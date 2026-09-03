@@ -1,0 +1,45 @@
+name: Proteger Fechamento de PR
+
+on:
+  pull_request:
+    types: [closed]
+
+# ↴ ESTE BLOCO DIZ AO GITHUB EXATAMENTE O QUE O SCRIPT PRECISA FAZER
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  verificar-fechamento:
+    if: github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validar permissão de fechamento
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          QUEM_FECHOU: ${{ github.actor }}
+          CRIADOR_DO_PR: ${{ github.event.pull_request.user.login }}
+          GRUPO_PERMITIDO: "Tech Leads"
+          
+        run: |
+          echo "PR fechado por: $QUEM_FECHOU"
+          echo "Criador do PR: $CRIADOR_DO_PR"
+          
+          if [ "$QUEM_FECHOU" = "$CRIADOR_DO_PR" ]; then
+            echo "Permitido: O criador do PR pode fechar o próprio PR."
+            exit 0
+          fi
+          
+          for usuario in $GRUPO_PERMITIDO; do
+            if [ "$QUEM_FECHOU" = "$usuario" ]; then
+              echo "Permitido: $QUEM_FECHOU faz parte do grupo autorizado."
+              exit 0
+            fi
+          done
+          
+          echo "Bloqueado: $QUEM_FECHOU não tem permissão para fechar este PR."
+          
+          gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ Olá @$QUEM_FECHOU, este Pull Request foi reaberto automaticamente. Apenas o criador do PR (@$CRIADOR_DO_PR) ou membros do grupo autorizado podem cancelá-lo."
+          
+          gh pr reopen ${{ github.event.pull_request.number }}

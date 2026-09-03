@@ -1,3 +1,5 @@
+![The Farmer Edu](logo_horizontal.png)
+
 # The Farmer Edu — Plano de Desenvolvimento
 ### SENAI · Aprendizagem em Assistente de Programação Web · UC Desenvolvimento de Sistemas Web/Back-End
 

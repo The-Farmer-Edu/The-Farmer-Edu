@@ -13,8 +13,11 @@ jobs:
   verificar-fechamento:
     if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
-    
+
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Validar permissão de fechamento
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,10 +4,6 @@ on:
   pull_request:
     types: [closed]
 
-permissions:
-  pull-requests: write
-  contents: read
-
 jobs:
   verificar-fechamento:
     if: github.event.pull_request.merged == false

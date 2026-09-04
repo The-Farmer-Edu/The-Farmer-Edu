@@ -36,9 +36,9 @@ jobs:
               return;
             }
 
-            // 2. Instancia corretamente um novo Octokit usando o módulo interno da Action 🔐
-            const { GitHub } = require('@actions/github');
-            const githubOrg = new GitHub({ auth: process.env.ORG_TOKEN });
+            // 2. Cria um novo cliente Octokit herdando as funções internas da Action, mas injetando o novo token 🔐
+            const Octokit = github.constructor;
+            const githubOrg = new Octokit({ auth: process.env.ORG_TOKEN });
 
             try {
               const membership = await githubOrg.rest.teams.getMembershipForUserInOrg({
@@ -55,7 +55,7 @@ jobs:
               console.log(`Usuário ${quemFechou} não foi encontrado no time ou ocorreu um erro.`);
             }
 
-            // 3. Ações de Bloqueio (usam o token padrão do repositório)
+            // 3. Ações de Bloqueio (usam o token padrão do repositório através do 'github')
             console.log(`Bloqueado: ${quemFechou} não tem permissão para fechar.`);
             
             await github.rest.issues.createComment({

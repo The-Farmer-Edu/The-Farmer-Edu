@@ -1,7 +1,7 @@
 ---
 name: Solicitação de Melhoria
 about: Sugira uma ideia para este projeto.
-title: TFE-REQ
+title: TFE-REQ - 
 labels: enhancement
 assignees: PedroTechJF
 type: Feature

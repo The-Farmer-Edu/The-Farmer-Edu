@@ -1,7 +1,7 @@
 ---
 name: Novo Bug
 about: Crie um relatório para nos ajudar a melhorar.
-title: TFE-BUG
+title: TFE-BUG - 
 labels: bug
 assignees: PedroTechJF
 type: Bug

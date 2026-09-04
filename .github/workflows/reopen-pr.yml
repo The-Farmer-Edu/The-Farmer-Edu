@@ -4,45 +4,70 @@ on:
   pull_request:
     types: [closed]
 
-# ↴ ESTE BLOCO DIZ AO GITHUB EXATAMENTE O QUE O SCRIPT PRECISA FAZER
 permissions:
   pull-requests: write
   contents: read
 
 jobs:
-  verificar-fechamento:
+  verificar-time:
     if: github.event.pull_request.merged == false
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
-      - name: Validar permissão de fechamento
+      - name: Validar Permissão via GitHub Team
+        uses: actions/github-script@v7
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          QUEM_FECHOU: ${{ github.actor }}
-          CRIADOR_DO_PR: ${{ github.event.pull_request.user.login }}
-          GRUPO_PERMITIDO: "Tech Leads"
-          
-        run: |
-          echo "PR fechado por: $QUEM_FECHOU"
-          echo "Criador do PR: $CRIADOR_DO_PR"
-          
-          if [ "$QUEM_FECHOU" = "$CRIADOR_DO_PR" ]; then
-            echo "Permitido: O criador do PR pode fechar o próprio PR."
-            exit 0
-          fi
-          
-          for usuario in $GRUPO_PERMITIDO; do
-            if [ "$QUEM_FECHOU" = "$usuario" ]; then
-              echo "Permitido: $QUEM_FECHOU faz parte do grupo autorizado."
-              exit 0
-            fi
-          done
-          
-          echo "Bloqueado: $QUEM_FECHOU não tem permissão para fechar este PR."
-          
-          gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ Olá @$QUEM_FECHOU, este Pull Request foi reaberto automaticamente. Apenas o criador do PR (@$CRIADOR_DO_PR) ou membros do grupo autorizado podem cancelá-lo."
-          
-          gh pr reopen ${{ github.event.pull_request.number }}
+          # Injeta o token da Org como variável de ambiente
+          ORG_TOKEN: ${{ secrets.ORGANIZATION_TEAM_PAT }}
+        with:
+          # Mantém o token padrão do próprio repositório para o restante das ações
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const quemFechou = context.actor;
+            const criadorDoPR = context.payload.pull_request.user.login;
+            
+            const TEAM_SLUG = "tech-leads"; 
+            const ORG = context.repo.owner;
+            const prNumber = context.payload.pull_request.number;
+
+            // 1. Permite se for o próprio criador do PR
+            if (quemFechou === criadorDoPR) {
+              console.log(`Permitido: O criador do PR (${quemFechou}) pode fechar o próprio PR.`);
+              return;
+            }
+
+            // 2. Cria um novo cliente Octokit herdando as funções internas da Action, mas injetando o novo token 🔐
+            const Octokit = github.constructor;
+            const githubOrg = new Octokit({ auth: process.env.ORG_TOKEN });
+
+            try {
+              const membership = await githubOrg.rest.teams.getMembershipForUserInOrg({
+                org: ORG,
+                team_slug: TEAM_SLUG,
+                username: quemFechou,
+              });
+
+              if (membership.data.state === 'active') {
+                console.log(`Permitido: ${quemFechou} pertence ao time autorizado (${TEAM_SLUG}).`);
+                return;
+              }
+            } catch (error) {
+              console.log(`Usuário ${quemFechou} não foi encontrado no time ou ocorreu um erro.`);
+            }
+
+            // 3. Ações de Bloqueio (usam o token padrão do repositório através do 'github')
+            console.log(`Bloqueado: ${quemFechou} não tem permissão para fechar.`);
+            
+            await github.rest.issues.createComment({
+              owner: ORG,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `⚠️ Olá @${quemFechou}, este Pull Request foi reaberto automaticamente.\n\nApenas o criador do PR (@${criadorDoPR}) ou membros do time **@${ORG}/${TEAM_SLUG}** têm permissão para fechá-lo sem aprovação.`
+            });
+
+            await github.rest.pulls.update({
+              owner: ORG,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              state: 'open'
+            });

@@ -1,3 +1,3 @@
 <?php
-    echo "Controller de atividades";
+    echo "Controller de atividades -1 ";
 ?>

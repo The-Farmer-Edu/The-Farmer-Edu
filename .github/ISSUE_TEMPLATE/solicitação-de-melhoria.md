@@ -19,3 +19,6 @@ Uma descrição clara e concisa de quaisquer soluções ou recursos alternativos
 
 **Contexto adicional**
 Adicione aqui qualquer outro contexto ou capturas de tela relacionados à solicitação de recurso.
+
+**Marcação de Squad**
+@The-Farmer-Edu/squad-$

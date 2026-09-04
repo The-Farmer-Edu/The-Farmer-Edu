@@ -37,3 +37,6 @@ Se aplicável, adicione capturas de tela para ajudar a explicar o problema.
 
 **Contexto adicional**
 Adicione qualquer outro contexto sobre o problema aqui.
+
+**Marcação de Squad**
+@The-Farmer-Edu/squad-$

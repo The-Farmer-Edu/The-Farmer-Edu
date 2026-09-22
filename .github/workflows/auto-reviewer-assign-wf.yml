@@ -3,6 +3,10 @@ on:
   pull_request:
     types: [opened, review_requested]
 
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   auto-reviewer-assign:
     runs-on: ubuntu-latest
@@ -11,3 +15,4 @@ jobs:
       - uses: johnmanjiro13/auto-reviewer-assign@v0.2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          config-file-path: .github/auto-reviewer-assign.yml

@@ -27,6 +27,15 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Matheus
 - Yan
 
+# Squad 7 - Fazenda 2:
+
+- Guilherme Macedo Ribeiro - Tech Lead
+- Eduardo Fregulia Alves de Oliveira Simão
+- Gabriel Carvalho de Albuquerque
+- Leonardo Davy Silva Correa
+- Ana Beatriz Nunes Condé
+
+
 # Squad 12 - Squad Submissões 2:
 Ficamos responsáveis pelas submissões, ou seja, criaremos o sistema de envio das respostas/anexos das atividades realizadas pelos alunos na plataforma.
 

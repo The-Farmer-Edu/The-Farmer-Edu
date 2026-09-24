@@ -1,3 +1,13 @@
-# The Farmer Edu 
-# squad 2 - submissões - integrantes: 
-# Arthur - tech lead, Karolãyne, Mariana e Vitória
+# The Farmer Edu
+
+# Squad 2 - Submissões 1: 
+-Arthur - Tech Lead
+-Karolãyne
+-Mariana
+-Vitória
+
+# Squad 3 - Notas: 
+-Kauã Furtado
+-Kauã Pereira
+-Leonardo Wagner
+-Gustavo Alexandre

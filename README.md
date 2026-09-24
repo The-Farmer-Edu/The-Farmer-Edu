@@ -16,3 +16,13 @@
 # SQUAD 4: TURMAS E CURSOS
 
 Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que tenha um sistema de turmas, com criação de turmas. visualização de turmas e seleção entre os cursos, vamos fazer seu funcionamento ser similar ao do Google Sala de Aula. 
+
+# SQUAD 7 - Fazenda 2
+
+-Guilherme Macedo Ribeiro
+-Eduardo Fregulia Alves de Oliveira Simão
+-Gabriel Carvalho de Albuquerque
+-Leonardo Davy Silva Correa
+-Ana Beatriz Nunes Condé
+
+Tech lead: Guilherme Macedo Ribeiro

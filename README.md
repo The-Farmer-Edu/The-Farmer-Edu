@@ -12,6 +12,11 @@
 -Leonardo Wagner
 -Gustavo Alexandre
 
+# Squad 6 - Atividades: 
+-Bernardo Castro
+-Arthur Januário - Tech Lead
+-Sandro De Souza
+-Lucas Ferreira
 
 # SQUAD 4: TURMAS E CURSOS
 

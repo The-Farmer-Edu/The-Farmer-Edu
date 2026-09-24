@@ -4,16 +4,35 @@ on:
   pull_request:
     types: [opened, ready_for_review]
 
-permissions:
-  pull-requests: write
-  contents: read
-
 jobs:
-  auto-reviewer-assign:
+  assign-squad-members:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: johnmanjiro13/auto-reviewer-assign@v0.2.0
+      - uses: actions/github-script@v7
         with:
-          token: ${{ secrets.ORGANIZATION_TEAM_PAT }}
-          config-file-path: .github/auto-reviewer-assign.yml
+          github-token: ${{ secrets.ORGANIZATION_TEAM_PAT }}
+          script: |
+            const org = 'The-Farmer-Edu'; // Substitua pela sua org
+            const team_slug = 'tech-leads';  // Slug do time
+
+            // 1. Busca todos os membros do time na Organização
+            const { data: members } = await github.rest.teams.listMembersInOrg({
+              org: org,
+              team_slug: team_slug,
+            });
+
+            // 2. Extrai os usernames e remove o autor do PR
+            const prAuthor = context.payload.pull_request.user.login;
+            const reviewers = members
+              .map(member => member.login)
+              .filter(username => username !== prAuthor);
+
+            // 3. Adiciona todos os membros do time como revisores individuais
+            if (reviewers.length > 0) {
+              await github.rest.pulls.requestReviewers({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                reviewers: reviewers
+              });
+            }

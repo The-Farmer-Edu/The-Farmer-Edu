@@ -21,3 +21,12 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Emanuele
 - Matheus
 - Yan
+
+# Squad 11 - Gamificação: 
+- Alvaro Ventura - Tech Lead
+- Ângelo Ferreira
+- Breno Antônio
+- Eric Mendonça
+- Hugo Bacellar
+
+Nosso squad está responsável por fazer um sistema de gamificação para o The Farmer Edu, onde os alunos poderão ganhar pontos por assistir aulas, completar tarefas e interagir com a plataforma, fazendo toda a lógica por de trás do sistema.

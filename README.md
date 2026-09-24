@@ -21,3 +21,11 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Emanuele
 - Matheus
 - Yan
+
+# Squad 10 (Squad Autenticação):
+
+-João Emanuel
+-Bernardo Paulino
+-Ana Beatriz Assis
+-Esther Vieira (Tech lead da semana)
+-Davi Souza

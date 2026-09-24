@@ -7,5 +7,5 @@
 - Gabriel Donato
 
 # Tech-lead:
-- Breno Santos
+- Davi Paiva
  

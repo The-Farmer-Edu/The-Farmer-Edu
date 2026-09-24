@@ -15,4 +15,12 @@
 
 # SQUAD 4: TURMAS E CURSOS
 
-Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que tenha um sistema de turmas, com criação de turmas. visualização de turmas e seleção entre os cursos, vamos fazer seu funcionamento ser similar ao do Google Sala de Aula. 
+Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que tenha um sistema de turmas, com criação de turmas. visualização de turmas e seleção entre os cursos, vamos fazer seu funcionamento ser similar ao do Google Sala de Aula.
+
+## Squad 12 (Squad Submissões 2):
+- Lucas de Sá
+- Agata (Tech Lead)
+- João Pedro
+- Rhuan
+- Annie
+### Ficamos responsáveis pelas submissões, ou seja, criaremos o sistema de envio das respostas/anexos das atividades realizadas pelos alunos na plataforma.

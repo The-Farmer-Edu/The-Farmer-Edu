@@ -21,6 +21,14 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Matheus
 - Yan
 
+# Squad 11 - Gamificação: 
+- Alvaro Ventura - Tech Lead
+- Ângelo Ferreira
+- Breno Antônio
+- Eric Mendonça
+- Hugo Bacellar
+
+Nosso squad está responsável por fazer um sistema de gamificação para o The Farmer Edu, onde os alunos poderão ganhar pontos por assistir aulas, completar tarefas e interagir com a plataforma, fazendo toda a lógica por de trás do sistema.
 # Squad Feddback IA 2:
 - Breno Santos
 - Davi Paiva - Tech Lead
@@ -28,10 +36,10 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Gabriel Donato
 
 # Squad 6 - Atividades: 
--Bernardo Castro
--Arthur Januário - Tech Lead
--Sandro De Souza
--Lucas Ferreira
+- Bernardo Castro
+- Arthur Januário - Tech Lead
+- Sandro De Souza
+- Lucas Ferreira
 
 # Squad 7 - Fazenda 2:
 
@@ -48,7 +56,6 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 -Ana Beatriz Assis
 -Esther Vieira (Tech lead da semana)
 -Davi Souza
-
 
 # Squad 12 - Squad Submissões 2:
 Ficamos responsáveis pelas submissões, ou seja, criaremos o sistema de envio das respostas/anexos das atividades realizadas pelos alunos na plataforma.

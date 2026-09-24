@@ -12,11 +12,6 @@
 - Leonardo Wagner
 - Gustavo Alexandre
 
-# Squad 6 - Atividades: 
--Bernardo Castro
--Arthur Januário - Tech Lead
--Sandro De Souza
--Lucas Ferreira
 
 # Squad 4 - Turmas e Cursos:
 
@@ -26,6 +21,20 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Emanuele
 - Matheus
 - Yan
+
+# Squad 6 - Atividades: 
+-Bernardo Castro
+-Arthur Januário - Tech Lead
+-Sandro De Souza
+-Lucas Ferreira
+
+# Squad 7 - Fazenda 2:
+
+- Guilherme Macedo Ribeiro - Tech Lead
+- Eduardo Fregulia Alves de Oliveira Simão
+- Gabriel Carvalho de Albuquerque
+- Leonardo Davy Silva Correa
+- Ana Beatriz Nunes Condé
 
 # Squad 10 (Squad Autenticação):
 

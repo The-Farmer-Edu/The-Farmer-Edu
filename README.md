@@ -39,6 +39,12 @@ Nosso Squad ficou com o módulo Turmas e Cursos onde iremos fazer um código que
 - Leonardo Davy Silva Correa
 - Ana Beatriz Nunes Condé
 
+# Squad 8 - Feddback IA 1:
+- Felipe Cesar
+- Gustavo de Oliveira (TECH LEAD DA SEMANA)
+- Hugo Candido
+- Laís Aparecida
+
 # Squad 9 - Feddback IA 2:
 - Breno Santos
 - Davi Paiva - Tech Lead da Semana

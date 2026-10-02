@@ -41,12 +41,31 @@ CREATE TABLE instrutores (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE materias (
+  id_materia     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nome_materia   VARCHAR(100)    NOT NULL,
+  descricao      TEXT            NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE materias_instrutores (
+  id_materia     INT UNSIGNED NOT NULL,
+  id_instrutor   INT UNSIGNED NOT NULL,
+  PRIMARY KEY (id_materia, id_instrutor),
+  CONSTRAINT fk_materias_instrutores_instrutor
+    FOREIGN KEY (id_instrutor) REFERENCES instrutores(id_usuario)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_materias_instrutores_materia
+    FOREIGN KEY (id_materia) REFERENCES materias(id_materia)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------------------------------------------------------------------
 -- 3. ALUNOS  [Aluno]
 -- ---------------------------------------------------------------------
 CREATE TABLE alunos (
   id_usuario     INT UNSIGNED PRIMARY KEY,
   matricula      VARCHAR(30)     NOT NULL,
+  xp_total       INT UNSIGNED    NOT NULL DEFAULT 0,
   CONSTRAINT fk_alunos_usuario
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,

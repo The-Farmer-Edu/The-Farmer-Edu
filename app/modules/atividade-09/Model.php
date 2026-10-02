@@ -4,7 +4,7 @@ class Usuario {
     public string $nome;
     public string $email;
     public string $tipo;
-    private string $senha_hash;
+    protected string $senha_hash;
 
     public function saudacao(): string {
         return "Olá {$this->nome}!";
@@ -17,6 +17,21 @@ class Usuario {
     public function verificarSenha(string $senha): bool {
         return password_verify($senha, $this->senha_hash);
     }
+
+    public function salvar(PDO $pdo): void {
+        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo_usuario) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$this->nome, $this->email, $this->senha_hash, $this->tipo]);
+        $this->id = (int) $pdo->lastIn sertId();
+
+    }
+
+    public static function buscarPorEmail(PDO $pdo, string $email): ?self {
+        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
+        $stmt->execute([$email]);
+        $dados = $stmt->fetch();
+        return $dados ? self::formatarDados($dados) : null;
+    }
+
 }
 
 class Instrutor extends Usuario {
@@ -33,23 +48,32 @@ class Aluno extends Usuario {
     }
 }
 
-function validar_login(string $email, string $senha): array {
-    $erros = [];
-    if (empty($email) || empty($senha)) {
-        $erros[] = "E-mail e senha são obrigatórios";
+class UsuarioController {
+    public function exibirPerfil() {
+        $user = new Usuario();
+        $user->nome = "Hugo";
+
+        $professor = new Instrutor();
+        $professor->id = 1;
+        $professor->nome = "Ronaldo";
+        $professor->email = "instrutoRonaldo@gmail.com";
+        $professor->tipo = "Instrutor";
+        $professor->materias_leciona = ["PHP", "Python"];
+
+        $aluno = new Aluno();
+        $aluno->id = 2;
+        $aluno->nome = "Cleiton";
+        $aluno->email = "alunoCleiton@gmail.com";
+        $aluno->tipo = "Aluno";
+        $aluno->xp_total = 150;
+
+        $resultado = validar_login("usuaraio@gmail.com", "senha123!");
+
+        if ($resultado['status'] === 'sucesso') {
+            $aluno->definirSenha("senha123!");
+        }
+
+        require_once __DIR__ . '/views/buscarUsuario.php'; 
     }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $erros[] = "E-mail inválido";
-    }
-    if (strlen($senha) < 8) {
-        $erros[] = "Senha muito curta";
-    }
-    if (!preg_match('/[\W_]/', $senha)) {
-        $erros[] = "A senha deve conter pelo menos um caracter especial";
-    }
-    if (!empty($erros)) {
-        return ['status' => 'erro', 'mensagem' => implode(', ', $erros)];
-    } else {
-        return ['status' => 'sucesso', 'mensagem' => 'Login e senha válidos'];
-    }
+    
 }

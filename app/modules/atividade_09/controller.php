@@ -1,7 +1,6 @@
 <?php
     require_once "model/Atividade2_php.php";
 
-    $bd = new BancoDeDados();
 
     function validar_login(string $email, string $senha, array $usuarios): array { // é substituido pela nova função com novos parametros?
         $usuarioEncontrado = null;

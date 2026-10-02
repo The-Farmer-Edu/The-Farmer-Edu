@@ -12,25 +12,27 @@ class Usuario {
         return "Olá; {$this->nome}!";
     }
 
-    public function definirSenha (string $senha): void {
-        $this->senha_hash = password_hash($senha, PASSWORD_BCRYPT);
+    public function definirSenha (string $senha, bool $isHash): void {
+
+        
+        $isHash ? $this->senha_hash = $senha : $this->senha_hash = password_hash($senha, PASSWORD_BCRYPT);
     }
 
     public function verificarSenha(string $senha): bool {
         return password_verify($senha, $this->senha_hash);
     }
 
-    public function __construct(string $nome, string $email, string $tipo, string $senha) {
+    public function __construct(string $nome, string $email, string $tipo, string $senha, bool $isHash) {
         $this->nome = $nome;
         $this->email = $email;
         $this->tipo = $tipo;
-        $this->definirSenha($senha);
+        $this->definirSenha($senha, $isHash);
         $this->salvaUsuario(iniciarPDO());
         
     }
 
     public function salvaUsuario (PDO $pdo): void {
-        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo) VALUES (?,?,?,?)"); // continua com os tipos de usuário?
+        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo_usuario) VALUES (?,?,?,?)"); // função de salvar usuario no banco de dados com os parametros nome, email, senha_hash e tipo
         $stmt->execute([$this->nome, $this->email, $this->senha_hash, $this->tipo]);
         $this->id_usuarios=(int)$pdo->lastInsertId();
     }
@@ -39,10 +41,16 @@ class Usuario {
         $stmt =$pdo ->prepare("SELECT * FROM usuarios WHERE email = ?");
         $stmt->execute([$email]);
         $dadosUsuario = $stmt->fetch();
-    return $dadosUsuario ? self::formatarDadosUsuario($dadosUsuario) : null;
+        return $dadosUsuario ? self::formatarDadosUsuario($dadosUsuario) : null;
     }
 
+    public static function formatarDadosUsuario(array $dadosUsuario): Usuario {
+        if ($dadosUsuario['tipo_usuario'] === 'Instrutor') {
+            return new Instrutor($dadosUsuario['nome'], $dadosUsuario['email'], $dadosUsuario['senha_hash']);;
 
+    }
+
+    }
 }
 
 
@@ -50,8 +58,8 @@ class Usuario {
 class Instrutor extends Usuario {
     public array $materias_lecionadas;
 
-    function __construct(string $nome, string $email, string $senha, array $materias_lecionadas) {
-        parent::__construct($nome, $email, 'Instrutor', $senha);
+    function __construct(string $nome, string $email, string $senha, array $materias_lecionadas, bool $isHash = false) {
+        parent::__construct($nome, $email, 'Instrutor', $senha, $isHash);
         $this->materias_lecionadas = $materias_lecionadas;
     }
 }
@@ -62,8 +70,8 @@ class Aluno extends Usuario {
 
     public int $xp_total;
 
-    function __construct(string $nome, string $email, string $senha, string $xp_total) {
-        parent::__construct($nome, $email, 'Aluno', $senha);
+    function __construct(string $nome, string $email, string $senha, string $xp_total, bool $isHash = false) {
+        parent::__construct($nome, $email, 'Aluno', $senha, $isHash);
         $this->xp_total = $xp_total;
     }
  

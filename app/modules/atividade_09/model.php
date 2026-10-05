@@ -46,7 +46,9 @@ class Usuario {
 
     public static function formatarDadosUsuario(array $dadosUsuario): Usuario {
         if ($dadosUsuario['tipo_usuario'] === 'Instrutor') {
-            return new Instrutor($dadosUsuario['nome'], $dadosUsuario['email'], $dadosUsuario['senha_hash']);;
+            return new Instrutor($dadosUsuario['nome'], $dadosUsuario['email'], $dadosUsuario['senha_hash'], $dadosUsuario['materias_lecionadas'], true);;
+        elseif ($dadosUsuario['tipo_usuario'] === 'Aluno') {
+            return new Aluno($dadosUsuario['nome'], $dadosUsuario['email'], $dadosUsuario['senha_hash'], $dadosUsuario['xp_total'], true);
 
     }
 
@@ -57,6 +59,40 @@ class Usuario {
 
 class Instrutor extends Usuario {
     public array $materias_lecionadas;
+    public array $id_materias;
+
+    public function salvarInstrutor(PDO $pdo): void {
+        $stmt = $pdo->prepare("INSERT INTO instrutores (id_usuario) VALUES (?)");
+        $stmt->execute([$this->id])
+    }   
+
+    public function gerenciarMaterias(PDO $pdo, array $materias_lecionadas): void {
+        foreach ($materias_lecionadas as $materia)
+            if 
+        
+            
+
+    }
+
+    public function salvarMaterias(PDO $pdo, string $nome): void {
+        $stmt = $pdo->prepare("INSERT INTO materias (id_materia, nome_materia) VALUES (?, ?)");
+        // $stmt->execute([$this->id, this->])
+        $this->id_materias[] = (int)$pdo->lastInsertId();
+
+    }
+
+    public static function buscarMaterias(PDO $pdo, string $nome): ?array{
+        $stmt =$pdo->prepare("SELECT * FROM materias WHERE nome_materia = ?")
+        $stmt -> execute([$nome]);
+        $dadosMateria = $stmt->fetch();
+        if ($dadosMateria) {
+            return $dadosMateria;
+        } else {
+            return null;
+        }
+    }
+
+
 
     function __construct(string $nome, string $email, string $senha, array $materias_lecionadas, bool $isHash = false) {
         parent::__construct($nome, $email, 'Instrutor', $senha, $isHash);

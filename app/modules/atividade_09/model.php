@@ -7,6 +7,7 @@ class Usuario {
     public string $email;
     public string $tipo; // instrutor ou aluno
     private string $senha_hash;
+    // private PDO $pdo;
 
     public function saudacao(): string{
         return "Olá; {$this->nome}!";
@@ -24,8 +25,10 @@ class Usuario {
 
     public function __construct(string $nome, string $email, string $tipo, string $senha, bool $isHash) {
         $this->nome = $nome;
+        
         $this->email = $email;
         $this->tipo = $tipo;
+        // $this->pdo = iniciarPDO();
         $this->definirSenha($senha, $isHash);
         $this->salvaUsuario(iniciarPDO());
         
@@ -63,20 +66,28 @@ class Instrutor extends Usuario {
 
     public function salvarInstrutor(PDO $pdo): void {
         $stmt = $pdo->prepare("INSERT INTO instrutores (id_usuario) VALUES (?)");
-        $stmt->execute([$this->id])
+        $stmt->execute([$this->id]);
     }   
 
+
     public function gerenciarMaterias(PDO $pdo, array $materias_lecionadas): void {
-        foreach ($materias_lecionadas as $materia)
-            if 
+        foreach ($materias_lecionadas as $materia) {
+            $materia = $this->buscarMaterias($pdo, $materia);
+            if ($materia === null){
+                $this->salvarMaterias($pdo, $nome);
+            }
+            else{
+                $this->id_materias[] = (int)$materia['id_materia'];
+            }
         
+        }
             
 
     }
 
     public function salvarMaterias(PDO $pdo, string $nome): void {
-        $stmt = $pdo->prepare("INSERT INTO materias (id_materia, nome_materia) VALUES (?, ?)");
-        // $stmt->execute([$this->id, this->])
+        $stmt = $pdo->prepare("INSERT INTO materias (nome_materia) VALUE (?)");
+        $stmt->execute([$nome]):
         $this->id_materias[] = (int)$pdo->lastInsertId();
 
     }
@@ -92,11 +103,21 @@ class Instrutor extends Usuario {
         }
     }
 
+    public function relacionarId(PDO $pdo){
+        foreach($this->id_materias as $id_materia){
+            $stmt = $pdo->prepare("INSERT INTO materias_instrutores (id_materia, id_instrutor) VALUES (?,?)");
+            $stmt->execute([$id_materia, $this->id]);
+        }
+    }
+
 
 
     function __construct(string $nome, string $email, string $senha, array $materias_lecionadas, bool $isHash = false) {
         parent::__construct($nome, $email, 'Instrutor', $senha, $isHash);
         $this->materias_lecionadas = $materias_lecionadas;
+
+        $this->gerenciarMaterias($pdo, $materias_lecionadas);
+        $this->relacionarId($pdo);
     }
 }
 

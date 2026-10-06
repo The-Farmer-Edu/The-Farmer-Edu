@@ -26,23 +26,72 @@
             $this->tipo = $tipo;
             $this->definirSenha($senha);
         }
+
+        public function salvarUsuario(PDO $pdo): void {
+            $sql = "INSERT INTO usuarios (nome, email, tipo_usuario, senha_hash) VALUES (?, ?, ?, ?)";
+
+            $stmt = $pdo->prepare($sql);
+
+            $stmt->execute([
+                $this->nome,
+                $this->email,
+                $this->tipo,
+                $this->senha_hash
+            ]);
+
+            $this->id = (int) $pdo->lastInsertId();
+        }
+
+        public static function buscarEmail(PDO $pdo, string $email): ?Usuario {
+            $sql = "SELECT * FROM usuarios WHERE email = ?";
+
+            $stmt = $pdo->prepare($sql);
+
+            $stmt->execute([$email]);
+
+            $dados = $stmt->fetch();
+
+            if ($dados === false) {
+                return null;
+            }
+
+            $usuario = new Usuario(
+                (int) $dados['id'],
+                $dados['nome'],
+                $dados['email'],
+                $dados['tipo_usuario'],
+                ''
+            );
+
+            $usuario->senha_hash = $dados['senha_hash'];
+
+            return $usuario;
+        }
+
+        public function excluirUsuario(PDO $pdo): void {
+            $sql = "DELETE FROM usuarios WHERE id = ?";
+
+            $stmt = $pdo->prepare($sql);
+
+            $stmt->execute([$this->id]);
+        }
     }
     
-    class Instrutor extends Usuario {
-        public array $materias_leciona;
+        class Instrutor extends Usuario {
+            public array $materias_leciona;
 
-        public function __construct(int $id, string $nome, string $email, string $senha, array $materias_leciona = []) {
-            parent::__construct($id, $nome, $email, "instrutor", $senha);
-            $this->materias_leciona = $materias_leciona;
+            public function __construct(int $id, string $nome, string $email, string $senha, array $materias_leciona = []) {
+                parent::__construct($id, $nome, $email, "instrutor", $senha);
+                $this->materias_leciona = $materias_leciona;
+            }
         }
-    }
 
-    class Aluno extends Usuario {
-        public int $xp_total;
+        class Aluno extends Usuario {
+            public int $xp_total;
 
-        public function __construct(int $id, string $nome, string $email, string $senha, int $xp_total = 0) {
-            parent::__construct($id, $nome, $email, "aluno", $senha);
-            $this->xp_total = $xp_total;
+            public function __construct(int $id, string $nome, string $email, string $senha, int $xp_total = 0) {
+                parent::__construct($id, $nome, $email, "aluno", $senha);
+                $this->xp_total = $xp_total;
+            }
         }
-    }
 ?>

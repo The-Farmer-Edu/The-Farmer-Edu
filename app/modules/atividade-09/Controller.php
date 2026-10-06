@@ -26,10 +26,18 @@ class UsuarioController
             'aluno@senai.com',
             'aluno'
         );
+        
+        $usuarioExistente = Usuario::buscarPorEmail(
+        $pdo,
+        'aluno@senai.com'
+        );
 
-        $usuario->salvar($pdo);
-
-        $idSalvo = $usuario->id;
+        if ($usuarioExistente === null) {
+            $usuario->salvar($pdo);
+        }   else {
+               $usuario = $usuarioExistente;
+        }
+            $idSalvo = $usuario->id;    
 
         $usuarioEncontrado = Usuario::buscarPorEmail(
             $pdo,

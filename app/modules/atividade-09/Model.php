@@ -39,19 +39,47 @@ class Usuario {
         return $dados ? self::formatarDados($dados) : null;
     }
 
+    protected static function formatarDados(array $dados): self {
+        switch ($dados['tipo_usuario']) {
+            case 'instrutor':
+                $usuario = new Instrutor($dados['nome'], $dados['email'], $dados['tipo_usuario'], '');
+                break;
+            case 'aluno':
+                $usuario = new Aluno($dados['nome'], $dados['email'], $dados['tipo_usuario'], '');
+                break;
+            default:
+                $usuario = new self($dados['nome'], $dados['email'], $dados['tipo_usuario'], '');
+                break;
+        }
+
+        $usuario->id_usuario = (int) $dados['id_usuario'];
+        $usuario->senha_hash = $dados['senha_hash'];
+
+        return $usuario;
+    }
+
 }
 
 class Instrutor extends Usuario {
     public array $materias_leciona = [];
+
     public function saudacao(): string {
         return "Olá, Professor(a) {$this->nome}!";
+    }
+    public function __construct(array $materias_leciona) {
+        $this->materias_leciona = $materias_leciona;
     }
 }
 
 class Aluno extends Usuario {
     public int $xp_total = 0;
+
     public function saudacao(): string {
         return "Olá, Aluno(a) {$this->nome}!";
+    }
+
+    public function __construct(int $xp_total) {
+        $this->xp_total = $xp_total;
     }
 }
 

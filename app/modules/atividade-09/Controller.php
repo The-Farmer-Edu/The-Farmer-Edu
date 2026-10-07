@@ -2,6 +2,7 @@
     require __DIR__ . '/Model.php';
     require_once __DIR__ . '/../../core/database.php';
     require_once __DIR__ . '/views/novoUsuario.php';
+    require_once __DIR__ . '/views/buscarUsuario.php'; 
     
     function validar_login(string $email, string $senha): array {
         $erros = [];
@@ -26,13 +27,9 @@
 
     class UsuarioController {
         public function exibirPerfil() {
-
             $resultado = validar_login("alunoCleiton@gmail.com", "senha123!");
-
-
-            require_once __DIR__ . '/views/buscarUsuario.php'; 
         }
         
     }
 
-    require_once __DIR__ . '/views/novoUsuario.php';
+

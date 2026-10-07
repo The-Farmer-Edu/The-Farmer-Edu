@@ -64,7 +64,7 @@ class Instrutor extends Usuario {
     public array $materias_leciona = [];
 
     public function saudacao(): string {
-        return "Olá, Professor(a) {$this->nome}!";
+        return "Olá, Professor(a) {$this->nome}!<br>";
     }
     public function __construct(string $nome, string $email, string $tipo, string $senha, array $materias_leciona) {
         parent::__construct($nome, $email, $tipo, $senha);
@@ -76,7 +76,7 @@ class Aluno extends Usuario {
     public int $xp_total = 0;
 
     public function saudacao(): string {
-        return "Olá, Aluno(a) {$this->nome}!";
+        return "Olá, Aluno(a) {$this->nome}!<br>";
     }
 
     public function __construct(string $nome, string $email, string $tipo, string $senha, int $xp_total = 0) {

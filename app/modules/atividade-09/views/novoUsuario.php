@@ -13,10 +13,10 @@
 
     try {
         $aluno->salvar($pdo);
-        echo "<br>Aluno salvo com sucesso!<br>";
+        echo "Aluno salvo com sucesso!<br>";
     } catch (PDOException $e) {
         if ($e->getCode() == 23000) {
-            echo "<br>O e-mail '{$aluno->email}' já está cadastrado no sistema.<br>";
+            echo "O e-mail '{$aluno->email}' já está cadastrado no sistema.<br>";
         } else {
             echo "Erro no banco de dados: " . $e->getMessage();
         }

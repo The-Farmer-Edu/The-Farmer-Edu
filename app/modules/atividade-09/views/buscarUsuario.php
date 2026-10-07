@@ -9,5 +9,12 @@
     if ($aluno) {
         echo $aluno->saudacao();
     } else {
-        echo "Usuário não encontrado com esse e-mail.";
+        echo "Usuário não encontrado com esse e-mail.<br>";
     }
+
+    $pdo = iniciarPDO();
+    $email = "' OR '1'='1";
+    $aluno = Usuario::buscarPorEmail($pdo, $email);
+
+    var_dump($aluno);
+    echo "<br>";

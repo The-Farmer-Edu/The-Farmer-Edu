@@ -52,7 +52,7 @@ class Usuario {
                 break;
         }
 
-        $usuario->id_usuario = (int) $dados['id_usuario'];
+        $usuario->id = (int) $dados['id_usuario'];
         $usuario->senha_hash = $dados['senha_hash'];
 
         return $usuario;
@@ -66,7 +66,8 @@ class Instrutor extends Usuario {
     public function saudacao(): string {
         return "Olá, Professor(a) {$this->nome}!";
     }
-    public function __construct(array $materias_leciona) {
+    public function __construct(string $nome, string $email, string $tipo, string $senha, array $materias_leciona) {
+        parent::__construct($nome, $email, $tipo, $senha);
         $this->materias_leciona = $materias_leciona;
     }
 }
@@ -78,7 +79,8 @@ class Aluno extends Usuario {
         return "Olá, Aluno(a) {$this->nome}!";
     }
 
-    public function __construct(int $xp_total) {
+    public function __construct(string $nome, string $email, string $tipo, string $senha, int $xp_total = 0) {
+        parent::__construct($nome, $email, $tipo, $senha);
         $this->xp_total = $xp_total;
     }
 }

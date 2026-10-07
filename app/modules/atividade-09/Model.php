@@ -63,3 +63,37 @@ class Usuario {
         return $usuario;
     }
 }
+
+class Materia {
+    public ?int $id = null;
+    public string $nome = '';
+
+    public function __construct(string $nome = '') {
+        $this->nome = $nome;
+    }
+
+    public function salvar(PDO $pdo): void {
+        $stmt = $pdo->prepare("INSERT INTO materias (nome) VALUES (?)");
+        $stmt->execute([$this->nome]);
+        $this->id = (int) $pdo->lastInsertId();
+    }
+
+    // Busca todas as matérias associadas a um instrutor específico
+    public static function buscarPorInstrutor(PDO $pdo, int $instrutorId): array {
+        $sql = "SELECT m.* FROM materias m
+                INNER JOIN instrutor_materia im ON m.id = im.materia_id
+                WHERE im.instrutor_id = ?";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$instrutorId]);
+        
+        $materias = [];
+        while ($dados = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $m = new self($dados['nome']);
+            $m->id = (int) $dados['id'];
+            $materias[] = $m;
+        }
+
+        return $materias;
+    }
+}

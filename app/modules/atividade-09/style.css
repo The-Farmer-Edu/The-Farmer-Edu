@@ -1,0 +1,164 @@
+/* ==========================================================================
+   Estilos Gerais & Design System
+   ========================================================================== */
+   :root {
+    --primary-color: #2e7d32;      /* Verde The Farmer Edu */
+    --primary-hover: #1b5e20;
+    --bg-color: #f4f6f8;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --text-muted: #666666;
+    --border-color: #cccccc;
+    --error-bg: #ffebee;
+    --error-text: #c62828;
+    --success-bg: #e8f5e9;
+    --success-text: #2e7d32;
+    --radius: 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  
+  /* ==========================================================================
+     Container / Card Principal
+     ========================================================================== */
+  .container {
+    background-color: var(--card-bg);
+    width: 100%;
+    max-width: 480px;
+    padding: 30px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  
+  h1 {
+    font-size: 1.6rem;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  h2 {
+    font-size: 1.2rem;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--bg-color);
+    padding-bottom: 5px;
+  }
+  
+  /* ==========================================================================
+     Formulários e Campos
+     ========================================================================== */
+  form p {
+    margin-bottom: 16px;
+  }
+  
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #fafafa;
+  }
+  
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+    background-color: #ffffff;
+  }
+  
+  button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: #ffffff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+  }
+  
+  button[type="submit"]:hover {
+    background-color: var(--primary-hover);
+  }
+  
+  /* ==========================================================================
+     Mensagens de Alerta & Resultados
+     ========================================================================== */
+  .alert {
+    padding: 12px 15px;
+    border-radius: var(--radius);
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    text-align: center;
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid var(--primary-color);
+  }
+  
+  .result-card {
+    background-color: var(--bg-color);
+    padding: 15px;
+    border-radius: var(--radius);
+    margin-top: 15px;
+  }
+  
+  .result-card p {
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+  }
+  
+  .result-card p:last-child {
+    margin-bottom: 0;
+  }
+  
+  /* ==========================================================================
+     Links de Navegação
+     ========================================================================== */
+  .nav-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .nav-link:hover {
+    text-decoration: underline;
+  }

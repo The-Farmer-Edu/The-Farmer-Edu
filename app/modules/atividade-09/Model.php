@@ -27,7 +27,7 @@
             $this->definirSenha($senha);
         }
 
-        public function salvarUsuario(PDO $pdo): void {
+        public function salvar(PDO $pdo): void {
             $sql = "INSERT INTO usuarios (nome, email, tipo_usuario, senha_hash) VALUES (?, ?, ?, ?)";
 
             $stmt = $pdo->prepare($sql);
@@ -42,7 +42,7 @@
             $this->id = (int) $pdo->lastInsertId();
         }
 
-        public static function buscarEmail(PDO $pdo, string $email): ?Usuario {
+        public static function buscarPorEmail(PDO $pdo, string $email): ?Usuario {
             $sql = "SELECT * FROM usuarios WHERE email = ?";
 
             $stmt = $pdo->prepare($sql);
@@ -56,7 +56,7 @@
             }
 
             $usuario = new Usuario(
-                (int) $dados['id'],
+                (int) $dados['id_usuario'],
                 $dados['nome'],
                 $dados['email'],
                 $dados['tipo_usuario'],
@@ -68,7 +68,7 @@
             return $usuario;
         }
 
-        public function excluirUsuario(PDO $pdo): void {
+        public function excluir(PDO $pdo): void {
             $sql = "DELETE FROM usuarios WHERE id = ?";
 
             $stmt = $pdo->prepare($sql);

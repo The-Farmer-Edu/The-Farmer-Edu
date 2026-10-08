@@ -1,81 +1,106 @@
 <?php
-
 class Usuario {
-    public int $id;
+    public ?int $id = null;
     public string $nome;
     public string $email;
     public string $tipo;
-    private string $senha_hash;
+    protected string $senha_hash;
 
 
-    public function saudacao(): string {
-        return "Olá, {$this->nome}"; 
-    }
 
-    public function __construct(int $id, string $nome, string $email, string $tipo) {
-        $this->id = $id;
+
+    public function __construct(string $nome, string $email, string $tipo, string $senha) {
         $this->nome = $nome;
         $this->email = $email;
         $this->tipo = $tipo;
+        $this->definirSenha($senha);
+    }
+
+    public function saudacao(): string {
+        return "Olá {$this->nome}!";
     }
 
     public function definirSenha(string $senha): void {
-        $this->senha_hash = password_hash ($senha, PASSWORD_BCRYPT);
+        $this->senha_hash = password_hash($senha, PASSWORD_BCRYPT);
     }
-
 
     public function verificarSenha(string $senha): bool {
         return password_verify($senha, $this->senha_hash);
     }
 
     public function salvar(PDO $pdo): void {
-    $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo_usuario) VALUES (?, ?, ?, ?)");
-    $stmt->execute([$this->nome, $this->email, $this->senha_hash, $this->tipo]);
-    $this->id = (int) $pdo->lastInsertId();
+        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha_hash, tipo_usuario) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$this->nome, $this->email, $this->senha_hash, $this->tipo]);
+        $this->id = (int) $pdo->lastInsertId();
+
     }
 
     public static function buscarPorEmail(PDO $pdo, string $email): ?self {
-    $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
-    $stmt->execute([$email]);
-    $dados = $stmt->fetch();
-    return $dados ?self::formatarDados($dados) : null;
+        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
+        $stmt->execute([$email]);
+        $dados = $stmt->fetch();
+        return $dados ? self::formatarDados($dados) : null;
     }
+
+
+
+
+
+    protected static function formatarDados(array $dados): self {
+        switch ($dados['tipo_usuario']) {
+            case 'instrutor':
+                $usuario = new Instrutor($dados['nome'], $dados['email'], $dados['tipo_usuario'], '');
+                break;
+            case 'aluno':
+                $usuario = new Aluno($dados['nome'], $dados['email'], $dados['tipo_usuario'], '');
+                break;
+            default:
+                $usuario = new self($dados['nome'], $dados['email'], $dados['tipo_usuario'], '');
+                break;
+        }
+
+        $usuario->id = (int) $dados['id_usuario'];
+        $usuario->senha_hash = $dados['senha_hash'];
+
+
+
+
+        return $usuario;
+    }
+
 }
+
+
+
+
+
+
+
 
 class Instrutor extends Usuario {
     public array $materias_leciona = [];
+
+    public function saudacao(): string {
+        return "Olá, Professor(a) {$this->nome}<br>";
+    }
+    public function __construct(string $nome, string $email, string $tipo, string $senha, array $materias_leciona) {
+        parent::__construct($nome, $email, $tipo, $senha);
+        $this->materias_leciona = $materias_leciona;
+    }
 }
 
 class Aluno extends Usuario {
     public int $xp_total = 0;
 
+    public function saudacao(): string {
+        return "Olá, Aluno(a) {$this->nome}<br>";
+    }
+
+    public function __construct(string $nome, string $email, string $tipo, string $senha, int $xp_total = 0) {
+        parent::__construct($nome, $email, $tipo, $senha);
+        $this->xp_total = $xp_total;
+    }
 }
 
 
-function validar_login(string $email, string $senha): array { 
-    $erros = [];
-    if (empty($email)) { 
-        $erros[] = "O e-mail não pode estar vazio."; 
-    } 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) { 
-        $erros[] = "O e-mail é inválido."; 
-    } 
-    if (strlen($senha) < 8) { 
-        $erros[] = "A senha deve ter no mínimo 8 caracteres."; 
-    } 
-    if (!preg_match('/[\W_]/', $senha)) { 
-        $erros[] = "A senha deve conter pelo menos um caracter especial."; 
-    } 
-    if (!preg_match('/[A-Z]/', $senha)) { 
-        $erros[] = "A senha deve conter pelo menos uma letra maiúscula."; 
-    } 
-    if (!preg_match('/[a-z]/', $senha)) { 
-        $erros[] = "A senha deve conter pelo menos uma letra minúscula."; 
-    }
-    if (!empty($erros)) {
-        return ['status' => 'erro', 'mensagem' => implode(',',$erros)];
-    }
-    else {
-        return ['status' => 'sucesso', 'mensagem' => 'login e senha válidos'];
-    }
-} 
+

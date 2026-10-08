@@ -1,34 +1,33 @@
 <?php
-require_once    __DIR__ . '/../atividade-09/Model.php';
-
-
-
-class autenticarUsuario {
-    public function autenticar() {
-        $prof = new Instrutor(1, "Pedro", "pedrotechjf@gmail.com", "Instrutor");
-        $prof->definirSenha = ("Pedro.123");
-        $aluno = new Aluno(2, "Breno", "brenosantos@gmail.com", "Aluno");
-        $aluno->definirSenha = ("Breno.123");
-        $resultado = validar_login("brenosantos@gmail.com", "Breno.123");
-
-        if ($resultado['status'] === 'sucesso') {
-            $aluno->definirSenha("Breno.123");
+    require __DIR__ . '/Model.php';
+    require_once __DIR__ . '/../../core/database.php';
+    require_once __DIR__ . '/view/novoUsuario.php';
+    require_once __DIR__ . '/view/buscarUsuario.php'; 
+    
+    function validar_login(string $email, string $senha): array {
+        $erros = [];
+        if (empty($email) || empty($senha)) {
+            $erros[] = "E-mail e senha obrigatórios";
         }
-
-        
-
-        require_once __DIR__ .'/../view/buscarUsuario.php';
-        require_once __DIR__ .'/../view/novoUsuario.php';
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $erros[] = "E-mail inválido";
+        }
+        if (strlen($senha) < 8) {
+            $erros[] = "Senha muito curta";
+        }
+        if (!preg_match('/[\W_]/', $senha)) {
+            $erros[] = "A senha deve conter pelo menos um caracter especial";
+        }
+        if (!empty($erros)) {
+            return ['status' => 'erro', 'mensagem' => implode(', ', $erros)];
+        } else {
+            return ['status' => 'sucesso', 'mensagem' => 'Login e senha válidos'];
+        }
     }
 
-}
-
-class adicionarUsuario {
-    public function adicionar() {
-        $novoUsuario = new salvar("breno", "breno@gmail.com", "senha123!", "Instrutor");
-        $novoUsuario->definirEmail = ("breno@gmail.com");
-        $resultado = validar_login("breno", "senha123!");
+    class UsuarioController {
+        public function exibirPerfil() {
+            $resultado = validar_login("breno67@gmail.com", "sixseven123!");
+        }
         
-
     }
-}

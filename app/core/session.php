@@ -21,7 +21,7 @@ function login(array $usuario): void {
         "nome" => $usuario["nome"],
         "email" => $usuario["email"],
         "perfilAcesso" => $usuario["perfilAcesso"] // instrutor ou aluno
-    ]];
+    ]];   
 }
 
 function logout(): void {
@@ -56,5 +56,4 @@ function solicitarPerfilDeAcesso(string $perfil): void {
         exit();
     }
 }
-
 ?>

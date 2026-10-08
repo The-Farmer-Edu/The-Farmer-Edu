@@ -74,11 +74,9 @@ class Instrutor extends Usuario {
 
 class Aluno extends Usuario {
     public int $xp_total = 0;
-
     public function saudacao(): string {
         return "Olá, Aluno(a) {$this->nome}!<br>";
     }
-
     public function __construct(string $nome, string $email, string $tipo, string $senha, int $xp_total = 0) {
         parent::__construct($nome, $email, $tipo, $senha);
         $this->xp_total = $xp_total;

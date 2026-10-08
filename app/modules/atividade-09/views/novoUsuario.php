@@ -9,9 +9,32 @@
     <?php
     require_once __DIR__ . '/../Model.php';
 
-    // $instrutor = new Instrutor(1, "Pedrão", "PedroTechJf@gmail.com", "123456", ["PHP, Programação Orientada a Objetos"]);
-    $salvar = new Usuario("Guilherme", "ChupoVivi@gmail.com", "Aluno", "abcdef");
-    // $salvar->salvarUsuario()
-    ?>
+    // $instrutor = new Instrutor(1, "Pedrão", "PedroTechJf@gmail.com", "123456", ["PHP", "Programação Orientada a Objetos"]);
+    try {
+        $salvarInstrutor = new Instrutor("Pedrão", "PedroTechJf@gmail.com", "123456", ["PHP", "Programação Orientada a Objetos"]);
+        
+        ?>
+        <p class="sucesso">Instrutor salvo com sucesso!</p>
+        <?php 
+    } 
+    catch (PDOException) { 
+        ?>
+        <p class="erro">Falha ao salvar Instrutor!</p>
+        <?php 
+    }
+
+    try {
+        $salvarAluno = new Aluno("Frecu", "FrebundaCompany@gmail.com", "sarahtraiu", "000120", 250);
+        
+        ?>
+        <p class="sucesso">Aluno salvo com sucesso!</p>
+        <?php 
+    } 
+    catch (PDOException) { 
+        ?>
+        <p class="erro">Falha ao salvar Aluno!</p>
+        <?php 
+    }
+        ?>
 </body>
 </html>

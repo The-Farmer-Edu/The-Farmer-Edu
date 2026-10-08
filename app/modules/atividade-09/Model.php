@@ -26,8 +26,8 @@
             $this->tipo = $tipo;
             if(!empty($senha)){
                 $this->definirSenha($senha);
+                $this->salvarUsuario(iniciarPDO());
             }
-            $this->salvarUsuario(iniciarPDO());
         }
         
         public function salvarUsuario(PDO $pdo): void {
@@ -40,16 +40,22 @@
             $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = ?");
             $stmt->execute([$email]);
             $dadosUsuario = $stmt->fetch();
-            return $dadosUsuario ?? Usuario::formatarDados($dadosUsuario);
+            return $dadosUsuario ? Usuario::formatarDados($dadosUsuario) : null ;
         }
 
-        public static function formatarDados(array $dadosUsuario): Usuario{
+        public static function formatarDados(array $dadosUsuario): ?Usuario{
             $tipo_usuario = $dadosUsuario['tipo_usuario'];
             if ($tipo_usuario === 'instrutor'){
-                $usuario = new Instrutor($dadosUsuario['nome'], $dadosUsuario['email'], "");
+                $usuario = new Instrutor($dadosUsuario['nome'], $dadosUsuario['email'], "", );
+                $usuario->senha_hash = $dadosUsuario['senha_hash'];
+                return $usuario;
+            } else if ($tipo_usuario === 'aluno'){
+                $aluno = Aluno::buscarAluno(iniciarPDO(), $dadosUsuario['id_usuario']);
+                $usuario = new Aluno($dadosUsuario['nome'], $dadosUsuario['email'], "", $aluno['matricula'], $aluno['xp_total'], false);
                 $usuario->senha_hash = $dadosUsuario['senha_hash'];
                 return $usuario;
             }
+            return null;
         }
     }
 
@@ -62,7 +68,8 @@
             $this->materias_lecionadas = $materias_lecionadas;
 
             $this->salvarInstrutor(iniciarPDO());
-            $this->gerenciarMaterias()
+            $this->gerenciarMaterias(iniciarPDO(), $materias_lecionadas);
+            // $this->relacionarId($pdo);
         }
 
         public function salvarInstrutor(PDO $pdo): void {
@@ -74,40 +81,68 @@
             foreach($materias_lecionadas as $materia) {
                 $materiaDb = $this->buscarMaterias($pdo, $materia);
                 if ($materiaDb === null){
-                    $this->salvarMaterias($pdo, $materias)
-                else{
+                    $this->salvarMaterias($pdo, $materia);
+                } else {
                     $this->id_materias[] = (int)$materia['id_materia'];
                 }
                 }
             }
-        }
         
-        public function buscarMaterias(PDO $pdo, string $materia): void {
-            $stmt = $pdo->prepare("SELECT * FROM materias WHERE nome_materia = (?)")
-            $stmt->execute([$nome]);
+        public function buscarMaterias(PDO $pdo, string $materia): ?array {
+            $stmt = $pdo->prepare("SELECT * FROM materias WHERE nome_materia = (?)");
+            $stmt->execute([$materia]);
             $dadosMateria = $stmt->fetch();
             if ($dadosMateria){
-                $dadosMateria
-            }
-            else{
-                null
+                return $dadosMateria;
+            } else {
+                return null;
             }
         }
 
-        public function salvarMaterias(PDO $pdo): void {
-            $stmt = $pdo->prepare("INSERT INTO materias (id_materia) VALUES (?)");
-            $stmt->execute([$nome]);
-            $this->id_materias = (int)$pdo->LastInsertId();
+        public function salvarMaterias(PDO $pdo, string $materia): void {
+            $stmt = $pdo->prepare("INSERT INTO materias (nome_materia) VALUES (?)");
+            $stmt->execute([$materia]);
+            $this->id_materias[] = (int)$pdo->LastInsertId();
         }
+
+        public function relacionarId(PDO $pdo){
+            foreach (id_materias as id_materia){
+                $stmt = $pdo->prepare("INSERT INTO materias_instrutores (id_materia, id_instrutor) VALUES (?, ?)")
+                $stmt->execute([$this->id_materia, $this->id]);
+            }
+        }
+
+
 
     }
 
     class Aluno extends Usuario{
         public int $xp_total;
+        public string $matricula;
 
-        public function __construct(string $nome, string $email, string $senha, int $xp_total = 0){
-            parent::__construct($nome,  $email, 'Aluno',  $senha);
+        public function __construct(string $nome, string $email, string $senha, string $matricula, int $xp_total = 0, bool $salvarUsuario = true){
+            parent::__construct($nome,  $email, 'Aluno', $senha);
             $this->xp_total = $xp_total;
+            $this->matricula = $matricula;
+            if($salvarUsuario){
+                $this->salvarAluno(iniciarPDO());
+            }
+        }
+
+         public function salvarAluno(PDO $pdo): void {
+            $stmt = $pdo->prepare("INSERT INTO alunos (id_usuario, matricula, xp_total) VALUES (?, ?, ?)");
+            $stmt->execute([$this->id, $this->matricula, $this->xp_total]);
+        }
+
+        public static function buscarAluno(PDO $pdo, int $id_usuario){
+            $stmt = $pdo->prepare("SELECT * FROM alunos WHERE id_usuario = ?");
+            $stmt->execute([$id_usuario]);
+            $dadosAluno = $stmt->fetch();
+            if ($dadosAluno){
+                return $dadosAluno;
+            } else {
+                return null;
+            }
         }
     }
 

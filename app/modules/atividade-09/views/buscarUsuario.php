@@ -8,12 +8,19 @@
 </head>
 <body>
     <?php
-        $buscar = new Usuario;
-        $buscar->buscarEmail(iniciarPDO(), "PedroTechJf@gmail.com");
+        require_once __DIR__ . '/../Model.php';
+        //FrebundaCompany@gmail.com
+        //PedroTechJf@gmail.com
+        $usuarioEncontrado = Usuario::buscarEmail(iniciarPDO(), "FrebundaCompany@gmail.com");
         ?>
-    <p>
-        <strong>Usuário encontrado:</strong>
-             <?= $buscar->email ?>
+        <?php 
+        if ($usuarioEncontrado !== null) { ?>
+            <p class="sucesso ">Email encontrado com sucesso!</p>
+        <?php } 
+        else { ?>
+            <p class="erro"> Email não encontrado!</p>
+        <?php } ?>
+
     </p>
 </body>
 </html>

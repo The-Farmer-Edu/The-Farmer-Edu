@@ -13,7 +13,7 @@
         }
 
         public function showBuscarUsuario(): void {
-            require_once __DIR__ . '/views/novoUsuario.php';
+            require_once __DIR__ . '/views/buscarUsuario.php';
         }
         
         public function showNovoUsuario(): void {

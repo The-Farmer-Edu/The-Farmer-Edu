@@ -69,7 +69,7 @@
         }
 
         public function excluir(PDO $pdo): void {
-            $sql = "DELETE FROM usuarios WHERE id = ?";
+            $sql = "DELETE FROM usuarios WHERE id_usuario = ?";
 
             $stmt = $pdo->prepare($sql);
 

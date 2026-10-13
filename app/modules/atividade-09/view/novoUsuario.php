@@ -7,7 +7,7 @@
 
     
     
-    $aluno = new Aluno("breno", "breno67@gmail.com", "Aluno", "sixseven123!", 67);
+    $aluno = new Aluno("breno", "breno678@gmail.com", "Aluno", "sixseven1234!", 67);
     
     $pdo = iniciarPDO();
 

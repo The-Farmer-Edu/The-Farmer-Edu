@@ -71,10 +71,10 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Receber um CEP e exibir formatado.</p>
+    <p>Objetivo: Retornar a imagem da fazenda de acordo com o XP total.</p>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
-    <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>
+    <textarea id="codigo_aluno" placeholder="Escreva seu código PHP aqui..."></textarea>
     <!-- cep = formatarCep("36020490")
     print(cep)
 
@@ -113,8 +113,8 @@
             // O payload com as regras da atividade
             const payload = {
                 codigo_aluno: codigo,
-                id_linguagem: 71, // 71 = Python no Judge0
-                objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",
+                id_linguagem: 68, // 71 = Python no Judge0
+                objetivo_atividade: "Retornar a imagem da fazenda de acordo com o XP total",
                 nota_max: "10",
                 nota_min: "6"
             };

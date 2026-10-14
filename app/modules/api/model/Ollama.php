@@ -12,8 +12,7 @@
             $this->host = (new InitConfig())->hostOllama;
             $this->model = "llama3.1:8b";
             $this->routes = [
-                'apiGen' => '/api/generate',
-                'sendCode' => '/submissions?base64_encoded=true&wait=true'
+                'apiGen' => 'api/generate',
             ];
         }
 
@@ -59,7 +58,7 @@
             ]);
 
             $curlOllama = curl_init();
-            curl_setopt($curlOllama, CURLOPT_URL, $this->host . $this->routes['apiGen']);
+            curl_setopt($curlOllama, CURLOPT_URL, $this->host . base64_encode($this->routes['apiGen']) . '&isBase64=true');
             curl_setopt($curlOllama, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($curlOllama, CURLOPT_POST, true);
             curl_setopt($curlOllama, CURLOPT_POSTFIELDS, $this->payload);

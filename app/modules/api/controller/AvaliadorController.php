@@ -23,9 +23,6 @@ class AvaliadorController {
         $codigoBase = $data['codigo_base'] ?? "";
 
         try {
-            // =================================================================
-            // PASSO 1: Enviar o código para o Judge0 compilar e obter a saída
-            // =================================================================
             $judge0Model = new Judge0();
             
             // Opcional: Você pode querer validar se a linguagem existe antes.
@@ -34,10 +31,6 @@ class AvaliadorController {
             $statusJudge0 = $respostaJudge0['status'];
             $saidaJudge0 = $respostaJudge0['saida'];
 
-
-            // =================================================================
-            // PASSO 2: Enviar a saída e o código para o Ollama avaliar
-            // =================================================================
             $ollamaModel = new Ollama();
             $feedbackIA_String = $ollamaModel->obterResultadoOllama(
                 $objetivoAtividade,
@@ -49,10 +42,6 @@ class AvaliadorController {
                 $saidaJudge0
             );
 
-            // =================================================================
-            // PASSO 3: Retornar o resultado para a View
-            // =================================================================
-            
             // Como pedimos para o Llama retornar um JSON no Model, vamos garantir
             // que decodificamos a string dele para anexar no nosso retorno limpo.
             $feedbackIA_Objeto = json_decode($feedbackIA_String, true);

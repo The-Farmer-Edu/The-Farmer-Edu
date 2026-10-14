@@ -8,7 +8,6 @@
 
         public static function getHTML($forSelect = false): string {
             $linguagens = (new Judge0())->linguagens ?? null;
-            // print_r($linguagens);
 
             if($linguagens){
                 if($forSelect){

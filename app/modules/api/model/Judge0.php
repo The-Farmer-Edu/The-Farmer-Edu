@@ -68,18 +68,13 @@
 
             $respostaJudge0 = json_decode(curl_exec($curlJudge0), true);
 
-            // $responseSubmit = curl_init();
-            // curl_setopt($curlJudge0, CURLOPT_URL, $this->host . str_replace('id_submit', curl_exec($curlJudge0), $this->routes['getResponse']));
-            // curl_setopt($curlJudge0, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-            // $respostaJudge0 = json_decode(curl_exec($responseSubmit), true);
-
             $saidaDecodificada = isset($respostaJudge0['stdout']) ? base64_decode($respostaJudge0['stdout']) : "";
             $saidaCompiladaDecodificada = isset($respostaJudge0['compile_output']) ? base64_decode($respostaJudge0['compile_output']) : "";
             $erroDecodificado = isset($respostaJudge0['stderr']) ? base64_decode($respostaJudge0['stderr']) : "";
 
             $saidaCodigo = $saidaDecodificada ?: $erroDecodificado ?: $saidaCompiladaDecodificada ?: "Sem saída.";
-            // $saidaCodigo = $saidaDecodificada ?: $erroDecodificado ?: $saidaCompiladaDecodificada ?: curl_exec($curlJudge0);
-            return ["status" => $respostaJudge0['status'], "saida" => $saidaCodigo];
+            $status = $respostaJudge0['status']['description'] === "Accepted" ? "Código Aceito!" : "Código Incorreto!";
+            return ["status" => $status, "saida" => $saidaCodigo];
         }
 
     }

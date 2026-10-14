@@ -1,8 +1,8 @@
 <?php
     require __DIR__ . '/Model.php';
     require_once __DIR__ . '/../../core/database.php';
-    require_once __DIR__ . '/view/novoUsuario.php';
-    require_once __DIR__ . '/view/buscarUsuario.php'; 
+    // require_once __DIR__ . '/view/novoUsuario.php';
+    // require_once __DIR__ . '/view/buscarUsuario.php'; 
     
     function validar_login(string $email, string $senha): array {
         $erros = [];

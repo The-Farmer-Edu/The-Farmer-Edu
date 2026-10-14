@@ -1,5 +1,5 @@
 <?php
-    require_once __DIR__ . "/../controller/AvaliadorController.php";
+    require_once __DIR__ . "/../../api/controller/AvaliadorController.php";
 
     header("Access-Control-Allow-Origin: *");
     header("Content-Type: application/json; charset=UTF-8");

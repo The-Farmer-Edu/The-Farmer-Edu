@@ -72,7 +72,7 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Receber um CEP e exibir formatado.</p>
+    <p>Objetivo: Dar Capa</p>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
     <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>

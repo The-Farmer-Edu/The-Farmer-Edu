@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
@@ -71,17 +71,11 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Receber um CEP e exibir formatado.</p>
+    <p>Objetivo: Contagem de click do botão</p>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
-    <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>
-    <!-- cep = formatarCep("36020490")
-    print(cep)
-
-    formatarCep(cep):
-        cepFormatado = cep[:5] + cep[6:8]
-        return cepFormatado -->
-
+    <textarea id="codigo_aluno" placeholder="Escreva seu código JavaScript aqui..."></textarea>
+  
     <button onclick="enviarParaAvaliacao()">Submeter Código</button>
 
     <div id="loading" style="display:none; color: #00d2ff; margin-top: 10px;">A IA está analisando sua lógica...</div>
@@ -113,10 +107,10 @@
             // O payload com as regras da atividade
             const payload = {
                 codigo_aluno: codigo,
-                id_linguagem: 71, // 71 = Python 68 = PHP no Judge0
-                objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",
+                id_linguagem: 68, // 68 = PHP no Judge0
+                objetivo_atividade: "Contagem de click do botão",
                 nota_max: "10",
-                nota_min: "6"
+                nota_min: "5"
             };
 
             try {

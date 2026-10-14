@@ -6,7 +6,6 @@
     header("Access-Control-Allow-Methods: POST");
 
     $data = json_decode(file_get_contents("php://input"), true);
-    // echo json_encode($data); // Apenas para depuração, você pode remover isso depois
     $controller = new AvaliadorController();
     $controller->avaliarAtividade($data);
 ?>

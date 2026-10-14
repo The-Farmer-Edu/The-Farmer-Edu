@@ -113,7 +113,7 @@
             // O payload com as regras da atividade
             const payload = {
                 codigo_aluno: codigo,
-                id_linguagem: 71, // 71 = Python no Judge0
+                id_linguagem: 71, // 71 = Python 68 = PHP no Judge0
                 objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",
                 nota_max: "10",
                 nota_min: "6"
@@ -130,7 +130,6 @@
                 });
 
                 const data = await response.json();
-                console.log(data)
 
                 if (data.sucesso) {
                     document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida;

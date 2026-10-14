@@ -71,7 +71,7 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Echo bem sucedido</p>
+    <p>Objetivo: Validação da senha</p>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
     <textarea id="codigo_aluno" placeholder="Escreva seu código PHP aqui..."></textarea>
@@ -114,7 +114,7 @@
             const payload = {
                 codigo_aluno: codigo,
                 id_linguagem: 68, // 71 = Python 68 = PHP no Judge0
-                objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",
+                objetivo_atividade: "Validar se a senha tem 8 caracteres, sendo um especial e um maiúsculo.",
                 nota_max: "10",
                 nota_min: "6"
             };

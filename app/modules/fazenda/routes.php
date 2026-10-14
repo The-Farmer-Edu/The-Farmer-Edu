@@ -3,5 +3,7 @@
     require_once __DIR__ . '/Controller.php';
 
     // Registra as rotas usando os métodos estáticos do Router
-    Router::get('/fazenda/testarApi.php', [TesteApi::class, 'showTesteApi']);
+    Router::get('/fazenda/testarApi', [testeApiController::class, 'showTesteApi']);
+    Router::post('/fazenda/sendAvaliacao', [testeApiController::class, 'sendAvaliacao']);
+
 ?>

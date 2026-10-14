@@ -13,13 +13,13 @@
         public function __construct() {
             $this->host = (new InitConfig())->hostJudge0;
             $this->routes = [
-                'languages' => '/languages',
-                'sendCode' => '/submissions?base64_encoded=true&wait=true'
+                'languages' => 'languages',
+                'sendCode' => 'submissions?base64_encoded=true&wait=true',
             ];
-            $this->obterLinguagens();
+            $this->linguagens = $this->obterLinguagens();
         }
 
-        public function obterLinguagens(): void {
+        public function obterLinguagens(): ?array {
             $curlLinguagens = curl_init();
             curl_setopt($curlLinguagens, CURLOPT_URL, $this->host . $this->routes['languages']);
             curl_setopt($curlLinguagens, CURLOPT_RETURNTRANSFER, true);
@@ -28,11 +28,10 @@
             ]);
             if(curl_errno($curlLinguagens)) {
                 echo "Erro ao obter linguagens: " . curl_error($curlLinguagens);
-                return;
+                return null;
             }
-            $jsonlinguagens = json_decode(curl_exec($curlLinguagens), true);
-
-            $this->linguagens = $jsonlinguagens;
+            $arrayLinguagens = json_decode(curl_exec($curlLinguagens), true);
+            return $arrayLinguagens;
         }
 
         public function buscarLinguagens(string $query): array|bool {
@@ -61,7 +60,7 @@
             ]);
 
             $curlJudge0 = curl_init();
-            curl_setopt($curlJudge0, CURLOPT_URL, $this->host . $this->routes['sendCode']);
+            curl_setopt($curlJudge0, CURLOPT_URL, $this->host . base64_encode($this->routes['sendCode']) . '&isBase64=true');
             curl_setopt($curlJudge0, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($curlJudge0, CURLOPT_POST, true);
             curl_setopt($curlJudge0, CURLOPT_POSTFIELDS, $this->payload);
@@ -69,12 +68,17 @@
 
             $respostaJudge0 = json_decode(curl_exec($curlJudge0), true);
 
+            // $responseSubmit = curl_init();
+            // curl_setopt($curlJudge0, CURLOPT_URL, $this->host . str_replace('id_submit', curl_exec($curlJudge0), $this->routes['getResponse']));
+            // curl_setopt($curlJudge0, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            // $respostaJudge0 = json_decode(curl_exec($responseSubmit), true);
+
             $saidaDecodificada = isset($respostaJudge0['stdout']) ? base64_decode($respostaJudge0['stdout']) : "";
             $saidaCompiladaDecodificada = isset($respostaJudge0['compile_output']) ? base64_decode($respostaJudge0['compile_output']) : "";
             $erroDecodificado = isset($respostaJudge0['stderr']) ? base64_decode($respostaJudge0['stderr']) : "";
 
             $saidaCodigo = $saidaDecodificada ?: $erroDecodificado ?: $saidaCompiladaDecodificada ?: "Sem saída.";
-
+            // $saidaCodigo = $saidaDecodificada ?: $erroDecodificado ?: $saidaCompiladaDecodificada ?: curl_exec($curlJudge0);
             return ["status" => $respostaJudge0['status'], "saida" => $saidaCodigo];
         }
 

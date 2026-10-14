@@ -121,7 +121,7 @@
 
             try {
                 // Chama o Controller que orquestra os Models
-                const response = await fetch('sendAvaliar', {
+                const response = await fetch('sendAvaliacao', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -130,6 +130,7 @@
                 });
 
                 const data = await response.json();
+                console.log(data)
 
                 if (data.sucesso) {
                     document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida;

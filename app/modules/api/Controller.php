@@ -3,13 +3,22 @@
 class ApiController {
 
     public function showAvaliar(): void {
-        // Carrega a view de Avaliar
         require_once __DIR__ . '/views/Avaliar.php';
     }
 
-    public function sendAvaliar(): void {
-        // Lógica para enviar a avaliação
-        require_once __DIR__ . '/views/sendAvaliar.php';
+    public function sendAvaliacao(): void {
+        require_once __DIR__ . '/views/sendAvaliacao.php';
     }
 
+    public function showLinguagens(): void {
+        require_once __DIR__ . '/views/ListarLinguagens.php';
+    }
+
+    public function showJudge0(): void {
+        require_once __DIR__ . '/views/Judge0.php';
+    }
+
+    public function showOllama(): void {
+        require_once __DIR__ . '/views/Ollama.php';
+    }
 }

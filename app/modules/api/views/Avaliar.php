@@ -157,6 +157,7 @@
                     alert("Erro: " + data.erro);
                 }
             } catch (error) {
+                console.log(error)
                 console.error("Erro ao comunicar com o servidor:", error);
                 alert("Erro de comunicação com o servidor de avaliação.");
             } finally {

@@ -43,8 +43,7 @@ class UsuarioController
 
     public function showNivelUsuario(): void
     {
-        $pdo = iniciarPDO();
-
+        define('BASE_URL', '/The-Farmer-Edu/public');
         $xp_total = 120;
         $limite_medio = 100;
         $limite_maximo = 250;

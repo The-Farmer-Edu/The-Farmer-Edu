@@ -32,7 +32,7 @@
             $codigoAluno
 
             [SAÍDA DO COMPILADOR (Judge0)]
-            - Status: $statusJudge0
+            - Status: " . implode(', ', $statusJudge0) . "
             - Terminal (stdout/stderr): $saidaJudge0
 
             [DIRETRIZES DE AVALIAÇÃO]

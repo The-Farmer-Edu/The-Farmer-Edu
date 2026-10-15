@@ -14,27 +14,19 @@
             max-width: 900px;
             margin: 0 auto;
         }
-
-
         h1, h2, h3 {
             font-family: 'Poppins', sans-serif;
             color: #00d2ff;
         }
-
-
         .form-group {
             margin-bottom: 15px;
         }
-
-
         label {
             display: block;
             margin-bottom: 5px;
             color: #00d2ff;
             font-weight: 600;
         }
-
-
         select, input[type="text"], textarea {
             width: 100%;
             background: #1e1e1e;
@@ -44,13 +36,9 @@
             border: 1px solid #333;
             border-radius: 4px;
         }
-
-
         textarea {
             height: 180px;
         }
-
-
         button {
             background: #00d2ff;
             color: #000;
@@ -62,13 +50,9 @@
             border-radius: 5px;
             transition: background 0.2s;
         }
-
-
         button:hover {
             background: #00a8cc;
         }
-
-
         #resultado-ia {
             margin-top: 25px;
             padding: 20px;
@@ -77,14 +61,10 @@
             display: none;
             border-radius: 4px;
         }
-
-
         .missao {
             color: #ff5252;
             font-weight: bold;
         }
-
-
         pre {
             background: #000;
             padding: 10px;
@@ -92,8 +72,6 @@
             overflow-x: auto;
             border-radius: 4px;
         }
-
-
         #loading {
             display: none;
             color: #00d2ff;
@@ -102,20 +80,15 @@
         }
     </style>
 </head>
-
 <body>
-
-
     <h1>Módulo de Submissões</h1>
     <p>Envie sua solução para validação automática no compilador e feedback da IA.</p>
-
     <div class="form-group">
         <label for="atividade_id">Selecione a Atividade:</label>
         <select id="atividade_id">
             <option value="Validação e Formatação de CPF">Atividade 01: Validação e Formatação de Dados</option>
         </select>
     </div>
-
     <div class="form-group">
         <label for="id_linguagem">Linguagem de Programação:</label>
         <select id="id_linguagem">
@@ -124,14 +97,12 @@
             <option value="54">C++ (GCC)</option>
         </select>
     </div>
-
     <div class="form-group">
         <label for="codigo_aluno">Código da Submissão:</label>
         <textarea id="codigo_aluno" placeholder="# Escreva seu código aqui..."></textarea>
     </div>
     <button onclick="enviarSubmissao()">Enviar Submissão</button>
     <div id="loading">Aguarde... O Judge0 está processando o código e a IA está avaliando...</div>
-
     <div id="resultado-ia">
         <h2 id="nota-final"></h2>
         <p><strong>Status da Avaliação:</strong> <span id="status-avaliacao" style="text-transform: uppercase; font-weight: bold;"></span></p>
@@ -143,24 +114,19 @@
         <h3>Pontos de Melhoria <span class="missao">(Missões de Correção)</span></h3>
         <ul id="pontos-melhoria"></ul>
     </div>
-
     <script>
-
     async function enviarSubmissao() {
         const atividadeId = document.getElementById('atividade_id').value;
         const idLinguagem = document.getElementById('id_linguagem').value;
         const codigo = document.getElementById('codigo_aluno').value;
         const loading = document.getElementById('loading');
         const resultadoDiv = document.getElementById('resultado-ia');
-
         if (!codigo.trim()) {
             alert('Por favor, insira o código da submissão!');
             return;
         }
-
         loading.style.display = 'block';
         resultadoDiv.style.display = 'none';
-
         const payload = {
             id_linguagem: parseInt(idLinguagem),
             codigo_aluno: codigo,
@@ -168,7 +134,6 @@
             nota_max: "10",
             nota_min: "6"
         };
-
         try {
             const response = await fetch('enviarSubmissao', {
                 method: 'POST',
@@ -177,10 +142,8 @@
                 },
                 body: JSON.stringify(payload)
             });
-
             const data = await response.json();
             console.log(data);
-
             if (data.sucesso) {
                 document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida + " / 10";
                 document.getElementById('status-avaliacao').innerText = data.avaliacao.status_avaliacao;
@@ -189,7 +152,6 @@
                 document.getElementById('feedback-geral').innerText = data.avaliacao.feedback_geral;
                 const ulMelhoria = document.getElementById('pontos-melhoria');
                 ulMelhoria.innerHTML = '';
-
                 if (data.avaliacao.pontos_melhoria && data.avaliacao.pontos_melhoria.length > 0) {
                     data.avaliacao.pontos_melhoria.forEach(ponto => {
                         let li = document.createElement('li');
@@ -199,7 +161,6 @@
                 } else {
                     ulMelhoria.innerHTML = '<li>Parabéns! Nenhuma correção necessária.</li>';
                 }
-
                 resultadoDiv.style.display = 'block';
             } else {
                 alert("Erro na submissão: " + (data.erro || 'Erro desconhecido.'));

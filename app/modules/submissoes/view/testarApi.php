@@ -113,7 +113,6 @@
         <label for="atividade_id">Selecione a Atividade:</label>
         <select id="atividade_id">
             <option value="Validação e Formatação de CPF">Atividade 01: Validação e Formatação de Dados</option>
-            <option value="2">Atividade 02: Lógica de Controle do Bebedouro Automático</option>
         </select>
     </div>
 

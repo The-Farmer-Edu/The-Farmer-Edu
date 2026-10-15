@@ -6,3 +6,5 @@ class TesteApiController {
         require_once __DIR__ . '/./views/teste_api.php';
     }
 }
+
+?>

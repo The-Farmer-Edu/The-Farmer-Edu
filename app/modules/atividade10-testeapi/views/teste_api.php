@@ -159,4 +159,32 @@
     </script>
 </body>
 
+<!-- <!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contagem de click</title>
+</head>
+
+<body>
+    <main>
+        <h1 id="contador">0</h1>
+        <button id="clickado">Click</button>
+    </main>
+
+    <script>
+        const contador = document.getElementById("contador");
+        let contagem = 0
+
+        document.getElementById("clickado").addEventListener('click', () => {
+            contador.textContent = contagem += 1;
+        });
+
+    </script>
+</body>
+
+</html> -->
+
 </html>

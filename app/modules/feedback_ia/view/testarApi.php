@@ -72,7 +72,7 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Dar Capa</p>
+    <p>Objetivo: Criar uma função que recebe um código em PHP e retorna-o codificado</p>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
     <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>
@@ -114,8 +114,8 @@
             // O payload com as regras da atividade
             const payload = {
                 codigo_aluno: codigo,
-                id_linguagem: 71, // 71 = Python 68 = PHP no Judge0
-                objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",
+                id_linguagem: 68, // 71 = Python 68 = PHP no Judge0
+                objetivo_atividade: " Criar uma função que recebe um código em PHP e retorna-o codificado.",
                 nota_max: "10",
                 nota_min: "6"
             };

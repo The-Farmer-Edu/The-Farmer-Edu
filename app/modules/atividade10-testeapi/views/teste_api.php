@@ -115,7 +115,7 @@
 
             try {
                 // Chama o Controller que orquestra os Models
-                const response = await fetch('sendAvaliacao', {
+                const response = await fetch('../api/sendAvaliacao', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

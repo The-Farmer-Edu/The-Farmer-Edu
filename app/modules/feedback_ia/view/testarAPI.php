@@ -71,25 +71,14 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Corrija o código abaixo(conserte os erros de lógica e comente).</p>
+    <p>Objetivo: Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado</p>
     <pre>
-        <!-- Código base do projeto -->
-        cep = formatarCep("36020490")
-        print(cep)
-
-        formatarCep(cep):
-            cepFormatado = cep[:5] + cep[6:8]
-            return cepFormatado
+        PD9waHAKICAgIHJlcXVpcmVfb25jZSBfX0RJUl9fIC4gJy8uLi8uLi9jb3JlL2RhdGFiYXNlLnBocCc7CgogICAgY2xhc3MgdGVzdGFyQVBJQ29udHJvbGxlciB7CiAgICBwdWJsaWMgZnVuY3Rpb24gc2hvd0F2YWxpYXIoKTogdm9pZCB7CiAgICAgICAgcmVxdWlyZV9vbmNlIF9fRElSX18gLiAnL3ZpZXcvdGVzdGFyQVBJLnBocCc7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHNlbmRBdmFsaWFjYW8oKTogdm9pZCB7CiAgICAgICAgcmVxdWlyZV9vbmNlIF9fRElSX18gLiAnL3ZpZXcvc2VuZEF2YWxpYWNhby5waHAnOwogICAgfQogICAgfQo/Pg==
     </pre>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
     <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>
-    <!-- cep = formatarCep("36020490")
-    print(cep)
-
-    formatarCep(cep):
-        cepFormatado = cep[:5] + cep[6:8]
-        return cepFormatado -->
+   
 
     <button onclick="enviarParaAvaliacao()">Submeter Código</button>
 
@@ -123,7 +112,7 @@
             const payload = {
                 codigo_aluno: codigo,
                 id_linguagem: 68, // 71 = Python no Judge0, 68 = PHP
-                objetivo_atividade: "Corrigir a resposta recebido do aluno conferindo com o código modelo.",
+                objetivo_atividade: "Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado",
                 nota_max: "10",
                 nota_min: "6"
             };

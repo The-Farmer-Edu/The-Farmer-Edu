@@ -98,7 +98,6 @@
         <h3>Missões de Correção <span class="missao">(Pontos de Melhoria)</span></h3>
         <ul id="pontos-melhoria"></ul>
     </div>
-
     <script>
         async function enviarParaAvaliacao() {
             const codigo = document.getElementById('codigo_aluno').value;

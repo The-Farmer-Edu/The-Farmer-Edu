@@ -6,19 +6,25 @@
     <title>The Farmer Edu - testarAPI</title>
     <!-- Fontes Inter e Poppins para manter a estética dark tech -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="shortcut icon" href="/The-Farmer-Edu-Tarde-Setup/public/assets/img/ico/logo_icone.ico" type="image/x-icon">
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
-            padding: 20px;
+            background-color: white;
+            color: black;
         }
 
         h1,
         h2,
         h3 {
             font-family: 'Poppins', sans-serif;
-            color: #00d2ff;
+            color: #34C759;
         }
 
         textarea {
@@ -32,7 +38,7 @@
         }
 
         button {
-            background: #00d2ff;
+            background: #34C759;
             color: #000;
             border: none;
             padding: 10px 20px;
@@ -40,18 +46,27 @@
             font-weight: bold;
             margin-top: 10px;
             border-radius: 5px;
+            width: 200px;
+            height: 60px;
+            font-size: 18px;
+            margin: 30px;
         }
 
         button:hover {
-            background: #00a8cc;
+            background: #089C2F;
         }
 
         #resultado-ia {
             margin-top: 20px;
-            padding: 15px;
-            background: #1e1e1e;
-            border-left: 4px solid #00d2ff;
+            padding: 50px;
+            background: #D9D9D9;
+            border-left: 4px solid #34C759;
             display: none;
+            width: 60%;
+            border-top: 2px solid black;
+            border-right: 2px solid black;
+            border-bottom: 2px solid black;
+            margin-left: 20px;
         }
 
         .missao {
@@ -65,26 +80,84 @@
             color: #0f0;
             overflow-x: auto;
         }
+
+        #logo_cabecalho {
+            width: height: 100%;
+            height: 80%;
+        }
+
+        #nome_cabecalho {
+            color: #2bad1a;
+            font-size: 30px;
+        }
+
+        header {
+            background-color: #A0FDA3;
+            display: flex;
+            width: 100%;
+            height: 100px;
+            justify-content: space-between;
+        }
+
+        #esquerda_cabecalho {
+            display: flex;
+            align-items: center;
+            padding-left: 40px;
+            gap: 30px;
+        }
+
+        #direita_cabecalho {
+            display: flex;
+            align-items: center;
+            padding-right: 60px;
+        }
+
+        #desafio {
+            display: flex;
+            flex-direction: column;
+            margin: 20px;
+            gap: 10px;
+        }
+
+        #titulo_codigo {
+            margin: 20px;
+        }
+
+
+
+
+
+
     </style>
 </head>
 
 <body>
+    <header>
+        <div id="esquerda_cabecalho">
+            <img src="/The-Farmer-Edu-Tarde-Setup/public/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
+            <p id="nome_cabecalho">The Farmer Edu</p>
+        </div>
+        
+        <div id="direita_cabecalho">
+            <p>Bem vindo, PiorAinda</p>
+        </div>
+    </header>
+    <div id="desafio">
+        <h1>Desafio de Lógica</h1>
+        <p>Objetivo: Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado</p>
+    </div>
 
-    <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado</p>
-    <pre>
-        PD9waHAKICAgIHJlcXVpcmVfb25jZSBfX0RJUl9fIC4gJy8uLi8uLi9jb3JlL2RhdGFiYXNlLnBocCc7CgogICAgY2xhc3MgdGVzdGFyQVBJQ29udHJvbGxlciB7CiAgICBwdWJsaWMgZnVuY3Rpb24gc2hvd0F2YWxpYXIoKTogdm9pZCB7CiAgICAgICAgcmVxdWlyZV9vbmNlIF9fRElSX18gLiAnL3ZpZXcvdGVzdGFyQVBJLnBocCc7CiAgICB9CgogICAgcHVibGljIGZ1bmN0aW9uIHNlbmRBdmFsaWFjYW8oKTogdm9pZCB7CiAgICAgICAgcmVxdWlyZV9vbmNlIF9fRElSX18gLiAnL3ZpZXcvc2VuZEF2YWxpYWNhby5waHAnOwogICAgfQogICAgfQo/Pg==
-    </pre>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
-    <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>
+    <h1 id="titulo_codigo">Digite seu Código abaixo:</h1>
+    <textarea id="codigo_aluno" placeholder="Escreva seu código PHP aqui..."></textarea>
    
 
     <button onclick="enviarParaAvaliacao()">Submeter Código</button>
 
-    <div id="loading" style="display:none; color: #00d2ff; margin-top: 10px;">A IA está analisando sua lógica...</div>
+    <div id="loading" style="display:none; color: #34C759; margin-top: 10px;">A IA está analisando sua lógica...</div>
 
-    <div id="resultado-ia">
+    <div id="resultado-ia" style="display:none;">
         <h2 id="nota-final"></h2>
         <p><strong>Status do Compilador:</strong> <span id="status-compilador"></span></p>
         <p><strong>Terminal:</strong></p>

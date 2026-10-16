@@ -10,4 +10,5 @@ class testarApiController {
         require_once __DIR__ . '/view/enviarSubmissao.php';
     }
 }
+
 ?>

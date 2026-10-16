@@ -172,6 +172,7 @@
             loading.style.display = 'none';
         }
     }
+    
     </script>
 </body>
 </html>

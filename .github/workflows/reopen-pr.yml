@@ -1,0 +1,73 @@
+name: Proteger Fechamento de PR
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  verificar-time:
+    if: github.event.pull_request.merged == false
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Validar Permissão via GitHub Team
+        uses: actions/github-script@v7
+        env:
+          # Injeta o token da Org como variável de ambiente
+          ORG_TOKEN: ${{ secrets.ORGANIZATION_TEAM_PAT }}
+        with:
+          # Mantém o token padrão do próprio repositório para o restante das ações
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const quemFechou = context.actor;
+            const criadorDoPR = context.payload.pull_request.user.login;
+            
+            const TEAM_SLUG = "tech-leads"; 
+            const ORG = context.repo.owner;
+            const prNumber = context.payload.pull_request.number;
+
+            // 1. Permite se for o próprio criador do PR
+            if (quemFechou === criadorDoPR) {
+              console.log(`Permitido: O criador do PR (${quemFechou}) pode fechar o próprio PR.`);
+              return;
+            }
+
+            // 2. Cria um novo cliente Octokit herdando as funções internas da Action, mas injetando o novo token 🔐
+            const Octokit = github.constructor;
+            const githubOrg = new Octokit({ auth: process.env.ORG_TOKEN });
+
+            try {
+              const membership = await githubOrg.rest.teams.getMembershipForUserInOrg({
+                org: ORG,
+                team_slug: TEAM_SLUG,
+                username: quemFechou,
+              });
+
+              if (membership.data.state === 'active') {
+                console.log(`Permitido: ${quemFechou} pertence ao time autorizado (${TEAM_SLUG}).`);
+                return;
+              }
+            } catch (error) {
+              console.log(`Usuário ${quemFechou} não foi encontrado no time ou ocorreu um erro.`);
+            }
+
+            // 3. Ações de Bloqueio (usam o token padrão do repositório através do 'github')
+            console.log(`Bloqueado: ${quemFechou} não tem permissão para fechar.`);
+            
+            await github.rest.issues.createComment({
+              owner: ORG,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `⚠️ Olá @${quemFechou}, este Pull Request foi reaberto automaticamente.\n\nApenas o criador do PR (@${criadorDoPR}) ou membros do time **@${ORG}/${TEAM_SLUG}** têm permissão para fechá-lo sem aprovação.`
+            });
+
+            await github.rest.pulls.update({
+              owner: ORG,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              state: 'open'
+            });

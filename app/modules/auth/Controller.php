@@ -1,15 +1,27 @@
-<?php 
-    require_once __DIR__ . '/Model.php';
-    require_once __DIR__ . '/../../core/database.php';
+<?php
+    require_once "model.php";
 
-    class testarApiController{
+    function validar_login(PDO $pdo, string $email, string $senha,): array {
+        $usuario = Usuario::buscarUsuario($pdo, $email);
 
-    public function showTestarApi(): void {
-            require_once __DIR__ . '/views/testarApi.php';
+        if ($usuario === null || !$usuario->verificarSenha($senha)) {
+            $erros[] = 'E-mail ou senha inválidos.';
         }
-
-    public function sendAvaliacao(): void {
-            require_once __DIR__ . '/views/sendAvaliacao.php';
-        }
+        return [
+            'status' => empty($erros) ? 'sucesso' : 'erro',
+            'mensagem' => empty($erros) ? $usuarioEncontrado->saudacao() : implode(' ', $erros)
+        ];
     }
+
+    $pdo = iniciarPDO();
+
+    $testes = [
+        ['email' => 'joao@escola.br', 'senha' => 'SenhaForte123!'],
+        ['email' => 'mariaeduarda.aluna@escola.br', 'senha' => 'Senha123'],
+    ];
+
+    foreach ($testes as $teste) {
+        $resultado = validar_login($pdo, $email, $senha);
+        print_r($resultado['mensagem']);
+    } 
 ?>

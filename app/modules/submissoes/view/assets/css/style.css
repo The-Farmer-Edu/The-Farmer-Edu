@@ -31,14 +31,17 @@ header {
     color: var(--Branco);
     padding: 12px 30px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 16px;
+    position: relative;
+    z-index: 2;
 }
 
 header .titulo-modulo {
     font-size: 1.1rem;
     font-weight: bold;
     letter-spacing: 0.5px;
+    flex: 1;
 }
 
 header .usuario-avatar {
@@ -47,7 +50,91 @@ header .usuario-avatar {
     border-radius: 50%;
     background: var(--Off-white);
     border: 2px solid var(--Branco);
+    margin-left: auto;
+    flex-shrink: 0;
 }
+
+/* style do menu */
+.botao-iconi,
+.botao-usuario {
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+#botaoIconi {
+    display: flex;
+    border-radius: 50px;
+}
+
+
+.menu-iconi {
+    position: absolute;
+    top: 76px;
+    left: 22px;
+    width: min(200px, calc(100vw - 40px));
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 10;
+}
+
+.menu-iconi.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.menu-coluna {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.menu-coluna-direita {
+    align-items: flex-end;
+}
+
+.menu-item {
+    width: 100%;
+    background: #f4f4f4;
+    border: 1px solid #e3e3e3;
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 0.95rem;
+    color: #1b5e20;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.menu-coluna-direita .menu-item {
+    text-align: right;
+}
+
+.menu-item:hover {
+    background: #e8f5e9;
+}
+
+.menu-item:active {
+    transform: scale(0.99);
+}
+/*style do menu */
+
 
 main{
     flex: 1;
@@ -129,6 +216,7 @@ main{
 }
 
 .trabalhos {
+    margin: 0;
     padding: 30px 20px;
     border-radius: 16px;
 }
@@ -182,7 +270,7 @@ main{
 
 .mascote-container {
     display: flex;
-    justify-content: flex-end;
+    justify-content: right;
     margin-top: -15px;
 }
 

@@ -7,122 +7,197 @@
     <!-- Fontes Inter e Poppins para manter a estética dark tech -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <link rel="shortcut icon" href="/The-Farmer-Edu-Tarde-Setup/public/assets/img/ico/logo_icone.ico" type="image/x-icon">
+
     <style>
         * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: white;
-            color: black;
-        }
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: white;
+    color: black;
+    
+}
 
-        h1,
-        h2,
-        h3 {
-            font-family: 'Poppins', sans-serif;
-            color: #34C759;
-        }
 
-        textarea {
-            width: 100%;
-            height: 200px;
-            background: #1e1e1e;
-            color: #c586c0;
-            font-family: monospace;
-            padding: 10px;
-            border: 1px solid #333;
-        }
+h1, h2, h3 {
+    font-family: 'Poppins', sans-serif;
+    color: #34C759;
+}
 
-        button {
-            background: #34C759;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-            border-radius: 5px;
-            width: 200px;
-            height: 60px;
-            font-size: 18px;
-            margin: 30px;
-        }
+textarea {
+    width: 100%;
+    height: 200px;
+    background: #1e1e1e;
+    color: #c586c0;
+    font-family: monospace;
+    padding: 10px;
+    border: 1px solid #333;
+}
 
-        button:hover {
-            background: #089C2F;
-        }
+button {
+    background: #34C759;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    border-radius: 5px;
+    width: 200px;
+    height: 60px;
+    font-size: 18px;
+    margin: 30px;
+}
 
-        #resultado-ia {
-            margin-top: 20px;
-            padding: 50px;
-            background: #D9D9D9;
-            border-left: 4px solid #34C759;
-            display: none;
-            width: 60%;
-            border-top: 2px solid black;
-            border-right: 2px solid black;
-            border-bottom: 2px solid black;
-            margin-left: 20px;
-        }
+button:hover {
+    background: #089C2F;
+}
 
-        .missao {
-            color: #ff5252;
-            font-weight: bold;
-        }
+#resultado-ia {
+    margin-top: 20px;
+    padding: 40px;
+    /* background: #FFF;
+    background: linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(8, 156, 47, 1) 175%); */
+    display: none;
+    width: 45%;
+    border: 2px solid black;
+    margin-left: 20px;
+    flex-direction: column;
+    gap: 10px;
+    border-radius: 30px;
+}
 
-        pre {
-            background: #000;
-            padding: 10px;
-            color: #0f0;
-            overflow-x: auto;
-        }
+.missao {
+    color: #ff5252;
+    font-weight: bold;
+}
 
-        #logo_cabecalho {
-            width: height: 100%;
-            height: 80%;
-        }
+pre {
+    background: #000;
+    padding: 10px;
+    color: #0f0;
+    overflow-x: auto;
+    max-width: 75%;
+}
 
-        #nome_cabecalho {
-            color: #2bad1a;
-            font-size: 30px;
-        }
+#logo_cabecalho {
+    width: 100px;
+    height: 100px;
+}
 
-        header {
-            background-color: #A0FDA3;
-            display: flex;
-            width: 100%;
-            height: 100px;
-            justify-content: space-between;
-        }
+#nome_cabecalho {
+    color: #2bad1a;
+    font-size: 30px;
+}
 
-        #esquerda_cabecalho {
-            display: flex;
-            align-items: center;
-            padding-left: 40px;
-            gap: 30px;
-        }
+header {
+    background-color: #A0FDA3;
+    display: flex;
+    width: 100%;
+    height: 100px;
+    justify-content: space-between;
+}
 
-        #direita_cabecalho {
-            display: flex;
-            align-items: center;
-            padding-right: 60px;
-        }
+#esquerda_cabecalho {
+    display: flex;
+    align-items: center;
+    padding-left: 40px;
+    gap: 30px;
+}
 
-        #desafio {
-            display: flex;
-            flex-direction: column;
-            margin: 20px;
-            gap: 10px;
-        }
+#direita_cabecalho {
+    display: flex;
+    align-items: center;
+    padding-right: 60px;
+}
 
-        #titulo_codigo {
-            margin: 20px;
-        }
+#desafio {
+    display: flex;
+    flex-direction: column;
+    margin: 20px;
+    gap: 10px;
+}
 
+#titulo_codigo {
+    margin: 20px;
+}
+
+html {
+  position: relative;
+  min-height: 100vh;
+}
+
+html::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: url('file?type=img&file=agropecuaria-capa-1.png') no-repeat center center fixed;
+  background-size: cover;
+  opacity: 0.3;
+}
+
+.glass-card {
+  width: 240px;
+  height: 360px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 0px 0px rgba(255, 255, 255, 0);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+}
+
+.glass-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+}
+
+.status-compilador {
+    background: #FFF;
+    background: linear-gradient(90deg,rgba(255, 255, 255, 1) 0%, rgba(8, 156, 47, 1) 175%);
+    border-radius: 10px;
+    padding: 5px;
+}
 
 
 
@@ -135,6 +210,7 @@
     <header>
         <div id="esquerda_cabecalho">
             <img src="/The-Farmer-Edu-Tarde-Setup/public/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
+            
             <p id="nome_cabecalho">The Farmer Edu</p>
         </div>
         
@@ -146,6 +222,9 @@
         <h1>Desafio de Lógica</h1>
         <p>Objetivo: Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado</p>
     </div>
+<!-- 
+    <img src="file?type=img&file=agropecuaria-capa-1.png" alt="Logo" id="logo_fundo"> -->
+
 
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
@@ -157,9 +236,9 @@
 
     <div id="loading" style="display:none; color: #34C759; margin-top: 10px;">A IA está analisando sua lógica...</div>
 
-    <div id="resultado-ia" style="display:none;">
+    <div class="glass-card" id="resultado-ia" style="display:flex;">
         <h2 id="nota-final"></h2>
-        <p><strong>Status do Compilador:</strong> <span id="status-compilador"></span></p>
+        <p class="status-compilador"><strong>Status do Compilador:</strong> <span id="status-compilador"></span></p>
         <p><strong>Terminal:</strong></p>
         <pre id="terminal-saida"></pre>
 
@@ -170,6 +249,7 @@
         <ul id="pontos-melhoria"></ul>
     </div>
 
+    
     <script>
         async function enviarParaAvaliacao() {
             const codigo = document.getElementById('codigo_aluno').value;
@@ -235,6 +315,6 @@
             }
         }
     </script>
+    
 </body>
-
 </html>

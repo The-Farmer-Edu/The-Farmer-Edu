@@ -11,4 +11,10 @@
             require_once __DIR__ . '/views/sendAvaliacao.php';
         }
     }
+
+    class baseFazenda {
+        public function showFazenda(): void {
+            require_once __DIR__ . '/views/index.html';
+        }
+    }
 ?>

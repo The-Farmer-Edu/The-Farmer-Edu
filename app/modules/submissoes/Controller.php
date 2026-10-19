@@ -12,5 +12,9 @@ class testarApiController {
     public function enviarSubmissao() {
         require_once __DIR__ . '/view/enviarSubmissao.php';
     }
+    public function showalunoCSS() {
+        require_once __DIR__ . '/view/aluno.css';
+    }
 }
+
 ?>

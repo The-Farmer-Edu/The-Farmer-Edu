@@ -1,329 +1,72 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Farm Edu - Envio de Atividade</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f0f7f4;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
-
-        header {
-            background-color: #4caf50;
-            color: white;
-            padding: 12px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid #388e3c;
-        }
-
-        header .titulo-modulo {
-            font-size: 1.1rem;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
-
-        header .usuario-avatar {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: #ddd;
-            border: 2px solid white;
-        }
-
-        .main-container {
-            flex: 1;
-            max-width: 1200px;
-            width: 95%;
-            margin: 25px auto;
-            display: grid;
-            grid-template-columns: 2.2fr 1fr;
-            gap: 25px;
-            align-items: stretch;
-            position: relative;
-        }
-
-        .card-conteudo {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border: 1px solid #dcedc8;
-            position: relative;
-        }
-
-        .titulo-secao {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .titulo-secao img-icone, .icone-clipboard {
-            font-size: 2.5rem;
-        }
-
-        .titulo-secao h1 {
-            font-size: 2.4rem;
-            color: #2e7d32;
-            font-weight: 800;
-        }
-
-        .titulo-secao .trofeu {
-            font-size: 2rem;
-            margin-left: 5px;
-        }
-
-        .card-conteudo p {
-            font-size: 1.05rem;
-            line-height: 1.7;
-            color: #444;
-            margin-bottom: 30px;
-        }
-
-        .btn-voltar {
-            background: #e0e0e0;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 12px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #333;
-            transition: background 0.2s, transform 0.1s;
-            width: fit-content;
-        }
-
-        .btn-voltar:hover {
-            background: #d5d5d5;
-        }
-
-        .card-trabalhos {
-            background: white;
-            padding: 30px 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-            border: 2px solid #c8e6c9;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .card-trabalhos h3 {
-            font-size: 1.25rem;
-            color: #1b5e20;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f1f8e9;
-            margin-bottom: 20px;
-        }
-
-        .card-trabalhos p {
-            font-size: 1rem;
-            color: #555;
-            line-height: 1.5;
-            margin-bottom: 25px;
-        }
-
-        .btn-comecar-principal {
-            background-color: #00e676;
-            color: #111;
-            border: none;
-            width: 100%;
-            padding: 16px;
-            font-size: 1.25rem;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);
-            transition: 0.2s, 0.1s;
-            margin-bottom: 25px;
-        }
-
-        .btn-comecar-principal:hover {
-            background-color: #00c853;
-        }
-
-        .btn-comecar-principal:active {
-            transform: scale(0.98);
-        }
-
-        .tech-badges {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .badge {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            color: white;
-        }
-        .badge-html { background: #e44d26; }
-        .badge-css { background: #1572b6; }
-        .badge-js { background: #f7df1e; color: #000; }
-
-        .mascote-container {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: -15px;
-        }
-
-        .galinha-pixel {
-            font-size: 2.2rem;
-        }
-
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: 0.3s ease;
-            z-index: 1000;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 650px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
-            transform: translateY(-20px);
-            transition: transform 0.3s ease;
-        }
-
-        .modal-overlay.active .modal-card {
-            transform: translateY(0);
-        }
-
-        .modal-card h3 {
-            color: #1b5e20;
-            font-size: 1.6rem;
-            margin-bottom: 30px;
-        }
-
-        .modal-options {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .option-box {
-            background: #fafafa;
-            border: 2px solid #e0e0e0;
-            border-radius: 14px;
-            padding: 20px 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .option-box:hover {
-            border-color: #00e676;
-            background: #f1f8e9;
-            transform: translateY(-4px);
-        }
-
-        .option-box span {
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        .option-box button {
-            background-color: #00e676;
-            border: none;
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #111;
-            transition: background 0.2s;
-        }
-
-        .option-box button:hover {
-            background-color: #00c853;
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/style.css">
 </head>
+
+
 <body>
     <header>
-        <span class="titulo-modulo">MODELAGEM DE SISTEMAS  |  AI-APW-01-M-25-13150</span>
+        <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
         <div class="usuario-avatar"></div>
     </header>
 
-    <div class="main-container">
 
-        <div class="card-conteudo">
-            <div>
-                <div class="titulo-secao">
-                    <span style="font-size: 2.5rem;">📋</span>
-                    <h1>The Farm Edu <span class="trofeu">🏆</span></h1>
+    <main>
+        <section class="card conteudo">
+            <article>
+                <div class="titulo">
+                    <h1 class="titulo">📋The Farm Edu🏆</h1>
                 </div>
-                <p>Turma, conforme conversamos, vocês deverão desenvolver toda a parte de um analista para o projeto FarmTech / The Web Farm / FarmCode. Sendo mais específico, vocês devem desenvolver:</p>
-            </div>
-            
-            <div>
-                <button class="btn-voltar">⬅ Voltar</button>
-            </div>
-        </div>
+                <p>
+                    Turma, conforme conversamos, vocês deverão desenvolver toda a parte de um analista para o projeto
+                    FarmTech / The Web Farm / FarmCode. Sendo mais específico, vocês devem desenvolver:
+                </p>
+            </article>
 
-        <div class="card-trabalhos">
-            <div>
-                <h3>Seus trabalhos</h3>
+
+            <article>
+                <button class="btn-voltar">⬅ Voltar</button>
+            </article>
+        </section>
+
+
+        <section class="card trabalhos">
+            <article>
+                <div class="titulo">
+                    <h3>Seus trabalhos</h3>
+                </div>
+
+
                 <p>Anexe seus arquivos aqui clicando em "Começar".</p>
                 <button class="btn-comecar-principal" id="btnAbrirModal">Começar</button>
-                <div class="tech-badges">
-                    <span class="badge badge-html">HTML5</span>
-                    <span class="badge badge-css">CSS3</span>
-                    <span class="badge badge-js">JS</span>
-                </div>
+            </article>
+            <div class="tech-badges">
+                <span class="badge badge-html">HTML5</span>
+                <span class="badge badge-css">CSS3</span>
+                <span class="badge badge-js">JS</span>
             </div>
-            
-            <div class="mascote-container">
-                <span class="galinha-pixel">🐔</span>
-            </div>
-        </div>
+        </section>
+    </main>
+
+
+
+
+
+
+    <div class="mascote-container">
+        <button class="galinha-pixel">🐔</button>
     </div>
 
+
+
+
+    <!-- erro -->
     <div class="modal-overlay" id="modalLinguagens">
         <div class="modal-card">
             <h3>Escolha a linguagem para trabalhar:</h3>
@@ -343,25 +86,9 @@
             </div>
         </div>
     </div>
-
-    <script>
-        const btnAbrirModal = document.getElementById('btnAbrirModal');
-        const modalLinguagens = document.getElementById('modalLinguagens');
-
-        btnAbrirModal.addEventListener('click', () => {
-            modalLinguagens.classList.add('active');
-        });
-
-        modalLinguagens.addEventListener('click', (e) => {
-            if (e.target === modalLinguagens) {
-                modalLinguagens.classList.remove('active');
-            }
-        });
-
-        function selecionarLinguagem(linguagem) {
-            alert("Linguagem selecionada: ${linguagem}. Redirecionando para o ambiente de envio...");
-            modalLinguagens.classList.remove('active');
-        }
-    </script>
+    <!-- erro -->
 </body>
+<script src="assets/js/script.js"></script>
+
+
 </html>

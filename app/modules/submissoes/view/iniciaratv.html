@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Farm Edu - Editor</title>
+    <link rel="stylesheet" href="iniciaratv.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <button class="voltar" id="btnVoltar" title="Voltar">⬅</button>
+            <span>🐔 The Farm Edu</span><small>Atividade de programação</small>
+        </div>
+        <div class="acoes">
+            <span class="salvo" id="salvo">✔ Salvo</span>
+            <button class="btn ghost" id="btnRodar">▶ Executar</button>
+            <button class="btn" id="btnEnviar">Enviar para feedback</button>
+        </div>
+    </header>
+
+    <div class="ide">
+        <aside class="explorer">
+            <h4>Arquivos</h4>
+            <ul id="arquivos"></ul>
+        </aside>
+        <section class="editor-col">
+            <div class="tabs" id="tabs"></div>
+            <div class="editor-wrap">
+                <pre class="gutter" id="gutter" aria-hidden="true"></pre>
+                <div class="code">
+                    <pre id="hl" aria-hidden="true"></pre>
+                    <textarea id="ed" spellcheck="false" wrap="off" aria-label="Editor de código"></textarea>
+                </div>
+            </div>
+        </section>
+        <section class="preview-col">
+            <div class="pv-head">Resultado</div>
+            <iframe id="pv" title="Pré-visualização" sandbox="allow-scripts"></iframe>
+        </section>
+    </div>
+
+    <footer class="status">
+        <span id="stLang">HTML</span>
+        <span id="stPos">Ln 1, Col 1</span>
+        <span>UTF-8</span>
+    </footer>
+    <div class="toast" id="toast"></div>
+    <script src="iniciaratv.js"></script>
+</body>
+</html>

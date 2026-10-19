@@ -1,51 +1,38 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Farm Edu - Envio de Atividade</title>
-    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="alunoCSS">
 </head>
-
-
 <body>
     <header>
         <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
-        <div class="usuario-avatar"></div>
+        <div class="usuario-avatar" aria-label="Seu perfil">👤</div>
     </header>
-
-
     <main>
         <section class="card conteudo">
             <article>
-                <div class="titulo">
-                    <h1 class="titulo">📋The Farm Edu🏆</h1>
-                </div>
+                <span class="pill">Atividade</span>
+                <h1>📋 The Farm Edu 🏆</h1>
                 <p>
                     Turma, conforme conversamos, vocês deverão desenvolver toda a parte de um analista para o projeto
                     FarmTech / The Web Farm / FarmCode. Sendo mais específico, vocês devem desenvolver:
                 </p>
             </article>
-
-
-            <article>
-                <button class="btn-voltar">⬅ Voltar</button>
-            </article>
+            <button class="btn-voltar" id="btnVoltar">⬅ Voltar</button>
         </section>
 
 
         <section class="card trabalhos">
-            <article>
-                <div class="titulo">
-                    <h3>Seus trabalhos</h3>
-                </div>
+            <h3>Seus trabalhos</h3>
+            <div class="status"><span class="ponto"></span> Não entregue</div>
+            <p>Escreva seu código direto na plataforma clicando em "Começar".</p>
+            <form action="iniciarAtv" method="get">
+                <button type="submit">Começar</button>
+            </form>
 
-
-                <p>Anexe seus arquivos aqui clicando em "Começar".</p>
-                <button class="btn-comecar-principal" id="btnAbrirModal">Começar</button>
-            </article>
             <div class="tech-badges">
                 <span class="badge badge-html">HTML5</span>
                 <span class="badge badge-css">CSS3</span>
@@ -53,42 +40,10 @@
             </div>
         </section>
     </main>
-
-
-
-
-
-
     <div class="mascote-container">
-        <button class="galinha-pixel">🐔</button>
-    </div>
-
-
-
-
-    <!-- erro -->
-    <div class="modal-overlay" id="modalLinguagens">
-        <div class="modal-card">
-            <h3>Escolha a linguagem para trabalhar:</h3>
-            <div class="modal-options">
-                <div class="option-box" onclick="selecionarLinguagem('HTML')">
-                    <span style="color: #e44d26;">HTML</span>
-                    <button>Começar</button>
-                </div>
-                <div class="option-box" onclick="selecionarLinguagem('CSS')">
-                    <span style="color: #1572b6;">CSS</span>
-                    <button>Começar</button>
-                </div>
-                <div class="option-box" onclick="selecionarLinguagem('JS')">
-                    <span style="color: #d4ac0d;">JS</span>
-                    <button>Começar</button>
-                </div>
-            </div>
+        <div class="balao" id="balao">Cocoricó! Bora codar?</div>
+        <button class="galinha-pixel" id="btnGalinha" aria-label="Mascote">🐔</button>
         </div>
-    </div>
-    <!-- erro -->
+    <script src="alunoJS"></script>
 </body>
-<script src="assets/js/script.js"></script>
-
-
 </html>

@@ -5,7 +5,7 @@ document.getElementById('btnVoltar').addEventListener('click', () => {
 const balao = document.getElementById('balao');
 const btnGalinha = document.getElementById('btnGalinha');
 const frases = [
-    'Cocoricó! Bora codar?',
+    'Cocoricó!',
     'Dica: um passo de cada vez 🌱',
     'Errou? Faz parte, tenta de novo!',
     'Clique em "Começar" 👆'

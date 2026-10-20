@@ -2,16 +2,17 @@
     --Cabecalho-aluno: #A0FDA3;
     /* --Ativo: #089C2F; */
     --Verde-principal: #34C759;
+    --Verde-Hoover: #35ad53;
     --Texto: #555;
     --Titulo: #1b5e20;
     --Branco: #ffffff;
     --Off-white: #fafafa;
     --Hoover: #e8f5e9;
-    --Branco-98: rgba(255, 255, 255, 0.98);
-    --Preto-15: rgba(0, 0, 0, 0.15);
-    --Preto-06: rgba(0, 0, 0, 0.06);
-    --Preto-60: rgba(0, 0, 0, 0.6);
-    --Verde-35: rgba(0, 230, 118, 0.35);
+    --Sombra: #38353521;
+}
+
+:root{
+    
 }
 
 
@@ -84,10 +85,10 @@ header .usuario-avatar {
     display: flex;
     justify-content: center;
     gap: 16px;
-    background: var(--Branco-98);
+    background: var(--Branco);
     border-radius: 18px;
     padding: 18px 20px;
-    box-shadow: 0 12px 30px var(--Preto-15);
+    box-shadow: 0 12px 30px var(--Sombra);
     opacity: 0;
     pointer-events: none;
     transform: translateY(-10px);
@@ -137,22 +138,23 @@ header .usuario-avatar {
 .menu-item:active {
     transform: scale(0.99);
 }
+
 /*style do menu */
 
 
-main{
+main {
     flex: 1;
     max-width: 1200px;
     width: 95%;
     margin: 25px auto;
     display: grid;
     grid-template-columns: 2.2fr 1fr;
-    gap: 25px;    
+    gap: 25px;
 }
 
-.card{
+.card {
     background: var(--Branco);
-    box-shadow: 0 4px 20px var(--Preto-06);
+    box-shadow: 0 4px 20px var(--Sombra);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -194,7 +196,7 @@ main{
 }
 
 .btn-voltar {
-    background: var(--Botao);
+    background: var(--Off-white);
     border: none;
     padding: 12px 28px;
     border-radius: 12px;
@@ -210,7 +212,7 @@ main{
 }
 
 .btn-voltar:hover {
-    background: var(--Botao-hoover);
+    background: var(--Hoover);
 }
 
 .btn-voltar:active {
@@ -218,7 +220,7 @@ main{
 }
 
 /*  */
-aside{
+aside {
     display: flex;
     justify-content: center;
     align-self: start;
@@ -231,21 +233,22 @@ aside{
     padding: 30px 20px;
     border-radius: 16px;
     background-color: var(--Branco);
-    box-shadow: 0 4px 20px var(--Preto-06);
+    box-shadow: 0 4px 20px var(--Sombra);
     align-self: start;
 }
 
 .card_trabalhos p {
     font-size: 1rem;
-    color: #555;
+    color: var(--Texto);
     line-height: 1.5;
     margin-bottom: 25px;
 }
+
 /*  */
 
 .btn-comecar-principal {
     background-color: var(--Verde-principal);
-    color: #111;
+    color: var(--Texto);
     border: none;
     width: 100%;
     padding: 16px;
@@ -253,13 +256,13 @@ aside{
     font-weight: bold;
     border-radius: 12px;
     cursor: pointer;
-    box-shadow: 0 4px 12px var(--Verde-35);
+    box-shadow: 0 4px 12px var(--Sombra);
     transition: 0.2s, 0.1s;
     margin-bottom: 25px;
 }
 
 .btn-comecar-principal:hover {
-    background-color: #00c853;
+    background-color: var(--Verde-Hoover);
 }
 
 .btn-comecar-principal:active {
@@ -277,11 +280,21 @@ aside{
     border-radius: 6px;
     font-weight: bold;
     font-size: 0.85rem;
-    color: white;
+    color: var(--Branco);
 }
-.badge-html { background: #e44d26; }
-.badge-css { background: #1572b6; }
-.badge-js { background: #f7df1e; color: #000; }
+
+.badge-html {
+    background: #e44d26;
+}
+
+.badge-css {
+    background: #1572b6;
+}
+
+.badge-js {
+    background: #f7df1e;
+    color: #000;
+}
 
 .mascote-container {
     display: flex;
@@ -299,7 +312,7 @@ aside{
     left: 0;
     width: 100%;
     height: 100%;
-    background: var(--Preto-60);
+    background: var(--Sombra);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -320,7 +333,7 @@ aside{
     border-radius: 20px;
     width: 90%;
     max-width: 650px;
-    box-shadow: 0 10px 30px var(--Preto-15);
+    box-shadow: 0 10px 30px var(--Sombra);
     text-align: center;
     transform: translateY(-20px);
     transition: transform 0.3s ease;
@@ -331,7 +344,7 @@ aside{
 }
 
 .modal-card h3 {
-    color: #1b5e20;
+    color: var(--Titulo);
     font-size: 1.6rem;
     margin-bottom: 30px;
 }
@@ -343,7 +356,7 @@ aside{
 }
 
 .option-box {
-    background: #fafafa;
+    background: var(--Off-white);
     border: none;
     border-radius: 14px;
     padding: 20px 15px;
@@ -356,7 +369,7 @@ aside{
 }
 
 .option-box:hover {
-    background: #f1f8e9;
+    background: var(--Hoover);
     transform: translateY(-4px);
 }
 
@@ -373,10 +386,10 @@ aside{
     border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
-    color: #111;
+    color: var(--Texto);
     transition: background 0.2s;
 }
 
 .option-box button:hover {
-    background-color: #00c853;
+    background-color: var(--Verde-Hoover);
 }

@@ -1,13 +1,12 @@
-:root{
-    --Verde-botao: #00e676;
-    --Verde-botao-hoover: #00c853;
-    --Off-white: #fafafa;
-    --Branco: #ffffff;
-    --Botao: #e0e0e0;
-    --Botao-hoover: #d5d5d5;
-    --Titulo: #1b5e20;
+:root {
+    --Cabecalho-aluno: #A0FDA3;
+    /* --Ativo: #089C2F; */
+    --Verde-principal: #34C759;
     --Texto: #555;
-    --Verde-fundo: #4caf50;
+    --Titulo: #1b5e20;
+    --Branco: #ffffff;
+    --Off-white: #fafafa;
+    --Hoover: #e8f5e9;
 }
 
 
@@ -27,8 +26,8 @@ body {
 }
 
 header {
-    background-color: var(--Verde-fundo);
-    color: var(--Branco);
+    background-color: var(--Cabecalho-aluno);
+    color: var(--Titulo);
     padding: 12px 30px;
     display: flex;
     align-items: center;
@@ -110,13 +109,13 @@ header .usuario-avatar {
 
 .menu-item {
     width: 100%;
-    background: #f4f4f4;
-    border: 1px solid #e3e3e3;
+    background: var(--Branco);
+    border: none;
     border-radius: 10px;
     padding: 12px 14px;
     text-align: left;
     font-size: 0.95rem;
-    color: #1b5e20;
+    color: var(--Titulo);
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s ease, transform 0.1s ease;
@@ -127,7 +126,7 @@ header .usuario-avatar {
 }
 
 .menu-item:hover {
-    background: #e8f5e9;
+    background: var(--Hoover);
 }
 
 .menu-item:active {
@@ -240,7 +239,7 @@ aside{
 /*  */
 
 .btn-comecar-principal {
-    background-color: #00e676;
+    background-color: var(--Verde-principal);
     color: #111;
     border: none;
     width: 100%;
@@ -362,7 +361,7 @@ aside{
 }
 
 .option-box button {
-    background-color: #00e676;
+    background-color: var(--Verde-principal);
     border: none;
     width: 100%;
     padding: 10px;

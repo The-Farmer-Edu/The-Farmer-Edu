@@ -1,9 +1,10 @@
 <?php
+    require_once __DIR__ . '/../../core/router.php';
+    require_once __DIR__ . '/Controller.php';
 
-require_once __DIR__ . '/../../core/router.php';
-require_once __DIR__ . '/Controller.php';
+    // Registra as rotas usando os métodos estáticos do Router
+    Router::get('/fazenda/testarApi', [testeApiController::class, 'showTesteApi']);
+    Router::post('/fazenda/sendAvaliacao', [testeApiController::class, 'sendAvaliacao']);
+    Router::get('/fazenda/index', [baseFazenda::class, 'showFazenda']);
 
-// Registra as rotas usando os métodos estáticos do Router
-Router::get('/fazenda/nivelUsuario', [UsuarioController::class, 'showNivelUsuario']);
-Router::get('/fazenda/fazenda', [UsuarioController::class, 'showFazenda']);
-
+?>

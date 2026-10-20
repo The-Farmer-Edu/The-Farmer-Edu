@@ -26,21 +26,27 @@ class Router {
     public static function enviarRota(): void {
         self::carregarRotas();
 
-        // Pega a URI da requisição (ex: /the-farmer-edu/login)
-        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        
-        // Pega o caminho base do script (ex: /the-farmer-edu/public/index.php)
-        $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+        $rotaConsulta = $_GET['rota'] ?? null;
 
-        // Remove a subpasta da URI para obter apenas a rota relativa (ex: /login)
-        if ($scriptName !== '/' && $scriptName !== '\\') {
-            $uri = str_replace($scriptName, '', $uri);
-        }
+        if (is_string($rotaConsulta) && $rotaConsulta !== '') {
+            $uri = '/' . trim($rotaConsulta, '/');
+        } else {
+            // Pega a URI da requisição (ex: /the-farmer-edu/login)
+            $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-        // Garante que a URI comece com '/' e não fique vazia
-        $uri = '/' . trim($uri, '/');
-        if ($uri !== '/') {
-            $uri = rtrim($uri, '/');
+            // Pega o caminho base do script (ex: /the-farmer-edu/public/index.php)
+            $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+
+            // Remove a subpasta da URI para obter apenas a rota relativa (ex: /login)
+            if ($scriptName !== '/' && $scriptName !== '\\') {
+                $uri = str_replace($scriptName, '', $uri);
+            }
+
+            // Garante que a URI comece com '/' e não fique vazia
+            $uri = '/' . trim($uri, '/');
+            if ($uri !== '/') {
+                $uri = rtrim($uri, '/');
+            }
         }
 
         $method = $_SERVER['REQUEST_METHOD'];

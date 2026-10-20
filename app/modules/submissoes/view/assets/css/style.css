@@ -143,9 +143,7 @@ main{
     margin: 25px auto;
     display: grid;
     grid-template-columns: 2.2fr 1fr;
-    gap: 25px;
-    align-items: stretch;
-    position: relative;
+    gap: 25px;    
 }
 
 .card{
@@ -215,18 +213,31 @@ main{
     transform: scale(0.98);
 }
 
-.trabalhos {
-    margin: 0;
-    padding: 30px 20px;
-    border-radius: 16px;
+/*  */
+aside{
+    display: flex;
+    justify-content: center;
+    align-self: start;
+    /* auto */
 }
 
-.trabalhos p {
+.card_trabalhos {
+    display: flex;
+    flex-direction: column;
+    padding: 30px 20px;
+    border-radius: 16px;
+    background-color: var(--Branco);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    align-self: start;
+}
+
+.card_trabalhos p {
     font-size: 1rem;
     color: #555;
     line-height: 1.5;
     margin-bottom: 25px;
 }
+/*  */
 
 .btn-comecar-principal {
     background-color: #00e676;

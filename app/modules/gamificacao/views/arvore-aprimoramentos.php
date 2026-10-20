@@ -184,7 +184,7 @@ foreach ($categorias as $categoria) {
         }
 
         .tree-shell {
-            max-width: 1320px;
+            max-width: 100%;
             margin: 0 auto;
         }
 
@@ -304,7 +304,7 @@ foreach ($categorias as $categoria) {
 
         .tree-grid {
             display: grid;
-            grid-template-columns: repeat(5, minmax(220px, 1fr));
+            grid-template-columns: 1fr;
             gap: 20px;
         }
 
@@ -511,21 +511,11 @@ foreach ($categorias as $categoria) {
             box-shadow: none;
         }
 
-        @media (max-width: 1200px) {
-            .tree-grid {
-                grid-template-columns: repeat(3, minmax(220px, 1fr));
-            }
-        }
-
         @media (max-width: 840px) {
             .topbar,
             .tree-header {
                 flex-direction: column;
                 align-items: flex-start;
-            }
-
-            .tree-grid {
-                grid-template-columns: 1fr;
             }
         }
     </style>

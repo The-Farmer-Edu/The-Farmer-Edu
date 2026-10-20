@@ -7,6 +7,11 @@
     --Branco: #ffffff;
     --Off-white: #fafafa;
     --Hoover: #e8f5e9;
+    --Branco-98: rgba(255, 255, 255, 0.98);
+    --Preto-15: rgba(0, 0, 0, 0.15);
+    --Preto-06: rgba(0, 0, 0, 0.06);
+    --Preto-60: rgba(0, 0, 0, 0.6);
+    --Verde-35: rgba(0, 230, 118, 0.35);
 }
 
 
@@ -79,10 +84,10 @@ header .usuario-avatar {
     display: flex;
     justify-content: center;
     gap: 16px;
-    background: rgba(255, 255, 255, 0.98);
+    background: var(--Branco-98);
     border-radius: 18px;
     padding: 18px 20px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 30px var(--Preto-15);
     opacity: 0;
     pointer-events: none;
     transform: translateY(-10px);
@@ -147,7 +152,7 @@ main{
 
 .card{
     background: var(--Branco);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 20px var(--Preto-06);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -226,7 +231,7 @@ aside{
     padding: 30px 20px;
     border-radius: 16px;
     background-color: var(--Branco);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 20px var(--Preto-06);
     align-self: start;
 }
 
@@ -248,7 +253,7 @@ aside{
     font-weight: bold;
     border-radius: 12px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 230, 118, 0.35);
+    box-shadow: 0 4px 12px var(--Verde-35);
     transition: 0.2s, 0.1s;
     margin-bottom: 25px;
 }
@@ -294,7 +299,7 @@ aside{
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--Preto-60);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -310,12 +315,12 @@ aside{
 }
 
 .modal-card {
-    background: white;
+    background: var(--Branco);
     padding: 40px;
     border-radius: 20px;
     width: 90%;
     max-width: 650px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px var(--Preto-15);
     text-align: center;
     transform: translateY(-20px);
     transition: transform 0.3s ease;

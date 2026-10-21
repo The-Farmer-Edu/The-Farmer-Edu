@@ -304,7 +304,15 @@ document.addEventListener('keydown', e => {
 });
 
 $('btnRodar').onclick = executar;
-$('btnVoltar').onclick = () => history.back();
+$('btnVoltar').onclick = () => {
+    if (document.referrer) {
+        location.href = document.referrer;
+    } else if (history.length > 1) {
+        history.back();
+    } else {
+        location.href = 'aluno'
+    }
+};
 $('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : abrirModalEntrega());
 $('btnConfirmar').onclick = confirmarEntrega;
 $('btnCancelarModal').onclick = fecharModalEntrega;

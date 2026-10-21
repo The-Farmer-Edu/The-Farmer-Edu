@@ -1,7 +1,7 @@
 const CHAVE_ENTREGA = 'farmedu:entrega';
 const status = document.querySelector('.status');
-const texto = document.querySelector('.trabalhos p');
-const botaoComecar = document.querySelector('.trabalhos form button');
+const texto = document.getElementById('texto');
+const botaoComecar = document.getElementById('comecar');
 function lerEntrega() {
     try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) { return null; }
 }

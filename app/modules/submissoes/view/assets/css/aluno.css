@@ -302,6 +302,11 @@ aside {
     margin-top: -15px;
 }
 
+.mascote-container button{
+    border: none;
+    background: none;
+}
+
 .galinha-pixel {
     font-size: 2.2rem;
 }

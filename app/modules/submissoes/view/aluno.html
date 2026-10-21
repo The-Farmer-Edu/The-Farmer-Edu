@@ -11,7 +11,7 @@
 <body>
     <header>
         <button id="botaoIconi" class="botao-iconi" type="button" aria-expanded="false" aria-controls="menuIconi">
-            <img src="assets/img/logo_icone.png" alt="iconiEDU" height="55px" width="55px">
+            <img src="submissoes/file?type=img&file=logo_icone.png" alt="iconiEDU" height="55px" width="55px">
         </button>
 
         <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
@@ -47,7 +47,7 @@
             </article>
 
             <article>
-                <button class="btn-voltar">⬅ Voltar</button>
+                <button id="btnVoltar" class="btn-voltar">⬅ Voltar</button>
             </article>
 
         </section>
@@ -59,10 +59,12 @@
                         <h3>Seus trabalhos</h3>
                     </div>
 
-                    <p>Anexe seus arquivos aqui clicando em "Começar".</p>
+                    <div class="status"><span class="ponto"></span> Não entregue</div>
+
+                    <p id="texto">Anexe seus arquivos aqui clicando em "Começar".</p>
 
                     <form action="iniciarAtv" method="get">
-                        <button type="submit" class="btn-comecar-principal" id="btnAbrirModal">Começar</button>
+                        <button id="comecar" type="submit" class="btn-comecar-principal" id="btnAbrirModal">Começar</button>
                     </form>
                 </article>
 
@@ -78,7 +80,7 @@
 
     <footer>
         <div class="mascote-container">
-            <img src="assets/img/png%20zoas.png" alt="Mascote" height="150px" width="150px">
+            <button id="btnGalinha"><img src="submissoes/file?type=img&file=png%20zoas.png" alt="Mascote" height="150px" width="150px"></button>
         </div>
     </footer>
 

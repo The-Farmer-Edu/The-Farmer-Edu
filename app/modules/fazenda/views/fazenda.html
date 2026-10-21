@@ -1,1148 +1,897 @@
-<!-- <!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Minha Fazenda 3D</title>
-<style>
-:root{--fundo-card:#fffdf5;--texto:#3b2a1a;--destaque:#4a8f3a;--desativado:#a89a82}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--fundo-card:#2b3424;--texto:#f1e8d0;--destaque:#7fc15f;--desativado:#6f7a62}}
-:root[data-theme="dark"]{--fundo-card:#2b3424;--texto:#f1e8d0;--destaque:#7fc15f;--desativado:#6f7a62}
-html,body{height:100%;margin:0;overflow:hidden;background:#9fd8f5;font-family:system-ui,sans-serif}
-canvas{position:fixed;inset:0;touch-action:none}
-#barra-topo{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;pointer-events:none}
-#barra-topo>*{pointer-events:auto;background:var(--fundo-card);color:var(--texto);border-radius:20px;padding:8px 14px;font-size:15px;box-shadow:0 2px 8px #0003;border:0}
-#lista-cards{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;overflow-x:auto;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
-.card{flex:0 0 150px;background:var(--fundo-card);color:var(--texto);border-radius:14px;padding:10px;box-shadow:0 2px 8px #0003}
-.pontos-nivel{letter-spacing:2px;color:var(--destaque);margin:4px 0 8px;font-size:13px}
-.card button{width:100%;min-height:36px;border:0;border-radius:10px;background:var(--destaque);color:#fff;font-weight:600;font-size:13px}
-.card button:disabled{background:var(--desativado);opacity:.7}
-#aviso{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--fundo-card);color:var(--texto);padding:10px 16px;border-radius:20px;box-shadow:0 2px 10px #0004;opacity:0;transition:opacity .3s;pointer-events:none;font-size:14px;text-align:center}
-</style></head><body>
-<div id="barra-topo"><b>⭐ <span id="valor-xp">0</span> XP</b><button id="botao-teste-xp">+50 XP (teste)</button></div>
-<div id="lista-cards"></div><div id="aviso"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-const selecionar = seletor => document.querySelector(seletor);
+<!DOCTYPE html>
+<html lang="pt-BR">
 
-// ======================= CONFIGURAÇÃO DO JOGO =======================
-const AREAS = [
-  { id: 'animais',    nome: 'Animais',    icone: '🐄', posicao: { x: 9,  z: 5 } },
-  { id: 'casa',       nome: 'Casa',       icone: '🏠', posicao: { x: -8, z: -6 } },
-  { id: 'celeiro',    nome: 'Celeiro',    icone: '🛖', posicao: { x: 7,  z: -6 } },
-  { id: 'maquinario', nome: 'Maquinário', icone: '🚜', posicao: { x: -9, z: 5 } },
-  { id: 'plantacao',  nome: 'Plantação',  icone: '🌽', posicao: { x: 0,  z: 20 } },
-];
-const NIVEL_MAXIMO = 5;
-const CUSTO_PARA_PROXIMO_NIVEL = [100, 250, 500, 1000]; // posição 0 = custo do nível 1 → 2
-const COR = { madeira: 0x8a5a2a, janela: 0xffe08a, vidro: 0xbfe3f2, cinzaClaro: 0xcfd4d8, feno: 0xe8c04a, pneu: 0x222222 };
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Minha Fazenda 3D</title>
+  <style>
+    :root {
+      --fundo-card: #fffdf5;
+      --texto: #3b2a1a;
+      --destaque: #4a8f3a;
+      --desativado: #a89a82
+    }
 
-// ======================= PROGRESSO (XP E NÍVEIS) =======================
-const CHAVE_SALVAMENTO = 'fazenda3d-progresso';
-let estado = { xp: 0, niveis: { animais: 1, casa: 1, celeiro: 1, maquinario: 1, plantacao: 1 } };
-try {
-  const progressoSalvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
-  if (progressoSalvo && progressoSalvo.niveis) estado = progressoSalvo;
-} catch (erro) {}
-function salvarProgresso() {
-  try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) {}
-}
-
-// ======================= CENA 3D BÁSICA =======================
-const renderizador = new THREE.WebGLRenderer({ antialias: true });
-const canvas = renderizador.domElement;
-renderizador.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderizador.shadowMap.enabled = true;
-document.body.prepend(canvas);
-
-const cena = new THREE.Scene();
-cena.background = new THREE.Color(0x9fd8f5);
-cena.fog = new THREE.Fog(0x9fd8f5, 45, 100);
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-
-cena.add(new THREE.HemisphereLight(0xffffff, 0x6a8f4a, 0.75)); // luz ambiente (céu + chão)
-const sol = new THREE.DirectionalLight(0xfff2cc, 0.9);
-sol.position.set(12, 22, 10);
-sol.castShadow = true;
-sol.shadow.mapSize.set(1024, 1024);
-Object.assign(sol.shadow.camera, { left: -24, right: 24, top: 24, bottom: -24, near: 1, far: 70 });
-cena.add(sol);
-
-// ======================= FUNÇÕES AUXILIARES DE MODELAGEM =======================
-const cacheDeMateriais = {};
-function material(cor) {
-  if (!cacheDeMateriais[cor]) cacheDeMateriais[cor] = new THREE.MeshLambertMaterial({ color: cor });
-  return cacheDeMateriais[cor];
-}
-function criarCaixa(largura, altura, profundidade, cor, x, y, z, pai) {
-  const caixa = new THREE.Mesh(new THREE.BoxGeometry(largura, altura, profundidade), material(cor));
-  caixa.position.set(x, y, z);
-  caixa.castShadow = caixa.receiveShadow = true;
-  pai.add(caixa);
-  return caixa;
-}
-function criarCilindro(raioTopo, raioBase, altura, cor, x, y, z, pai, segmentos = 14) {
-  const cilindro = new THREE.Mesh(new THREE.CylinderGeometry(raioTopo, raioBase, altura, segmentos), material(cor));
-  cilindro.position.set(x, y, z);
-  cilindro.castShadow = true;
-  pai.add(cilindro);
-  return cilindro;
-}
-function criarRoda(raio, largura, x, y, z, pai) {
-  const roda = criarCilindro(raio, raio, largura, COR.pneu, x, y, z, pai);
-  roda.rotation.z = Math.PI / 2; // deita o cilindro para virar roda
-}
-
-// ======================= CENÁRIO FIXO (chão, caminho, árvores, nuvens) =======================
-const chao = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), material(0x78b24a));
-chao.rotation.x = -Math.PI / 2;
-chao.receiveShadow = true;
-cena.add(chao);
-criarCaixa(2.4, 0.05, 16, 0xd9b97a, 0, 0.03, -1, cena); // caminho de terra
-
-const POSICOES_ARVORES = [[-16, -2], [16, 0], [-15, 13], [15, 14], [-3, -13], [2, -14], [-17, -12], [17, -12]];
-POSICOES_ARVORES.forEach(([x, z]) => {
-  criarCaixa(0.4, 1, 0.4, 0x6b4a2b, x, 0.5, z, cena); // tronco
-  const copa = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.6, 7), material(0x2f7d32));
-  copa.position.set(x, 2.2, z);
-  copa.castShadow = true;
-  cena.add(copa);
-});
-
-const nuvens = [];
-for (let i = 0; i < 5; i++) {
-  const nuvem = new THREE.Group();
-  for (let parte = 0; parte < 3; parte++) criarCaixa(3 + parte, 1, 2, 0xffffff, parte * 2 - 2, (parte % 2) * 0.4, 0, nuvem);
-  nuvem.position.set(-30 + i * 14, 16, -20 + i * 9);
-  cena.add(nuvem);
-  nuvens.push(nuvem);
-}
-
-// ======================= MODELOS REUTILIZÁVEIS (trator e animais) =======================
-function criarTrator(pai, x, z, escala, corCarroceria) {
-  const trator = new THREE.Group();
-  criarCaixa(1.1, 0.7, 2, corCarroceria, 0, 0.95, 0, trator);   // carroceria
-  criarCaixa(0.9, 0.9, 0.9, COR.vidro, 0, 1.7, -0.45, trator);  // cabine
-  criarCaixa(0.1, 0.6, 0.1, 0x333333, 0.35, 1.6, 0.7, trator);  // escapamento
-  criarRoda(0.6, 0.4, -0.8, 0.6, -0.5, trator);  criarRoda(0.6, 0.4, 0.8, 0.6, -0.5, trator);   // rodas traseiras
-  criarRoda(0.38, 0.3, -0.7, 0.38, 0.8, trator); criarRoda(0.38, 0.3, 0.7, 0.38, 0.8, trator);  // rodas dianteiras
-  trator.scale.setScalar(escala);
-  trator.position.set(x, 0, z);
-  pai.add(trator);
-  return trator;
-}
-
-// tipo: 'galinha' | 'porco' | 'vaca' | 'ovelha'. Cada animal passeia em círculos dentro do cercado.
-function criarAnimal(pai, animacoes, tipo, centroX, centroZ) {
-  const animal = new THREE.Group();
-  if (tipo === 'galinha') {
-    criarCaixa(0.4, 0.35, 0.5, 0xffffff, 0, 0.35, 0, animal);
-    criarCaixa(0.12, 0.12, 0.12, 0xe03a2a, 0, 0.62, 0.22, animal);  // crista
-    criarCaixa(0.1, 0.08, 0.15, 0xf2a93b, 0, 0.5, 0.34, animal);    // bico
-  }
-  if (tipo === 'porco') {
-    criarCaixa(0.7, 0.5, 1, 0xf2a0b5, 0, 0.5, 0, animal);
-    criarCaixa(0.45, 0.4, 0.4, 0xf2a0b5, 0, 0.55, 0.65, animal);    // cabeça
-  }
-  if (tipo === 'vaca') {
-    criarCaixa(0.9, 0.8, 1.6, 0xffffff, 0, 0.9, 0, animal);
-    criarCaixa(0.6, 0.6, 0.6, 0xffffff, 0, 1.1, 1, animal);         // cabeça
-    criarCaixa(0.5, 0.3, 0.05, 0x222222, 0.46, 1, 0.1, animal);     // manchas
-    criarCaixa(0.5, 0.3, 0.05, 0x222222, -0.46, 0.8, -0.3, animal);
-  }
-  if (tipo === 'ovelha') {
-    criarCaixa(0.7, 0.55, 0.9, 0xeeeeee, 0, 0.55, 0, animal);
-    criarCaixa(0.35, 0.35, 0.35, 0x444444, 0, 0.7, 0.55, animal);   // cabeça
-  }
-  pai.add(animal);
-
-  const raioDoPasseio = 0.3 + Math.random() * 0.4;
-  const velocidade = 0.3 + Math.random() * 0.4;
-  const faseInicial = Math.random() * 6;
-  animacoes.push(tempo => {
-    const angulo = tempo * velocidade + faseInicial;
-    animal.position.set(
-      centroX + Math.sin(angulo) * raioDoPasseio * 2,
-      Math.abs(Math.sin(tempo * 5 + faseInicial)) * 0.05, // pulinho ao andar
-      centroZ + Math.cos(angulo) * raioDoPasseio * 1.4
-    );
-    animal.rotation.y = Math.atan2(Math.cos(angulo) * raioDoPasseio * 2, -Math.sin(angulo) * raioDoPasseio * 1.4);
-  });
-}
-
-// ======================= CONSTRUTORES DAS 5 ÁREAS =======================
-// Cada construtor recebe: grupo (onde desenhar), nivel (1 a 5) e animacoes (lista de funções chamadas a cada frame).
-const construtoresDasAreas = {
-
-  casa(grupo, nivel, animacoes) {
-    const lado = 3 + nivel * 0.5;
-    const andares = nivel >= 3 ? 2 : 1;
-    const alturaParedes = 1.8 * andares;
-    criarCaixa(lado, alturaParedes, lado, 0xf3e3c0, 0, alturaParedes / 2, 0, grupo); // paredes
-
-    const telhado = new THREE.Mesh(new THREE.ConeGeometry(lado * 0.78, 1.6 + nivel * 0.1, 4), material(0xb5532f));
-    telhado.rotation.y = Math.PI / 4;
-    telhado.position.y = alturaParedes + 0.8;
-    telhado.castShadow = true;
-    grupo.add(telhado);
-
-    criarCaixa(0.7, 1.2, 0.1, 0x7a4a2a, 0, 0.6, lado / 2 + 0.05, grupo); // porta
-    for (let andar = 0; andar < andares; andar++) {
-      for (const ladoDaJanela of [-1, 1]) {
-        criarCaixa(0.6, 0.6, 0.1, COR.janela, ladoDaJanela * lado * 0.3, 1 + andar * 1.8, lado / 2 + 0.05, grupo);   // janela da frente
-        criarCaixa(0.1, 0.6, 0.6, COR.janela, ladoDaJanela * (lado / 2 + 0.05), 1 + andar * 1.8, 0, grupo);          // janela lateral
+    @media(prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --fundo-card: #2b3424;
+        --texto: #f1e8d0;
+        --destaque: #7fc15f;
+        --desativado: #6f7a62
       }
     }
 
-    if (nivel >= 2) { // chaminé com fumaça
-      const chamineX = lado * 0.25, chamineY = alturaParedes + 1, chamineZ = -lado * 0.15;
-      criarCaixa(0.5, 1.4, 0.5, 0x8a5a44, chamineX, chamineY, chamineZ, grupo);
-      for (let i = 0; i < 4; i++) {
-        const baforada = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
-        grupo.add(baforada);
-        animacoes.push(tempo => {
-          const progresso = (tempo * 0.3 + i / 4) % 1; // 0 = saindo da chaminé, 1 = sumindo no ar
-          baforada.position.set(chamineX + progresso * 0.8, chamineY + 0.8 + progresso * 2.2, chamineZ);
-          baforada.scale.setScalar(0.5 + progresso);
-          baforada.material.opacity = 0.7 * (1 - progresso);
-        });
+    :root[data-theme="dark"] {
+      --fundo-card: #2b3424;
+      --texto: #f1e8d0;
+      --destaque: #7fc15f;
+      --desativado: #6f7a62
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #9fd8f5;
+      font-family: system-ui, sans-serif
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      touch-action: none
+    }
+
+    #barra-topo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 8px;
+      pointer-events: none
+    }
+
+    #barra-topo>* {
+      pointer-events: auto;
+      background: var(--fundo-card);
+      color: var(--texto);
+      border-radius: 20px;
+      padding: 8px 14px;
+      font-size: 15px;
+      box-shadow: 0 2px 8px #0003;
+      border: 0
+    }
+
+    #lista-cards {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 10px)
+    }
+
+    .card {
+      flex: 0 0 150px;
+      background: var(--fundo-card);
+      color: var(--texto);
+      border-radius: 14px;
+      padding: 10px;
+      box-shadow: 0 2px 8px #0003
+    }
+
+    .pontos-nivel {
+      letter-spacing: 2px;
+      color: var(--destaque);
+      margin: 4px 0 8px;
+      font-size: 13px
+    }
+
+    .card button {
+      width: 100%;
+      min-height: 36px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--destaque);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px
+    }
+
+    .card button:disabled {
+      background: var(--desativado);
+      opacity: .7
+    }
+
+    #aviso {
+      position: fixed;
+      left: 50%;
+      top: 70px;
+      transform: translateX(-50%);
+      background: var(--fundo-card);
+      color: var(--texto);
+      padding: 10px 16px;
+      border-radius: 20px;
+      box-shadow: 0 2px 10px #0004;
+      opacity: 0;
+      transition: opacity .3s;
+      pointer-events: none;
+      font-size: 14px;
+      text-align: center
+    }
+  </style>
+</head>
+
+<body>
+  <div id="barra-topo"><b>⭐ <span id="valor-xp">0</span> XP</b><button id="botao-teste-xp">+5000 XP (teste)</button>
+  </div>
+  <div id="lista-cards"></div>
+  <div id="aviso"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const selecionar = seletor => document.querySelector(seletor);
+
+    // ======================= CONFIGURAÇÃO DO JOGO =======================
+    const AREAS = [
+      { id: 'curral', nome: 'Curral', icone: '🐄', posicao: { x: 9, z: 6 } },
+      { id: 'casa', nome: 'Casa', icone: '🏠', posicao: { x: -8, z: -9 } },
+      { id: 'celeiro', nome: 'Celeiro', icone: '🛖', posicao: { x: 9, z: -8 } },
+      { id: 'maquinario', nome: 'Maquinário', icone: '🚜', posicao: { x: -8, z: 6 } },
+      { id: 'plantacao', nome: 'Plantação', icone: '🌽', posicao: { x: 0, z: 20 } },
+      { id: 'galinheiro', nome: 'Galinheiro', icone: '🐔', posicao: { x: 22, z: 6 } },
+      { id: 'chiqueiro', nome: 'Chiqueiro', icone: '🐖', posicao: { x: 22, z: -8 } },
+    ];
+    const NIVEL_MAXIMO = 3;
+    const CUSTO_PARA_PROXIMO_NIVEL = [100, 250]; // posição 0 = custo do nível 1 → 2
+    const COR = { madeira: 0x8a5a2a, ripa: 0xb07a45, janela: 0xffe08a, vidro: 0xbfe3f2, feno: 0xe8c04a, pneu: 0x222222, telhaCasa: 0xd9532f, branco: 0xf2f2ea };
+
+    // ======================= PROGRESSO (XP E NÍVEIS) =======================
+    const CHAVE_SALVAMENTO = 'fazenda3d-progresso-v3';
+    let estado = { xp: 0, niveis: { curral: 1, casa: 1, celeiro: 1, maquinario: 1, plantacao: 1, galinheiro: 1, chiqueiro: 1 } };
+    try {
+      const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
+      if (salvo && salvo.niveis) {
+        estado = salvo;
+        for (const id in estado.niveis) estado.niveis[id] = Math.min(NIVEL_MAXIMO, Math.max(1, estado.niveis[id] | 0));
       }
+    } catch (erro) { }
+    function salvarProgresso() { try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { } }
+
+    // ======================= CENA 3D BÁSICA =======================
+    const renderizador = new THREE.WebGLRenderer({ antialias: true });
+    const canvas = renderizador.domElement;
+    renderizador.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderizador.shadowMap.enabled = true;
+    document.body.prepend(canvas);
+
+    const cena = new THREE.Scene();
+    cena.background = new THREE.Color(0x9fd8f5);
+    cena.fog = new THREE.Fog(0x9fd8f5, 45, 100);
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+    cena.add(new THREE.HemisphereLight(0xffffff, 0x6a8f4a, 0.75));
+    const sol = new THREE.DirectionalLight(0xfff2cc, 0.9);
+    sol.position.set(12, 22, 10);
+    sol.castShadow = true;
+    sol.shadow.mapSize.set(1024, 1024);
+    Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 70 });
+    cena.add(sol);
+
+    // ======================= FUNÇÕES AUXILIARES DE MODELAGEM =======================
+    const cacheDeMateriais = {};
+    function material(cor) {
+      if (!cacheDeMateriais[cor]) cacheDeMateriais[cor] = new THREE.MeshLambertMaterial({ color: cor });
+      return cacheDeMateriais[cor];
     }
-    if (nivel >= 4) { // varanda
-      criarCaixa(lado, 0.15, 1.2, 0x9a6b3f, 0, 0.08, lado / 2 + 0.6, grupo);
-      for (const ladoDoPoste of [-1, 1]) criarCaixa(0.12, 1.2, 0.12, 0x9a6b3f, ladoDoPoste * lado * 0.45, 0.6, lado / 2 + 1.1, grupo);
+    function criarCaixa(largura, altura, profundidade, cor, x, y, z, pai) {
+      const caixa = new THREE.Mesh(new THREE.BoxGeometry(largura, altura, profundidade), material(cor));
+      caixa.position.set(x, y, z);
+      caixa.castShadow = caixa.receiveShadow = true;
+      pai.add(caixa);
+      return caixa;
     }
-    if (nivel >= 5) { // jardim de flores
-      const coresDasFlores = [0xe84a5f, 0xffd23f, 0xff8fb1];
-      for (let i = 0; i < 8; i++) {
-        criarCaixa(0.22, 0.22, 0.22, coresDasFlores[i % 3], -lado / 2 - 0.8 + (i % 4) * 0.4, 0.15, lado / 2 + 0.4 + Math.floor(i / 4) * 0.5, grupo);
+    function criarCilindro(raioTopo, raioBase, altura, cor, x, y, z, pai, segmentos = 14) {
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(raioTopo, raioBase, altura, segmentos), material(cor));
+      c.position.set(x, y, z);
+      c.castShadow = true;
+      pai.add(c);
+      return c;
+    }
+    function criarEsfera(raio, cor, x, y, z, pai, escalaY = 1) {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(raio, 8, 6), material(cor));
+      e.position.set(x, y, z);
+      e.scale.y = escalaY;
+      e.castShadow = true;
+      pai.add(e);
+      return e;
+    }
+    function criarRoda(raio, largura, x, y, z, pai, aro) {
+      const roda = criarCilindro(raio, raio, largura, COR.pneu, x, y, z, pai);
+      roda.rotation.z = Math.PI / 2;
+      if (aro) criarCilindro(raio * 0.55, raio * 0.55, largura + 0.04, aro, x, y, z, pai).rotation.z = Math.PI / 2;
+    }
+    // base de grama sob cada área (como nas ilustrações isométricas)
+    function base(g, largura, profundidade, cor = 0x8fd05a) { criarCaixa(largura, 0.15, profundidade, cor, 0, 0.02, 0, g); }
+    // telhado de duas águas (prisma). largura = vão entre as águas; comprimento = ao longo do cume.
+    function telhado(g, largura, comprimento, altura, cor, x, y, z, giro = 0) {
+      const r = altura / 1.5;
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, comprimento, 3), material(cor));
+      m.rotation.x = -Math.PI / 2;
+      m.scale.x = largura / (r * 1.732);
+      m.position.y = r / 2;
+      m.castShadow = true;
+      const p = new THREE.Group();
+      p.add(m);
+      p.position.set(x, y, z);
+      p.rotation.y = giro;
+      g.add(p);
+    }
+    function cercaLinha(g, x1, z1, x2, z2) {
+      const comp = Math.hypot(x2 - x1, z2 - z1), n = Math.ceil(comp), ang = Math.atan2(x2 - x1, z2 - z1);
+      for (let i = 0; i <= n; i++) criarCaixa(0.14, 0.8, 0.14, COR.madeira, x1 + (x2 - x1) * i / n, 0.5, z1 + (z2 - z1) * i / n, g);
+      for (const y of [0.68, 0.42]) criarCaixa(0.07, 0.09, comp, COR.ripa, (x1 + x2) / 2, y, (z1 + z2) / 2, g).rotation.y = ang;
+    }
+    function cerca(g, w, d) {
+      cercaLinha(g, -w / 2, -d / 2, w / 2, -d / 2); cercaLinha(g, -w / 2, d / 2, w / 2, d / 2);
+      cercaLinha(g, -w / 2, -d / 2, -w / 2, d / 2); cercaLinha(g, w / 2, -d / 2, w / 2, d / 2);
+    }
+    function arvore(g, x, z, s = 1) {
+      criarCilindro(0.2 * s, 0.28 * s, 1.4 * s, 0x6b4a2b, x, 0.7 * s, z, g, 6);
+      criarEsfera(1.1 * s, 0x3f9e3a, x, 2 * s, z, g);
+      criarEsfera(0.8 * s, 0x4fb043, x + 0.5 * s, 1.5 * s, z + 0.2 * s, g);
+      criarEsfera(0.8 * s, 0x358f33, x - 0.5 * s, 1.6 * s, z - 0.2 * s, g);
+    }
+    function arbusto(g, x, z, flores = true) {
+      criarEsfera(0.4, 0x4a9e3a, x, 0.35, z, g, 0.8);
+      if (flores) [0xe84a5f, 0xffd23f, 0xff8fb1].forEach((c, i) => criarCaixa(0.12, 0.12, 0.12, c, x + (i - 1) * 0.22, 0.6, z + 0.25, g));
+    }
+    function pedra(g, x, z, s = 0.4) {
+      const p = new THREE.Mesh(new THREE.DodecahedronGeometry(s), material(0xb4b4aa));
+      p.position.set(x, s * 0.5, z); p.scale.y = 0.7; p.castShadow = true; g.add(p);
+    }
+    
+    function barril(g, x, z) { criarCilindro(0.32, 0.32, 0.7, 0x7a4a2a, x, 0.45, z, g, 10); }
+    function caixote(g, x, z) { criarCaixa(0.55, 0.45, 0.55, 0xa0703a, x, 0.32, z, g); }
+    function fardo(g, x, y, z) { criarCaixa(0.8, 0.5, 0.6, COR.feno, x, y, z, g); }
+    function janela(g, x, y, z, lateral) {
+      criarCaixa(...(lateral ? [0.1, 0.67, 0.62] : [0.62, 0.67, 0.1]), 0x9a4a2a, x, y, z, g);
+      criarCaixa(...(lateral ? [0.14, 0.5, 0.45] : [0.45, 0.5, 0.14]), COR.vidro, x, y, z, g);
+    }
+    function placa(g, x, z) { criarCaixa(0.1, 1.5, 0.1, COR.madeira, x, 0.75, z, g); criarCaixa(0.6, 0.45, 0.08, 0xc98a4a, x, 1.4, z, g); }
+
+    // ======================= MODELOS REUTILIZÁVEIS =======================
+    function criarTrator(pai, x, z, escala, cor, aro) {
+      const t = new THREE.Group();
+      criarCaixa(1.1, 0.7, 2, cor, 0, 0.95, 0, t);
+      criarCaixa(0.9, 0.9, 0.9, COR.vidro, 0, 1.7, -0.45, t);
+      criarCaixa(1, 0.08, 1, cor, 0, 2.2, -0.45, t);
+      criarCaixa(0.1, 0.6, 0.1, 0x333333, 0.35, 1.6, 0.7, t);
+      criarRoda(0.6, 0.4, -0.8, 0.6, -0.5, t, aro); criarRoda(0.6, 0.4, 0.8, 0.6, -0.5, t, aro);
+      criarRoda(0.38, 0.3, -0.7, 0.38, 0.8, t, aro); criarRoda(0.38, 0.3, 0.7, 0.38, 0.8, t, aro);
+      t.scale.setScalar(escala);
+      t.position.set(x, 0, z);
+      pai.add(t);
+      return t;
+    }
+    function reboque(g, x, z, giro) {
+      const r = new THREE.Group();
+      r.position.set(x, 0, z); r.rotation.y = giro; g.add(r);
+      criarCaixa(1.6, 0.12, 2.4, 0x8a5a2a, 0, 0.7, 0, r);
+      criarCaixa(1.4, 0.05, 2.2, 0xe8e0d0, 0, 0.78, 0, r);
+      for (const s of [-1, 1]) { criarCaixa(0.1, 0.5, 2.4, 0xa5703a, s * 0.8, 0.95, 0, r); criarCaixa(1.6, 0.5, 0.1, 0xa5703a, 0, 0.95, s * 1.2, r); }
+      criarRoda(0.4, 0.3, -0.9, 0.4, -0.3, r); criarRoda(0.4, 0.3, 0.9, 0.4, -0.3, r);
+      criarCaixa(0.1, 0.1, 1.4, 0x555555, 0, 0.55, 1.9, r);
+    }
+    function arado(g, x, z, giro, cor) {
+      const p = new THREE.Group();
+      p.position.set(x, 0, z); p.rotation.y = giro; g.add(p);
+      criarCaixa(3, 0.12, 0.3, cor, 0, 0.7, 0, p);
+      for (let i = 0; i < 8; i++) criarCaixa(0.05, 0.55, 0.05, 0x555555, -1.3 + i * 0.37, 0.4, 0, p);
+      criarRoda(0.3, 0.1, 1.6, 0.3, 0, p);
+    }
+    function abrigo(g, x, z) {
+      for (const dx of [-1, 1]) for (const dz of [-0.9, 0.9]) criarCaixa(0.12, 1.5, 0.12, COR.madeira, x + dx, 0.85, z + dz, g);
+      telhado(g, 2.7, 2.5, 0.8, 0xc98a3a, x, 1.6, z);
+      criarCaixa(1.2, 0.35, 0.7, 0x2f6f6f, x, 0.3, z, g);
+    }
+    function cocho(g, x, z) { criarCaixa(1.6, 0.4, 0.6, 0x2f6f6f, x, 0.3, z, g); criarCaixa(1.4, 0.05, 0.4, 0x5ec7e0, x, 0.5, z, g); }
+
+    // casinha de galinha elevada, com rampa, janela e caixa de ninhos (a frente fica virada para +Z)
+    function casinhaDeGalinha(g, x, z, corParede = 0xc0522f) {
+      const casinha = new THREE.Group();
+      casinha.position.set(x, 0, z);
+      g.add(casinha);
+      for (const dx of [-0.6, 0.6]) for (const dz of [-0.45, 0.45]) criarCaixa(0.1, 0.5, 0.1, COR.madeira, dx, 0.25, dz, casinha); // pernas
+      criarCaixa(1.6, 1, 1.2, corParede, 0, 1, 0, casinha);                            // corpo
+      telhado(casinha, 1.6, 2, 0.6, COR.telhaCasa, 0, 1.5, 0, Math.PI / 2);            // telhado
+      criarCaixa(0.4, 0.5, 0.05, 0x3a2a1a, 0.3, 0.95, 0.62, casinha);                  // porta
+      criarCaixa(0.4, 0.04, 0.9, COR.ripa, 0.3, 0.4, 0.95, casinha).rotation.x = 0.75; // rampa
+      janela(casinha, -0.4, 1.1, 0.62, false);
+      criarCaixa(0.35, 0.4, 1, COR.ripa, 1, 1.1, 0, casinha);                          // caixa de ninhos
+    }
+
+    // poça de lama oval (dois cilindros achatados, um mais claro por cima)
+    function pocaDeLama(g, x, z, raio) {
+      criarCilindro(raio, raio, 0.06, 0x5b3a22, x, 0.13, z, g, 20).scale.z = 0.7;
+      criarCilindro(raio * 0.6, raio * 0.6, 0.06, 0x70492c, x + raio * 0.1, 0.16, z, g, 16).scale.z = 0.7;
+    }
+
+    const RAIO_DA_HITBOX = { galinha: 0.3, ovelha: 0.5, vaca: 0.8, porco: 0.5 };
+
+    // diz se um animal (círculo de centro x,z) pode ficar nessa posição sem bater em nada
+    function posicaoEstaLivre(cercado, animalAtual, x, z, raio) {
+      if (Math.abs(x) > cercado.limiteX - raio || Math.abs(z) > cercado.limiteZ - raio) return false; // cerca
+      for (const o of cercado.obstaculos) { // retângulos (abrigo, cocho...)
+        const pontoMaisProximoX = Math.min(o.maxX, Math.max(o.minX, x));
+        const pontoMaisProximoZ = Math.min(o.maxZ, Math.max(o.minZ, z));
+        if (Math.hypot(x - pontoMaisProximoX, z - pontoMaisProximoZ) < raio) return false;
       }
+      return !cercado.animais.some(outro => outro !== animalAtual && Math.hypot(x - outro.x, z - outro.z) < raio + outro.raio);
     }
-  },
 
-  celeiro(grupo, nivel) {
-    const largura = 4 + nivel * 0.6;
-    const altura = 2.4 + nivel * 0.2;
-    const profundidade = 4.5;
-    criarCaixa(largura, altura, profundidade, 0xb23a2e, 0, altura / 2, 0, grupo);                           // paredes
-    criarCaixa(1.6, altura * 0.7, 0.1, 0x6b2118, 0, altura * 0.35, profundidade / 2 + 0.05, grupo);        // portão
-    criarCaixa(1.7, 0.12, 0.12, 0xffffff, 0, altura * 0.7, profundidade / 2 + 0.1, grupo);                  // detalhe branco
-
-    // telhado de duas águas: prisma triangular (cilindro de 3 lados deitado)
-    const raioDoTelhado = (largura + 0.5) / 1.732;
-    const telhado = new THREE.Mesh(new THREE.CylinderGeometry(raioDoTelhado, raioDoTelhado, profundidade + 0.5, 3), material(0x6e6e78));
-    telhado.rotation.x = -Math.PI / 2;
-    telhado.position.y = altura + raioDoTelhado * 0.5;
-    telhado.castShadow = true;
-    grupo.add(telhado);
-
-    const quantidadeDeFardos = Math.min(nivel - 1, 3);
-    for (let i = 0; i < quantidadeDeFardos; i++) {
-      const fardo = criarCilindro(0.45, 0.45, 0.8, COR.feno, largura / 2 + 1, 0.45, -1.2 + i * 1.1, grupo);
-      fardo.rotation.x = Math.PI / 2;
-    }
-    if (nivel >= 3) { // silo com cúpula
-      criarCilindro(0.9, 0.9, altura + 1.5, COR.cinzaClaro, -largura / 2 - 1.2, (altura + 1.5) / 2, 0, grupo, 16);
-      const cupula = new THREE.Mesh(new THREE.SphereGeometry(0.9, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), material(0x8f98a0));
-      cupula.position.set(-largura / 2 - 1.2, altura + 1.5, 0);
-      grupo.add(cupula);
-    }
-    if (nivel >= 5) { // segundo silo e ala extra
-      criarCilindro(0.8, 0.8, altura + 0.8, COR.cinzaClaro, -largura / 2 - 1.2, (altura + 0.8) / 2, -1.9, grupo, 16);
-      criarCaixa(largura * 0.6, altura * 0.7, 2, 0xb23a2e, 0, altura * 0.35, -profundidade / 2 - 1, grupo);
-    }
-  },
-
-  animais(grupo, nivel, animacoes) {
-    criarCaixa(7.4, 0.05, 6.4, 0x8fc45a, 0, 0.03, 0, grupo); // grama do cercado
-    for (let x = -3.5; x <= 3.5; x++) for (const z of [-3.2, 3.2]) criarCaixa(0.14, 0.8, 0.14, COR.madeira, x, 0.4, z, grupo); // postes (frente/trás)
-    for (let z = -2.2; z <= 2.3; z += 1.1) for (const x of [-3.5, 3.5]) criarCaixa(0.14, 0.8, 0.14, COR.madeira, x, 0.4, z, grupo); // postes (laterais)
-    for (const z of [-3.2, 3.2]) criarCaixa(7.2, 0.1, 0.08, 0xb07a45, 0, 0.55, z, grupo); // travessas
-    for (const x of [-3.5, 3.5]) criarCaixa(0.08, 0.1, 6.4, 0xb07a45, x, 0.55, 0, grupo);
-    if (nivel >= 3) criarCaixa(1.6, 0.3, 0.5, COR.madeira, 0, 0.15, -2.6, grupo); // cocho
-
-    // posição no array = nível - 1
-    const quantidadePorTipo = {
-      galinha: [2, 4, 5, 6, 8][nivel - 1],
-      porco:   [0, 1, 2, 3, 3][nivel - 1],
-      vaca:    [0, 0, 1, 2, 3][nivel - 1],
-      ovelha:  [0, 0, 0, 2, 4][nivel - 1],
-    };
-    for (const tipo in quantidadePorTipo) {
-      for (let i = 0; i < quantidadePorTipo[tipo]; i++) {
-        criarAnimal(grupo, animacoes, tipo, (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 3);
+    function criarAnimal(pai, animacoes, tipo, cercado) {
+      const a = new THREE.Group();
+      if (tipo === 'galinha') {
+        criarCaixa(0.4, 0.35, 0.5, 0xd2691e, 0, 0.45, 0, a);
+        criarCaixa(0.25, 0.3, 0.25, 0xd2691e, 0, 0.7, 0.22, a);
+        criarCaixa(0.1, 0.12, 0.1, 0xe03a2a, 0, 0.92, 0.22, a);
+        criarCaixa(0.1, 0.08, 0.15, 0xf2c23b, 0, 0.72, 0.4, a);
       }
-    }
-  },
-
-  maquinario(grupo, nivel, animacoes) {
-    if (nivel === 1) { // carrinho de mão
-      criarCaixa(0.8, 0.35, 1.1, 0x777777, 0, 0.5, 0, grupo);
-      criarCilindro(0.3, 0.3, 0.12, COR.pneu, 0, 0.3, 0.7, grupo).rotation.z = Math.PI / 2;
-      criarCaixa(0.1, 0.1, 0.9, COR.madeira, -0.3, 0.7, -0.9, grupo);
-      criarCaixa(0.1, 0.1, 0.9, COR.madeira, 0.3, 0.7, -0.9, grupo);
-    } else {
-      const trator = criarTrator(grupo, 0, 0, 1 + (nivel - 2) * 0.12, 0x3f8f3a);
-      animacoes.push(tempo => { trator.position.y = Math.sin(tempo * 40) * 0.01; }); // vibração do motor
-      if (nivel >= 3) { // reboque
-        criarCaixa(1.6, 0.6, 2.2, 0xc9a24a, 0, 0.7, -2.8, grupo);
-        criarRoda(0.4, 0.3, -0.9, 0.4, -3.2, grupo);
-        criarRoda(0.4, 0.3, 0.9, 0.4, -3.2, grupo);
+      if (tipo === 'ovelha') {
+        criarCaixa(0.8, 0.65, 1, 0xf4f1e8, 0, 0.7, 0, a);
+        criarCaixa(0.4, 0.4, 0.4, 0xe9dfcc, 0, 0.85, 0.6, a);
+        criarCaixa(0.25, 0.25, 0.1, 0x3a3a3a, 0, 0.82, 0.82, a);
+        for (const sx of [-0.25, 0.25]) for (const sz of [-0.3, 0.3]) criarCaixa(0.1, 0.4, 0.1, 0x3a3a3a, sx, 0.2, sz, a);
       }
-    }
-    if (nivel >= 4) { // colheitadeira
-      criarCaixa(1.8, 1.3, 3, 0xe0b72a, 3.4, 1.2, 1, grupo);
-      criarCaixa(1.2, 0.9, 1, COR.vidro, 3.4, 2.2, 0.2, grupo);
-      criarCaixa(3, 0.5, 0.8, 0xc43a2a, 3.4, 0.6, 3, grupo);  // plataforma de corte
-      criarRoda(0.6, 0.4, 2.6, 0.6, 0.4, grupo);
-      criarRoda(0.6, 0.4, 4.2, 0.6, 0.4, grupo);
-    }
-    if (nivel >= 5) { // cata-vento com hélice girando
-      criarCilindro(0.2, 0.45, 4, 0xeeeeee, -3.2, 2, -2.5, grupo);
-      const helice = new THREE.Group();
-      helice.position.set(-3.2, 4.1, -2.1);
-      grupo.add(helice);
-      for (let pa = 0; pa < 4; pa++) {
-        const bracoDaHelice = new THREE.Group();
-        bracoDaHelice.rotation.z = pa * Math.PI / 2;
-        criarCaixa(0.25, 1.8, 0.05, 0xffffff, 0, 0.9, 0, bracoDaHelice);
-        helice.add(bracoDaHelice);
+      if (tipo === 'vaca') {
+        criarCaixa(0.9, 0.8, 1.6, 0xffffff, 0, 1, 0, a);
+        criarCaixa(0.6, 0.6, 0.6, 0xffffff, 0, 1.2, 1, a);
+        criarCaixa(0.3, 0.2, 0.1, 0xf2a0b5, 0, 1.05, 1.32, a);
+        criarCaixa(0.5, 0.35, 0.05, 0x222222, 0.46, 1.1, 0.1, a);
+        criarCaixa(0.5, 0.35, 0.05, 0x222222, -0.46, 0.9, -0.3, a);
+        criarCaixa(0.62, 0.3, 0.62, 0x222222, 0, 1.45, 0.98, a);
+        for (const sx of [-0.3, 0.3]) for (const sz of [-0.55, 0.55]) criarCaixa(0.16, 0.6, 0.16, 0xffffff, sx, 0.3, sz, a);
       }
-      animacoes.push(tempo => { helice.rotation.z = tempo * 1.2; });
+      if (tipo === 'porco') {
+        criarCaixa(0.75, 0.55, 1.1, 0xf2a0b5, 0, 0.55, 0, a);       // corpo
+        criarCaixa(0.5, 0.45, 0.45, 0xf2a0b5, 0, 0.62, 0.65, a);    // cabeça
+        criarCaixa(0.3, 0.2, 0.1, 0xe58aa2, 0, 0.55, 0.9, a);       // focinho
+        for (const sx of [-0.18, 0.18]) criarCaixa(0.14, 0.14, 0.06, 0xe58aa2, sx, 0.9, 0.6, a); // orelhas
+        for (const sx of [-0.25, 0.25]) for (const sz of [-0.35, 0.35]) criarCaixa(0.14, 0.3, 0.14, 0xe58aa2, sx, 0.15, sz, a); // pernas
+      }
+      pai.add(a);
+      const raio = RAIO_DA_HITBOX[tipo];
+      const dados = { x: 0, z: 0, raio };
+      for (let tentativa = 0; tentativa < 50; tentativa++) { // posição inicial livre
+        const x = (Math.random() * 2 - 1) * (cercado.limiteX - raio);
+        const z = (Math.random() * 2 - 1) * (cercado.limiteZ - raio);
+        if (posicaoEstaLivre(cercado, dados, x, z, raio)) { dados.x = x; dados.z = z; break; }
+      }
+      cercado.animais.push(dados);
+
+      let direcao = Math.random() * Math.PI * 2;
+      const velocidade = 0.4 + Math.random() * 0.4;
+      const fase = Math.random() * 6;
+      let segundosAteVirar = 1 + Math.random() * 3;
+
+      animacoes.push((tempo, segundosDesdeUltimoFrame) => {
+        segundosAteVirar -= segundosDesdeUltimoFrame;
+        if (segundosAteVirar <= 0) { direcao += (Math.random() - 0.5) * Math.PI; segundosAteVirar = 1 + Math.random() * 3; }
+
+        const novoX = dados.x + Math.sin(direcao) * velocidade * segundosDesdeUltimoFrame;
+        const novoZ = dados.z + Math.cos(direcao) * velocidade * segundosDesdeUltimoFrame;
+        if (posicaoEstaLivre(cercado, dados, novoX, novoZ, raio)) { dados.x = novoX; dados.z = novoZ; }
+        else direcao += Math.PI / 2 + Math.random() * Math.PI / 2; // bateu: vira
+
+        a.position.set(dados.x, 0.1 + Math.abs(Math.sin(tempo * 5 + fase)) * 0.05, dados.z);
+        a.rotation.y = direcao;
+      });
     }
-  },
 
-  plantacao(grupo, nivel, animacoes) {
-    const colunas = 3 + nivel;
-    const linhas = 2 + nivel;
-    criarCaixa(colunas * 1.2 + 0.4, 0.12, linhas * 1.1 + 0.4, 0x7a4f2a, 0, 0.06, 0, grupo); // terra
+    // ======================= CENÁRIO FIXO =======================
+    const chao = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), material(0x78b24a));
+    chao.rotation.x = -Math.PI / 2;
+    chao.receiveShadow = true;
+    cena.add(chao);
+    // == ESTRADA == 
+    criarCaixa(2.4, 0.05, 130, 0xd9b97a, 0, 0.03, -50, cena);
+    criarCaixa(3000, 0.05, 2.4, 0xd9b97a, 10, 0.03, -1, cena);
+    [[-16, -2], [16, 0], [-15, 13], [15, 14], [-3, -13], [2, -14], [-17, -12], [17, -12]].forEach(([x, z]) => arvore(cena, x, z, 1.3));
 
-    for (let coluna = 0; coluna < colunas; coluna++) {
-      for (let linha = 0; linha < linhas; linha++) {
-        // cada planta fica num grupo próprio para balançar a partir da base
-        const planta = new THREE.Group();
-        planta.position.set((coluna - (colunas - 1) / 2) * 1.2, 0.12, (linha - (linhas - 1) / 2) * 1.1);
-        grupo.add(planta);
+    const nuvens = [];
+    for (let i = 0; i < 5; i++) {
+      const nuvem = new THREE.Group();
+      for (let p = 0; p < 3; p++) criarCaixa(3 + p, 1, 2, 0xffffff, p * 2 - 2, (p % 2) * 0.4, 0, nuvem);
+      nuvem.position.set(-30 + i * 14, 16, -20 + i * 9);
+      cena.add(nuvem);
+      nuvens.push(nuvem);
+    }
 
-        const ehLinhaDeMilho = nivel >= 3 && linha % 2 === 1;
-        if (ehLinhaDeMilho) {
-          criarCaixa(0.12, 1.1, 0.12, 0x3d8f3a, 0, 0.55, 0, planta);  // caule
-          criarCaixa(0.22, 0.32, 0.22, 0xf2c94c, 0, 1.2, 0, planta);  // espiga
-        } else {
-          const corDoTrigo = nivel === 1 ? 0x7fbf4a : 0xd9b44a;       // verde no início, dourado depois
-          for (const deslocamentoX of [-0.2, 0, 0.2]) criarCaixa(0.08, 0.6, 0.08, corDoTrigo, deslocamentoX, 0.3, 0, planta);
+    // ======================= CONSTRUTORES DAS ÁREAS (3 níveis, baseados nas ilustrações) =======================
+    const construtoresDasAreas = {
+
+      // N1 casinha de madeira · N2 varanda, água-furtada e jardim · N3 casarão com ala, lago e pérgola
+      casa(g, n, anim) {
+        const w = [3.2, 3.8, 4.2][n - 1], d = [3.4, 3.8, 4.2][n - 1], h = [1.8, 2, 2.2][n - 1];
+        const S = n === 3 ? 10.5 : 8, D = n === 3 ? 10 : 7.5;
+        base(g, S, D);
+        criarCaixa(w, h, d, 0xdcc08e, 0, h / 2, 0, g);
+        criarCaixa(w + 0.1, 0.3, d + 0.1, 0x8a8a80, 0, 0.15, 0, g);
+        telhado(g, d + 0.5, w + 0.5, 1.6, COR.telhaCasa, 0, h, 0, Math.PI / 2);
+        criarCaixa(0.7, 1.2, 0.1, 0x7a4a2a, 0, 0.7, d / 2 + 0.04, g);
+        for (const s of [-1, 1]) { janela(g, s * w * 0.3, 1.2, d / 2 + 0.04, false); janela(g, s * (w / 2 + 0.02), 1.2, -d * 0.15, true); }
+
+        // varanda (todos os níveis); grade a partir do nível 2
+        const pw = w * 0.8, ph = h - 0.25;
+        criarCaixa(pw, 0.12, 1.3, 0xb98a55, 0, 0.1, d / 2 + 0.65, g);
+        criarCaixa(pw + 0.3, 0.1, 1.6, COR.telhaCasa, 0, h - 0.1, d / 2 + 0.75, g).rotation.x = 0.25;
+        for (const s of [-1, 1]) criarCaixa(0.12, ph, 0.12, 0xf2ead8, s * pw / 2, ph / 2, d / 2 + 1.25, g);
+        if (n >= 2) criarCaixa(pw, 0.35, 0.06, 0xf2ead8, 0, 0.45, d / 2 + 1.3, g);
+
+        // chaminé com fumaça
+        const chamines = [[w * 0.25, h + 1.1, -d * 0.1, 1.5]];
+        if (n === 3) chamines.push([-w * 0.15, h + 0.9, -d / 2 - 1.8, 1.3]);
+        for (const [cx, cy, cz, alt] of chamines) criarCaixa(0.55, alt, 0.55, 0xe6dfd0, cx, cy, cz, g);
+        const [fx, fy, fz] = chamines[0];
+        for (let i = 0; i < 4; i++) {
+          const b = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
+          g.add(b);
+          anim.push(t => { const p = (t * 0.3 + i / 4) % 1; b.position.set(fx + p * 0.8, fy + 1 + p * 2.2, fz); b.scale.setScalar(0.5 + p); b.material.opacity = 0.7 * (1 - p); });
         }
-        animacoes.push(tempo => { planta.rotation.z = Math.sin(tempo * 1.5 + coluna * 0.5 + linha * 0.3) * 0.07; });
+        // água-furtada
+        if (n >= 2) for (const xs of (n === 2 ? [0] : [-w * 0.25, w * 0.25])) {
+          criarCaixa(0.9, 1, 0.7, 0xdcc08e, xs, h + 0.85, d * 0.25, g);
+          telhado(g, 1.2, 1, 0.5, COR.telhaCasa, xs, h + 1.35, d * 0.25);
+          janela(g, xs, h + 0.95, d * 0.25 + 0.37, false);
+        }
+        // jardim, cerca e árvores
+        const k = [2, 5, 8][n - 1];
+        for (let i = 0; i < k; i++) arbusto(g, (i % 2 ? 1 : -1) * (w / 2 + 0.5), d / 2 - 0.3 + Math.floor(i / 2) * 0.8);
+        if (n === 1) {
+          cercaLinha(g, S / 2 - 0.4, -1, S / 2 - 0.4, 2.5);
+          criarCaixa(0.1, 1, 0.1, COR.madeira, 2.8, 0.5, D / 2 - 0.8, g); criarCaixa(0.3, 0.25, 0.4, 0x2f6fb0, 2.8, 1.05, D / 2 - 0.8, g);
+        } else cercaLinha(g, -S / 2 + 0.4, -D / 2 + 1, -S / 2 + 0.4, D / 2 - 1);
+        arvore(g, S / 2 - 1, -D / 2 + 1.2, 0.9);
+        if (n === 3) {
+          // ala dos fundos
+          criarCaixa(2.8, h, 3.2, 0xdcc08e, -w * 0.15, h / 2, -d / 2 - 1, g);
+          telhado(g, 3.3, 3.5, 1.5, COR.telhaCasa, -w * 0.15, h, -d / 2 - 1);
+          janela(g, -w * 0.15 - 1.42, 1.2, -d / 2 - 1, true);
+          // lago de pedras
+          criarCilindro(1.2, 1.2, 0.1, 0x9a9a90, 3.9, 0.12, 2.6, g, 18);
+          criarCilindro(1, 1, 0.1, 0x4aa8c8, 3.9, 0.15, 2.6, g, 18);
+          // pérgola
+          for (const dx of [-0.9, 0.9]) for (const dz of [-0.9, 0.9]) criarCaixa(0.12, 1.8, 0.12, 0x8a5a2a, 3.9 + dx, 0.9, -2.6 + dz, g);
+          for (let i = 0; i < 4; i++) criarCaixa(2.2, 0.08, 0.12, 0xa06a35, 3.9, 1.85, -3.4 + i * 0.55, g);
+          arvore(g, -S / 2 + 1.2, -D / 2 + 1.2, 1);
+          arvore(g, -S / 2 + 1, D / 2 - 1.5, 0.8);
+        }
+      },
+
+      // N1 celeiro com janelas · N2 maior, com fardos · N3 silo e telheiro lateral
+      celeiro(g, n) {
+        const w = [3.4, 3.8, 4.2][n - 1], d = [3.8, 4.4, 4.8][n - 1], h = [2.2, 2.4, 2.6][n - 1];
+        const S = n === 3 ? 10.5 : 8;
+        base(g, S, 7.5);
+        const forma = new THREE.Shape();
+        [[-w / 2, 0], [w / 2, 0], [w / 2, h], [w * 0.3, h + 1], [0, h + 1.6], [-w * 0.3, h + 1], [-w / 2, h]].forEach(([x, y], i) => i ? forma.lineTo(x, y) : forma.moveTo(x, y));
+        const corpo = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: d, bevelEnabled: false }), material(0xc0392b));
+        corpo.position.z = -d / 2; corpo.castShadow = true; g.add(corpo);
+        criarCaixa(w + 0.1, 0.25, d + 0.1, 0x6a7078, 0, 0.12, 0, g);
+        // telhado de duas inclinações (gambrel)
+        const topo = [[-w / 2, h], [-w * 0.3, h + 1], [0, h + 1.6], [w * 0.3, h + 1], [w / 2, h]].map(([x, y]) => [x * 1.12, y]);
+        for (let i = 0; i < 4; i++) {
+          const [x1, y1] = topo[i], [x2, y2] = topo[i + 1];
+          criarCaixa(Math.hypot(x2 - x1, y2 - y1) + 0.05, 0.16, d + 0.6, 0x4b5060, (x1 + x2) / 2, (y1 + y2) / 2 + 0.08, 0, g).rotation.z = Math.atan2(y2 - y1, x2 - x1);
+        }
+        for (const s of [-1, 1]) criarCaixa(0.08, h, 0.08, COR.branco, s * w / 2, h / 2, d / 2 + 0.02, g);
+        // portão com X e janela do sótão
+        const ph = h * 0.8;
+        criarCaixa(1.6, ph, 0.1, COR.branco, 0, ph / 2, d / 2 + 0.03, g);
+        criarCaixa(1.4, ph - 0.2, 0.12, 0xa82e22, 0, ph / 2, d / 2 + 0.05, g);
+        for (const s of [-1, 1]) criarCaixa(0.06, Math.hypot(1.4, ph - 0.2), 0.14, COR.branco, 0, ph / 2, d / 2 + 0.06, g).rotation.z = s * Math.atan(1.4 / (ph - 0.2));
+        criarCaixa(0.8, 0.8, 0.1, COR.branco, 0, h + 0.45, d / 2 + 0.04, g);
+        criarCaixa(0.6, 0.6, 0.12, 0x7a2a20, 0, h + 0.45, d / 2 + 0.05, g);
+
+        if (n === 1) {
+          for (const z of [-0.8, 0.9]) { criarCaixa(0.1, 0.55, 0.45, COR.branco, w / 2 + 0.02, 1, z, g); criarCaixa(0.14, 0.4, 0.3, COR.vidro, w / 2 + 0.02, 1, z, g); }
+          barril(g, w / 2 + 0.6, d / 2 - 0.4);
+          arbusto(g, w / 2 + 0.5, 0.2, false);
+        } else {
+          fardo(g, w / 2 + 0.9, 0.25, 0.5); fardo(g, w / 2 + 0.9, 0.25, 1.2); fardo(g, w / 2 + 1, 0.75, 0.85);
+          barril(g, w / 2 + 0.5, d / 2 - 0.2); caixote(g, w / 2 + 1.2, -1.4);
+        }
+        if (n === 3) {
+          // silo
+          const sx = -w / 2 - 1.1, sa = h + 2.2;
+          criarCilindro(0.85, 0.85, sa, 0xc0392b, sx, sa / 2, -0.5, g, 16);
+          for (const y of [1.2, 2.6, 4]) criarCilindro(0.87, 0.87, 0.12, COR.branco, sx, y, -0.5, g, 16);
+          const cupula = new THREE.Mesh(new THREE.SphereGeometry(0.85, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), material(0xc4c8cc));
+          cupula.position.set(sx, sa, -0.5); g.add(cupula);
+          // telheiro lateral com fardos
+          criarCaixa(2.6, 0.14, d * 0.8, 0x4b5060, w / 2 + 1.2, h * 0.62, 0.2, g).rotation.z = -0.18;
+          for (const z of [-1.5, 1.8]) criarCaixa(0.12, h * 0.55, 0.12, 0xb98a55, w / 2 + 2.4, h * 0.275, z, g);
+          fardo(g, w / 2 + 1.2, 0.25, -0.6); fardo(g, w / 2 + 1.2, 0.25, 0.4); fardo(g, w / 2 + 1.3, 0.75, -0.1);
+          arvore(g, S / 2 - 0.8, -2.5, 0.9);
+        } else {
+          arvore(g, -w / 2 - 1.6, -d / 2 + 0.8, 0.9);
+          cercaLinha(g, -S / 2 + 0.5, -1, -S / 2 + 0.5, 2.5);
+        }
+      },
+
+      // N1 cercado com vaca · N2 vaca e ovelhas · N3 fazendinha cheia com cata-vento
+      curral(g, n, anim) {
+        const w = [6, 7.2, 8.8][n - 1], d = [5, 6, 7.2][n - 1];
+        base(g, w + 0.9, d + 0.9, 0x7fc650);
+        cerca(g, w, d);
+        arvore(g, w / 2 - 0.3, -d / 2 - 0.6, 1);
+        abrigo(g, w / 2 - 1.6, -d / 2 + 1.4);
+        cocho(g, 0.5, d / 2 - 0.9);
+        placa(g, -w / 2 - 0.2, d / 2 - 0.5);
+        if (n >= 2) { cercaLinha(g, -w / 2, -1, -w / 2 + 2, -1); cercaLinha(g, w / 2 - 2, 1, w / 2, 1); }
+        if (n === 3) {
+          abrigo(g, -w / 2 + 1.6, -d / 2 + 1.4);
+          cocho(g, -2.4, d / 2 - 0.9);
+          const mx = -w / 2 + 1, mz = d / 2 - 1.3;
+          criarCilindro(0.12, 0.55, 4.2, COR.madeira, mx, 2.2, mz, g, 4);
+          const helice = new THREE.Group();
+          helice.position.set(mx, 4.4, mz + 0.35); g.add(helice);
+          for (let p = 0; p < 4; p++) { const braco = new THREE.Group(); braco.rotation.z = p * Math.PI / 2; criarCaixa(0.25, 1.4, 0.05, 0xc98a4a, 0, 0.7, 0, braco); helice.add(braco); }
+          anim.push(t => { helice.rotation.z = t * 1.2; });
+        }
+        // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
+        const MOSTRAR_HITBOXES = true; // true = mostra retângulos vermelhos no chão para conferir
+        const retangulos = [
+          [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
+          [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
+        ];
+        if (n >= 2) retangulos.push([-w / 2 + 1, -1, 2, 0.3], [w / 2 - 1, 1, 2, 0.3]); // cercas divisórias
+        if (n === 3) retangulos.push(
+          [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
+          [-2.4, d / 2 - 0.9, 1.6, 0.6],          // segundo cocho
+          [-w / 2 + 1, d / 2 - 1.3, 1.1, 1.1]     // base do cata-vento
+        );
+        const cercado = {
+          limiteX: w / 2 - 0.1, limiteZ: d / 2 - 0.1, animais: [],
+          obstaculos: retangulos.map(([x, z, largura, prof]) => ({ minX: x - largura / 2, maxX: x + largura / 2, minZ: z - prof / 2, maxZ: z + prof / 2 })),
+        };
+        if (MOSTRAR_HITBOXES) retangulos.forEach(([x, z, largura, prof]) => criarCaixa(largura, 0.05, prof, 0xff0000, x, 0.2, z, g));
+        const qtd = { vaca: [1, 1, 3][n - 1], ovelha: [0, 2, 3][n - 1] };
+        for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
+          criarAnimal(g, anim, tipo, cercado);
+      },
+
+      // N1 galinheiro simples · N2 com poleiro e feno · N3 dois galinheiros
+      galinheiro(g, n, anim) {
+        const w = [5.5, 6.5, 7.5][n - 1], d = [4.5, 5.2, 6][n - 1];
+        base(g, w + 0.9, d + 0.9, 0x9ccf5a);
+        cerca(g, w, d);
+        placa(g, -w / 2 - 0.2, d / 2 - 0.5);
+        arvore(g, w / 2 + 0.7, -d / 2 - 0.4, 0.9);
+        for (const x of (n === 3 ? [-1.8, 1.8] : [0])) casinhaDeGalinha(g, x, -d / 2 + 1);
+        cocho(g, -w / 2 + 1.2, d / 2 - 0.8);
+        barril(g, w / 2 - 0.6, d / 2 - 0.6);
+        if (n >= 2) {
+          for (const dz of [-0.8, 0.8]) criarCaixa(0.1, 0.9, 0.1, COR.madeira, -w / 2 + 0.8, 0.45, dz, g); // poleiro
+          criarCaixa(0.08, 0.08, 1.8, COR.ripa, -w / 2 + 0.8, 0.9, 0, g);
+          fardo(g, w / 2 - 0.9, 0.25, 0.9);
+        }
+
+        // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
+        const MOSTRAR_HITBOXES = false; // true = mostra retângulos vermelhos no chão para conferir
+        const retangulos = [
+          [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
+          [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
+        ];
+        if (n >= 2) retangulos.push([-w / 2 + 1, -1, 2, 0.3], [w / 2 - 1, 1, 2, 0.3]); // cercas divisórias
+        if (n === 3) retangulos.push(
+          [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
+          [-2.4, d / 2 - 0.9, 1.6, 0.6],          // segundo cocho
+          [-w / 2 + 1, d / 2 - 1.3, 1.1, 1.1]     // base do cata-vento
+        );
+        const cercado = {
+          limiteX: w / 2 - 0.1, limiteZ: d / 2 - 0.1, animais: [],
+          obstaculos: retangulos.map(([x, z, largura, prof]) => ({ minX: x - largura / 2, maxX: x + largura / 2, minZ: z - prof / 2, maxZ: z + prof / 2 })),
+        };
+        if (MOSTRAR_HITBOXES) retangulos.forEach(([x, z, largura, prof]) => criarCaixa(largura, 0.05, prof, 0xff0000, x, 0.2, z, g));
+
+        const qtd = { galinha: [1, 3, 5][n - 1]};
+        for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
+          criarAnimal(g, anim, tipo, cercado);
+      },
+
+      // N1 chiqueiro com poça de lama · N2 maior, com abrigo · N3 duas poças, feno e barril
+      chiqueiro(g, n, anim) {
+        const w = [5.5, 6.5, 7.5][n - 1], d = [4.5, 5.2, 6][n - 1];
+        base(g, w + 0.9, d + 0.9, 0x8fbf5a);
+        cerca(g, w, d);
+        placa(g, -w / 2 - 0.2, d / 2 - 0.5);
+        arvore(g, w / 2 + 0.7, -d / 2 - 0.4, 0.9);
+        cocho(g, -w / 2 + 1.2, d / 2 - 0.8);
+        if (n === 3) { pocaDeLama(g, -1.5, 0.2, 1.3); pocaDeLama(g, 1.6, 0.6, 1.1); }
+        else pocaDeLama(g, 0, 0.2, n === 1 ? 1.5 : 1.8);
+        if (n >= 2) abrigo(g, w / 2 - 1.6, -d / 2 + 1.4);
+        if (n === 3) { barril(g, w / 2 - 0.6, d / 2 - 0.6); fardo(g, -w / 2 + 1, 0.25, -d / 2 + 0.8); }
+        // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
+        const MOSTRAR_HITBOXES = false; // true = mostra retângulos vermelhos no chão para conferir
+        const retangulos = [
+          [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
+          [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
+        ];
+        if (n >= 2) retangulos.push([-w / 2 + 1, -1, 2, 0.3], [w / 2 - 1, 1, 2, 0.3]); // cercas divisórias
+        if (n === 3) retangulos.push(
+          [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
+          [-2.4, d / 2 - 0.9, 1.6, 0.6],          // segundo cocho
+          [-w / 2 + 1, d / 2 - 1.3, 1.1, 1.1]     // base do cata-vento
+        );
+        const cercado = {
+          limiteX: w / 2 - 0.1, limiteZ: d / 2 - 0.1, animais: [],
+          obstaculos: retangulos.map(([x, z, largura, prof]) => ({ minX: x - largura / 2, maxX: x + largura / 2, minZ: z - prof / 2, maxZ: z + prof / 2 })),
+        };
+        if (MOSTRAR_HITBOXES) retangulos.forEach(([x, z, largura, prof]) => criarCaixa(largura, 0.05, prof, 0xff0000, x, 0.2, z, g));
+
+        const qtd = { porco: [1, 1, 3][n - 1]};
+        for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
+          criarAnimal(g, anim, tipo, cercado);
+      },
+
+      // N1 reboque e forcado · N2 trator vermelho com reboque e grade · N3 trator verde, arado, fardos e caixa-d'água
+      maquinario(g, n, anim) {
+        const S = n === 3 ? 10 : 8, D = n === 3 ? 8 : 6.5;
+        base(g, S, D);
+        criarCaixa(S - 2.5, 0.04, D - 2.5, 0xd6a05a, 0, 0.1, 0, g);
+        pedra(g, -S / 2 + 0.8, D / 2 - 0.8, 0.45); pedra(g, S / 2 - 0.9, -D / 2 + 0.9, 0.5); pedra(g, S / 2 - 1.2, D / 2 - 1, 0.3);
+        if (n === 1) {
+          reboque(g, 0, 0.2, 0.5);
+          criarCaixa(0.06, 1.9, 0.06, COR.madeira, 2.2, 0.95, 0.8, g);
+          criarCaixa(0.45, 0.05, 0.05, 0x666666, 2.2, 0.15, 0.8, g);
+          for (const dx of [-0.2, 0, 0.2]) criarCaixa(0.04, 0.4, 0.04, 0x666666, 2.2 + dx, 0.25, 0.8, g);
+          caixote(g, 2.3, -1.5);
+          arvore(g, -2.4, -D / 2 + 0.8, 0.9);
+          arbusto(g, -S / 2 + 0.9, -0.5, false);
+        } else {
+          const cor = n === 2 ? 0xd03a2a : 0x3f9a35;
+          const t = criarTrator(g, n === 2 ? -1.4 : -2, n === 2 ? 0.4 : 0.3, n === 2 ? 1.05 : 1.15, cor, n === 3 ? 0xe8c230 : null);
+          t.rotation.y = 0.5;
+          anim.push(tempo => { t.position.y = Math.sin(tempo * 40) * 0.01; });
+          if (n === 2) {
+            reboque(g, 2.3, -0.8, 0.3);
+            arado(g, 0.2, -2, 0.1, 0x7a5a3a);
+            arvore(g, S / 2 - 0.9, -D / 2 + 0.8, 0.9);
+            arbusto(g, -S / 2 + 0.8, -D / 2 + 0.8, false);
+          } else {
+            arado(g, 1.3, 0.2, -0.3, 0x2f7a30);
+            fardo(g, -1.3, 0.25, 2.8); fardo(g, -0.4, 0.25, 2.8); fardo(g, -0.9, 0.75, 2.8);
+            // caixa-d'água em torre
+            for (const dx of [-0.5, 0.5]) for (const dz of [-0.5, 0.5]) criarCaixa(0.1, 2.2, 0.1, COR.madeira, 3.6 + dx, 1.1, -2.3 + dz, g);
+            criarCilindro(0.65, 0.65, 1.1, 0x6f9a8a, 3.6, 2.7, -2.3, g, 14);
+            criarCilindro(0.05, 0.67, 0.4, 0x6f9a8a, 3.6, 3.4, -2.3, g, 14);
+            // colmeia e cerca
+            criarCaixa(0.6, 0.35, 0.6, 0xc9a24a, 0.4, 0.4, -3, g); criarCaixa(0.6, 0.35, 0.6, 0xb08a3a, 0.4, 0.75, -3, g); criarCaixa(0.7, 0.08, 0.7, 0x8a5a2a, 0.4, 0.95, -3, g);
+            cercaLinha(g, 2.2, -3.4, 4.6, -3.4); cercaLinha(g, 4.6, -3.4, 4.6, -1);
+            arvore(g, -S / 2 + 1.3, -D / 2 + 1, 1);
+          }
+        }
+      },
+
+      // N1 terra preparada · N2 mudas · N3 milharal com espantalho
+      plantacao(g, n, anim) {
+        const w = 7.4, d = 6.4;
+        base(g, w + 0.9, d + 0.9, 0x7fc650);
+        cerca(g, w, d);
+        criarCaixa(w - 1, 0.1, d - 1, 0x6b4226, 0, 0.11, 0, g);
+        placa(g, -w / 2 - 0.2, -d / 2 + 0.5);
+        arvore(g, w / 2 - 0.2, -d / 2 - 0.7, 1);
+        barril(g, w / 2 - 0.1, d / 2 + 0.3); caixote(g, -w / 2 + 0.4, d / 2 + 0.35);
+
+        if (n === 1) { // canteiros arados
+          for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) criarCaixa(1.4, 0.07, 1.25, (i + j) % 2 ? 0x7a4a28 : 0x6b3f20, (i - 1.5) * 1.5, 0.18, (j - 1.5) * 1.3, g);
+          return;
+        }
+        const colunas = n === 2 ? 5 : 7, linhas = n === 2 ? 4 : 6, passo = n === 2 ? 1.15 : 0.88;
+        for (let c = 0; c < colunas; c++) for (let l = 0; l < linhas; l++) {
+          const planta = new THREE.Group();
+          planta.position.set((c - (colunas - 1) / 2) * passo, 0.16, (l - (linhas - 1) / 2) * passo);
+          g.add(planta);
+          if (n === 2) { // muda com folhas
+            criarEsfera(0.14, 0x3f9a35, 0, 0.2, 0, planta);
+            for (let f = 0; f < 3; f++) criarCaixa(0.55, 0.08, 0.18, 0x4aa83a, 0, 0.18, 0, planta).rotation.y = f * Math.PI / 3;
+          } else { // milho
+            const alt = 1.4 + ((c * 7 + l * 3) % 5) * 0.06;
+            criarCaixa(0.1, alt, 0.1, 0x3d8f3a, 0, alt / 2, 0, planta);
+            for (const s of [-1, 1]) criarCaixa(0.55, 0.05, 0.12, 0x2f8a2f, s * 0.25, alt * 0.55, 0, planta).rotation.z = s * 0.5;
+            criarCaixa(0.14, 0.4, 0.14, 0xf2c230, 0.08, alt + 0.1, 0, planta);
+          }
+          anim.push(t => { planta.rotation.z = Math.sin(t * 1.5 + c * 0.5 + l * 0.3) * 0.06; });
+        }
+        if (n === 3) { // espantalho
+          const x = w / 2 - 0.9;
+          criarCaixa(0.1, 2, 0.1, COR.madeira, x, 1, 0, g);
+          criarCaixa(1.2, 0.1, 0.1, COR.madeira, x, 1.6, 0, g);
+          criarCaixa(0.5, 0.7, 0.3, 0xc0392b, x, 1.3, 0, g);
+          criarCaixa(0.4, 0.4, 0.4, 0xf2c28e, x, 1.95, 0, g);
+          criarCaixa(0.9, 0.08, 0.9, 0x9a5a2a, x, 2.2, 0, g);
+          criarCaixa(0.4, 0.25, 0.4, 0x9a5a2a, x, 2.35, 0, g);
+        }
+      },
+    };
+
+    // ======================= GRUPOS 3D DAS ÁREAS =======================
+    const grupoDaArea = {}, animacoesDaArea = {};
+    for (const area of AREAS) {
+      grupoDaArea[area.id] = new THREE.Group();
+      grupoDaArea[area.id].position.set(area.posicao.x, 0, area.posicao.z);
+      cena.add(grupoDaArea[area.id]);
+    }
+    function reconstruirArea(id) {
+      const grupo = grupoDaArea[id];
+      while (grupo.children.length) {
+        const modelo = grupo.children[0];
+        grupo.remove(modelo);
+        modelo.traverse(o => { if (o.geometry) o.geometry.dispose(); });
       }
+      animacoesDaArea[id] = [];
+      construtoresDasAreas[id](grupo, estado.niveis[id], animacoesDaArea[id]);
+      grupo.userData.progressoDoEfeitoDeEvolucao = 1;
     }
+    AREAS.forEach(a => reconstruirArea(a.id));
 
-    if (nivel >= 5) { // espantalho + aspersores
-      const bordaX = colunas * 0.6 + 0.5;
-      criarCaixa(0.1, 2, 0.1, COR.madeira, bordaX, 1, 0, grupo);        // poste
-      criarCaixa(1.2, 0.1, 0.1, COR.madeira, bordaX, 1.6, 0, grupo);    // braços
-      criarCaixa(0.5, 0.7, 0.3, 0xc0392b, bordaX, 1.2, 0, grupo);       // camisa
-      criarCaixa(0.4, 0.4, 0.4, 0xf2c28e, bordaX, 1.9, 0, grupo);       // cabeça
-      criarCaixa(0.8, 0.1, 0.8, 0x5a3a1a, bordaX, 2.15, 0, grupo);      // chapéu
-      for (const lado of [-1, 1]) {
-        criarCilindro(0.08, 0.08, 1, 0x999999, -bordaX, 0.5, lado * linhas * 0.5, grupo, 6);
-        criarCaixa(0.3, 0.3, 0.3, 0x4aa3df, -bordaX, 1.1, lado * linhas * 0.5, grupo);
-      }
+    // ======================= CÂMERA E CONTROLES =======================
+    let anguloHorizontal = 0.7, anguloVertical = 0.85;
+    let distanciaDaCamera = innerWidth < innerHeight ? 52 : 38;
+    const DISTANCIA_MINIMA = 14, DISTANCIA_MAXIMA = 62;
+    const alvoAtualDaCamera = new THREE.Vector3(0, 0, 1), alvoDestinoDaCamera = alvoAtualDaCamera.clone();
+    function focarCameraNaArea(id) {
+      const area = AREAS.find(a => a.id === id);
+      alvoDestinoDaCamera.set(area.posicao.x, 0, area.posicao.z);
+      let zoomInterval = setInterval((e) => {
+        if (distanciaDaCamera > 20) {
+          distanciaDaCamera -= 2;
+        } else if (anguloHorizontal > -0.38600000000000023) {
+          anguloHorizontal -= 0.05;
+          if (anguloVertical > 0.38499999999999956) {
+            anguloVertical -= 0.05;
+          }
+        } else {
+          clearInterval(zoomInterval);
+        }
+      }, 10);
     }
-  },
-};
-
-// ======================= GRUPOS 3D DAS ÁREAS =======================
-const grupoDaArea = {};          // id da área → grupo 3D com os modelos
-const animacoesDaArea = {};      // id da área → lista de funções animadas a cada frame
-
-for (const area of AREAS) {
-  grupoDaArea[area.id] = new THREE.Group();
-  grupoDaArea[area.id].position.set(area.posicao.x, 0, area.posicao.z);
-  cena.add(grupoDaArea[area.id]);
-}
-
-// Apaga e redesenha uma área de acordo com seu nível atual.
-function reconstruirArea(idDaArea) {
-  const grupo = grupoDaArea[idDaArea];
-  while (grupo.children.length) {
-    const modelo = grupo.children[0];
-    grupo.remove(modelo);
-    modelo.traverse(objeto => { if (objeto.geometry) objeto.geometry.dispose(); });
-  }
-  animacoesDaArea[idDaArea] = [];
-  construtoresDasAreas[idDaArea](grupo, estado.niveis[idDaArea], animacoesDaArea[idDaArea]);
-  grupo.userData.progressoDoEfeitoDeEvolucao = 1; // dispara o "pulinho" de crescimento
-}
-AREAS.forEach(area => reconstruirArea(area.id));
-
-// ======================= CÂMERA E CONTROLES (arrastar, zoom) =======================
-let anguloHorizontal = 0.7;
-let anguloVertical = 0.85;
-let distanciaDaCamera = innerWidth < innerHeight ? 48 : 34;
-const DISTANCIA_MINIMA = 14, DISTANCIA_MAXIMA = 60;
-const alvoAtualDaCamera = new THREE.Vector3(0, 0, 1);
-const alvoDestinoDaCamera = alvoAtualDaCamera.clone();
-
-function focarCameraNaArea(idDaArea) {
-  const area = AREAS.find(a => a.id === idDaArea);
-  alvoDestinoDaCamera.set(area.posicao.x * 0.7, 0, area.posicao.z * 0.7);
-}
-function ajustarTamanhoDaTela() {
-  renderizador.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-}
-addEventListener('resize', ajustarTamanhoDaTela);
-ajustarTamanhoDaTela();
-
-const dedosNaTela = new Map(); // id do ponteiro → [x, y]
-canvas.addEventListener('pointerdown', evento => {
-  canvas.setPointerCapture(evento.pointerId);
-  dedosNaTela.set(evento.pointerId, [evento.clientX, evento.clientY]);
-});
-canvas.addEventListener('pointermove', evento => {
-  const posicaoAnterior = dedosNaTela.get(evento.pointerId);
-  if (!posicaoAnterior) return;
-  if (dedosNaTela.size === 1) { // 1 dedo: gira a câmera
-    anguloHorizontal -= (evento.clientX - posicaoAnterior[0]) * 0.006;
-    anguloVertical = Math.min(1.35, Math.max(0.35, anguloVertical + (evento.clientY - posicaoAnterior[1]) * 0.005));
-  } else { // 2 dedos: zoom (pinça)
-    const outroDedo = [...dedosNaTela.entries()].find(([id]) => id !== evento.pointerId)[1];
-    const distanciaAntes = Math.hypot(posicaoAnterior[0] - outroDedo[0], posicaoAnterior[1] - outroDedo[1]);
-    const distanciaAgora = Math.hypot(evento.clientX - outroDedo[0], evento.clientY - outroDedo[1]);
-    distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera * distanciaAntes / distanciaAgora));
-  }
-  dedosNaTela.set(evento.pointerId, [evento.clientX, evento.clientY]);
-});
-['pointerup', 'pointercancel'].forEach(nome => canvas.addEventListener(nome, evento => dedosNaTela.delete(evento.pointerId)));
-canvas.addEventListener('wheel', evento => {
-  distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera + evento.deltaY * 0.03));
-});
-
-// ======================= LOOP PRINCIPAL (roda a cada frame) =======================
-const relogio = new THREE.Clock();
-function animarCena() {
-  requestAnimationFrame(animarCena);
-  const tempoDesdeUltimoFrame = Math.min(relogio.getDelta(), 0.05);
-  const tempoTotal = relogio.elapsedTime;
-
-  for (const idDaArea in animacoesDaArea) for (const animar of animacoesDaArea[idDaArea]) animar(tempoTotal);
-
-  for (const idDaArea in grupoDaArea) { // "pulinho" ao evoluir: cresce 20% e volta ao normal
-    const grupo = grupoDaArea[idDaArea];
-    if (grupo.userData.progressoDoEfeitoDeEvolucao > 0) {
-      grupo.userData.progressoDoEfeitoDeEvolucao = Math.max(0, grupo.userData.progressoDoEfeitoDeEvolucao - tempoDesdeUltimoFrame * 1.5);
-      grupo.scale.setScalar(1 + 0.2 * Math.sin(grupo.userData.progressoDoEfeitoDeEvolucao * Math.PI));
+    function ajustarTamanhoDaTela() {
+      renderizador.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth / innerHeight;
+      camera.updateProjectionMatrix();
     }
-  }
-  nuvens.forEach(nuvem => { nuvem.position.x += tempoDesdeUltimoFrame * 0.6; if (nuvem.position.x > 38) nuvem.position.x = -38; });
+    addEventListener('resize', ajustarTamanhoDaTela);
+    ajustarTamanhoDaTela();
 
-  alvoAtualDaCamera.lerp(alvoDestinoDaCamera, 0.06); // movimento suave até a área focada
-  camera.position.set(
-    alvoAtualDaCamera.x + distanciaDaCamera * Math.cos(anguloVertical) * Math.sin(anguloHorizontal),
-    distanciaDaCamera * Math.sin(anguloVertical),
-    alvoAtualDaCamera.z + distanciaDaCamera * Math.cos(anguloVertical) * Math.cos(anguloHorizontal)
-  );
-  camera.lookAt(alvoAtualDaCamera);
-  renderizador.render(cena, camera);
-}
-animarCena();
-
-// ======================= INTERFACE (XP, cards, avisos) =======================
-let temporizadorDoAviso;
-function mostrarAviso(mensagem) {
-  const elementoAviso = selecionar('#aviso');
-  elementoAviso.textContent = mensagem;
-  elementoAviso.style.opacity = 1;
-  clearTimeout(temporizadorDoAviso);
-  temporizadorDoAviso = setTimeout(() => { elementoAviso.style.opacity = 0; }, 2200);
-}
-
-function evoluirArea(idDaArea) {
-  const nivelAtual = estado.niveis[idDaArea];
-  const custo = CUSTO_PARA_PROXIMO_NIVEL[nivelAtual - 1];
-  if (nivelAtual >= NIVEL_MAXIMO || estado.xp < custo) return;
-
-  estado.xp -= custo;
-  estado.niveis[idDaArea]++;
-  salvarProgresso();
-  reconstruirArea(idDaArea);
-  focarCameraNaArea(idDaArea);
-  desenharCards();
-  const nomeDaArea = AREAS.find(a => a.id === idDaArea).nome;
-  mostrarAviso(nomeDaArea + ' evoluiu para o nível ' + (nivelAtual + 1) + '! 🎉');
-}
-
-function desenharCards() {
-  const listaDeCards = selecionar('#lista-cards');
-  const rolagemAnterior = listaDeCards.scrollLeft; // mantém a posição da rolagem ao redesenhar
-  selecionar('#valor-xp').textContent = estado.xp;
-
-  listaDeCards.innerHTML = AREAS.map(area => {
-    const nivel = estado.niveis[area.id];
-    const estaNoMaximo = nivel >= NIVEL_MAXIMO;
-    const custo = CUSTO_PARA_PROXIMO_NIVEL[nivel - 1];
-    const botaoDesativado = estaNoMaximo || estado.xp < custo;
-    const textoDoBotao = estaNoMaximo ? 'Nível máximo' : 'Evoluir · ' + custo + ' XP';
-    return `<div class="card" onclick="focarCameraNaArea('${area.id}')">
-      <div>${area.icone} <b>${area.nome}</b></div>
-      <div class="pontos-nivel">${'●'.repeat(nivel) + '○'.repeat(NIVEL_MAXIMO - nivel)}</div>
-      <button ${botaoDesativado ? 'disabled' : ''} onclick="event.stopPropagation(); evoluirArea('${area.id}')">${textoDoBotao}</button>
-    </div>`;
-  }).join('');
-  listaDeCards.scrollLeft = rolagemAnterior;
-}
-
-// O sistema de atividades deve chamar window.adicionarXP(quantidade) para creditar XP.
-window.adicionarXP = quantidade => { estado.xp += quantidade; salvarProgresso(); desenharCards(); };
-selecionar('#botao-teste-xp').onclick = () => window.adicionarXP(50);
-desenharCards();
-</script></body></html> -->
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<!-- NOVO CÓDIGO -->
-
-<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Minha Fazenda 3D</title>
-<style>
-:root{--fundo-card:#fffdf5;--texto:#3b2a1a;--destaque:#4a8f3a;--desativado:#a89a82}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--fundo-card:#2b3424;--texto:#f1e8d0;--destaque:#7fc15f;--desativado:#6f7a62}}
-:root[data-theme="dark"]{--fundo-card:#2b3424;--texto:#f1e8d0;--destaque:#7fc15f;--desativado:#6f7a62}
-html,body{height:100%;margin:0;overflow:hidden;background:#9fd8f5;font-family:system-ui,sans-serif}
-canvas{position:fixed;inset:0;touch-action:none}
-#barra-topo{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;pointer-events:none}
-#barra-topo>*{pointer-events:auto;background:var(--fundo-card);color:var(--texto);border-radius:20px;padding:8px 14px;font-size:15px;box-shadow:0 2px 8px #0003;border:0}
-#lista-cards{position:fixed;left:0;right:0;bottom:0;display:flex;gap:8px;overflow-x:auto;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 10px)}
-.card{flex:0 0 150px;background:var(--fundo-card);color:var(--texto);border-radius:14px;padding:10px;box-shadow:0 2px 8px #0003}
-.pontos-nivel{letter-spacing:2px;color:var(--destaque);margin:4px 0 8px;font-size:13px}
-.card button{width:100%;min-height:36px;border:0;border-radius:10px;background:var(--destaque);color:#fff;font-weight:600;font-size:13px}
-.card button:disabled{background:var(--desativado);opacity:.7}
-#aviso{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--fundo-card);color:var(--texto);padding:10px 16px;border-radius:20px;box-shadow:0 2px 10px #0004;opacity:0;transition:opacity .3s;pointer-events:none;font-size:14px;text-align:center}
-</style></head><body>
-<div id="barra-topo"><b>⭐ <span id="valor-xp">0</span> XP</b><button id="botao-teste-xp">+5000 XP (teste)</button></div>
-<div id="lista-cards"></div><div id="aviso"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-const selecionar = seletor => document.querySelector(seletor);
-
-// ======================= CONFIGURAÇÃO DO JOGO =======================
-const AREAS = [
-  { id: 'animais',    nome: 'Animais',    icone: '🐄', posicao: { x: 9,  z: 6 } },
-  { id: 'casa',       nome: 'Casa',       icone: '🏠', posicao: { x: -8, z: -9 } },
-  { id: 'celeiro',    nome: 'Celeiro',    icone: '🛖', posicao: { x: 9,  z: -8 } },
-  { id: 'maquinario', nome: 'Maquinário', icone: '🚜', posicao: { x: -8, z: 6 } },
-  { id: 'plantacao',  nome: 'Plantação',  icone: '🌽', posicao: { x: 0,  z: 20 } },
-];
-const NIVEL_MAXIMO = 3;
-const CUSTO_PARA_PROXIMO_NIVEL = [100, 250]; // posição 0 = custo do nível 1 → 2
-const COR = { madeira: 0x8a5a2a, ripa: 0xb07a45, janela: 0xffe08a, vidro: 0xbfe3f2, feno: 0xe8c04a, pneu: 0x222222, telhaCasa: 0xd9532f, branco: 0xf2f2ea };
-
-// ======================= PROGRESSO (XP E NÍVEIS) =======================
-const CHAVE_SALVAMENTO = 'fazenda3d-progresso-v2';
-let estado = { xp: 0, niveis: { animais: 1, casa: 1, celeiro: 1, maquinario: 1, plantacao: 1 } };
-try {
-  const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
-  if (salvo && salvo.niveis) {
-    estado = salvo;
-    for (const id in estado.niveis) estado.niveis[id] = Math.min(NIVEL_MAXIMO, Math.max(1, estado.niveis[id] | 0));
-  }
-} catch (erro) {}
-function salvarProgresso() { try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) {} }
-
-// ======================= CENA 3D BÁSICA =======================
-const renderizador = new THREE.WebGLRenderer({ antialias: true });
-const canvas = renderizador.domElement;
-renderizador.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderizador.shadowMap.enabled = true;
-document.body.prepend(canvas);
-
-const cena = new THREE.Scene();
-cena.background = new THREE.Color(0x9fd8f5);
-cena.fog = new THREE.Fog(0x9fd8f5, 45, 100);
-const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
-cena.add(new THREE.HemisphereLight(0xffffff, 0x6a8f4a, 0.75));
-const sol = new THREE.DirectionalLight(0xfff2cc, 0.9);
-sol.position.set(12, 22, 10);
-sol.castShadow = true;
-sol.shadow.mapSize.set(1024, 1024);
-Object.assign(sol.shadow.camera, { left: -26, right: 26, top: 26, bottom: -26, near: 1, far: 70 });
-cena.add(sol);
-
-// ======================= FUNÇÕES AUXILIARES DE MODELAGEM =======================
-const cacheDeMateriais = {};
-function material(cor) {
-  if (!cacheDeMateriais[cor]) cacheDeMateriais[cor] = new THREE.MeshLambertMaterial({ color: cor });
-  return cacheDeMateriais[cor];
-}
-function criarCaixa(largura, altura, profundidade, cor, x, y, z, pai) {
-  const caixa = new THREE.Mesh(new THREE.BoxGeometry(largura, altura, profundidade), material(cor));
-  caixa.position.set(x, y, z);
-  caixa.castShadow = caixa.receiveShadow = true;
-  pai.add(caixa);
-  return caixa;
-}
-function criarCilindro(raioTopo, raioBase, altura, cor, x, y, z, pai, segmentos = 14) {
-  const c = new THREE.Mesh(new THREE.CylinderGeometry(raioTopo, raioBase, altura, segmentos), material(cor));
-  c.position.set(x, y, z);
-  c.castShadow = true;
-  pai.add(c);
-  return c;
-}
-function criarEsfera(raio, cor, x, y, z, pai, escalaY = 1) {
-  const e = new THREE.Mesh(new THREE.SphereGeometry(raio, 8, 6), material(cor));
-  e.position.set(x, y, z);
-  e.scale.y = escalaY;
-  e.castShadow = true;
-  pai.add(e);
-  return e;
-}
-function criarRoda(raio, largura, x, y, z, pai, aro) {
-  const roda = criarCilindro(raio, raio, largura, COR.pneu, x, y, z, pai);
-  roda.rotation.z = Math.PI / 2;
-  if (aro) criarCilindro(raio * 0.55, raio * 0.55, largura + 0.04, aro, x, y, z, pai).rotation.z = Math.PI / 2;
-}
-// base de grama sob cada área (como nas ilustrações isométricas)
-function base(g, largura, profundidade, cor = 0x8fd05a) { criarCaixa(largura, 0.15, profundidade, cor, 0, 0.02, 0, g); }
-// telhado de duas águas (prisma). largura = vão entre as águas; comprimento = ao longo do cume.
-function telhado(g, largura, comprimento, altura, cor, x, y, z, giro = 0) {
-  const r = altura / 1.5;
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, comprimento, 3), material(cor));
-  m.rotation.x = -Math.PI / 2;
-  m.scale.x = largura / (r * 1.732);
-  m.position.y = r / 2;
-  m.castShadow = true;
-  const p = new THREE.Group();
-  p.add(m);
-  p.position.set(x, y, z);
-  p.rotation.y = giro;
-  g.add(p);
-}
-function cercaLinha(g, x1, z1, x2, z2) {
-  const comp = Math.hypot(x2 - x1, z2 - z1), n = Math.ceil(comp), ang = Math.atan2(x2 - x1, z2 - z1);
-  for (let i = 0; i <= n; i++) criarCaixa(0.14, 0.8, 0.14, COR.madeira, x1 + (x2 - x1) * i / n, 0.5, z1 + (z2 - z1) * i / n, g);
-  for (const y of [0.68, 0.42]) criarCaixa(0.07, 0.09, comp, COR.ripa, (x1 + x2) / 2, y, (z1 + z2) / 2, g).rotation.y = ang;
-}
-function cerca(g, w, d) {
-  cercaLinha(g, -w / 2, -d / 2, w / 2, -d / 2); cercaLinha(g, -w / 2, d / 2, w / 2, d / 2);
-  cercaLinha(g, -w / 2, -d / 2, -w / 2, d / 2); cercaLinha(g, w / 2, -d / 2, w / 2, d / 2);
-}
-function arvore(g, x, z, s = 1) {
-  criarCilindro(0.2 * s, 0.28 * s, 1.4 * s, 0x6b4a2b, x, 0.7 * s, z, g, 6);
-  criarEsfera(1.1 * s, 0x3f9e3a, x, 2 * s, z, g);
-  criarEsfera(0.8 * s, 0x4fb043, x + 0.5 * s, 1.5 * s, z + 0.2 * s, g);
-  criarEsfera(0.8 * s, 0x358f33, x - 0.5 * s, 1.6 * s, z - 0.2 * s, g);
-}
-function arbusto(g, x, z, flores = true) {
-  criarEsfera(0.4, 0x4a9e3a, x, 0.35, z, g, 0.8);
-  if (flores) [0xe84a5f, 0xffd23f, 0xff8fb1].forEach((c, i) => criarCaixa(0.12, 0.12, 0.12, c, x + (i - 1) * 0.22, 0.6, z + 0.25, g));
-}
-function pedra(g, x, z, s = 0.4) {
-  const p = new THREE.Mesh(new THREE.DodecahedronGeometry(s), material(0xb4b4aa));
-  p.position.set(x, s * 0.5, z); p.scale.y = 0.7; p.castShadow = true; g.add(p);
-}
-function barril(g, x, z) { criarCilindro(0.32, 0.32, 0.7, 0x7a4a2a, x, 0.45, z, g, 10); }
-function caixote(g, x, z) { criarCaixa(0.55, 0.45, 0.55, 0xa0703a, x, 0.32, z, g); }
-function fardo(g, x, y, z) { criarCaixa(0.8, 0.5, 0.6, COR.feno, x, y, z, g); }
-function janela(g, x, y, z, lateral) {
-  criarCaixa(...(lateral ? [0.1, 0.67, 0.62] : [0.62, 0.67, 0.1]), 0x9a4a2a, x, y, z, g);
-  criarCaixa(...(lateral ? [0.14, 0.5, 0.45] : [0.45, 0.5, 0.14]), COR.vidro, x, y, z, g);
-}
-function placa(g, x, z) { criarCaixa(0.1, 1.5, 0.1, COR.madeira, x, 0.75, z, g); criarCaixa(0.6, 0.45, 0.08, 0xc98a4a, x, 1.4, z, g); }
-
-// ======================= MODELOS REUTILIZÁVEIS =======================
-function criarTrator(pai, x, z, escala, cor, aro) {
-  const t = new THREE.Group();
-  criarCaixa(1.1, 0.7, 2, cor, 0, 0.95, 0, t);
-  criarCaixa(0.9, 0.9, 0.9, COR.vidro, 0, 1.7, -0.45, t);
-  criarCaixa(1, 0.08, 1, cor, 0, 2.2, -0.45, t);
-  criarCaixa(0.1, 0.6, 0.1, 0x333333, 0.35, 1.6, 0.7, t);
-  criarRoda(0.6, 0.4, -0.8, 0.6, -0.5, t, aro); criarRoda(0.6, 0.4, 0.8, 0.6, -0.5, t, aro);
-  criarRoda(0.38, 0.3, -0.7, 0.38, 0.8, t, aro); criarRoda(0.38, 0.3, 0.7, 0.38, 0.8, t, aro);
-  t.scale.setScalar(escala);
-  t.position.set(x, 0, z);
-  pai.add(t);
-  return t;
-}
-function reboque(g, x, z, giro) {
-  const r = new THREE.Group();
-  r.position.set(x, 0, z); r.rotation.y = giro; g.add(r);
-  criarCaixa(1.6, 0.12, 2.4, 0x8a5a2a, 0, 0.7, 0, r);
-  criarCaixa(1.4, 0.05, 2.2, 0xe8e0d0, 0, 0.78, 0, r);
-  for (const s of [-1, 1]) { criarCaixa(0.1, 0.5, 2.4, 0xa5703a, s * 0.8, 0.95, 0, r); criarCaixa(1.6, 0.5, 0.1, 0xa5703a, 0, 0.95, s * 1.2, r); }
-  criarRoda(0.4, 0.3, -0.9, 0.4, -0.3, r); criarRoda(0.4, 0.3, 0.9, 0.4, -0.3, r);
-  criarCaixa(0.1, 0.1, 1.4, 0x555555, 0, 0.55, 1.9, r);
-}
-function arado(g, x, z, giro, cor) {
-  const p = new THREE.Group();
-  p.position.set(x, 0, z); p.rotation.y = giro; g.add(p);
-  criarCaixa(3, 0.12, 0.3, cor, 0, 0.7, 0, p);
-  for (let i = 0; i < 8; i++) criarCaixa(0.05, 0.55, 0.05, 0x555555, -1.3 + i * 0.37, 0.4, 0, p);
-  criarRoda(0.3, 0.1, 1.6, 0.3, 0, p);
-}
-function abrigo(g, x, z) {
-  for (const dx of [-1, 1]) for (const dz of [-0.9, 0.9]) criarCaixa(0.12, 1.5, 0.12, COR.madeira, x + dx, 0.85, z + dz, g);
-  telhado(g, 2.7, 2.5, 0.8, 0xc98a3a, x, 1.6, z);
-  criarCaixa(1.2, 0.35, 0.7, 0x2f6f6f, x, 0.3, z, g);
-}
-function cocho(g, x, z) { criarCaixa(1.6, 0.4, 0.6, 0x2f6f6f, x, 0.3, z, g); criarCaixa(1.4, 0.05, 0.4, 0x5ec7e0, x, 0.5, z, g); }
-
-// tipo: 'galinha' | 'ovelha' | 'vaca'. Cada animal passeia em círculos dentro do cercado.
-function criarAnimal(pai, animacoes, tipo, cx, cz) {
-  const a = new THREE.Group();
-  if (tipo === 'galinha') {
-    criarCaixa(0.4, 0.35, 0.5, 0xd2691e, 0, 0.45, 0, a);
-    criarCaixa(0.25, 0.3, 0.25, 0xd2691e, 0, 0.7, 0.22, a);
-    criarCaixa(0.1, 0.12, 0.1, 0xe03a2a, 0, 0.92, 0.22, a);
-    criarCaixa(0.1, 0.08, 0.15, 0xf2c23b, 0, 0.72, 0.4, a);
-  }
-  if (tipo === 'ovelha') {
-    criarCaixa(0.8, 0.65, 1, 0xf4f1e8, 0, 0.7, 0, a);
-    criarCaixa(0.4, 0.4, 0.4, 0xe9dfcc, 0, 0.85, 0.6, a);
-    criarCaixa(0.25, 0.25, 0.1, 0x3a3a3a, 0, 0.82, 0.82, a);
-    for (const sx of [-0.25, 0.25]) for (const sz of [-0.3, 0.3]) criarCaixa(0.1, 0.4, 0.1, 0x3a3a3a, sx, 0.2, sz, a);
-  }
-  if (tipo === 'vaca') {
-    criarCaixa(0.9, 0.8, 1.6, 0xffffff, 0, 1, 0, a);
-    criarCaixa(0.6, 0.6, 0.6, 0xffffff, 0, 1.2, 1, a);
-    criarCaixa(0.3, 0.2, 0.1, 0xf2a0b5, 0, 1.05, 1.32, a);
-    criarCaixa(0.5, 0.35, 0.05, 0x222222, 0.46, 1.1, 0.1, a);
-    criarCaixa(0.5, 0.35, 0.05, 0x222222, -0.46, 0.9, -0.3, a);
-    criarCaixa(0.62, 0.3, 0.62, 0x222222, 0, 1.45, 0.98, a);
-    for (const sx of [-0.3, 0.3]) for (const sz of [-0.55, 0.55]) criarCaixa(0.16, 0.6, 0.16, 0xffffff, sx, 0.3, sz, a);
-  }
-  pai.add(a);
-  const raio = 0.3 + Math.random() * 0.4, vel = 0.3 + Math.random() * 0.4, fase = Math.random() * 6;
-  animacoes.push(tempo => {
-    const ang = tempo * vel + fase;
-    a.position.set(cx + Math.sin(ang) * raio * 2, 0.1 + Math.abs(Math.sin(tempo * 5 + fase)) * 0.05, cz + Math.cos(ang) * raio * 1.4);
-    a.rotation.y = Math.atan2(Math.cos(ang) * raio * 2, -Math.sin(ang) * raio * 1.4);
-  });
-}
-
-// ======================= CENÁRIO FIXO =======================
-const chao = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), material(0x78b24a));
-chao.rotation.x = -Math.PI / 2;
-chao.receiveShadow = true;
-cena.add(chao);
-// == ESTRADA == 
-criarCaixa(2.4, 0.05, 130, 0xd9b97a, 0, 0.03, -50, cena);
-criarCaixa(3000, 0.05, 2.4, 0xd9b97a, 10, 0.03, -1, cena);
-[[-16, -2], [16, 0], [-15, 13], [15, 14], [-3, -13], [2, -14], [-17, -12], [17, -12]].forEach(([x, z]) => arvore(cena, x, z, 1.3));
-
-const nuvens = [];
-for (let i = 0; i < 5; i++) {
-  const nuvem = new THREE.Group();
-  for (let p = 0; p < 3; p++) criarCaixa(3 + p, 1, 2, 0xffffff, p * 2 - 2, (p % 2) * 0.4, 0, nuvem);
-  nuvem.position.set(-30 + i * 14, 16, -20 + i * 9);
-  cena.add(nuvem);
-  nuvens.push(nuvem);
-}
-
-// ======================= CONSTRUTORES DAS ÁREAS (3 níveis, baseados nas ilustrações) =======================
-const construtoresDasAreas = {
-
-  // N1 casinha de madeira · N2 varanda, água-furtada e jardim · N3 casarão com ala, lago e pérgola
-  casa(g, n, anim) {
-    const w = [3.2, 3.8, 4.2][n - 1], d = [3.4, 3.8, 4.2][n - 1], h = [1.8, 2, 2.2][n - 1];
-    const S = n === 3 ? 10.5 : 8, D = n === 3 ? 10 : 7.5;
-    base(g, S, D);
-    criarCaixa(w, h, d, 0xdcc08e, 0, h / 2, 0, g);
-    criarCaixa(w + 0.1, 0.3, d + 0.1, 0x8a8a80, 0, 0.15, 0, g);
-    telhado(g, d + 0.5, w + 0.5, 1.6, COR.telhaCasa, 0, h, 0, Math.PI / 2);
-    criarCaixa(0.7, 1.2, 0.1, 0x7a4a2a, 0, 0.7, d / 2 + 0.04, g);
-    for (const s of [-1, 1]) { janela(g, s * w * 0.3, 1.2, d / 2 + 0.04, false); janela(g, s * (w / 2 + 0.02), 1.2, -d * 0.15, true); }
-
-    // varanda (todos os níveis); grade a partir do nível 2
-    const pw = w * 0.8, ph = h - 0.25;
-    criarCaixa(pw, 0.12, 1.3, 0xb98a55, 0, 0.1, d / 2 + 0.65, g);
-    criarCaixa(pw + 0.3, 0.1, 1.6, COR.telhaCasa, 0, h - 0.1, d / 2 + 0.75, g).rotation.x = 0.25;
-    for (const s of [-1, 1]) criarCaixa(0.12, ph, 0.12, 0xf2ead8, s * pw / 2, ph / 2, d / 2 + 1.25, g);
-    if (n >= 2) criarCaixa(pw, 0.35, 0.06, 0xf2ead8, 0, 0.45, d / 2 + 1.3, g);
-
-    // chaminé com fumaça
-    const chamines = [[w * 0.25, h + 1.1, -d * 0.1, 1.5]];
-    if (n === 3) chamines.push([-w * 0.15, h + 0.9, -d / 2 - 1.8, 1.3]);
-    for (const [cx, cy, cz, alt] of chamines) criarCaixa(0.55, alt, 0.55, 0xe6dfd0, cx, cy, cz, g);
-    const [fx, fy, fz] = chamines[0];
-    for (let i = 0; i < 4; i++) {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
-      g.add(b);
-      anim.push(t => { const p = (t * 0.3 + i / 4) % 1; b.position.set(fx + p * 0.8, fy + 1 + p * 2.2, fz); b.scale.setScalar(0.5 + p); b.material.opacity = 0.7 * (1 - p); });
-    }
-    // água-furtada
-    if (n >= 2) for (const xs of (n === 2 ? [0] : [-w * 0.25, w * 0.25])) {
-      criarCaixa(0.9, 1, 0.7, 0xdcc08e, xs, h + 0.85, d * 0.25, g);
-      telhado(g, 1.2, 1, 0.5, COR.telhaCasa, xs, h + 1.35, d * 0.25);
-      janela(g, xs, h + 0.95, d * 0.25 + 0.37, false);
-    }
-    // jardim, cerca e árvores
-    const k = [2, 5, 8][n - 1];
-    for (let i = 0; i < k; i++) arbusto(g, (i % 2 ? 1 : -1) * (w / 2 + 0.5), d / 2 - 0.3 + Math.floor(i / 2) * 0.8);
-    if (n === 1) {
-      cercaLinha(g, S / 2 - 0.4, -1, S / 2 - 0.4, 2.5);
-      criarCaixa(0.1, 1, 0.1, COR.madeira, 2.8, 0.5, D / 2 - 0.8, g); criarCaixa(0.3, 0.25, 0.4, 0x2f6fb0, 2.8, 1.05, D / 2 - 0.8, g);
-    } else cercaLinha(g, -S / 2 + 0.4, -D / 2 + 1, -S / 2 + 0.4, D / 2 - 1);
-    arvore(g, S / 2 - 1, -D / 2 + 1.2, 0.9);
-    if (n === 3) {
-      // ala dos fundos
-      criarCaixa(2.8, h, 3.2, 0xdcc08e, -w * 0.15, h / 2, -d / 2 - 1, g);
-      telhado(g, 3.3, 3.5, 1.5, COR.telhaCasa, -w * 0.15, h, -d / 2 - 1);
-      janela(g, -w * 0.15 - 1.42, 1.2, -d / 2 - 1, true);
-      // lago de pedras
-      criarCilindro(1.2, 1.2, 0.1, 0x9a9a90, 3.9, 0.12, 2.6, g, 18);
-      criarCilindro(1, 1, 0.1, 0x4aa8c8, 3.9, 0.15, 2.6, g, 18);
-      // pérgola
-      for (const dx of [-0.9, 0.9]) for (const dz of [-0.9, 0.9]) criarCaixa(0.12, 1.8, 0.12, 0x8a5a2a, 3.9 + dx, 0.9, -2.6 + dz, g);
-      for (let i = 0; i < 4; i++) criarCaixa(2.2, 0.08, 0.12, 0xa06a35, 3.9, 1.85, -3.4 + i * 0.55, g);
-      arvore(g, -S / 2 + 1.2, -D / 2 + 1.2, 1);
-      arvore(g, -S / 2 + 1, D / 2 - 1.5, 0.8);
-    }
-  },
-
-  // N1 celeiro com janelas · N2 maior, com fardos · N3 silo e telheiro lateral
-  celeiro(g, n) {
-    const w = [3.4, 3.8, 4.2][n - 1], d = [3.8, 4.4, 4.8][n - 1], h = [2.2, 2.4, 2.6][n - 1];
-    const S = n === 3 ? 10.5 : 8;
-    base(g, S, 7.5);
-    const forma = new THREE.Shape();
-    [[-w / 2, 0], [w / 2, 0], [w / 2, h], [w * 0.3, h + 1], [0, h + 1.6], [-w * 0.3, h + 1], [-w / 2, h]].forEach(([x, y], i) => i ? forma.lineTo(x, y) : forma.moveTo(x, y));
-    const corpo = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: d, bevelEnabled: false }), material(0xc0392b));
-    corpo.position.z = -d / 2; corpo.castShadow = true; g.add(corpo);
-    criarCaixa(w + 0.1, 0.25, d + 0.1, 0x6a7078, 0, 0.12, 0, g);
-    // telhado de duas inclinações (gambrel)
-    const topo = [[-w / 2, h], [-w * 0.3, h + 1], [0, h + 1.6], [w * 0.3, h + 1], [w / 2, h]].map(([x, y]) => [x * 1.12, y]);
-    for (let i = 0; i < 4; i++) {
-      const [x1, y1] = topo[i], [x2, y2] = topo[i + 1];
-      criarCaixa(Math.hypot(x2 - x1, y2 - y1) + 0.05, 0.16, d + 0.6, 0x4b5060, (x1 + x2) / 2, (y1 + y2) / 2 + 0.08, 0, g).rotation.z = Math.atan2(y2 - y1, x2 - x1);
-    }
-    for (const s of [-1, 1]) criarCaixa(0.08, h, 0.08, COR.branco, s * w / 2, h / 2, d / 2 + 0.02, g);
-    // portão com X e janela do sótão
-    const ph = h * 0.8;
-    criarCaixa(1.6, ph, 0.1, COR.branco, 0, ph / 2, d / 2 + 0.03, g);
-    criarCaixa(1.4, ph - 0.2, 0.12, 0xa82e22, 0, ph / 2, d / 2 + 0.05, g);
-    for (const s of [-1, 1]) criarCaixa(0.06, Math.hypot(1.4, ph - 0.2), 0.14, COR.branco, 0, ph / 2, d / 2 + 0.06, g).rotation.z = s * Math.atan(1.4 / (ph - 0.2));
-    criarCaixa(0.8, 0.8, 0.1, COR.branco, 0, h + 0.45, d / 2 + 0.04, g);
-    criarCaixa(0.6, 0.6, 0.12, 0x7a2a20, 0, h + 0.45, d / 2 + 0.05, g);
-
-    if (n === 1) {
-      for (const z of [-0.8, 0.9]) { criarCaixa(0.1, 0.55, 0.45, COR.branco, w / 2 + 0.02, 1, z, g); criarCaixa(0.14, 0.4, 0.3, COR.vidro, w / 2 + 0.02, 1, z, g); }
-      barril(g, w / 2 + 0.6, d / 2 - 0.4);
-      arbusto(g, w / 2 + 0.5, 0.2, false);
-    } else {
-      fardo(g, w / 2 + 0.9, 0.25, 0.5); fardo(g, w / 2 + 0.9, 0.25, 1.2); fardo(g, w / 2 + 1, 0.75, 0.85);
-      barril(g, w / 2 + 0.5, d / 2 - 0.2); caixote(g, w / 2 + 1.2, -1.4);
-    }
-    if (n === 3) {
-      // silo
-      const sx = -w / 2 - 1.1, sa = h + 2.2;
-      criarCilindro(0.85, 0.85, sa, 0xc0392b, sx, sa / 2, -0.5, g, 16);
-      for (const y of [1.2, 2.6, 4]) criarCilindro(0.87, 0.87, 0.12, COR.branco, sx, y, -0.5, g, 16);
-      const cupula = new THREE.Mesh(new THREE.SphereGeometry(0.85, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), material(0xc4c8cc));
-      cupula.position.set(sx, sa, -0.5); g.add(cupula);
-      // telheiro lateral com fardos
-      criarCaixa(2.6, 0.14, d * 0.8, 0x4b5060, w / 2 + 1.2, h * 0.62, 0.2, g).rotation.z = -0.18;
-      for (const z of [-1.5, 1.8]) criarCaixa(0.12, h * 0.55, 0.12, 0xb98a55, w / 2 + 2.4, h * 0.275, z, g);
-      fardo(g, w / 2 + 1.2, 0.25, -0.6); fardo(g, w / 2 + 1.2, 0.25, 0.4); fardo(g, w / 2 + 1.3, 0.75, -0.1);
-      arvore(g, S / 2 - 0.8, -2.5, 0.9);
-    } else {
-      arvore(g, -w / 2 - 1.6, -d / 2 + 0.8, 0.9);
-      cercaLinha(g, -S / 2 + 0.5, -1, -S / 2 + 0.5, 2.5);
-    }
-  },
-
-  // N1 cercado com vaca · N2 vaca e ovelhas · N3 fazendinha cheia com cata-vento
-  animais(g, n, anim) {
-    const w = [6, 7.2, 8.8][n - 1], d = [5, 6, 7.2][n - 1];
-    base(g, w + 0.9, d + 0.9, 0x7fc650);
-    cerca(g, w, d);
-    arvore(g, w / 2 - 0.3, -d / 2 - 0.6, 1);
-    abrigo(g, w / 2 - 1.6, -d / 2 + 1.4);
-    cocho(g, 0.5, d / 2 - 0.9);
-    placa(g, -w / 2 - 0.2, d / 2 - 0.5);
-    if (n >= 2) { cercaLinha(g, -w / 2, -1, -w / 2 + 2, -1); cercaLinha(g, w / 2 - 2, 1, w / 2, 1); }
-    if (n === 3) {
-      abrigo(g, -w / 2 + 1.6, -d / 2 + 1.4);
-      cocho(g, -2.4, d / 2 - 0.9);
-      const mx = -w / 2 + 1, mz = d / 2 - 1.3;
-      criarCilindro(0.12, 0.55, 4.2, COR.madeira, mx, 2.2, mz, g, 4);
-      const helice = new THREE.Group();
-      helice.position.set(mx, 4.4, mz + 0.35); g.add(helice);
-      for (let p = 0; p < 4; p++) { const braco = new THREE.Group(); braco.rotation.z = p * Math.PI / 2; criarCaixa(0.25, 1.4, 0.05, 0xc98a4a, 0, 0.7, 0, braco); helice.add(braco); }
-      anim.push(t => { helice.rotation.z = t * 1.2; });
-    }
-    const qtd = { vaca: [1, 1, 3][n - 1], ovelha: [0, 2, 3][n - 1], galinha: [0, 0, 3][n - 1] };
-    for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
-      criarAnimal(g, anim, tipo, (Math.random() - 0.5) * (w - 3.6), (Math.random() - 0.5) * (d - 3.4));
-  },
-
-  // N1 reboque e forcado · N2 trator vermelho com reboque e grade · N3 trator verde, arado, fardos e caixa-d'água
-  maquinario(g, n, anim) {
-    const S = n === 3 ? 10 : 8, D = n === 3 ? 8 : 6.5;
-    base(g, S, D);
-    criarCaixa(S - 2.5, 0.04, D - 2.5, 0xd6a05a, 0, 0.1, 0, g);
-    pedra(g, -S / 2 + 0.8, D / 2 - 0.8, 0.45); pedra(g, S / 2 - 0.9, -D / 2 + 0.9, 0.5); pedra(g, S / 2 - 1.2, D / 2 - 1, 0.3);
-    if (n === 1) {
-      reboque(g, 0, 0.2, 0.5);
-      criarCaixa(0.06, 1.9, 0.06, COR.madeira, 2.2, 0.95, 0.8, g);
-      criarCaixa(0.45, 0.05, 0.05, 0x666666, 2.2, 0.15, 0.8, g);
-      for (const dx of [-0.2, 0, 0.2]) criarCaixa(0.04, 0.4, 0.04, 0x666666, 2.2 + dx, 0.25, 0.8, g);
-      caixote(g, 2.3, -1.5);
-      arvore(g, -2.4, -D / 2 + 0.8, 0.9);
-      arbusto(g, -S / 2 + 0.9, -0.5, false);
-    } else {
-      const cor = n === 2 ? 0xd03a2a : 0x3f9a35;
-      const t = criarTrator(g, n === 2 ? -1.4 : -2, n === 2 ? 0.4 : 0.3, n === 2 ? 1.05 : 1.15, cor, n === 3 ? 0xe8c230 : null);
-      t.rotation.y = 0.5;
-      anim.push(tempo => { t.position.y = Math.sin(tempo * 40) * 0.01; });
-      if (n === 2) {
-        reboque(g, 2.3, -0.8, 0.3);
-        arado(g, 0.2, -2, 0.1, 0x7a5a3a);
-        arvore(g, S / 2 - 0.9, -D / 2 + 0.8, 0.9);
-        arbusto(g, -S / 2 + 0.8, -D / 2 + 0.8, false);
+    const dedosNaTela = new Map();
+    canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); dedosNaTela.set(e.pointerId, [e.clientX, e.clientY]); });
+    canvas.addEventListener('pointermove', e => {
+      const anterior = dedosNaTela.get(e.pointerId);
+      if (!anterior) return;
+      if (dedosNaTela.size === 1) {
+        anguloHorizontal -= (e.clientX - anterior[0]) * 0.006;
+        anguloVertical = Math.min(1.35, Math.max(0.35, anguloVertical + (e.clientY - anterior[1]) * 0.005));
       } else {
-        arado(g, 1.3, 0.2, -0.3, 0x2f7a30);
-        fardo(g, -1.3, 0.25, 2.8); fardo(g, -0.4, 0.25, 2.8); fardo(g, -0.9, 0.75, 2.8);
-        // caixa-d'água em torre
-        for (const dx of [-0.5, 0.5]) for (const dz of [-0.5, 0.5]) criarCaixa(0.1, 2.2, 0.1, COR.madeira, 3.6 + dx, 1.1, -2.3 + dz, g);
-        criarCilindro(0.65, 0.65, 1.1, 0x6f9a8a, 3.6, 2.7, -2.3, g, 14);
-        criarCilindro(0.05, 0.67, 0.4, 0x6f9a8a, 3.6, 3.4, -2.3, g, 14);
-        // colmeia e cerca
-        criarCaixa(0.6, 0.35, 0.6, 0xc9a24a, 0.4, 0.4, -3, g); criarCaixa(0.6, 0.35, 0.6, 0xb08a3a, 0.4, 0.75, -3, g); criarCaixa(0.7, 0.08, 0.7, 0x8a5a2a, 0.4, 0.95, -3, g);
-        cercaLinha(g, 2.2, -3.4, 4.6, -3.4); cercaLinha(g, 4.6, -3.4, 4.6, -1);
-        arvore(g, -S / 2 + 1.3, -D / 2 + 1, 1);
+        const outro = [...dedosNaTela.entries()].find(([id]) => id !== e.pointerId)[1];
+        const antes = Math.hypot(anterior[0] - outro[0], anterior[1] - outro[1]);
+        const agora = Math.hypot(e.clientX - outro[0], e.clientY - outro[1]);
+        distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera * antes / agora));
+      }
+      dedosNaTela.set(e.pointerId, [e.clientX, e.clientY]);
+    });
+    ['pointerup', 'pointercancel'].forEach(nome => canvas.addEventListener(nome, e => dedosNaTela.delete(e.pointerId)));
+    canvas.addEventListener('wheel', e => { distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera + e.deltaY * 0.03)); });
+
+    // ======================= MOVIMENTO WASD DO ALVO DA CÂMERA =======================
+    const teclas = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
+    const LIMITE_DO_MAPA = 30;       // o chão tem 70x70, então ±30 mantém o alvo dentro dele
+    const VELOCIDADE_BASE = 0.6;     // unidades/s para cada unidade de distância da câmera
+    const VELOCIDADE_COM_SHIFT = 1.8; // multiplicador ao segurar Shift
+
+    addEventListener('keydown', e => { if (e.code in teclas) { teclas[e.code] = true; e.preventDefault(); } });
+    addEventListener('keyup', e => { if (e.code in teclas) teclas[e.code] = false; });
+    addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; }); // evita tecla "presa" ao trocar de aba
+
+    const frente = new THREE.Vector3(), direita = new THREE.Vector3(), deslocamento = new THREE.Vector3();
+
+    function atualizarMovimento(dt, shift) {
+      let avanco = (teclas.KeyW ? 1 : 0) - (teclas.KeyS ? 1 : 0);
+      let lateral = (teclas.KeyD ? 1 : 0) - (teclas.KeyA ? 1 : 0);
+      if (!avanco && !lateral) return;
+
+      // A câmera fica em (sin h, cos h) em relação ao alvo, então "para frente" é o oposto disso
+      frente.set(-Math.sin(anguloHorizontal), 0, -Math.cos(anguloHorizontal));
+      direita.set(Math.cos(anguloHorizontal), 0, -Math.sin(anguloHorizontal));
+
+      deslocamento.set(0, 0, 0).addScaledVector(frente, avanco).addScaledVector(direita, lateral);
+      deslocamento.normalize(); // diagonal não fica mais rápida
+
+      // Quanto mais longe a câmera, mais rápido anda (sensação constante na tela)
+      const velocidade = distanciaDaCamera * VELOCIDADE_BASE * (shift ? VELOCIDADE_COM_SHIFT : 1);
+      deslocamento.multiplyScalar(velocidade * dt);
+
+      // Move destino e atual juntos: resposta imediata e sem brigar com o focarCameraNaArea
+      for (const alvo of [alvoDestinoDaCamera, alvoAtualDaCamera]) {
+        alvo.add(deslocamento);
+        alvo.x = Math.max(-LIMITE_DO_MAPA, Math.min(LIMITE_DO_MAPA, alvo.x));
+        alvo.z = Math.max(-LIMITE_DO_MAPA, Math.min(LIMITE_DO_MAPA, alvo.z));
       }
     }
-  },
+    let shiftPressionado = false;
+    addEventListener('keydown', e => { if (e.key === 'Shift') shiftPressionado = true; });
+    addEventListener('keyup', e => { if (e.key === 'Shift') shiftPressionado = false; });
 
-  // N1 terra preparada · N2 mudas · N3 milharal com espantalho
-  plantacao(g, n, anim) {
-    const w = 7.4, d = 6.4;
-    base(g, w + 0.9, d + 0.9, 0x7fc650);
-    cerca(g, w, d);
-    criarCaixa(w - 1, 0.1, d - 1, 0x6b4226, 0, 0.11, 0, g);
-    placa(g, -w / 2 - 0.2, -d / 2 + 0.5);
-    arvore(g, w / 2 - 0.2, -d / 2 - 0.7, 1);
-    barril(g, w / 2 - 0.1, d / 2 + 0.3); caixote(g, -w / 2 + 0.4, d / 2 + 0.35);
-
-    if (n === 1) { // canteiros arados
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) criarCaixa(1.4, 0.07, 1.25, (i + j) % 2 ? 0x7a4a28 : 0x6b3f20, (i - 1.5) * 1.5, 0.18, (j - 1.5) * 1.3, g);
-      return;
-    }
-    const colunas = n === 2 ? 5 : 7, linhas = n === 2 ? 4 : 6, passo = n === 2 ? 1.15 : 0.88;
-    for (let c = 0; c < colunas; c++) for (let l = 0; l < linhas; l++) {
-      const planta = new THREE.Group();
-      planta.position.set((c - (colunas - 1) / 2) * passo, 0.16, (l - (linhas - 1) / 2) * passo);
-      g.add(planta);
-      if (n === 2) { // muda com folhas
-        criarEsfera(0.14, 0x3f9a35, 0, 0.2, 0, planta);
-        for (let f = 0; f < 3; f++) criarCaixa(0.55, 0.08, 0.18, 0x4aa83a, 0, 0.18, 0, planta).rotation.y = f * Math.PI / 3;
-      } else { // milho
-        const alt = 1.4 + ((c * 7 + l * 3) % 5) * 0.06;
-        criarCaixa(0.1, alt, 0.1, 0x3d8f3a, 0, alt / 2, 0, planta);
-        for (const s of [-1, 1]) criarCaixa(0.55, 0.05, 0.12, 0x2f8a2f, s * 0.25, alt * 0.55, 0, planta).rotation.z = s * 0.5;
-        criarCaixa(0.14, 0.4, 0.14, 0xf2c230, 0.08, alt + 0.1, 0, planta);
+    // ======================= LOOP PRINCIPAL =======================
+    const relogio = new THREE.Clock();
+    function animarCena() {
+      requestAnimationFrame(animarCena);
+      const dt = Math.min(relogio.getDelta(), 0.05), tempo = relogio.elapsedTime;
+      atualizarMovimento(dt, shiftPressionado);   // <-- adicione esta linha
+      for (const id in animacoesDaArea) for (const animar of animacoesDaArea[id]) animar(tempo, dt);
+      for (const id in grupoDaArea) {
+        const g = grupoDaArea[id];
+        if (g.userData.progressoDoEfeitoDeEvolucao > 0) {
+          g.userData.progressoDoEfeitoDeEvolucao = Math.max(0, g.userData.progressoDoEfeitoDeEvolucao - dt * 1.5);
+          g.scale.setScalar(1 + 0.2 * Math.sin(g.userData.progressoDoEfeitoDeEvolucao * Math.PI));
+        }
       }
-      anim.push(t => { planta.rotation.z = Math.sin(t * 1.5 + c * 0.5 + l * 0.3) * 0.06; });
+      nuvens.forEach(n => { n.position.x += dt * 0.6; if (n.position.x > 38) n.position.x = -38; });
+      alvoAtualDaCamera.lerp(alvoDestinoDaCamera, 0.06);
+      camera.position.set(
+        alvoAtualDaCamera.x + distanciaDaCamera * Math.cos(anguloVertical) * Math.sin(anguloHorizontal),
+        distanciaDaCamera * Math.sin(anguloVertical),
+        alvoAtualDaCamera.z + distanciaDaCamera * Math.cos(anguloVertical) * Math.cos(anguloHorizontal)
+      );
+      camera.lookAt(alvoAtualDaCamera);
+      renderizador.render(cena, camera);
     }
-    if (n === 3) { // espantalho
-      const x = w / 2 - 0.9;
-      criarCaixa(0.1, 2, 0.1, COR.madeira, x, 1, 0, g);
-      criarCaixa(1.2, 0.1, 0.1, COR.madeira, x, 1.6, 0, g);
-      criarCaixa(0.5, 0.7, 0.3, 0xc0392b, x, 1.3, 0, g);
-      criarCaixa(0.4, 0.4, 0.4, 0xf2c28e, x, 1.95, 0, g);
-      criarCaixa(0.9, 0.08, 0.9, 0x9a5a2a, x, 2.2, 0, g);
-      criarCaixa(0.4, 0.25, 0.4, 0x9a5a2a, x, 2.35, 0, g);
+    animarCena();
+
+    // ======================= INTERFACE =======================
+    let temporizadorDoAviso;
+    function mostrarAviso(msg) {
+      const el = selecionar('#aviso');
+      el.textContent = msg; el.style.opacity = 1;
+      clearTimeout(temporizadorDoAviso);
+      temporizadorDoAviso = setTimeout(() => { el.style.opacity = 0; }, 2200);
     }
-  },
-};
-
-// ======================= GRUPOS 3D DAS ÁREAS =======================
-const grupoDaArea = {}, animacoesDaArea = {};
-for (const area of AREAS) {
-  grupoDaArea[area.id] = new THREE.Group();
-  grupoDaArea[area.id].position.set(area.posicao.x, 0, area.posicao.z);
-  cena.add(grupoDaArea[area.id]);
-}
-function reconstruirArea(id) {
-  const grupo = grupoDaArea[id];
-  while (grupo.children.length) {
-    const modelo = grupo.children[0];
-    grupo.remove(modelo);
-    modelo.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-  }
-  animacoesDaArea[id] = [];
-  construtoresDasAreas[id](grupo, estado.niveis[id], animacoesDaArea[id]);
-  grupo.userData.progressoDoEfeitoDeEvolucao = 1;
-}
-AREAS.forEach(a => reconstruirArea(a.id));
-
-// ======================= CÂMERA E CONTROLES =======================
-let anguloHorizontal = 0.7, anguloVertical = 0.85;
-let distanciaDaCamera = innerWidth < innerHeight ? 52 : 38;
-const DISTANCIA_MINIMA = 14, DISTANCIA_MAXIMA = 62;
-const alvoAtualDaCamera = new THREE.Vector3(0, 0, 1), alvoDestinoDaCamera = alvoAtualDaCamera.clone();
-function focarCameraNaArea(id) {
-  const area = AREAS.find(a => a.id === id);
-  alvoDestinoDaCamera.set(area.posicao.x , 0, area.posicao.z );
-  let zoomInterval = setInterval((e) => {
-    distanciaDaCamera > 20 ? distanciaDaCamera -= 2 : clearInterval(zoomInterval);
-  }, 10);
-}
-function ajustarTamanhoDaTela() {
-  renderizador.setSize(innerWidth, innerHeight);
-  camera.aspect = innerWidth / innerHeight;
-  camera.updateProjectionMatrix();
-}
-addEventListener('resize', ajustarTamanhoDaTela);
-ajustarTamanhoDaTela();
-
-const dedosNaTela = new Map();
-canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); dedosNaTela.set(e.pointerId, [e.clientX, e.clientY]); });
-canvas.addEventListener('pointermove', e => {
-  const anterior = dedosNaTela.get(e.pointerId);
-  if (!anterior) return;
-  if (dedosNaTela.size === 1) {
-    anguloHorizontal -= (e.clientX - anterior[0]) * 0.006;
-    anguloVertical = Math.min(1.35, Math.max(0.35, anguloVertical + (e.clientY - anterior[1]) * 0.005));
-  } else {
-    const outro = [...dedosNaTela.entries()].find(([id]) => id !== e.pointerId)[1];
-    const antes = Math.hypot(anterior[0] - outro[0], anterior[1] - outro[1]);
-    const agora = Math.hypot(e.clientX - outro[0], e.clientY - outro[1]);
-    distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera * antes / agora));
-  }
-  dedosNaTela.set(e.pointerId, [e.clientX, e.clientY]);
-});
-['pointerup', 'pointercancel'].forEach(nome => canvas.addEventListener(nome, e => dedosNaTela.delete(e.pointerId)));
-canvas.addEventListener('wheel', e => { distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera + e.deltaY * 0.03)); });
-
-// ======================= MOVIMENTO WASD DO ALVO DA CÂMERA =======================
-const teclas = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
-const LIMITE_DO_MAPA = 30;       // o chão tem 70x70, então ±30 mantém o alvo dentro dele
-const VELOCIDADE_BASE = 0.6;     // unidades/s para cada unidade de distância da câmera
-const VELOCIDADE_COM_SHIFT = 1.8; // multiplicador ao segurar Shift
-
-addEventListener('keydown', e => { if (e.code in teclas) { teclas[e.code] = true; e.preventDefault(); } });
-addEventListener('keyup', e => { if (e.code in teclas) teclas[e.code] = false; });
-addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; }); // evita tecla "presa" ao trocar de aba
-
-const frente = new THREE.Vector3(), direita = new THREE.Vector3(), deslocamento = new THREE.Vector3();
-
-function atualizarMovimento(dt, shift) {
-  let avanco = (teclas.KeyW ? 1 : 0) - (teclas.KeyS ? 1 : 0);
-  let lateral = (teclas.KeyD ? 1 : 0) - (teclas.KeyA ? 1 : 0);
-  if (!avanco && !lateral) return;
-
-  // A câmera fica em (sin h, cos h) em relação ao alvo, então "para frente" é o oposto disso
-  frente.set(-Math.sin(anguloHorizontal), 0, -Math.cos(anguloHorizontal));
-  direita.set(Math.cos(anguloHorizontal), 0, -Math.sin(anguloHorizontal));
-
-  deslocamento.set(0, 0, 0).addScaledVector(frente, avanco).addScaledVector(direita, lateral);
-  deslocamento.normalize(); // diagonal não fica mais rápida
-
-  // Quanto mais longe a câmera, mais rápido anda (sensação constante na tela)
-  const velocidade = distanciaDaCamera * VELOCIDADE_BASE * (shift ? VELOCIDADE_COM_SHIFT : 1);
-  deslocamento.multiplyScalar(velocidade * dt);
-
-  // Move destino e atual juntos: resposta imediata e sem brigar com o focarCameraNaArea
-  for (const alvo of [alvoDestinoDaCamera, alvoAtualDaCamera]) {
-    alvo.add(deslocamento);
-    alvo.x = Math.max(-LIMITE_DO_MAPA, Math.min(LIMITE_DO_MAPA, alvo.x));
-    alvo.z = Math.max(-LIMITE_DO_MAPA, Math.min(LIMITE_DO_MAPA, alvo.z));
-  }
-}
-let shiftPressionado = false;
-addEventListener('keydown', e => { if (e.key === 'Shift') shiftPressionado = true; });
-addEventListener('keyup', e => { if (e.key === 'Shift') shiftPressionado = false; });
-
-// ======================= LOOP PRINCIPAL =======================
-const relogio = new THREE.Clock();
-function animarCena() {
-  requestAnimationFrame(animarCena);
-  const dt = Math.min(relogio.getDelta(), 0.05), tempo = relogio.elapsedTime;
-  atualizarMovimento(dt, shiftPressionado);   // <-- adicione esta linha
-  for (const id in animacoesDaArea) for (const animar of animacoesDaArea[id]) animar(tempo);
-  for (const id in grupoDaArea) {
-    const g = grupoDaArea[id];
-    if (g.userData.progressoDoEfeitoDeEvolucao > 0) {
-      g.userData.progressoDoEfeitoDeEvolucao = Math.max(0, g.userData.progressoDoEfeitoDeEvolucao - dt * 1.5);
-      g.scale.setScalar(1 + 0.2 * Math.sin(g.userData.progressoDoEfeitoDeEvolucao * Math.PI));
+    function evoluirArea(id) {
+      const nivel = estado.niveis[id], custo = CUSTO_PARA_PROXIMO_NIVEL[nivel - 1];
+      if (nivel >= NIVEL_MAXIMO || estado.xp < custo) return;
+      estado.xp -= custo;
+      estado.niveis[id]++;
+      salvarProgresso();
+      reconstruirArea(id);
+      focarCameraNaArea(id);
+      desenharCards();
+      mostrarAviso(AREAS.find(a => a.id === id).nome + ' evoluiu para o nível ' + (nivel + 1) + '! 🎉');
     }
-  }
-  nuvens.forEach(n => { n.position.x += dt * 0.6; if (n.position.x > 38) n.position.x = -38; });
-  alvoAtualDaCamera.lerp(alvoDestinoDaCamera, 0.06);
-  camera.position.set(
-    alvoAtualDaCamera.x + distanciaDaCamera * Math.cos(anguloVertical) * Math.sin(anguloHorizontal),
-    distanciaDaCamera * Math.sin(anguloVertical),
-    alvoAtualDaCamera.z + distanciaDaCamera * Math.cos(anguloVertical) * Math.cos(anguloHorizontal)
-  );
-  camera.lookAt(alvoAtualDaCamera);
-  renderizador.render(cena, camera);
-}
-animarCena();
-
-// ======================= INTERFACE =======================
-let temporizadorDoAviso;
-function mostrarAviso(msg) {
-  const el = selecionar('#aviso');
-  el.textContent = msg; el.style.opacity = 1;
-  clearTimeout(temporizadorDoAviso);
-  temporizadorDoAviso = setTimeout(() => { el.style.opacity = 0; }, 2200);
-}
-function evoluirArea(id) {
-  const nivel = estado.niveis[id], custo = CUSTO_PARA_PROXIMO_NIVEL[nivel - 1];
-  if (nivel >= NIVEL_MAXIMO || estado.xp < custo) return;
-  estado.xp -= custo;
-  estado.niveis[id]++;
-  salvarProgresso();
-  reconstruirArea(id);
-  focarCameraNaArea(id);
-  desenharCards();
-  mostrarAviso(AREAS.find(a => a.id === id).nome + ' evoluiu para o nível ' + (nivel + 1) + '! 🎉');
-}
-function desenharCards() {
-  const lista = selecionar('#lista-cards'), rolagem = lista.scrollLeft;
-  selecionar('#valor-xp').textContent = estado.xp;
-  lista.innerHTML = AREAS.map(area => {
-    const nivel = estado.niveis[area.id], max = nivel >= NIVEL_MAXIMO, custo = CUSTO_PARA_PROXIMO_NIVEL[nivel - 1];
-    return `<div class="card" onclick="focarCameraNaArea('${area.id}')">
+    function desenharCards() {
+      const lista = selecionar('#lista-cards'), rolagem = lista.scrollLeft;
+      selecionar('#valor-xp').textContent = estado.xp;
+      lista.innerHTML = AREAS.map(area => {
+        const nivel = estado.niveis[area.id], max = nivel >= NIVEL_MAXIMO, custo = CUSTO_PARA_PROXIMO_NIVEL[nivel - 1];
+        return `<div class="card" onclick="focarCameraNaArea('${area.id}')">
       <div>${area.icone} <b>${area.nome}</b></div>
       <div class="pontos-nivel">${'●'.repeat(nivel) + '○'.repeat(NIVEL_MAXIMO - nivel)}</div>
       <button ${max || estado.xp < custo ? 'disabled' : ''} onclick="event.stopPropagation(); evoluirArea('${area.id}')">${max ? 'Nível máximo' : 'Evoluir · ' + custo + ' XP'}</button>
     </div>`;
-  }).join('');
-  lista.scrollLeft = rolagem;
-}
-// O sistema de atividades deve chamar window.adicionarXP(quantidade) para creditar XP.
-window.adicionarXP = q => { estado.xp += q; salvarProgresso(); desenharCards(); };
-selecionar('#botao-teste-xp').onclick = () => window.adicionarXP(5000);
-desenharCards();
-</script></body></html>
+      }).join('');
+      lista.scrollLeft = rolagem;
+    }
+    // O sistema de atividades deve chamar window.adicionarXP(quantidade) para creditar XP.
+    window.adicionarXP = q => { estado.xp += q; salvarProgresso(); desenharCards(); };
+    selecionar('#botao-teste-xp').onclick = () => window.adicionarXP(5000);
+    desenharCards();
+  </script>
+</body>
+
+</html>

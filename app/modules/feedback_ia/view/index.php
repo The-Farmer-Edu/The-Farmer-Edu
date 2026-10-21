@@ -150,6 +150,8 @@ button::after {
             width: 100%;
             height: 100px;
             justify-content: space-between;
+            position: fixed;
+            z-index: 1000;
         }
 
         #esquerda_cabecalho {
@@ -162,7 +164,8 @@ button::after {
         #direita_cabecalho {
             display: flex;
             align-items: center;
-            padding-right: 60px;
+            padding-right: 30px;
+            gap: 20px;
         }
 
         #desafio {
@@ -282,6 +285,21 @@ button::after {
         #status_compilador {
             padding: 10px;
         }
+
+        footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #a0fda37c;
+            color: #ffffff;
+            font-size: 20px;
+            -webkit-text-stroke-width: 0.00000001px;
+            -webkit-text-stroke-color: #000;
+        }
+
+        main {
+            padding-top: 90px; /* Espaço para o cabeçalho fixo */
+        }
     </style>
 </head>
 
@@ -294,6 +312,7 @@ button::after {
         
         <div id="direita_cabecalho">
             <p>Bem vindo, PiorAinda</p>
+            <img src="file?type=img&file=simbolo_usuario.webp" alt="Logo" id="logo_cabecalho">
         </div>
     </header>
     <main>
@@ -399,7 +418,7 @@ button::after {
         }
     </script>
     </main>
-    <footer style="height: 25px; width: 100%; text-align: center; background-color: #A0FDA3;" opc>
+    <footer style="height: 50px; width: 100%; text-align: center;" opc>
         <p>&copy; 2026 The Farmer Edu. Todos os direitos reservados.</p>
     </footer>
 </body>

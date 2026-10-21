@@ -257,7 +257,7 @@ function confirmarEntrega() {
     salvar();
     entrega = { data: new Date().toISOString(), arquivos: { ...dados } };
     try { localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega)); } catch (e) {}
-    // FUTURO: enviar "entrega" para o servidor aqui (fetch/POST)
+    
     fecharModalEntrega();
     atualizarEntrega();
     sophiaFala('Atividade entregue! Em breve eu te mando o feedback por aqui.', 6000);

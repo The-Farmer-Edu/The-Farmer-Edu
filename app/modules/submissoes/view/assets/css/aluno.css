@@ -77,11 +77,11 @@ header .usuario-avatar {
 }
 
 
-.menu-iconi {
+.menu-iconi,
+.menu-usuario {
     position: absolute;
     top: 76px;
-    left: 22px;
-    width: min(200px, calc(100vw - 40px));
+    width: min(220px, calc(100vw - 40px));
     display: flex;
     justify-content: center;
     gap: 16px;
@@ -96,7 +96,16 @@ header .usuario-avatar {
     z-index: 10;
 }
 
-.menu-iconi.active {
+.menu-iconi {
+    left: 22px;
+}
+
+.menu-usuario {
+    right: 22px;
+}
+
+.menu-iconi.active,
+.menu-usuario.active {
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
@@ -152,7 +161,7 @@ main {
     gap: 25px;
 }
 
-.card {
+.card-principal {
     background: var(--Branco);
     box-shadow: 0 4px 20px var(--Sombra);
     display: flex;
@@ -275,7 +284,7 @@ aside {
     gap: 12px;
 }
 
-.badge {
+.badge-padrao {
     padding: 6px 12px;
     border-radius: 6px;
     font-weight: bold;

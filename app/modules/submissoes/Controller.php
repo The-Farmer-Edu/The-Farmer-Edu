@@ -1,6 +1,20 @@
 <?php
+    class testarApiController {
+        public function showaluno() {
+            require_once __DIR__ . '/view/aluno.html';
+        }
+        public function showtestarApi() {
+            require_once __DIR__ . '/view/testarApi.php';
+            }
+        public function showtestarApi() {
+            require_once __DIR__ . '/view/testarApi.php';
+        }
+        public function enviarSubmissao() {
+            require_once __DIR__ . '/view/enviarSubmissao.php';
+        }
+    }
 
- public function sendFile(): void {
+    public function sendFile(): void {
         $type = $_GET['type'] ?? null;
         $file = $_GET['file'] ?? null;
         $caminhoArquivo = __DIR__ . "/view/assets/$type/$file";

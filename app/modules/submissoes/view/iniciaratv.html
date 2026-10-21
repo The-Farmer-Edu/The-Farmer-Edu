@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Farm Edu - Execução da Resposta</title>
+    <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn-icone" id="btnVoltar" title="Voltar" aria-label="Voltar">⬅</button>
+
+            <span class="logo">
+                <img src="submissoes/file?type=img&file=logo_icone.png" alt="The Farm Edu">
+            </span>
+
+            <span class="nome">The Farm <b>Edu</b></span>
+            <span class="modulo">Escrever código</span>
+        </div>
+
+        <div class="acoes">
+            <span class="chip-entrega" id="chipEntrega" hidden></span>
+            <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
+            <button class="btn btn-verde" id="btnEntregar">Entregar atividade</button>
+        </div>
+    </header>
+
+    <main class="ide">
+
+        <aside class="explorer">
+            <h2>Arquivos</h2>
+            <ul id="arquivos"></ul>
+        </aside>
+
+        <section class="card editor">
+            <div class="tabs" id="tabs"></div>
+            <div class="editor-wrap">
+                <pre class="gutter" id="gutter" aria-hidden="true"></pre>
+                <div class="code">
+                    <pre id="hl" aria-hidden="true"></pre>
+                    <textarea id="ed" spellcheck="false" wrap="off" aria-label="Editor de código"></textarea>
+                </div>
+            </div>
+            <div class="status">
+                <span id="stLang">HTML</span>
+                <span id="stPos">Ln 1, Col 1</span>
+                <span>UTF-8</span>
+            </div>
+        </section>
+
+        <section class="card preview">
+            <div class="pv-head"><span class="chip">Resultado</span></div>
+            <iframe id="pv" title="Pré-visualização" sandbox="allow-scripts"></iframe>
+            <div class="console">
+                <div class="con-head">
+                    <span>Console</span>
+                    <button id="btnLimpar">Limpar</button>
+                </div>
+                <div class="con-corpo" id="console"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="sophia">
+        <div class="balao" id="balao"></div>
+
+        <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
+            <img src="submissoes/file?type=img&file=sophia_ia.webp" alt="Sophia">
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="modalEntrega" role="dialog" aria-modal="true" aria-labelledby="tituloEntrega">
+        <div class="modal-card">
+            <h3 id="tituloEntrega">Entregar atividade?</h3>
+            <p>Você vai entregar estes arquivos:</p>
+            <ul class="resumo" id="resumoEntrega"></ul>
+            <div class="modal-acoes">
+                <button class="btn btn-cinza" id="btnCancelarModal">Voltar ao editor</button>
+                <button class="btn btn-verde" id="btnConfirmar">Confirmar entrega</button>
+            </div>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script src="submissoes/file?type=js&file=iniciaratv.js"></script>
+</body>
+</html>

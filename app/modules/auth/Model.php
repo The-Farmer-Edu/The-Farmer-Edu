@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../../core/database.php';
 
 class Usuario {
-    public const tipos = ['aluno','instrutor']
+    public const tipos = ['aluno','instrutor'];
     public ?int $id = null;
     public string $nome;
     public string $email;
@@ -49,7 +49,7 @@ class Usuario {
     }
 
     public static function formatarDados(array $dados): self {
-        $usuario = new self($dados['nome'], $dados['email'], $dados['tipo'], $dados['senha_has'], true);
+        $usuario = new self($dados['nome'], $dados['email'], $dados['tipo'], $dados['senha_hash'], true);
         $usuario->id = (int) $dados['id'];
         return $usuario;
     }
@@ -59,7 +59,7 @@ class Usuario {
             throw new LogicException('Defina a senha antes de salvar.');
         }
         if ($this->id !== null) {
-            trhow new LogicException('Usuário já foi cadastrado.');
+            throw new LogicException('Usuário já foi cadastrado.');
         }
         if (self::buscarPorEmail($pdo, $this->email) !== null) {
             throw new RuntimeException('E-mail já cadastrado.');
@@ -79,10 +79,10 @@ class Usuario {
 }
 
 class Instrutor extends usuario {
-    public array $materias;
+    public array $materias = [];
     public array $id_materias = [];
 
-    public function __construct(string $nome, string $email, string $senha, array $materias = materias[], bool $isHash = false) {
+    public function __construct(string $nome, string $email, string $senha, array $materias = materias, bool $isHash = false) {
         parent::__construct($nome, $email, 'instrutor', $senha, $isHash);
         $this->materias = $materias;
     }
@@ -122,7 +122,7 @@ class Instrutor extends usuario {
             throw new LogicException('Salve o instrutor antes de vincular a matéria.');
         }
         $stmt = $pdo->prepare('INSERT INTO instrutores_materias (id_usuario, id_materia) VALUES (?, ?)');
-        $stmt->execute([$this->id, $idMateria])
+        $stmt->execute([$this->id, $idMateria]);
     }
 
     public static function buscarMateria(PDO $pdo, string $nomeMateria): ?array {
@@ -156,6 +156,7 @@ class aluno extends usuario {
             $this->id = null;
             $this->matricula = null;
             throw $e;
+
         }
     }
 }

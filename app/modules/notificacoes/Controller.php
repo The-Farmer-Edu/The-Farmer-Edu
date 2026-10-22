@@ -6,10 +6,10 @@ class NotificacoesController
     public function listar(): void
     {
         $notificacoes = [
-            "Bem-vindo ao The Farmer Edu!",
-            "Você possui uma nova atividade.",
-            "Confira as novidades do sistema."
-        ];
+    "Você possui uma atividade pendente.",
+    "Uma nova nota foi disponibilizada.",
+    "Confira suas atividades no sistema."
+];
 
         echo "<h1>Notificações</h1>";
 

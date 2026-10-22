@@ -1,5 +1,3 @@
-
-// nao manjo de js, pedi ajuda ao copilot
 document.addEventListener('DOMContentLoaded', function () {
     const botaoIconi = document.getElementById('botaoIconi');
     const menuIconi = document.getElementById('menuIconi');

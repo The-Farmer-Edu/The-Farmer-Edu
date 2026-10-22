@@ -8,7 +8,7 @@
     --Branco: #ffffff;
     --Off-white: #fafafa;
     --Hoover: #e8f5e9;
-    --Sombra: #38353521;
+    --Sombra: #38353548;
 }
 
 :root {
@@ -329,10 +329,15 @@ aside {
 .mascote-container button {
     border: none;
     background: none;
+    border-radius: 50%;
+}
+.mascote-container button:hover {
+    transform: scale(0.93);
 }
 
-.galinha-pixel {
-    font-size: 2.2rem;
+.mascote-container img {
+  -webkit-filter: drop-shadow(8px 8px 5px var(--Sombra));
+  filter: drop-shadow(8px 8px 5px var(--Sombra));
 }
 
 .modal-overlay {

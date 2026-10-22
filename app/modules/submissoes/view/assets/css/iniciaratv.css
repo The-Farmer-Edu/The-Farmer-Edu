@@ -53,13 +53,11 @@ button { font-family: var(--fonte-ui); cursor: pointer; }
     flex: none;
     background: var(--verde-claro);
     color: var(--titulo);
-    padding: 12px 24px;
+    padding-left: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 16px;
-    border-radius: 0 0 10px 10px;
-    box-shadow: var(--brilho);
     position: relative;
     z-index: 10;
 }

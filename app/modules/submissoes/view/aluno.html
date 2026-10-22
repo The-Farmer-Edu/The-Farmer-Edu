@@ -8,9 +8,40 @@
 </head>
 <body>
     <header>
-        <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
-        <div class="usuario-avatar" aria-label="Seu perfil">👤</div>
+        <div class="header-esq">
+
+            <div class="menu menu-logo">
+                <button type="button" aria-haspopup="true" aria-label="Menu The Farm Edu">
+                    <span class="logo">
+                        <img src="submissoes/file?type=img&file=logo_icone.png" alt="The Farm Edu">
+                    </span>
+                    <span class="nome">The Farm <b>Edu</b></span>
+                </button>
+                <div class="dropdown">
+                    <div class="dropdown-card">
+                        <span class="grupo">Calendário</span>
+                        <a href="#" class="item">Cronograma</a>
+                        <span class="grupo">Desempenho</span>
+                        <a href="#" class="item claro">Visualize seu desempenho</a>
+                    </div>
+                </div>
+            </div>
+
+            <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
+        </div>
+
+        <div class="menu menu-perfil">
+            <button type="button" class="usuario-avatar" aria-haspopup="true" aria-label="Seu perfil">👤</button>
+            <div class="dropdown">
+                <div class="dropdown-card">
+                    <a href="#" class="item claro">Configurações</a>
+                    <a href="#" class="item claro">Meus dados</a>
+                    <a href="#" class="item sair">Logout</a>
+                </div>
+            </div>
+        </div>
     </header>
+
     <main>
         <section class="card conteudo">
             <article>
@@ -23,7 +54,6 @@
             </article>
             <button class="btn-voltar" id="btnVoltar">⬅ Voltar</button>
         </section>
-
 
         <section class="card trabalhos">
             <h3>Seus trabalhos</h3>
@@ -40,10 +70,14 @@
             </div>
         </section>
     </main>
+
     <div class="mascote-container">
-        <div class="balao" id="balao">Cocoricó! Bora codar?</div>
-        <button class="galinha-pixel" id="btnGalinha" aria-label="Mascote">🐔</button>
-        </div>
+        <div class="balao" id="balao">Cocoricó!</div>
+        <button class="fazenda-avatar" id="btnFazenda" aria-label="Fazenda">
+            <img src="submissoes/file?type=img&file=galinha.png" alt="Fazenda">
+        </button>
+    </div>
+
     <script src="submissoes/file?type=js&file=aluno.js"></script>
 </body>
 </html>

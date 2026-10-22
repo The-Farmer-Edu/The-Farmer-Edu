@@ -71,11 +71,11 @@ button { font-family: var(--fonte-ui); cursor: pointer; }
 
 .logo {
     flex: none;
-    width: 44px;
-    height: 44px;
+    width: 55px;
+    height: 55px;
     border-radius: 50%;
     background: var(--branco);
-    border: 2px solid var(--verde-botao-hover);
+    border:none;
     overflow: hidden;
 }
 
@@ -103,7 +103,25 @@ button { font-family: var(--fonte-ui); cursor: pointer; }
 }
 
 .btn,
-.btn-icone { border: none; transition: 0.2s, 0.1s; }
+.btn-voltar {
+    background: var(--off-white);
+    border: none;
+    padding: 12px 28px;
+    margin: 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    color: var(--titulo);
+    transition: background 0.2s, transform 0.1s;
+    width: fit-content;
+}
+
+.btn-voltar:hover, .btn-voltar:active {
+    transform: scale(0.98);
+}
 
 .btn:active { transform: scale(0.97); }
 

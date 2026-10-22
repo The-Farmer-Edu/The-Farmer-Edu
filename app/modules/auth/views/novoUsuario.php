@@ -11,7 +11,7 @@ $tipoEscolhido = $_POST['tipo'] ?? 'aluno';
     <title>Cadastro - The Farmer Edu</title>
 </head>
 <body>
-    <h1>Cadastro 🌱</h1>
+    <h1>Cadastro </h1>
  
     <?php if (!empty($mensagem)): ?>
         <p><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>

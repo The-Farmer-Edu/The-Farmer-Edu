@@ -3,6 +3,7 @@
  
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
+require_once __DIR__ . '/../../core/session.php';
  
 class UsuarioController
 {
@@ -47,6 +48,68 @@ class UsuarioController
         }
  
         $this->view('novoUsuario', ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
+    }
+
+    //login do instrutor
+    
+    public function showLoginInstrutor(): void
+    {
+        $this->view('loginInstrutor');
+    }
+
+    //só deixa entrar quem é instrutor
+    public function entrarInstrutor(): void
+    {
+        $this->autenticar('instrutor', 'loginInstrutor');
+    }
+
+    //sair(logout)
+
+    public function sair(): void
+    {
+        // "Descobre" o perfil antes de apagar a sessão
+        $perfil = usuarioLogado()['perfilAcesso'] ?? 'instrutor';
+
+        logout();
+
+        header('Location: login' . ucfirst($perfil));
+        exit;
+    }
+
+    
+
+    private function autenticar(string $tipo, string $view): void
+    {
+        $email = (string) ($_POST['email'] ?? '');
+        $senha = (string) ($_POST['senha'] ?? '');
+
+        $mensagem = '';
+        $sucesso  = false;
+
+        try {
+            $usuario = Usuario::buscarPorEmail(iniciarPDO(), $email);
+            if ($usuario === null || $usuario->tipo !== $tipo || !$usuario->verificarSenha($senha)) {
+                throw new InvalidArgumentException('E-mail ou senha incorretos.');
+            }
+
+            // login() é do core, gera de novo o id da sessão e guarda esses 4 
+            login([
+                'idUsuario'    => $usuario->id,
+                'nome'         => $usuario->nome,
+                'email'        => $usuario->email,
+                'perfilAcesso' => $usuario->tipo, // 'aluno' ou 'instrutor'
+            ]);
+
+            $mensagem = 'Login realizado com sucesso!';
+            $sucesso  = true;
+        } catch (InvalidArgumentException $e) {
+            $mensagem = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+        }
+
+        $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
     }
  
  

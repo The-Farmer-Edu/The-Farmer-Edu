@@ -11,8 +11,11 @@
     --Sombra: #38353521;
 }
 
-:root{
-    
+:root {
+    --Raio-pilula: 20px;
+    --Raio-card: 25px;
+    --Fonte-ui: 'Poppins', 'Segoe UI', Tahoma, sans-serif;
+    --Fonte-texto: 'Inter', 'Segoe UI', Tahoma, sans-serif;
 }
 
 
@@ -150,7 +153,6 @@ header .usuario-avatar {
 
 /*style do menu */
 
-
 main {
     flex: 1;
     max-width: 1200px;
@@ -200,8 +202,6 @@ main {
 .titulo h3 {
     font-size: 1.25rem;
     color: var(--Titulo);
-    padding-bottom: 12px;
-    margin-bottom: 20px;
 }
 
 .btn-voltar {
@@ -251,6 +251,22 @@ aside {
     color: var(--Texto);
     line-height: 1.5;
     margin-bottom: 25px;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255, 141, 40, 0.15);
+    font-family: var(--Fonte-ui);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 5px 14px;
+    border-radius: var(--Raio-pilula);
+    margin-bottom: 16px;
+}
+
+.status.entregue {
+    background: rgba(52, 199, 89, 0.18);
 }
 
 /*  */
@@ -311,7 +327,7 @@ aside {
     margin-top: -15px;
 }
 
-.mascote-container button{
+.mascote-container button {
     border: none;
     background: none;
 }

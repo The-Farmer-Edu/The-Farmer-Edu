@@ -51,7 +51,7 @@ menus.forEach(menu => {
 });
 
 document.addEventListener('click', e => {
-    if (e.target.closest('a[href="#"]')) e.preventDefault();   // links ainda sem destino
+    if (e.target.closest('a[href="#"]')) e.preventDefault();  
     if (!e.target.closest('.menu')) fecharMenus();
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharMenus(); });

@@ -140,13 +140,17 @@
 
     // ======================= CONFIGURAÇÃO DO JOGO =======================
     const AREAS = [
-      { id: 'curral', nome: 'Curral', icone: '🐄', posicao: { x: 9, z: 6 } },
+      { id: 'curral', nome: 'Curral das vacas', icone: '🐄', posicao: { x: 9, z: 6 } },
+      { id: 'ovelhal', nome: 'Ovelhal', icone: '🐑', posicao: { x: 34, z: 12 } },
       { id: 'casa', nome: 'Casa', icone: '🏠', posicao: { x: -8, z: -9 } },
       { id: 'celeiro', nome: 'Celeiro', icone: '🛖', posicao: { x: 9, z: -8 } },
       { id: 'maquinario', nome: 'Maquinário', icone: '🚜', posicao: { x: -8, z: 6 } },
-      { id: 'plantacao', nome: 'Plantação', icone: '🌽', posicao: { x: 0, z: 20 } },
+      { id: 'plantacao', nome: 'Plantação', icone: '🌽', posicao: { x: 13, z: 27 } },
+      { id: 'plantacaoGrande', nome: 'Grande plantação', icone: '🌾', posicao: { x: -7, z: 31 } },
       { id: 'galinheiro', nome: 'Galinheiro', icone: '🐔', posicao: { x: 22, z: 6 } },
       { id: 'chiqueiro', nome: 'Chiqueiro', icone: '🐖', posicao: { x: 22, z: -8 } },
+      { id: 'estabulo', nome: 'Estábulo', icone: '🐎', posicao: { x: 34, z: -8 } },
+      { id: 'ponte', nome: 'Ponte do rio', icone: '🌉', posicao: { x: -17.3, z: -1 } },
     ];
     const NIVEL_MAXIMO = 3;
     const CUSTO_PARA_PROXIMO_NIVEL = [100, 250]; // posição 0 = custo do nível 1 → 2
@@ -154,7 +158,7 @@
 
     // ======================= PROGRESSO (XP E NÍVEIS) =======================
     const CHAVE_SALVAMENTO = 'fazenda3d-progresso-v3';
-    let estado = { xp: 0, niveis: { curral: 1, casa: 1, celeiro: 1, maquinario: 1, plantacao: 1, galinheiro: 1, chiqueiro: 1 } };
+    let estado = { xp: 0, niveis: Object.fromEntries(AREAS.map(a => [a.id, 1])) };
     try {
       const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
       if (salvo && salvo.niveis) {
@@ -162,6 +166,13 @@
         for (const id in estado.niveis) estado.niveis[id] = Math.min(NIVEL_MAXIMO, Math.max(1, estado.niveis[id] | 0));
       }
     } catch (erro) { }
+    // Compatibilidade com saves antigos: as áreas novas começam no nível 1.
+    if (!estado.niveis) estado.niveis = {};
+    for (const area of AREAS) {
+      const nivelSalvo = Number(estado.niveis[area.id]);
+      estado.niveis[area.id] = Number.isFinite(nivelSalvo) ? Math.min(NIVEL_MAXIMO, Math.max(1, nivelSalvo | 0)) : 1;
+    }
+    if (!Number.isFinite(estado.xp)) estado.xp = 0;
     function salvarProgresso() { try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { } }
 
     // ======================= CENA 3D BÁSICA =======================
@@ -185,8 +196,48 @@
 
     // ======================= FUNÇÕES AUXILIARES DE MODELAGEM =======================
     const cacheDeMateriais = {};
-    function material(cor) {
-      if (!cacheDeMateriais[cor]) cacheDeMateriais[cor] = new THREE.MeshLambertMaterial({ color: cor });
+
+    function criarTexturaProcedural(cor) {
+      const tamanho = 128;
+      const canvasTextura = document.createElement('canvas');
+      canvasTextura.width = canvasTextura.height = tamanho;
+      const ctx = canvasTextura.getContext('2d');
+
+      ctx.fillStyle = '#' + cor.toString(16).padStart(6, '0');
+      ctx.fillRect(0, 0, tamanho, tamanho);
+
+      let semente = cor || 1;
+      function aleatorio() {
+        semente = (semente * 1664525 + 1013904223) >>> 0;
+        return semente / 4294967296;
+      }
+
+      for (let i = 0; i < 450; i++) {
+        const alpha = 0.04 + aleatorio() * 0.13;
+        ctx.fillStyle = aleatorio() > 0.5
+          ? `rgba(255,255,255,${alpha})`
+          : `rgba(0,0,0,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(aleatorio() * tamanho, aleatorio() * tamanho, 1 + aleatorio() * 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      const textura = new THREE.CanvasTexture(canvasTextura);
+      textura.wrapS = textura.wrapT = THREE.RepeatWrapping;
+      textura.repeat.set(2, 2);
+      return textura;
+    }
+
+    function material(cor, textura = false) {
+      if (!cacheDeMateriais[cor]) {
+        cacheDeMateriais[cor] = new THREE.MeshLambertMaterial({
+          color: cor
+        });
+        if(textura) {
+          cacheDeMateriais[cor].map = criarTexturaProcedural(cor)
+        }
+      }
+
       return cacheDeMateriais[cor];
     }
     function criarCaixa(largura, altura, profundidade, cor, x, y, z, pai) {
@@ -241,12 +292,28 @@
       cercaLinha(g, -w / 2, -d / 2, w / 2, -d / 2); cercaLinha(g, -w / 2, d / 2, w / 2, d / 2);
       cercaLinha(g, -w / 2, -d / 2, -w / 2, d / 2); cercaLinha(g, w / 2, -d / 2, w / 2, d / 2);
     }
-    function arvore(g, x, z, s = 1) {
-      criarCilindro(0.2 * s, 0.28 * s, 1.4 * s, 0x6b4a2b, x, 0.7 * s, z, g, 6);
-      criarEsfera(1.1 * s, 0x3f9e3a, x, 2 * s, z, g);
-      criarEsfera(0.8 * s, 0x4fb043, x + 0.5 * s, 1.5 * s, z + 0.2 * s, g);
-      criarEsfera(0.8 * s, 0x358f33, x - 0.5 * s, 1.6 * s, z - 0.2 * s, g);
+    function arvore (g, x, z, s = 1, y = 0) { // árvore de montanha (3 cones empilhados)
+      criarCilindro(0.12 * s, 0.18 * s, 0.9 * s, 0x6b4a2b, x, y + 0.45 * s, z, g, 6);
+      [[1.1, 1.5, 1.2], [0.85, 1.3, 2], [0.55, 1.1, 2.8]].forEach(([r, h, yy], i) => {
+      const c = new THREE.Mesh(new THREE.ConeGeometry(r * s, h * s, 7), material(i % 2 ? 0x2f7a4a : 0x2a6b40));
+      c.position.set(x, y + yy * s, z); c.castShadow = true; g.add(c);
+      });
     }
+
+const cacheDePlano = {};
+function materialPlano(cor) { // faces "facetadas" (visual low-poly) para montanhas
+  return cacheDePlano[cor] || (cacheDePlano[cor] = new THREE.MeshLambertMaterial({ color: cor, flatShading: true }));
+}
+function pinheiro(g, x, z, s = 1, y = 0) { // árvore de montanha (3 cones empilhados)
+  criarCilindro(0.12 * s, 0.18 * s, 0.9 * s, 0x6b4a2b, x, y + 0.45 * s, z, g, 6);
+  [[1.1, 1.5, 1.2], [0.85, 1.3, 2], [0.55, 1.1, 2.8]].forEach(([r, h, yy], i) => {
+    const c = new THREE.Mesh(new THREE.ConeGeometry(r * s, h * s, 7), material(i % 2 ? 0x2f7a4a : 0x2a6b40));
+    c.position.set(x, y + yy * s, z); c.castShadow = true; g.add(c);
+  });
+}
+function capim(g, x, z) {
+  for (let i = 0; i < 4; i++) criarCaixa(0.05, 0.55, 0.05, 0x4f9e3a, x + (i - 1.5) * 0.08, 0.27, z + (i % 2) * 0.06, g).rotation.z = (i - 1.5) * 0.18;
+}
     function arbusto(g, x, z, flores = true) {
       criarEsfera(0.4, 0x4a9e3a, x, 0.35, z, g, 0.8);
       if (flores) [0xe84a5f, 0xffd23f, 0xff8fb1].forEach((c, i) => criarCaixa(0.12, 0.12, 0.12, c, x + (i - 1) * 0.22, 0.6, z + 0.25, g));
@@ -255,7 +322,67 @@
       const p = new THREE.Mesh(new THREE.DodecahedronGeometry(s), material(0xb4b4aa));
       p.position.set(x, s * 0.5, z); p.scale.y = 0.7; p.castShadow = true; g.add(p);
     }
-    
+    function criarMontanha(x, z, largura, altura, profundidade, cor) {
+      const montanha = new THREE.Mesh(
+        new THREE.ConeGeometry(largura, altura, 5),
+        material(cor, true)
+      );
+      montanha.position.set(x, altura / 2 - 0.2, z);
+      montanha.scale.z = profundidade / largura;
+      montanha.castShadow = true;
+      montanha.receiveShadow = true;
+      cena.add(montanha);
+    }
+
+    function criarLago(x, z, largura, profundidade) {
+      const agua = new THREE.Mesh(
+        new THREE.CircleGeometry(1, 32),
+        new THREE.MeshLambertMaterial({
+          color: 0x55bddd,
+          transparent: true,
+          opacity: 0.88
+        })
+      );
+      agua.rotation.x = -Math.PI / 2;
+      agua.position.set(x, 0.07, z);
+      agua.scale.set(largura, profundidade, 1);
+      cena.add(agua);
+
+      for (let i = 0; i < 36; i++) {
+        const angulo = (i / 36) * Math.PI * 2;
+        pedra(
+          cena,
+          x + Math.cos(angulo) * largura * 0.95,
+          z + Math.sin(angulo) * profundidade * 0.95,
+          0.3
+        );
+      }
+    }
+
+    function criarCachoeira() {
+      const rocha = new THREE.Mesh(
+        new THREE.ConeGeometry(9, 18, 5),
+        material(0x777d70)
+      );
+      rocha.position.set(-24, 8.8, -36);
+      rocha.scale.z = 0.8;
+      cena.add(rocha);
+
+      const agua = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.2, 9),
+        new THREE.MeshLambertMaterial({
+          color: 0x7fe5f2,
+          transparent: true,
+          opacity: 0.82,
+          side: THREE.DoubleSide
+        })
+      );
+      agua.position.set(-24, 5.2, -31);
+      cena.add(agua);
+
+      criarLago(-24, -25, 4.5, 2.8);
+    }
+
     function barril(g, x, z) { criarCilindro(0.32, 0.32, 0.7, 0x7a4a2a, x, 0.45, z, g, 10); }
     function caixote(g, x, z) { criarCaixa(0.55, 0.45, 0.55, 0xa0703a, x, 0.32, z, g); }
     function fardo(g, x, y, z) { criarCaixa(0.8, 0.5, 0.6, COR.feno, x, y, z, g); }
@@ -322,7 +449,7 @@
       criarCilindro(raio * 0.6, raio * 0.6, 0.06, 0x70492c, x + raio * 0.1, 0.16, z, g, 16).scale.z = 0.7;
     }
 
-    const RAIO_DA_HITBOX = { galinha: 0.3, ovelha: 0.5, vaca: 0.8, porco: 0.5 };
+    const RAIO_DA_HITBOX = { galinha: 0.3, ovelha: 0.5, vaca: 0.8, porco: 0.5, cavalo: 0.85 };
 
     // diz se um animal (círculo de centro x,z) pode ficar nessa posição sem bater em nada
     function posicaoEstaLivre(cercado, animalAtual, x, z, raio) {
@@ -358,6 +485,22 @@
         criarCaixa(0.62, 0.3, 0.62, 0x222222, 0, 1.45, 0.98, a);
         for (const sx of [-0.3, 0.3]) for (const sz of [-0.55, 0.55]) criarCaixa(0.16, 0.6, 0.16, 0xffffff, sx, 0.3, sz, a);
       }
+      if (tipo === 'cavalo') {
+        // Cavalo low-poly: corpo, pescoço, cabeça, crina, cauda e quatro patas.
+        const pelo = [0x8b542f, 0x6b402b, 0xa66a3e, 0x4b3026][Math.floor(Math.random() * 4)];
+        criarCaixa(0.78, 0.82, 1.45, pelo, 0, 1.05, 0, a);
+        criarCaixa(0.36, 0.95, 0.42, pelo, 0, 1.62, 0.58, a).rotation.x = -0.22;
+        criarCaixa(0.42, 0.48, 0.52, pelo, 0, 2.02, 0.78, a).rotation.x = -0.18;
+        criarCaixa(0.34, 0.12, 0.12, 0x30251e, 0, 1.88, 1.05, a);
+        criarCaixa(0.12, 0.42, 0.16, 0x30251e, 0, 2.24, 0.54, a); // crina
+        criarCaixa(0.14, 0.58, 0.14, pelo, 0, 0.92, -0.82, a).rotation.x = -0.45; // cauda
+        for (const sx of [-0.25, 0.25]) for (const sz of [-0.5, 0.5]) {
+          criarCaixa(0.16, 0.72, 0.16, pelo, sx, 0.38, sz, a);
+          criarCaixa(0.17, 0.12, 0.19, 0x30251e, sx, 0.08, sz + 0.03, a);
+        }
+        criarCaixa(0.1, 0.16, 0.08, 0xf0d7b0, -0.22, 2.08, 0.9, a);
+        criarCaixa(0.1, 0.16, 0.08, 0xf0d7b0, 0.22, 2.08, 0.9, a);
+      }
       if (tipo === 'porco') {
         criarCaixa(0.75, 0.55, 1.1, 0xf2a0b5, 0, 0.55, 0, a);       // corpo
         criarCaixa(0.5, 0.45, 0.45, 0xf2a0b5, 0, 0.62, 0.65, a);    // cabeça
@@ -392,7 +535,7 @@
         a.position.set(dados.x, 0.1 + Math.abs(Math.sin(tempo * 5 + fase)) * 0.05, dados.z);
         a.rotation.y = direcao;
       });
-    }
+    };
 
     // ======================= CENÁRIO FIXO =======================
     const chao = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), material(0x78b24a));
@@ -400,20 +543,213 @@
     chao.receiveShadow = true;
     cena.add(chao);
     // == ESTRADA == 
-    criarCaixa(2.4, 0.05, 130, 0xd9b97a, 0, 0.03, -50, cena);
-    criarCaixa(3000, 0.05, 2.4, 0xd9b97a, 10, 0.03, -1, cena);
-    [[-16, -2], [16, 0], [-15, 13], [15, 14], [-3, -13], [2, -14], [-17, -12], [17, -12]].forEach(([x, z]) => arvore(cena, x, z, 1.3));
+    criarCaixa(2.4, 0.05, 86, 0xd9b97a, 0, 0.03, -28, cena);
+    criarCaixa(105, 0.05, 2.4, 0xd9b97a, 0, 0.03, -1, cena);
+    criarCaixa(46, 0.05, 2.4, 0xd9b97a, 3, 0.03, 18, cena);
+    const arvores = []
+    for(let a = 0; a < 1000; a++) {
+      let x = (Math.random() * 140 - 70);
+      let z = (Math.random() * 110 - 55);
+      while(true){
+        if((x > -40 && x < 40) && (z > -40 && z < 40)){
+          x = (Math.random() * 140 - 70);
+          z = (Math.random() * 110 - 55);
+        } else {
+          break;
+        }
+      }
+      arvores.push([x, z]);
+    }
+    arvores.forEach(([x, z]) => arvore(cena, x, z, 1.3));
 
+    // Nuvens feitas de volumes arredondados, espalhadas em profundidade e com velocidades distintas.
     const nuvens = [];
-    for (let i = 0; i < 5; i++) {
+    const materialNuvem = new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.92 });
+    for (let i = 0; i < 22; i++) {
       const nuvem = new THREE.Group();
-      for (let p = 0; p < 3; p++) criarCaixa(3 + p, 1, 2, 0xffffff, p * 2 - 2, (p % 2) * 0.4, 0, nuvem);
-      nuvem.position.set(-30 + i * 14, 16, -20 + i * 9);
+      const sopros = 5 + Math.floor(Math.random() * 4);
+      for (let p = 0; p < sopros; p++) {
+        const raio = 1.05 + Math.random() * 1.15;
+        const puff = new THREE.Mesh(new THREE.SphereGeometry(raio, 10, 7), materialNuvem);
+        puff.position.set((p - (sopros - 1) / 2) * 1.25, Math.random() * 0.65, (Math.random() - 0.5) * 1.5);
+        puff.scale.set(1.15, 0.72 + Math.random() * 0.28, 0.95);
+        puff.castShadow = false;
+        nuvem.add(puff);
+      }
+      const x = -65 + Math.random() * 130;
+      const z = -48 + Math.random() * 96;
+      nuvem.position.set(x, 17 + Math.random() * 7, z);
+      nuvem.userData = { velocidade: 0.12 + Math.random() * 0.28, zInicial: z, fase: Math.random() * Math.PI * 2, amplitude: 0.7 + Math.random() * 1.1 };
       cena.add(nuvem);
       nuvens.push(nuvem);
     }
 
-    // ======================= CONSTRUTORES DAS ÁREAS (3 níveis, baseados nas ilustrações) =======================
+// ======================= CENÁRIO DE FUNDO: MONTANHAS, CACHOEIRA E RIO =======================
+// Animações do cenário (rio correndo, cachoeira, névoa). Recebem (tempo, dt) e rodam todo frame.
+const animacoesDoCenario = [];
+function sorteio(semente) { let s = semente; return () => (s = (s * 16807) % 2147483647) / 2147483647; } // aleatório repetível: o cenário é sempre igual
+const sorte = sorteio(11);
+
+// --- Montanhas: saia de floresta + corpo rochoso + pico nevado + 2 picos menores ---
+function montanha(x, z, R, H) {
+  const m = new THREE.Group();
+  m.position.set(x, 0, z);
+  m.rotation.y = sorte() * 6.28;
+  const cone = (r, h, cor, px, pz) => {
+    const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), materialPlano(cor));
+    c.position.set(px, h / 2, pz);
+    m.add(c);
+  };
+  cone(R * 1.12, H * 0.7, 0x4a8a45, 0, 0);   // floresta na base
+  cone(R, H, 0x7b8691, 0, 0);                // corpo rochoso
+  const ch = H * 0.3;                         // neve: mesma inclinação do cone, 0.1 acima (sem "briga" de faces)
+  const neve = new THREE.Mesh(new THREE.ConeGeometry(ch * R / H, ch, 7), materialPlano(0xf4f7fb));
+  neve.position.y = H + 0.1 - ch / 2;
+  m.add(neve);
+  for (let i = 0; i < 2; i++) {               // picos menores ao redor
+    const a = sorte() * 6.28, d = R * (0.6 + sorte() * 0.3), r = R * (0.45 + sorte() * 0.2), h = H * (0.45 + sorte() * 0.25);
+    const px = Math.cos(a) * d, pz = Math.sin(a) * d;
+    cone(r * 1.1, h * 0.6, 0x4a8a45, px, pz);
+    cone(r, h, 0x8a929b, px, pz);
+  }
+  cena.add(m);
+}
+function morro(x, z, r, h, cor = 0x6fb04a) { // colina verde baixa
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 6), material(cor));
+  m.scale.set(1, h / r, 1); m.position.set(x, 0, z); m.receiveShadow = true; cena.add(m);
+}
+// [x, z, raio, altura]. A estrada norte-sul (x = 0) passa por um vale e termina na montanha central.
+[
+  [-30, -80, 18, 38],                                   // montanha atrás da cachoeira
+  [-62, -88, 20, 30], [-92, -70, 20, 26], [-105, -35, 18, 22], [-118, -28, 18, 20],
+  [26, -92, 20, 32], [54, -100, 24, 40], [84, -84, 22, 30], [104, -50, 20, 26], [118, -28, 18, 22],
+  [-28, -118, 28, 50], [30, -125, 28, 48], [0, -150, 40, 66],
+  [-95, 50, 16, 18], [100, 60, 16, 18],
+].forEach(([x, z, R, H]) => montanha(x * 0.72, z * 0.55, R * 0.72, H * 0.85));
+[[-55, -60, 10, 4], [-48, -72, 12, 5], [-75, -55, 12, 5], [12, -62, 10, 3.5], [18, -75, 14, 6], [40, -68, 12, 4.5]].forEach(([x, z, r, h]) => morro(x * 0.72, z * 0.55, r * 0.72, h * 0.8));
+
+// --- Rio: curva suave da cachoeira até o fim do mapa, passando pela estrada leste-oeste em (x -24, z -1) ---
+const curvaDoRio = new THREE.CatmullRomCurve3([[-30, -58], [-28, -48], [-22, -37], [-22.5, -25], [-25, -12], [-24, -1], [-24.5, 9], [-28, 22], [-31, 38], [-29, 55], [-34, 75], [-40, 100]].map(([x, z]) => new THREE.Vector3(x * 0.72, 0, z * 0.55)));
+const larguraDoRio = t => 3.4 + 1.8 * t;           // mais largo rio abaixo
+const pontosDoRio = curvaDoRio.getPoints(240);
+const distanciaDoRio = (x, z) => Math.min(...pontosDoRio.map(p => Math.hypot(p.x - x, p.z - z)));
+
+function criarFita(curva, largura, y, mat, tile, passos = 160) { // faixa plana que segue a curva
+  const pos = [], uv = [], nor = [], idx = [], comp = curva.getLength();
+  for (let i = 0; i <= passos; i++) {
+    const t = i / passos, p = curva.getPointAt(t), tg = curva.getTangentAt(t), w = largura(t) / 2;
+    pos.push(p.x + tg.z * w, y, p.z - tg.x * w, p.x - tg.z * w, y, p.z + tg.x * w);
+    uv.push(0, t * comp / tile, 1, t * comp / tile);
+    nor.push(0, 1, 0, 0, 1, 0);
+    if (i < passos) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setIndex(idx);
+  const m = new THREE.Mesh(geo, mat);
+  m.receiveShadow = true;
+  cena.add(m);
+  return m;
+}
+function texturaDeAgua(w, h, corBase, qtd, comp, alfa, espessura) { // listras claras que "emendam" na vertical
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'), r = sorteio(7);
+  x.fillStyle = corBase; x.fillRect(0, 0, w, h);
+  for (let i = 0; i < qtd; i++) {
+    const px = r() * w, py = r() * h, hh = comp * (0.5 + r()), ww = espessura * (0.6 + r());
+    x.fillStyle = `rgba(255,255,255,${alfa * (0.5 + r() * 0.5)})`;
+    for (const dy of [-h, 0, h]) x.fillRect(px, py + dy, ww, hh);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const texturaDoRio = texturaDeAgua(128, 256, '#3f9fd0', 34, 70, 0.4, 3);
+criarFita(curvaDoRio, t => larguraDoRio(t) + 2, 0.06, material(0xc2a56b), 8);  // margem de areia
+criarFita(curvaDoRio, larguraDoRio, 0.09, new THREE.MeshLambertMaterial({ map: texturaDoRio, side: THREE.DoubleSide }), 8);
+animacoesDoCenario.push((t, dt) => { texturaDoRio.offset.y -= dt * 0.25; }); // a água corre rio abaixo
+
+// Detalhes naturais da floresta: arbustos e pedras espalhados entre os pinheiros.
+for (let i = 0; i < 170; i++) {
+  const x = sorte() * 126 - 63, z = sorte() * 100 - 50;
+  if (Math.abs(x) < 43 && Math.abs(z) < 43) continue;
+  if (distanciaDoRio(x, z) < 6) continue;
+  if (sorte() < 0.62) arbusto(cena, x, z, sorte() > 0.65);
+  else {
+    const pedra = criarEsfera(0.18 + sorte() * 0.38, [0x777b78, 0x8a8d86, 0x686d69][Math.floor(sorte() * 3)], x, 0.12, z, cena, 0.55 + sorte() * 0.4);
+    pedra.scale.x = 0.8 + sorte() * 1.1; pedra.rotation.y = sorte() * Math.PI;
+  }
+}
+// Touceiras de grama com tons e alturas variados por todo o campo.
+for (let i = 0; i < 280; i++) {
+  const x = sorte() * 70 - 35, z = sorte() * 70 - 35;
+  if (Math.abs(z + 1) < 1.8 || Math.abs(z - 18) < 1.7 || distanciaDoRio(x, z) < 4.8) continue;
+  if (AREAS.some(a => Math.hypot(x - a.posicao.x, z - a.posicao.z) < 4.8)) continue;
+  const paleta = [0x5f9d38, 0x70b843, 0x8bc653, 0x4e8733, 0xa0cb5a];
+  for (let folha = 0; folha < 2 + (sorte() > 0.72 ? 1 : 0); folha++) {
+    const altura = 0.16 + sorte() * 0.28;
+    const haste = criarCaixa(0.045 + sorte() * 0.035, altura, 0.035, paleta[Math.floor(sorte() * paleta.length)], x + (sorte() - 0.5) * 0.3, 0.09 + altura / 2, z + (sorte() - 0.5) * 0.3, cena);
+    haste.rotation.z = (sorte() - 0.5) * 0.65; haste.rotation.y = sorte() * Math.PI;
+  }
+}
+
+// margens: pedras, pinheiros e capim (menos perto da ponte)
+for (let u = 0.02; u < 0.98; u += 0.012) {
+  const p = curvaDoRio.getPointAt(u), tg = curvaDoRio.getTangentAt(u);
+  if (Math.abs(p.z + 1) < 8) continue;
+  const lado = sorte() < 0.5 ? -1 : 1, off = larguraDoRio(u) / 2 + 1.1 + sorte() * 1.6, sorteado = sorte();
+  const x = p.x + tg.z * lado * off, z = p.z - tg.x * lado * off;
+  if (sorteado < 0.45) pedra(cena, x, z, 0.2 + sorte() * 0.35);
+  else if (sorteado < 0.7) pinheiro(cena, x, z, 0.7 + sorte() * 0.5);
+  else capim(cena, x, z);
+}
+// floresta de pinheiros no vale, longe do rio
+for (let i = 0, ok = 0; i < 400 && ok < 22; i++) {
+  const x = -38 + sorte() * 32, z = -39 + sorte() * 18;
+  if (distanciaDoRio(x, z) < 7) continue;
+  pinheiro(cena, x, z, 0.8 + sorte() * 0.7); ok++;
+}
+
+// --- Cachoeira: paredão de pedra em degraus, lago em cima, cortina de água animada e névoa embaixo ---
+const CX = -21.6, CZ_FRENTE = -34.1, ALTURA_CLIFF = 15.3;
+criarCaixa(14, 8, 10, 0x7d776c, CX, 4, CZ_FRENTE - 5, cena);          // degrau de baixo
+criarCaixa(10, 7, 8, 0x8a8478, CX, 11.5, CZ_FRENTE - 4, cena);         // degrau de cima (mesma face da frente)
+criarCaixa(10.2, 0.3, 8.2, 0x6fae4a, CX, 15.15, CZ_FRENTE - 4, cena);  // grama no topo
+criarCaixa(3.4, 0.06, 7.2, 0x4aa8d8, CX, 15.33, CZ_FRENTE - 3.55, cena); // lago de onde a água cai
+for (const lado of [-1, 1]) {                                           // pedras laterais
+  const c = new THREE.Mesh(new THREE.ConeGeometry(3.5, 9, 6), materialPlano(0x7d776c));
+  c.position.set(CX + lado * 8, 4.5, CZ_FRENTE - 2); c.castShadow = true; cena.add(c);
+}
+pinheiro(cena, CX - 3.6, CZ_FRENTE - 4, 1.1, 15.3); pinheiro(cena, CX + 3.4, CZ_FRENTE - 5.5, 0.9, 15.3); pinheiro(cena, CX + 4, CZ_FRENTE - 2.5, 0.8, 15.3);
+const texturaDaCachoeira = texturaDeAgua(64, 256, '#8fd3f0', 40, 90, 0.8, 5);
+texturaDaCachoeira.repeat.set(1, 3);
+const cortina = new THREE.Mesh(new THREE.PlaneGeometry(3.4, ALTURA_CLIFF), new THREE.MeshBasicMaterial({ map: texturaDaCachoeira, transparent: true, opacity: 0.92 }));
+cortina.position.set(CX, ALTURA_CLIFF / 2, CZ_FRENTE + 0.15);
+cena.add(cortina);
+animacoesDoCenario.push((t, dt) => { texturaDaCachoeira.offset.y += dt * 0.7; }); // a água desce
+criarCilindro(4.6, 4.6, 0.05, 0xc2a56b, CX, 0.06, CZ_FRENTE + 2.5, cena, 24);  // areia ao redor do poço
+criarCilindro(4.2, 4.2, 0.06, 0x57b3dd, CX, 0.09, CZ_FRENTE + 2.5, cena, 24);  // poço no pé da cachoeira
+for (let i = 0; i < 7; i++) {                                                  // espuma pulsando
+  const espuma = criarEsfera(0.5 + (i % 3) * 0.12, 0xffffff, CX + (i - 3) * 0.55, 0.3, CZ_FRENTE + 0.9 + (i % 2) * 0.4, cena, 0.7);
+  espuma.castShadow = false;
+  animacoesDoCenario.push(t => espuma.scale.set(1 + 0.12 * Math.sin(t * 4 + i), 0.7 + 0.1 * Math.sin(t * 5 + i), 1 + 0.12 * Math.sin(t * 4 + i)));
+}
+for (let i = 0; i < 8; i++) {                                                  // névoa subindo
+  const nevoa = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
+  cena.add(nevoa);
+  const dx = (sorte() - 0.5) * 3.2;
+  animacoesDoCenario.push(t => {
+    const p = (t * 0.25 + i / 8) % 1;
+    nevoa.position.set(CX + dx, 0.6 + p * 4.5, CZ_FRENTE + 0.5 + p * 1.5);
+    nevoa.scale.setScalar(0.8 + p * 1.6);
+    nevoa.material.opacity = 0.38 * (1 - p);
+  });
+}
+
+
+        // ======================= CONSTRUTORES DAS ÁREAS (3 níveis, baseados nas ilustrações) =======================
     const construtoresDasAreas = {
 
       // N1 casinha de madeira · N2 varanda, água-furtada e jardim · N3 casarão com ala, lago e pérgola
@@ -534,7 +870,6 @@
         abrigo(g, w / 2 - 1.6, -d / 2 + 1.4);
         cocho(g, 0.5, d / 2 - 0.9);
         placa(g, -w / 2 - 0.2, d / 2 - 0.5);
-        if (n >= 2) { cercaLinha(g, -w / 2, -1, -w / 2 + 2, -1); cercaLinha(g, w / 2 - 2, 1, w / 2, 1); }
         if (n === 3) {
           abrigo(g, -w / 2 + 1.6, -d / 2 + 1.4);
           cocho(g, -2.4, d / 2 - 0.9);
@@ -546,12 +881,11 @@
           anim.push(t => { helice.rotation.z = t * 1.2; });
         }
         // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
-        const MOSTRAR_HITBOXES = true; // true = mostra retângulos vermelhos no chão para conferir
+        const MOSTRAR_HITBOXES = false; // hitboxes de depuração ocultas no jogo final
         const retangulos = [
           [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
           [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
         ];
-        if (n >= 2) retangulos.push([-w / 2 + 1, -1, 2, 0.3], [w / 2 - 1, 1, 2, 0.3]); // cercas divisórias
         if (n === 3) retangulos.push(
           [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
           [-2.4, d / 2 - 0.9, 1.6, 0.6],          // segundo cocho
@@ -562,9 +896,77 @@
           obstaculos: retangulos.map(([x, z, largura, prof]) => ({ minX: x - largura / 2, maxX: x + largura / 2, minZ: z - prof / 2, maxZ: z + prof / 2 })),
         };
         if (MOSTRAR_HITBOXES) retangulos.forEach(([x, z, largura, prof]) => criarCaixa(largura, 0.05, prof, 0xff0000, x, 0.2, z, g));
-        const qtd = { vaca: [1, 1, 3][n - 1], ovelha: [0, 2, 3][n - 1] };
+        const qtd = { vaca: [1, 2, 4][n - 1] }; // ovelhas ficam em um cercado próprio
         for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
           criarAnimal(g, anim, tipo, cercado);
+      },
+
+      // Ovelhal independente: cada nível amplia o pasto e aumenta o rebanho.
+      ovelhal(g, n, anim) {
+        const w = [6, 7.5, 9][n - 1], d = [5, 6.2, 7.5][n - 1];
+        base(g, w + 0.9, d + 0.9, 0x9dce68);
+        // Cerca do ovelhal construída em segmentos retos e alinhados aos quatro lados.
+        // Isso evita que os trilhos pareçam tortos nas quinas em diferentes níveis.
+        const cercaReta = (x1, z1, x2, z2) => {
+          const dx = x2 - x1, dz = z2 - z1;
+          const horizontal = Math.abs(dx) >= Math.abs(dz);
+          const comp = Math.hypot(dx, dz);
+          const postes = Math.max(1, Math.ceil(comp / 1.05));
+          for (let i = 0; i <= postes; i++) {
+            const t = i / postes;
+            criarCaixa(0.14, 0.82, 0.14, COR.madeira, x1 + dx * t, 0.43, z1 + dz * t, g);
+          }
+          for (const y of [0.38, 0.68]) {
+            const trilho = criarCaixa(horizontal ? comp : 0.09, 0.09, horizontal ? 0.09 : comp, COR.ripa, (x1+x2)/2, y, (z1+z2)/2, g);
+          }
+        };
+        cercaReta(-w/2, -d/2, w/2, -d/2);
+        cercaReta(-w/2, d/2, w/2, d/2);
+        cercaReta(-w/2, -d/2, -w/2, d/2);
+        cercaReta(w/2, -d/2, w/2, d/2);
+        placa(g, -w / 2 - 0.2, d / 2 - 0.5);
+        abrigo(g, w / 2 - 1.5, -d / 2 + 1.3);
+        cocho(g, -w / 2 + 1.2, d / 2 - 0.8);
+        for (let i = 0; i < (n === 1 ? 2 : n === 2 ? 4 : 6); i++) {
+          const tufo = criarEsfera(0.17, i % 2 ? 0xf5f0e4 : 0xe7e0d1, -w / 2 + 1.5 + i * (w - 3) / Math.max(1, (n === 1 ? 1 : n === 2 ? 3 : 5)), -0.01, -d / 2 + 0.7, g, 0.55);
+          tufo.castShadow = false;
+        }
+        const cercado = { limiteX: w / 2 - 0.1, limiteZ: d / 2 - 0.1, animais: [], obstaculos: [
+          { minX: w / 2 - 2.65, maxX: w / 2 - 0.35, minZ: -d / 2 + 0.35, maxZ: -d / 2 + 2.25 },
+          { minX: -w / 2 + 0.4, maxX: -w / 2 + 2.0, minZ: d / 2 - 1.2, maxZ: d / 2 - 0.4 }
+        ] };
+        for (let i = 0; i < [2, 4, 6][n - 1]; i++) criarAnimal(g, anim, 'ovelha', cercado);
+        if (n >= 2) { fardo(g, -w / 2 + 1.3, 0.25, -d / 2 + 1.2); barril(g, w / 2 - 0.7, d / 2 - 0.8); }
+        if (n === 3) { abrigo(g, -w / 2 + 1.5, -d / 2 + 1.3); cocho(g, 0, d / 2 - 0.8); }
+      },
+
+      // Estábulo evolutivo: amplia as baias e acrescenta cavalos a cada nível.
+      estabulo(g, n, anim) {
+        const w = [5.8, 7.2, 8.8][n - 1], d = [4.5, 5.4, 6.5][n - 1];
+        base(g, w + 1.2, d + 1.2, 0x8fbd56);
+        cerca(g, w, d);
+        const parede = n === 1 ? 0x9b6738 : 0x87552f;
+        const bx = -w / 2 + 1.55, bz = -d / 2 + 1.35;
+        criarCaixa(3.1 + (n - 1) * 0.8, 2.25, 2.35, parede, bx, 1.15, bz, g);
+        criarCaixa(3.35 + (n - 1) * 0.8, 0.22, 2.6, 0x4c3c32, bx, 2.32, bz, g);
+        criarCaixa(3.5 + (n - 1) * 0.8, 0.16, 2.8, 0x9b3f2f, bx, 2.55, bz, g).rotation.z = -0.04;
+        for (let i = 0; i < n + 1; i++) {
+          const dx = bx - 0.8 + i * 0.55;
+          criarCaixa(0.08, 1.2, 0.08, 0xe6d3ad, dx, 0.62, bz + 1.2, g);
+        }
+        criarCaixa(1.1, 1.35, 0.12, 0x5b3926, bx, 0.72, bz + 1.22, g);
+        placa(g, w / 2 - 0.2, d / 2 - 0.5);
+        cocho(g, w / 2 - 1.1, d / 2 - 0.8);
+        fardo(g, -w / 2 + 1, 0.25, d / 2 - 0.8);
+        if (n >= 2) { fardo(g, -w / 2 + 1.6, 0.25, d / 2 - 1.6); barril(g, w / 2 - 0.7, -d / 2 + 0.8); }
+        if (n === 3) {
+          for (const x of [-1.8, 1.8]) { criarCaixa(0.12, 1.5, 0.12, COR.madeira, x, 0.75, -d / 2 - 0.5, g); criarCaixa(0.12, 1.5, 0.12, COR.madeira, x, 0.75, d / 2 + 0.5, g); }
+          criarCaixa(4.2, 0.12, 0.12, COR.madeira, 0, 1.5, -d / 2 - 0.5, g);
+        }
+        const cercado = { limiteX: w / 2 - 0.45, limiteZ: d / 2 - 0.35, animais: [], obstaculos: [
+          { minX: bx - 1.8, maxX: bx + 1.8, minZ: bz - 1.3, maxZ: bz + 1.35 }
+        ] };
+        for (let i = 0; i < [1, 2, 4][n - 1]; i++) criarAnimal(g, anim, 'cavalo', cercado);
       },
 
       // N1 galinheiro simples · N2 com poleiro e feno · N3 dois galinheiros
@@ -589,7 +991,6 @@
           [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
           [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
         ];
-        if (n >= 2) retangulos.push([-w / 2 + 1, -1, 2, 0.3], [w / 2 - 1, 1, 2, 0.3]); // cercas divisórias
         if (n === 3) retangulos.push(
           [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
           [-2.4, d / 2 - 0.9, 1.6, 0.6],          // segundo cocho
@@ -601,7 +1002,7 @@
         };
         if (MOSTRAR_HITBOXES) retangulos.forEach(([x, z, largura, prof]) => criarCaixa(largura, 0.05, prof, 0xff0000, x, 0.2, z, g));
 
-        const qtd = { galinha: [1, 3, 5][n - 1]};
+        const qtd = { galinha: [1, 3, 5][n - 1] };
         for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
           criarAnimal(g, anim, tipo, cercado);
       },
@@ -624,7 +1025,6 @@
           [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
           [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
         ];
-        if (n >= 2) retangulos.push([-w / 2 + 1, -1, 2, 0.3], [w / 2 - 1, 1, 2, 0.3]); // cercas divisórias
         if (n === 3) retangulos.push(
           [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
           [-2.4, d / 2 - 0.9, 1.6, 0.6],          // segundo cocho
@@ -636,7 +1036,7 @@
         };
         if (MOSTRAR_HITBOXES) retangulos.forEach(([x, z, largura, prof]) => criarCaixa(largura, 0.05, prof, 0xff0000, x, 0.2, z, g));
 
-        const qtd = { porco: [1, 1, 3][n - 1]};
+        const qtd = { porco: [1, 1, 3][n - 1] };
         for (const tipo in qtd) for (let i = 0; i < qtd[tipo]; i++)
           criarAnimal(g, anim, tipo, cercado);
       },
@@ -681,6 +1081,77 @@
       },
 
       // N1 terra preparada · N2 mudas · N3 milharal com espantalho
+      // Ponte sobre o rio: cada evolução reforça o tabuleiro e acrescenta detalhes.
+      ponte(g, n, anim) {
+        // Ponte transversal ao rio (o rio corre aproximadamente no eixo Z).
+        // Tabuleiro baixo, rampas nas duas margens e corrimãos contínuos.
+        const largura = [7.8, 9.6, 11.4][n - 1];
+        const profundidade = [3.0, 3.4, 3.8][n - 1];
+        const meio = largura / 2;
+        const corTabua = [0x9a6338, 0x8c5a34, 0x777b78][n - 1];
+        const corMadeira = n === 3 ? 0x5d6260 : 0x68452c;
+        const alturaNoX = x => 0.16 + 0.22 * Math.max(0, 1 - Math.pow(Math.abs(x) / meio, 1.7));
+
+        // Vigas longitudinais sob o piso, sem blocos grandes atravessando o vão.
+        for (const z of [-profundidade/2 + 0.22, profundidade/2 - 0.22]) {
+          criarCaixa(largura, 0.18, 0.18, 0x65452d, 0, 0.22, z, g);
+        }
+
+        // Pranchas regulares com leve inclinação nas extremidades para encontrar o terreno.
+        const quantidadeTabuas = Math.ceil(largura / 0.42);
+        for (let i = 0; i < quantidadeTabuas; i++) {
+          const x = -meio + 0.18 + i * (largura - 0.36) / Math.max(1, quantidadeTabuas - 1);
+          const y = alturaNoX(x);
+          const t = criarCaixa(0.36, 0.12, profundidade, i % 2 ? 0xb78049 : 0xc18b52, x, y, 0, g);
+          t.rotation.z = x < -meio + 1.05 ? -0.09 : x > meio - 1.05 ? 0.09 : 0;
+        }
+        // Guias de entrada e pequenos apoios nas margens.
+        for (const lado of [-1, 1]) {
+          const x = lado * (meio - 0.45);
+          criarCaixa(0.7, 0.36, profundidade + 0.25, n === 1 ? 0x806348 : 0x777b78, x, 0.05, 0, g);
+          criarCaixa(0.78, 0.12, profundidade + 0.35, n === 1 ? 0x9d7953 : 0x92958e, x, 0.27, 0, g);
+        }
+
+        // Corrimão de ambos os lados, com postes apoiados no tabuleiro e trilhos em segmentos.
+        for (const z of [-profundidade/2 + 0.12, profundidade/2 - 0.12]) {
+          const qtdPostes = Math.ceil(largura / 1.15);
+          for (let i = 0; i <= qtdPostes; i++) {
+            const x = -meio + i * largura / qtdPostes;
+            const piso = alturaNoX(x);
+            const alturaPoste = n === 1 ? 0.58 : 0.72;
+            criarCaixa(0.14, alturaPoste, 0.14, corMadeira, x, piso + alturaPoste/2 + 0.05, z, g);
+          }
+          for (let i = 0; i < qtdPostes; i++) {
+            const x1 = -meio + i * largura / qtdPostes;
+            const x2 = -meio + (i+1) * largura / qtdPostes;
+            const y1 = alturaNoX(x1) + (n === 1 ? 0.63 : 0.78);
+            const y2 = alturaNoX(x2) + (n === 1 ? 0.63 : 0.78);
+            const trilho = criarCaixa(Math.hypot(x2-x1, y2-y1), 0.12, 0.12, n === 3 ? 0x8e928d : 0x9b6c42, (x1+x2)/2, (y1+y2)/2, z, g);
+            trilho.rotation.z = Math.atan2(y2-y1, x2-x1);
+          }
+          if (n >= 2) {
+            for (let i = 0; i < qtdPostes; i++) {
+              const x1 = -meio + i * largura / qtdPostes;
+              const x2 = -meio + (i+1) * largura / qtdPostes;
+              const y1 = alturaNoX(x1) + 0.43, y2 = alturaNoX(x2) + 0.43;
+              const trilhoBaixo = criarCaixa(Math.hypot(x2-x1, y2-y1), 0.07, 0.07, corMadeira, (x1+x2)/2, (y1+y2)/2, z, g);
+              trilhoBaixo.rotation.z = Math.atan2(y2-y1, x2-x1);
+            }
+          }
+        }
+
+        // Nível 3: pilares de pedra e lampiões discretos nas entradas.
+        if (n === 3) {
+          for (const x of [-meio + 0.55, meio - 0.55]) {
+            for (const z of [-profundidade/2 - 0.15, profundidade/2 + 0.15]) {
+              criarCaixa(0.42, 0.72, 0.42, 0x777b78, x, 0.18, z, g);
+            }
+            criarCaixa(0.12, 1.05, 0.12, 0x4f4030, x, 1.05, 0, g);
+            criarEsfera(0.18, 0xffd66b, x, 1.7, 0, g, 1.1);
+          }
+        }
+      },
+
       plantacao(g, n, anim) {
         const w = 7.4, d = 6.4;
         base(g, w + 0.9, d + 0.9, 0x7fc650);
@@ -720,6 +1191,60 @@
           criarCaixa(0.4, 0.25, 0.4, 0x9a5a2a, x, 2.35, 0, g);
         }
       },
+
+      plantacaoGrande(g, n, anim) {
+        // Campo grande independente: a área mantém espaço para tratores e caminhos nas bordas.
+        const w = 20, d = 16;
+        base(g, w + 1.4, d + 1.4, 0x78bd49);
+        criarCaixa(w, 0.1, d, 0x8b5a30, 0, 0.12, 0, g);
+        // Caminho de entrada e cercas laterais para dar escala ao terreno.
+        criarCaixa(2.1, 0.12, 1.8, 0xd7b779, 0, 0.2, d / 2 - 0.1, g);
+        cercaLinha(g, -w / 2, -d / 2, w / 2, -d / 2);
+        cercaLinha(g, -w / 2, -d / 2, -w / 2, d / 2);
+        cercaLinha(g, w / 2, -d / 2, w / 2, d / 2);
+        placa(g, -w / 2 + 1.2, d / 2 - 0.8);
+        barril(g, w / 2 - 1.1, d / 2 - 0.9);
+        caixote(g, -w / 2 + 1.1, d / 2 - 0.9);
+
+        const colunas = [6, 9, 12][n - 1];
+        const linhas = [5, 7, 9][n - 1];
+        const passoX = 1.45, passoZ = 1.45;
+        // Canteiros compridos e fileiras bem espaçadas para a plantação parecer realmente grande.
+        for (let c = 0; c < colunas; c++) {
+          for (let l = 0; l < linhas; l++) {
+            const x = (c - (colunas - 1) / 2) * passoX;
+            const z = (l - (linhas - 1) / 2) * passoZ;
+            criarCaixa(1.15, 0.08, 1.18, (c + l) % 2 ? 0x754526 : 0x6b3f20, x, 0.2, z, g);
+            const planta = new THREE.Group();
+            planta.position.set(x, 0.24, z);
+            g.add(planta);
+            if (n === 1) {
+              criarEsfera(0.18, 0x4c9e38, 0, 0.18, 0, planta);
+              for (let f = 0; f < 3; f++) {
+                const folha = criarCaixa(0.42, 0.07, 0.15, 0x58ad3c, 0, 0.17, 0, planta);
+                folha.rotation.y = f * Math.PI / 3;
+              }
+            } else if (n === 2) {
+              criarCaixa(0.12, 0.7, 0.12, 0x3b8732, 0, 0.35, 0, planta);
+              for (const lado of [-1, 1]) criarCaixa(0.48, 0.07, 0.15, 0x4c9b35, lado * 0.2, 0.38, 0, planta).rotation.z = lado * 0.35;
+              criarEsfera(0.16, 0xd9b443, 0.1, 0.7, 0, planta, 1.3);
+            } else {
+              const alt = 1.25 + ((c * 7 + l * 3) % 4) * 0.12;
+              criarCaixa(0.12, alt, 0.12, 0x347f2d, 0, alt / 2, 0, planta);
+              for (const lado of [-1, 1]) criarCaixa(0.5, 0.06, 0.14, 0x2e762b, lado * 0.22, alt * 0.58, 0, planta).rotation.z = lado * 0.45;
+              criarCaixa(0.16, 0.38, 0.16, 0xf2c230, 0.08, alt + 0.05, 0, planta);
+            }
+            anim.push(t => { planta.rotation.z = Math.sin(t * 1.35 + c * 0.35 + l * 0.22) * 0.045; });
+          }
+        }
+        // Um pequeno espantalho na lateral do campo grande.
+        const sx = -w / 2 + 0.8, sz = -d / 2 + 0.9;
+        criarCaixa(0.1, 1.8, 0.1, COR.madeira, sx, 0.9, sz, g);
+        criarCaixa(1.05, 0.1, 0.1, COR.madeira, sx, 1.4, sz, g);
+        criarCaixa(0.42, 0.55, 0.3, 0xb74b35, sx, 1.2, sz, g);
+        criarEsfera(0.23, 0xd5ad7b, sx, 1.75, sz, g, 1.1);
+        criarCaixa(0.75, 0.1, 0.55, 0x65401f, sx, 2.02, sz, g);
+      },
     };
 
     // ======================= GRUPOS 3D DAS ÁREAS =======================
@@ -744,9 +1269,9 @@
 
     // ======================= CÂMERA E CONTROLES =======================
     let anguloHorizontal = 0.7, anguloVertical = 0.85;
-    let distanciaDaCamera = innerWidth < innerHeight ? 52 : 38;
-    const DISTANCIA_MINIMA = 14, DISTANCIA_MAXIMA = 62;
-    const alvoAtualDaCamera = new THREE.Vector3(0, 0, 1), alvoDestinoDaCamera = alvoAtualDaCamera.clone();
+    let distanciaDaCamera = innerWidth < innerHeight ? 40 : 31;
+    const DISTANCIA_MINIMA = 12, DISTANCIA_MAXIMA = 48;
+    const alvoAtualDaCamera = new THREE.Vector3(-1.5, 0, -1), alvoDestinoDaCamera = alvoAtualDaCamera.clone();
     function focarCameraNaArea(id) {
       const area = AREAS.find(a => a.id === id);
       alvoDestinoDaCamera.set(area.posicao.x, 0, area.posicao.z);
@@ -792,7 +1317,7 @@
 
     // ======================= MOVIMENTO WASD DO ALVO DA CÂMERA =======================
     const teclas = { KeyW: false, KeyA: false, KeyS: false, KeyD: false };
-    const LIMITE_DO_MAPA = 30;       // o chão tem 70x70, então ±30 mantém o alvo dentro dele
+    const LIMITE_DO_MAPA = 62;       // limite reduzido para acompanhar o mapa compacto
     const VELOCIDADE_BASE = 0.6;     // unidades/s para cada unidade de distância da câmera
     const VELOCIDADE_COM_SHIFT = 1.8; // multiplicador ao segurar Shift
 
@@ -835,6 +1360,7 @@
       requestAnimationFrame(animarCena);
       const dt = Math.min(relogio.getDelta(), 0.05), tempo = relogio.elapsedTime;
       atualizarMovimento(dt, shiftPressionado);   // <-- adicione esta linha
+      for (const animar of animacoesDoCenario) animar(tempo, dt);
       for (const id in animacoesDaArea) for (const animar of animacoesDaArea[id]) animar(tempo, dt);
       for (const id in grupoDaArea) {
         const g = grupoDaArea[id];
@@ -843,7 +1369,11 @@
           g.scale.setScalar(1 + 0.2 * Math.sin(g.userData.progressoDoEfeitoDeEvolucao * Math.PI));
         }
       }
-      nuvens.forEach(n => { n.position.x += dt * 0.6; if (n.position.x > 38) n.position.x = -38; });
+      nuvens.forEach(n => {
+        n.position.x += dt * n.userData.velocidade;
+        n.position.z = n.userData.zInicial + Math.sin(tempo * 0.08 + n.userData.fase) * n.userData.amplitude;
+        if (n.position.x > 68) { n.position.x = -68; n.userData.zInicial = -48 + Math.random() * 96; }
+      });
       alvoAtualDaCamera.lerp(alvoDestinoDaCamera, 0.06);
       camera.position.set(
         alvoAtualDaCamera.x + distanciaDaCamera * Math.cos(anguloVertical) * Math.sin(anguloHorizontal),

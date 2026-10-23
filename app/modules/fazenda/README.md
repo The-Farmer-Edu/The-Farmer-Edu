@@ -1,8 +1,8 @@
 # INTEGRANTES DA SQUAD 1 - FAZENDA 
 
 André Silva
-Davi Totti (Tech Lead da semana)
-Gabriel Furtado
+Davi Totti
+Gabriel Furtado (Tech Lead da semana)
 Hendrick Glansmann
 
 # Squad 7 - Fazenda 2

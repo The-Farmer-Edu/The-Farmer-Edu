@@ -21,6 +21,7 @@ class AvaliadorController {
         $notaMax = $data['nota_max'] ?? "10";
         $notaMin = $data['nota_min'] ?? "6";
         $codigoBase = $data['codigo_base'] ?? "";
+        $linguagem = $data['linguagem'] ?? "Tente detectar automaticamente";
 
         try {
             $judge0Model = new Judge0();
@@ -33,6 +34,7 @@ class AvaliadorController {
 
             $ollamaModel = new Ollama();
             $feedbackIA_String = $ollamaModel->obterResultadoOllama(
+                $linguagem,
                 $objetivoAtividade,
                 $notaMax,
                 $notaMin,

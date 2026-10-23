@@ -113,6 +113,7 @@
 
             // O payload com as regras da atividade
             const payload = {
+                linguagem: "Python",
                 codigo_aluno: codigo,
 <<<<<<< HEAD
                 id_linguagem: 71, // 71 = Python 68 = PHP no Judge0

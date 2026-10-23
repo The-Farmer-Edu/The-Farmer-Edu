@@ -2,7 +2,7 @@
 
 // require_once __DIR__ . '/Model.php';
 
-class testarApiController {
+class subApiController {
     public function showtestarApi() {
         require_once __DIR__ . '/view/testarApi.php';
     }

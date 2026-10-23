@@ -63,6 +63,18 @@ class UsuarioController
         $this->autenticar('instrutor', 'loginInstrutor');
     }
 
+    //login aluno
+    public function showLoginAluno(): void
+    {
+        $this->view('loginAluno');
+    }
+
+    //só deixa entrar quem é aluno
+    public function entrarAluno(): void
+    {
+        $this->autenticar('aluno', 'loginAluno');
+    }
+
     //sair(logout)
 
     public function sair(): void

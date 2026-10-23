@@ -49,6 +49,8 @@ $tipoEscolhido = $_POST['tipo'] ?? 'aluno';
  
         <button type="submit">Cadastrar</button>
     </form>
+
+        <p>Já tem conta? <a href="loginAluno">Entrar como aluno</a> | <a href="loginInstrutor">Entrar como instrutor</a></p>
  
     <script>
         const tipo = document.getElementById('tipo');

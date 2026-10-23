@@ -10,3 +10,6 @@ Router::get('/auth/loginInstrutor', [UsuarioController::class, 'showLoginInstrut
 Router::post('/auth/loginInstrutor', [UsuarioController::class, 'entrarInstrutor']);
 
 Router::get('/auth/logout', [UsuarioController::class, 'sair']);
+
+Router::get('/auth/loginAluno', [UsuarioController::class, 'showLoginAluno']);
+Router::post('/auth/loginAluno', [UsuarioController::class, 'entrarAluno']);

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<link rel="stylesheet" href=""> 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Postar Atividade</title>
+</head>
+<body>
+    
+<header>
+    <img src="assets/img/png/logo_icone.png" alt="">
+    <div>
+        <h2>PUBLICAR ATIVIDADE</h2>
+    </div>
+    <div></div>
+</header>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <button class="menu-item" onclick="abrirPagina('mural')">
+            Mural
+        </button>
+
+        <button class="menu-item active" onclick="abrirPagina('atividades')">
+            Atividades
+        </button>
+
+        <button class="menu-item" onclick="abrirPagina('pessoas')">
+            Pessoas
+        </button>
+
+        <button class="menu-item back" onclick="abrirPagina('atividades')">
+            Voltar
+        </button>
+    </aside>
+
+    <main>
+
+       
+        <section id="pagina-atividades" class="pagina">
+
+            <div class="page-header">
+                <h1>ATIVIDADES</h1>
+            </div>
+
+            <hr>
+
+            <button class="primary" onclick="abrirPagina('opcoes')">
+                Adicionar Atividade
+            </button>
+        </section>
+
+        <section id="pagina-opcoes" class="pagina hidden">
+
+            <div class="page-header">
+                <h1>O que você deseja adicionar?</h1>
+            </div>
+
+            <p>Escolha uma opção para continuar.</p>
+
+            <div class="option-grid">
+
+                <button class="option-card"
+                    onclick="abrirPagina('normal')">
+                    Atividade normal
+                    <small>Crie uma atividade com título, descrição e prazo.</small>
+                </button>
+
+                <button class="option-card"
+                    onclick="abrirPagina('texto')">
+                    Texto
+                    <small>Publique um texto para os alunos lerem.</small>
+                </button>
+
+                <button class="option-card"
+                    onclick="abrirPagina('pergunta')">
+                    Pergunta
+                    <small>Crie uma pergunta com alternativas de resposta.</small>
+                </button>
+
+                <button class="option-card"
+                    onclick="abrirPagina('material')">
+                    Material
+                    <small>Disponibilize um arquivo ou link de estudo.</small>
+                </button>
+
+                <button class="option-card"
+                    onclick="abrirPagina('reutilizar')">
+                    Reutilizar atividade já postada
+                    <small>Escolha uma atividade existente para reutilizar.</small>
+                </button>
+
+            </div>
+
+            <div class="form-actions">
+                <button class="secondary"
+                    onclick="abrirPagina('atividades')">
+                    Voltar
+                </button>
+            </div>
+        </section>
+
+        <section id="pagina-normal" class="pagina hidden">
+            <div class="form-card">
+                <h2>Criar atividade</h2>
+                <p>Adicione uma nova atividade para sua turma.</p>
+
+                <form onsubmit="salvarFormulario(event, 'Atividade')">
+                    <div class="field">
+                        <label for="titulo-normal">Título</label>
+                        <input id="titulo-normal" name="titulo"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="descricao-normal">Enunciado e descrição</label>
+                        <textarea id="descricao-normal" name="descricao"
+                            placeholder=""
+                            required></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="prazo-normal">Prazo de entrega</label>
+                        <input type="date" id="prazo-normal" name="prazo">
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="primary" type="submit">Publicar</button>
+                        <button class="secondary" type="button"
+                            onclick="abrirPagina('opcoes')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="pagina-texto" class="pagina hidden">
+            <div class="form-card">
+                <h2>Publicar texto</h2>
+                <p>Compartilhe um conteúdo escrito com os alunos.</p>
+
+                <form onsubmit="salvarFormulario(event, 'Texto')">
+                    <div class="field">
+                        <label for="titulo-texto">Título do texto</label>
+                        <input id="titulo-texto" name="titulo"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="conteudo-texto">Conteúdo</label>
+                        <textarea id="conteudo-texto" name="descricao"
+                            placeholder=""
+                            required></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="primary" type="submit">Publicar texto</button>
+                        <button class="secondary" type="button"
+                            onclick="abrirPagina('opcoes')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="pagina-pergunta" class="pagina hidden">
+            <div class="form-card">
+                <h2>Criar pergunta</h2>
+                <p>Crie uma pergunta para os alunos responderem.</p>
+
+                <form onsubmit="salvarFormulario(event, 'Pergunta')">
+                    <div class="field">
+                        <label for="titulo-pergunta">Título</label>
+                        <input id="titulo-pergunta" name="titulo"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="enunciado-pergunta">Enunciado da pergunta</label>
+                        <textarea id="enunciado-pergunta" name="descricao"
+                            placeholder="" required></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="alternativa-a">Alternativa A</label>
+                        <input id="alternativa-a" name="alternativaA"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="alternativa-b">Alternativa B</label>
+                        <input id="alternativa-b" name="alternativaB"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="alternativa-c">Alternativa C</label>
+                        <input id="alternativa-c" name="alternativaC"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="correta">Resposta correta</label>
+                        <select id="correta" name="correta" required>
+                            <option value="">Selecione</option>
+                            <option value="A">Alternativa A</option>
+                            <option value="B">Alternativa B</option>
+                            <option value="C">Alternativa C</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="primary" type="submit">Publicar pergunta</button>
+                        <button class="secondary" type="button"
+                            onclick="abrirPagina('opcoes')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="pagina-material" class="pagina hidden">
+            <div class="form-card">
+                <h2>Adicionar material</h2>
+                <p>Compartilhe um arquivo ou link de estudo.</p>
+
+                <form onsubmit="salvarMaterial(event)">
+                    <div class="field">
+                        <label for="titulo-material">Título do material</label>
+                        <input id="titulo-material" name="titulo"
+                            placeholder="" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="link-material">Adicionar um link</label>
+                        <input type="url" id="link-material" name="link"
+                            placeholder="">
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="primary" type="submit">Publicar material</button>
+                        <button class="secondary" type="button"
+                            onclick="abrirPagina('opcoes')">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="pagina-reutilizar" class="pagina hidden">
+            <div class="form-card">
+                <h2>Reutilizar atividade</h2>
+                <p>Selecione uma atividade da lista para criar uma cópia.</p>
+
+                <div id="lista-reutilizar"></div>
+
+                <div class="form-actions">
+                    <button class="secondary"
+                        onclick="abrirPagina('opcoes')">
+                        ← Voltar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="pagina-mural" class="pagina hidden">
+            <div class="page-header">
+                <h1>MURAL DA TURMA</h1>
+            </div>
+
+            <div class="form-card">
+                <h2>Bem-vindo ao mural!</h2>
+                <p>Aqui poderão aparecer avisos e publicações da turma.</p>
+                <button class="primary"
+                    onclick="abrirPagina('atividades')">
+                    Ver atividades
+                </button>
+            </div>
+        </section>
+
+        <section id="pagina-pessoas" class="pagina hidden">
+            <div class="page-header">
+                <h1>PESSOAS</h1>
+            </div>
+
+            <div class="form-card">
+                <h2>Participantes da turma</h2>
+                <p>Os alunos e instrutores poderão ser listados aqui.</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+</body>
+</html> 

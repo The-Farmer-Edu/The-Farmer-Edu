@@ -10,17 +10,17 @@
 
         public function __construct() {
             $this->host = (new InitConfig())->hostOllama;
-            $this->model = "llama3.1:8b";
+            $this->model = "professor-tfe";
             $this->routes = [
                 'apiGen' => 'api/generate',
             ];
         }
 
-        public function obterResultadoOllama(string $objetivoAtividade, string $notaMax, string $notaMin, string $codigoBase, string $codigoAluno, mixed $statusJudge0, mixed $saidaJudge0): mixed {
-            $this->promptSistema = "
-            Você é um instrutor de programação rigoroso, porém didático. Sua missão é avaliar o código de um aluno, analisar a saída da compilação e retornar um feedback construtivo no formato JSON.
+        public function obterResultadoOllama(string $linguagem, string $objetivoAtividade, string $notaMax, string $notaMin, string $codigoBase, string $codigoAluno, mixed $statusJudge0, mixed $saidaJudge0): mixed {
+            $this->promptSistema = "Você atua como o Professor Virtual do 'The Farmer Edu'. Sua tarefa é analisar a submissão de um aluno do SENAI, avaliar a lógica em conjunto com a saída do compilador (Judge0) e do códibo base enviado. Por fim, deve gerar um boletim de avaliação unicamente em formato JSON.
 
             [DADOS DA ATIVIDADE]
+            - Linguagem/Matéria: $linguagem
             - Objetivo: $objetivoAtividade
             - Nota Máxima: $notaMax
             - Nota Mínima para Aprovação: $notaMin
@@ -31,18 +31,24 @@
             [CÓDIGO DESENVOLVIDO PELO ALUNO]
             $codigoAluno
 
-            [SAÍDA DO COMPILADOR (Judge0)]
+<<<<<<< HEAD
+            [SAÍDA DO MOTOR DE AVALIAÇÃO (Judge0)]
             - Status: $statusJudge0
+=======
+            [SAÍDA DO COMPILADOR (Judge0)]
+            - Status: " . implode(', ', $statusJudge0) . "
+>>>>>>> ce39ba26f5f452f34e9cb6bcdb5a29e1b031a481
             - Terminal (stdout/stderr): $saidaJudge0
 
             [DIRETRIZES DE AVALIAÇÃO]
-            1. Análise Lógica: Verifique se o código do aluno atende ao Objetivo. O código compilar não significa que a lógica está correta.
-            2. Boas Práticas: Avalie nomenclatura de variáveis, indentação e clareza.
-            3. Feedback Formativo: Nunca dê o código corrigido pronto. Se houver erro (seja de sintaxe apontado pelo compilador ou erro de lógica), guie o aluno com dicas para que ele mesmo descubra o problema.
-            4. Notas: Atribua uma nota de 0 a $notaMax. Seja justo e baseie-se no cumprimento da demanda.
+            1. Análise Lógica e de Regras: Verifique se o código atende ao objetivo da atividade gamificada. O código compilar sem erros no Judge0 não significa necessariamente que a lógica resolve o problema proposto.
+            2. Boas Práticas Técnicas: Avalie a clareza, indentação e nomenclatura das variáveis segundo os padrões da linguagem ($linguagem).
+            3. Feedback Formativo (Regra de Ouro): NUNCA forneça o código corrigido pronto. Guie o aluno a descobrir o erro (seja de sintaxe ou de lógica) através de dicas conceituais. No campo \"feedback_geral\", adote o tom de um instrutor técnico e encerre SEMPRE com uma pergunta que estimule o raciocínio.
+            4. Avaliação e Nota: Seja justo. Atribua a nota (0 a $notaMax) baseada na proximidade da solução ideal e no cumprimento da demanda. Se houver erro crítico de compilação ou falha lógica grave, a nota deve refletir isso para que o status seja 'refazer'.
 
             [FORMATO DE SAÍDA OBRIGATÓRIO]
-            Não inclua nenhuma saudação ou texto fora do JSON. Retorne EXCLUSIVAMENTE um objeto JSON válido no seguinte formato:
+            Não inclua nenhuma saudação, explicação, formatação markdown (como ```json) ou texto fora do JSON. Retorne EXCLUSIVAMENTE um objeto JSON válido, pronto para ser lido por um decodificador (json_decode), utilizando a exata estrutura abaixo:
+
             {
                 \"nota_atribuida\": 0.0,
                 \"status_avaliacao\": \"aprovado|reprovado|refazer\",

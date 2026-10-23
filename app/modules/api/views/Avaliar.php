@@ -112,6 +112,7 @@
 
             // O payload com as regras da atividade
             const payload = {
+                linguagem: "Python",
                 codigo_aluno: codigo,
                 id_linguagem: 71, // 71 = Python 68 = PHP no Judge0
                 objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",

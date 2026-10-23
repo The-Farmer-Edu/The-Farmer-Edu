@@ -5,8 +5,7 @@
     <meta charset="UTF-8">
     <title>The Farmer Edu - API REST</title>
     <!-- Fontes Inter e Poppins para manter a estética dark tech -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -72,10 +71,10 @@
 <body>
 
     <h1>Desafio de Lógica</h1>
-    <p>Objetivo: Retornar a imagem da fazenda de acordo com o XP total.</p>
+    <p>Objetivo: Receber um CEP e exibir formatado.</p>
 
     <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
-    <textarea id="codigo_aluno" placeholder="Escreva seu código PHP aqui..."></textarea>
+    <textarea id="codigo_aluno" placeholder="Escreva seu código Python aqui..."></textarea>
     <!-- cep = formatarCep("36020490")
     print(cep)
 
@@ -114,65 +113,54 @@
             // O payload com as regras da atividade
             const payload = {
                 codigo_aluno: codigo,
-<<<<<<< HEAD
                 id_linguagem: 71, // 71 = Python 68 = PHP no Judge0
                 objetivo_atividade: "Receber um CEP do usuário e imprimi-lo formatado na tela.",
-=======
-                id_linguagem: 71, // 71 = Python no Judge0
-                objetivo_atividade: "exibir a mensagem Hello World",
->>>>>>> ef44ea793a34cf8e9fe2d3ee57ac89d043d0dd4b
                 nota_max: "10",
-                nota_min: "6",
+                nota_min: "6"
             };
 
-        try {
-            // Chama o Controller que orquestra os Models
-            const response = await fetch('sendAvaliacao', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            try {
+                // Chama o Controller que orquestra os Models
+                const response = await fetch('sendAvaliacao', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
 
-<<<<<<< HEAD
                 const data = await response.json();
-=======
-            const data = await response.json();
-            console.log(data)
->>>>>>> ef44ea793a34cf8e9fe2d3ee57ac89d043d0dd4b
 
-            if (data.sucesso) {
-                document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida;
-                document.getElementById('status-compilador').innerText = data.compilacao.status;
-                document.getElementById('terminal-saida').innerText = data.compilacao.saida_terminal;
-                document.getElementById('feedback-geral').innerText = data.avaliacao.feedback_geral;
+                if (data.sucesso) {
+                    document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida;
+                    document.getElementById('status-compilador').innerText = data.compilacao.status;
+                    document.getElementById('terminal-saida').innerText = data.compilacao.saida_terminal;
+                    document.getElementById('feedback-geral').innerText = data.avaliacao.feedback_geral;
 
-                const ulMelhoria = document.getElementById('pontos-melhoria');
-                ulMelhoria.innerHTML = '';
+                    const ulMelhoria = document.getElementById('pontos-melhoria');
+                    ulMelhoria.innerHTML = '';
 
-                // Renderiza os pontos de melhoria devolvidos no JSON do Llama
-                if (data.avaliacao.pontos_melhoria && data.avaliacao.pontos_melhoria.length > 0) {
-                    data.avaliacao.pontos_melhoria.forEach(ponto => {
-                        let li = document.createElement('li');
-                        li.innerText = ponto;
-                        ulMelhoria.appendChild(li);
-                    });
+                    // Renderiza os pontos de melhoria devolvidos no JSON do Llama
+                    if (data.avaliacao.pontos_melhoria && data.avaliacao.pontos_melhoria.length > 0) {
+                        data.avaliacao.pontos_melhoria.forEach(ponto => {
+                            let li = document.createElement('li');
+                            li.innerText = ponto;
+                            ulMelhoria.appendChild(li);
+                        });
+                    } else {
+                        ulMelhoria.innerHTML = '<li>Lógica perfeita! Nenhuma correção necessária.</li>';
+                    }
+
+                    resultadoDiv.style.display = 'block';
                 } else {
-                    ulMelhoria.innerHTML = '<li>Lógica perfeita! Nenhuma correção necessária.</li>';
+                    alert("Erro: " + data.erro);
                 }
-
-                resultadoDiv.style.display = 'block';
-            } else {
-                alert("Erro: " + data.erro);
+            } catch (error) {
+                console.error("Erro ao comunicar com o servidor:", error);
+                alert("Erro de comunicação com o servidor de avaliação.");
+            } finally {
+                loading.style.display = 'none';
             }
-        } catch (error) {
-            console.log(error)
-            console.error("Erro ao comunicar com o servidor:", error);
-            alert("Erro de comunicação com o servidor de avaliação.");
-        } finally {
-            loading.style.display = 'none';
-        }
         }
     </script>
 </body>

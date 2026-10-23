@@ -1,4 +1,5 @@
 <?php
+
 class ApiController {
 
     public function showAvaliar(): void {

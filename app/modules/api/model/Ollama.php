@@ -31,8 +31,13 @@
             [CÓDIGO DESENVOLVIDO PELO ALUNO]
             $codigoAluno
 
+<<<<<<< HEAD
             [SAÍDA DO MOTOR DE AVALIAÇÃO (Judge0)]
             - Status: $statusJudge0
+=======
+            [SAÍDA DO COMPILADOR (Judge0)]
+            - Status: " . implode(', ', $statusJudge0) . "
+>>>>>>> ce39ba26f5f452f34e9cb6bcdb5a29e1b031a481
             - Terminal (stdout/stderr): $saidaJudge0
 
             [DIRETRIZES DE AVALIAÇÃO]

@@ -27,7 +27,10 @@ CREATE TABLE usuarios (
   email          VARCHAR(150)    NOT NULL,
   senha_hash     VARCHAR(255)    NOT NULL,   -- gerado com password_hash() do PHP
   tipo_usuario   ENUM('instrutor', 'aluno') NOT NULL,
+  tentativas_login INT NOT NULL DEFAULT 0,
+  bloqueado_ate DATETIME NULL,
   criado_em      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ativo TINYINT(1) NOT NULL DEFAULT 1
   UNIQUE KEY uq_usuarios_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

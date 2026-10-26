@@ -4,7 +4,6 @@
     box-sizing: border-box;
 }
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap');
 
 :root {
     --verde-botao: #34C759;
@@ -525,8 +524,49 @@ button {
 }
 
 .con-corpo .error {
-    color: #ff7b7b;
+    color: var(--laranja);
 }
+/*  */
+
+.contador-limite {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--painel);
+    border: 1px solid var(--cinza-texto);
+    border-radius: 14px;
+    font-family: var(--fonte-ui);
+    color: var(--texto-claro);
+}
+
+.contador-limite.is-limitado {
+    border-color: var(--laranja);
+}
+
+.contador-limite__titulo {
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--verde-claro);
+    font-weight: 700;
+}
+
+.contador-limite__linha {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+}
+
+.contador-limite__linha strong {
+    color: var(--verde-claro);
+    font-size: 0.9rem;
+}
+/*  */
 
 .sophia {
     position: fixed;
@@ -551,10 +591,32 @@ button {
     box-shadow: var(--sombra);
     transition: transform 0.2s;
 }
+/*  */
+
+button:disabled,
+.btn:disabled,
+.sophia-avatar:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    filter: grayscale(1);
+    pointer-events: none;
+    box-shadow: none;
+}
+
+.btn:disabled {
+    background: var(--cinza-texto);
+    border-color: var(--cinza-texto);
+    color: var(--branco);
+}
 
 .sophia-avatar:hover {
     transform: scale(1.08);
 }
+
+.sophia-avatar:disabled:hover {
+    transform: none;
+}
+/*  */
 
 .balao {
     background: var(--branco);

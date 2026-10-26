@@ -26,10 +26,9 @@
     --fonte-ui: 'Poppins', 'Segoe UI', Tahoma, sans-serif;
     --fonte-texto: 'Inter', 'Segoe UI', Tahoma, sans-serif;
     --fonte-codigo: 'Cascadia Code', 'Fira Code', Consolas, monospace;
-    --fundo: #2e2e2e;
-    --painel: #161B1D;
-    /*#002D38*/
-    --codigo: #161B1D;
+    --fundo: #2b332f;
+    --painel: #161d19;
+    --codigo: #161d19;
     --texto-claro: #E6E6E6;
     --texto-mudo: #9AA7AB;
 }

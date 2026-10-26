@@ -7,6 +7,7 @@
     --Titulo: #1b5e20;
     --Branco: #ffffff;
     --Off-white: #fafafa;
+    --Verde-bg: #f6fcf9;
     --Hoover: #e8f5e9;
     --Sombra: #38353548;
 }
@@ -26,7 +27,7 @@
 }
 
 body {
-    background-color: var(--Off-white);
+    background-color: var(--Verde-bg) !important;
     color: var(--Texto);
     display: flex;
     flex-direction: column;
@@ -36,7 +37,7 @@ body {
 header {
     background-color: var(--Cabecalho-aluno);
     color: var(--Titulo);
-    padding: 12px 30px;
+    padding: 12px;
     display: flex;
     align-items: center;
     gap: 16px;
@@ -55,7 +56,7 @@ header .usuario-avatar {
     width: 35px;
     height: 35px;
     border-radius: 50%;
-    background: var(--Off-white);
+    background: var(--Verde-bg);
     border: 2px solid var(--Branco);
     margin-left: auto;
     flex-shrink: 0;

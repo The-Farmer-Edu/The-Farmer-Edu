@@ -128,18 +128,11 @@ function criarItem(elemento, a, ativo) {
 }
 
 function montarAbas() {
-    $('tabs').innerHTML = '';
     $('arquivos').innerHTML = '';
 
 
     ARQUIVOS.forEach(a => {
         const ativo = a.lang === atual;
-
-
-        const aba = document.createElement('button');
-        aba.className = 'tab';
-        $('tabs').appendChild(criarItem(aba, a, ativo));
-
 
         const item = document.createElement('li');
         $('arquivos').appendChild(criarItem(item, a, ativo));

@@ -30,7 +30,7 @@ CREATE TABLE usuarios (
   tentativas_login INT NOT NULL DEFAULT 0,
   bloqueado_ate DATETIME NULL,
   criado_em      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  ativo TINYINT(1) NOT NULL DEFAULT 1
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
   UNIQUE KEY uq_usuarios_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -114,6 +114,109 @@
       opacity: .7
     }
 
+    #atalhos {
+      display: flex;
+      gap: 2px;
+      padding: 3px 5px !important
+    }
+
+    #atalhos button {
+      background: none;
+      border: 0;
+      color: inherit;
+      font-size: 18px;
+      padding: 4px 9px;
+      border-radius: 14px;
+      cursor: pointer
+    }
+
+    #atalhos button.ativo {
+      background: var(--destaque)
+    }
+
+    .painel {
+      position: fixed;
+      z-index: 12;
+      top: calc(env(safe-area-inset-top, 0px) + 58px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(92vw, 330px);
+      max-height: calc(100vh - 190px);
+      overflow-y: auto;
+      box-sizing: border-box;
+      background: var(--fundo-card);
+      color: var(--texto);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 4px 16px #0005;
+      font-size: 13px
+    }
+
+    .painel[hidden] {
+      display: none
+    }
+
+    .painel h3 {
+      margin: 0 0 8px;
+      font-size: 14px
+    }
+
+    .painel .estado {
+      margin: 0 0 8px;
+      font-weight: 600;
+      color: var(--destaque)
+    }
+
+    .painel .seg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px
+    }
+
+    .painel button.botao {
+      min-height: 36px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--desativado);
+      color: #fff;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer
+    }
+
+    .painel button.botao.ativo {
+      background: var(--destaque)
+    }
+
+    .painel button.botao:disabled {
+      opacity: .5;
+      cursor: default
+    }
+
+    .linha-audio {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 10px;
+      align-items: center;
+      margin: 10px 0 0
+    }
+
+    .linha-audio label {
+      font-weight: 600;
+      display: flex;
+      gap: 6px;
+      align-items: center
+    }
+
+    .linha-audio input[type=range] {
+      width: 100%
+    }
+
+    .linha-audio small {
+      grid-column: 1 / -1;
+      opacity: .75
+    }
+
     #aviso {
       position: fixed;
       z-index: 11;
@@ -135,7 +238,24 @@
 </head>
 
 <body>
-  <div id="barra-topo"><b>⭐ <span id="valor-xp">0</span> XP</b><button id="botao-teste-xp">+5000 XP (teste)</button>
+  <div id="barra-topo"><b>⭐ <span id="valor-xp">0</span> XP</b>
+    <div id="atalhos"><button id="botao-ceu" title="Dia e noite" aria-label="Dia e noite">🌗</button><button id="botao-audio" title="Áudio" aria-label="Áudio">🔊</button></div>
+    <button id="botao-teste-xp">+5000 XP (teste)</button>
+  </div>
+  <div id="painel-ceu" class="painel" hidden>
+    <h3>🌗 Dia e noite</h3>
+    <p class="estado" id="ceu-status">Modo: Automático</p>
+    <div class="seg">
+      <button class="botao" data-modo="auto">▶ Automático</button>
+      <button class="botao" data-modo="pausa">⏸ Pausar</button>
+      <button class="botao" data-modo="dia">☀️ Dia fixo</button>
+      <button class="botao" data-modo="noite">🌙 Noite fixa</button>
+    </div>
+  </div>
+  <div id="painel-audio" class="painel" hidden>
+    <h3>🔊 Áudio</h3>
+    <button class="botao" id="audio-ativar" style="width:100%">Ativar áudio</button>
+    <div id="audio-linhas"></div>
   </div>
   <div id="lista-cards"></div>
   <div id="aviso"></div>
@@ -191,13 +311,17 @@
     cena.background = new THREE.Color(0x9fd8f5);
     cena.fog = new THREE.Fog(0x9fd8f5, 110, 260);
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 400);
-    cena.add(new THREE.HemisphereLight(0xffffff, 0x6a8f4a, 0.75));
+    const luzHemisferio = new THREE.HemisphereLight(0xffffff, 0x6a8f4a, 0.75); cena.add(luzHemisferio);
+    // materiais sem iluminação (água da cachoeira, névoa, gotas…) são escurecidos pelo ciclo dia/noite
+    const MATERIAIS_DE_BRILHO = [];
+    const brilhoNoturno = m => { m.userData.base = m.color.clone(); MATERIAIS_DE_BRILHO.push(m); return m; };
     const sol = new THREE.DirectionalLight(0xfff2cc, 0.9);
     sol.position.set(26, 24, 18); sol.target.position.set(12, 0, 6); cena.add(sol.target);
     sol.castShadow = true;
     sol.shadow.mapSize.set(2048, 2048);
     Object.assign(sol.shadow.camera, { left: -44, right: 44, top: 44, bottom: -44, near: 1, far: 100 });
     cena.add(sol);
+    const luaLuz = new THREE.DirectionalLight(0x9db8ff, 0); luaLuz.target = sol.target; cena.add(luaLuz); // luar (sem sombras)
 
     // ======================= FUNÇÕES AUXILIARES DE MODELAGEM =======================
     const cacheDeMateriais = {};
@@ -293,10 +417,23 @@
       for (let i = 0; i <= n; i++) criarCaixa(0.14, 0.8, 0.14, COR.madeira, x1 + (x2 - x1) * i / n, 0.5, z1 + (z2 - z1) * i / n, g);
       for (const y of [0.68, 0.42]) criarCaixa(0.07, 0.09, comp, COR.ripa, (x1 + x2) / 2, y, (z1 + z2) / 2, g).rotation.y = ang;
     }
+    function portao(g, cx, z, larg = 1.7) { // portão fechado de duas folhas, com mourões altos e travessa em diagonal
+      const mad = 0xb9824a;
+      for (const sd of [-1, 1]) { criarCaixa(0.18, 1.15, 0.18, COR.madeira, cx + sd * larg / 2, 0.58, z, g); criarEsfera(0.1, 0xc98a4a, cx + sd * larg / 2, 1.22, z, g); }
+      const f = larg / 2 - 0.14, ang = Math.atan2(0.35, f);
+      for (const sd of [-1, 1]) {
+        const x = cx + sd * (f / 2 + 0.07);
+        for (const y of [0.4, 0.75]) criarCaixa(f, 0.09, 0.06, mad, x, y, z, g);
+        for (const e of [-1, 1]) criarCaixa(0.07, 0.44, 0.06, mad, x + e * (f / 2 - 0.035), 0.575, z, g);
+        criarCaixa(Math.hypot(f, 0.35), 0.06, 0.05, mad, x, 0.575, z + 0.01, g).rotation.z = -sd * ang;
+      }
+    }
     // portoes: { N: deslocamentoX, S: deslocamentoX } abre uma passagem de 1,7 na cerca norte (z−) ou sul (z+)
     function cerca(g, w, d, portoes = {}) {
       const horiz = (z, ox) => ox === undefined ? cercaLinha(g, -w / 2, z, w / 2, z) : (cercaLinha(g, -w / 2, z, ox - 0.85, z), cercaLinha(g, ox + 0.85, z, w / 2, z));
       horiz(-d / 2, portoes.N); horiz(d / 2, portoes.S);
+      if (portoes.N !== undefined) portao(g, portoes.N, -d / 2);
+      if (portoes.S !== undefined) portao(g, portoes.S, d / 2);
       cercaLinha(g, -w / 2, -d / 2, -w / 2, d / 2); cercaLinha(g, w / 2, -d / 2, w / 2, d / 2);
     }
     // Cerca retangular regular: postes igualmente espaçados, trilhos exatos entre os cantos; portão central opcional.
@@ -310,13 +447,14 @@
         if (!aberto) return trecho(x1, z1, x2, z2, false);
         const mx = 0.85 * Math.sign(x2 - x1);
         trecho(x1, z1, -mx, z2, true); trecho(mx, z1, x2, z2, false);
+        portao(g, 0, z1);
       };
       lado(-w / 2, -d / 2, w / 2, -d / 2, portoes.includes('N')); trecho(w / 2, -d / 2, w / 2, d / 2, false);
       lado(w / 2, d / 2, -w / 2, d / 2, portoes.includes('S')); trecho(-w / 2, d / 2, -w / 2, -d / 2, false);
     }
     function arvore (g, x, z, s = 1, y = 0) { // árvore de montanha (3 cones empilhados)
-      criarCilindro(0.12 * s, 0.18 * s, 0.9 * s, 0x6b4a2b, x, y + 0.45 * s, z, g, 6);
-      [[1.1, 1.5, 1.2], [0.85, 1.3, 2], [0.55, 1.1, 2.8]].forEach(([r, h, yy], i) => {
+      criarCilindro(0.12 * s, 0.18 * s, 1.1 * s, 0x6b4a2b, x, y + 0.55 * s, z, g, 6);
+      [[1.1, 1.5, 1.4], [0.85, 1.3, 2.2], [0.55, 1.1, 3.0]].forEach(([r, h, yy], i) => {
       const c = new THREE.Mesh(new THREE.ConeGeometry(r * s, h * s, 7), material(i % 2 ? 0x2f7a4a : 0x2a6b40));
       c.position.set(x, y + yy * s, z); c.castShadow = true; g.add(c);
       });
@@ -327,8 +465,8 @@ function materialPlano(cor) { // faces "facetadas" (visual low-poly) para montan
   return cacheDePlano[cor] || (cacheDePlano[cor] = new THREE.MeshLambertMaterial({ color: cor, flatShading: true }));
 }
 function pinheiro(g, x, z, s = 1, y = 0) { // árvore de montanha (3 cones empilhados)
-  criarCilindro(0.12 * s, 0.18 * s, 0.9 * s, 0x6b4a2b, x, y + 0.45 * s, z, g, 6);
-  [[1.1, 1.5, 1.2], [0.85, 1.3, 2], [0.55, 1.1, 2.8]].forEach(([r, h, yy], i) => {
+  criarCilindro(0.12 * s, 0.18 * s, 1.1 * s, 0x6b4a2b, x, y + 0.55 * s, z, g, 6);
+  [[1.1, 1.5, 1.4], [0.85, 1.3, 2.2], [0.55, 1.1, 3.0]].forEach(([r, h, yy], i) => {
     const c = new THREE.Mesh(new THREE.ConeGeometry(r * s, h * s, 7), material(i % 2 ? 0x2f7a4a : 0x2a6b40));
     c.position.set(x, y + yy * s, z); c.castShadow = true; g.add(c);
   });
@@ -485,6 +623,7 @@ function capim(g, x, z) {
     }
 
     // ---- modelos de animais: formas arredondadas (elipsoides), pernas articuladas com cascos/pés, rostos com olhos ----
+    const REGISTRO_SONS_ANIMAIS = []; // [tipo, grupo3D] — lido pelo sistema de áudio
     const elipse = (pai, rx, ry, rz, cor, x, y, z, giroX = 0, giroZ = 0) => {
       const e = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), material(cor));
       e.scale.set(rx, ry, rz); e.position.set(x, y, z); e.rotation.set(giroX, 0, giroZ); e.castShadow = true; pai.add(e); return e;
@@ -570,6 +709,7 @@ function capim(g, x, z) {
     function criarAnimal(pai, animacoes, tipo, cercado) {
       const m = montarAnimal(tipo), a = m.a;
       pai.add(a);
+      REGISTRO_SONS_ANIMAIS.push([tipo, a]);
       const raio = RAIO_DA_HITBOX[tipo];
       const dados = { x: 0, z: 0, raio };
       for (let tentativa = 0; tentativa < 50; tentativa++) { // posição inicial livre
@@ -618,7 +758,7 @@ function capim(g, x, z) {
       [43, -1, 43, 4.5, 2.4],           // entrada da grande plantação
       [-8, -5.25, -8, -1, 1.6], [7, -5.25, 7, -1, 1.6], [19.3, -6.3, 19.3, -1, 1.6], [35, -4.35, 35, -1, 1.6],   // fileira norte
       [-8, -1, -8, 2.75, 1.6],                                                                                    // maquinário (norte)
-      [-8, 9.25, -8, 13.5, 2.4], [9.1, 8.95, 9.1, 13.5, 1.6], [19.3, 8.7, 19.3, 13.5, 1.6],                      // fileira do meio
+      [-8, 9.25, -8, 13.5, 2.4], [8.6, 8.95, 8.6, 13.5, 1.6], [19.3, 8.7, 19.3, 13.5, 1.6],                      // fileira do meio
       [7, 13.5, 7, 18.05, 1.6], [19, 13.5, 19, 16.6, 1.6],                                                        // ovelhal e estábulo
     ];
     const PRACAS = [[-27, -1, 2.4], [-15.5, -16.5, 2.2], [29, 27.5, 2.4]]; // fim da estrada oeste · mirante · lago
@@ -635,10 +775,9 @@ function capim(g, x, z) {
       criarCaixa(1.3, 0.08, 0.4, COR.ripa, 0, 0.42, 0, b); criarCaixa(1.3, 0.3, 0.06, COR.ripa, 0, 0.7, -0.2, b);
       for (const sx of [-0.55, 0.55]) criarCaixa(0.08, 0.42, 0.4, COR.madeira, sx, 0.21, 0, b);
     };
-    const lampiao = (x, z) => { criarCaixa(0.1, 1.9, 0.1, COR.madeira, x, 0.95, z, cena); criarEsfera(0.2, 0xffd66b, x, 2, z, cena, 1.1); };
-    banco(-14.2, -16.5, -Math.PI / 2); lampiao(-14.3, -18.1);              // mirante de frente para a cachoeira
-    lampiao(-27.7, -2.3); placa(cena, -26.2, 0.6);                          // fim da estrada oeste
-    banco(29, 26.5, 0); lampiao(30.9, 26.3);                                // praça do lago
+        banco(-14.2, -16.5, -Math.PI / 2);              // mirante de frente para a cachoeira
+    placa(cena, -26.2, 0.6);                          // fim da estrada oeste
+    banco(29, 26.5, 0);                                // praça do lago
 
     // Nuvens: volumes arredondados, espalhadas em faixas afastadas da vista principal, deriva lenta e fade nas bordas.
     const nuvens = [];
@@ -673,6 +812,21 @@ function sorteio(semente) { let s = semente; return () => (s = (s * 16807) % 214
 const sorte = sorteio(11);
 
 // --- Montanhas: saia de floresta + corpo rochoso + pico nevado + 2 picos menores ---
+// ---- Relevo: formas de terreno registradas (saia de floresta, rocha e morros) ----
+// Antes, árvores/arbustos eram colocados sempre em y = 0, mesmo dentro de morros e saias de montanha: o tronco ficava
+// enterrado e só a copa aparecia, misturada ao verde do terreno. Agora a vegetação usa a altura real do relevo.
+const RELEVO = []; // [x, z, raio, altura, ehRocha, ehMorro]
+function relevoEm(x, z) { // → [altura da superfície vegetada, rocha exposta?]
+  let saia = 0, rocha = 0;
+  for (let i = 0; i < RELEVO.length; i++) {
+    const f = RELEVO[i], dx = x - f[0], dz = z - f[1], r = f[2];
+    if (dx > r || dx < -r || dz > r || dz < -r) continue;
+    const d = Math.hypot(dx, dz); if (d >= r) continue;
+    const h = f[5] ? f[3] * Math.sqrt(1 - (d / r) ** 2) : f[3] * (1 - Math.pow(d / r, 1 / 0.82)); // mesmo perfil de perfilMontanha()
+    if (f[4]) rocha = Math.max(rocha, h); else saia = Math.max(saia, h);
+  }
+  return [saia, rocha > saia + 0.1];
+}
 function perfilMontanha(R, H, t0 = 0, t1 = 1, folga = 1) { // contorno levemente arredondado (expoente 0,82; cone puro = 1)
   const pts = [];
   for (let i = 0; i <= 7; i++) { const t = t0 + (t1 - t0) * i / 7; pts.push(new THREE.Vector2(Math.max(0.02, R * Math.pow(1 - t, 0.82) * folga), H * t)); }
@@ -683,23 +837,25 @@ function montanha(x, z, R, H) {
   m.position.set(x, 0, z);
   m.rotation.y = sorte() * 6.28;
   const k = 0.94 + sorte() * 0.12, variar = c => new THREE.Color(c).multiplyScalar(k).getHex(); // tom levemente diferente por montanha
-  const parte = (r, h, cor, px, pz, t0 = 0, folga = 1) => {
+  const parte = (r, h, cor, px, pz, t0 = 0, folga = 1, rocha = null) => { // rocha: null = neve (não registra) · false = saia · true = rocha
     const c = new THREE.Mesh(new THREE.LatheGeometry(perfilMontanha(r, h, t0, 1, folga), 8), materialPlano(cor));
     c.position.set(px, 0, pz); m.add(c);
+    if (rocha !== null) { const cs = Math.cos(m.rotation.y), sn = Math.sin(m.rotation.y); RELEVO.push([m.position.x + px * cs + pz * sn, m.position.z - px * sn + pz * cs, r, h, rocha, false]); }
   };
-  parte(R * 1.12, H * 0.7, variar(0x4a8a45), 0, 0);   // floresta na base
-  parte(R, H, variar(0x7b8691), 0, 0);                // corpo rochoso
+  parte(R * 1.12, H * 0.7, variar(0x4a8a45), 0, 0, 0, 1, false);   // floresta na base
+  parte(R, H, variar(0x7b8691), 0, 0, 0, 1, true);                // corpo rochoso
   parte(R, H, 0xf4f7fb, 0, 0, 0.7, 1.012);            // neve: mesmo contorno do corpo, 1,2% maior
   for (let i = 0; i < 2; i++) {                       // picos menores ao redor
     const a = sorte() * 6.28, d = R * (0.6 + sorte() * 0.3), r = R * (0.45 + sorte() * 0.2), h = H * (0.45 + sorte() * 0.25);
     const px = Math.cos(a) * d, pz = Math.sin(a) * d;
-    parte(r * 1.1, h * 0.6, variar(0x4a8a45), px, pz); parte(r, h, variar(0x8a929b), px, pz);
+    parte(r * 1.1, h * 0.6, variar(0x4a8a45), px, pz, 0, 1, false); parte(r, h, variar(0x8a929b), px, pz, 0, 1, true);
   }
   cena.add(m);
 }
 function morro(x, z, r, h, cor = 0x6fb04a) { // colina verde baixa
   const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 6), material(cor));
   m.scale.set(1, h / r, 1); m.position.set(x, 0, z); m.receiveShadow = true; cena.add(m);
+  RELEVO.push([x, z, r, h, false, true]);
 }
 // [x, z, raio, altura]. A estrada norte-sul (x = 0) passa por um vale e termina na montanha central.
 [
@@ -766,7 +922,12 @@ function ocupado(x, z, m = 0) {
   if (Math.abs(x - 32) < 8 + m && Math.abs(z - 35) < 6.5 + m) return true; // lago
   return distanciaDoRio(x, z) < 4.2 + m;
 }
+// só a rede de caminhos e praças (usado para ocultar árvores de floresta que nasceriam em cima delas)
+const naRede = (x, z, m) => ROTAS.some(([x1, z1, x2, z2, w]) => x > Math.min(x1, x2) - w / 2 - m && x < Math.max(x1, x2) + w / 2 + m && z > Math.min(z1, z2) - w / 2 - m && z < Math.max(z1, z2) + w / 2 + m) || PRACAS.some(([px, pz, r]) => Math.hypot(x - px, z - pz) < r + m);
 const dentroDaFazenda = (x, z) => x > -27 && x < 56 && z > -24 && z < 54;
+const PLACA = { x: -10, z: 19 };         // placa de boas-vindas (gramado aberto ao sul da casa)
+const PEDRA = { x: -39.5, z: 6.5 };      // pedra secreta, na floresta a oeste da ponte
+const CLAREIRAS = [[PLACA.x, PLACA.z, 5.6], [PEDRA.x, PEDRA.z, 3.2]]; // a vegetação instanciada não nasce aqui
 
 
 // ---- Vegetação instanciada (poucas draw calls), com semente fixa: sempre igual ao recarregar ----
@@ -774,7 +935,9 @@ const materialBranco = new THREE.MeshLambertMaterial({ color: 0xffffff });
 function malhaInstanciada(geo, itens) { // item = [x, y, z, sx, sy, sz, cor, giroY, giroZ]
   const m = new THREE.InstancedMesh(geo, materialBranco, itens.length), d = new THREE.Object3D(), c = new THREE.Color();
   itens.forEach((it, i) => {
-    d.position.set(it[0], it[1], it[2]); d.rotation.set(0, it[7] || 0, it[8] || 0); d.scale.set(it[3], it[4], it[5]); d.updateMatrix();
+    const rv = relevoEm(it[0], it[2]); // vegetação sobe junto com o relevo; sobre rocha exposta ou em clareiras fica oculta (escala 0, semente intacta)
+    const livre = (rv[1] || CLAREIRAS.some(c => Math.hypot(it[0] - c[0], it[2] - c[1]) < c[2])) ? 0 : 1;
+    d.position.set(it[0], it[1] + rv[0], it[2]); d.rotation.set(0, it[7] || 0, it[8] || 0); d.scale.set(it[3] * livre, it[4] * livre, it[5] * livre); d.updateMatrix();
     m.setMatrixAt(i, d.matrix); m.setColorAt(i, c.set(it[6]));
   });
   m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true;
@@ -788,14 +951,26 @@ const escolher = lista => lista[Math.floor(sorte() * lista.length)];
 // floresta: tronco + 3 cones por árvore, tamanhos e tons variados
 {
   const lista = [];
-  for (let i = 0; i < 4000 && lista.length < 900; i++) {
+  for (let i = 0; i < 4000 && lista.length < 1150; i++) {
     const x = -85 + sorte() * 180, z = -34 + sorte() * 118;
     if (dentroDaFazenda(x, z) || distanciaDoRio(x, z) < 5.5) continue;
-    lista.push([x, z, 1.1 + sorte() * 0.55]);
+    lista.push([x, z, 0.85 + sorte() * 0.5]);
   }
-  [[new THREE.CylinderGeometry(0.12, 0.18, 0.9, 6), 0.45, 0x6b4a2b], [new THREE.ConeGeometry(1.1, 1.5, 7), 1.2, 0x2a6b40],
-   [new THREE.ConeGeometry(0.85, 1.3, 7), 2, 0x2f7a4a], [new THREE.ConeGeometry(0.55, 1.1, 7), 2.8, 0x2a6b40]]
-    .forEach(([geo, yy, cor]) => malhaInstanciada(geo, lista.map(([x, z, k]) => [x, yy * k, z, k, k, k, tom(cor), sorte() * 6.28, 0])));
+  // desbaste: árvores cujas copas se sobrepõem demais ficam ocultas (grade espacial; mantém a semente do resto da vegetação)
+  const denso = new Array(lista.length).fill(false), celulas = new Map();
+  lista.forEach(([x, z, k], i) => {
+    const cx = Math.floor(x / 3), cz = Math.floor(z / 3);
+    for (let a = -1; a <= 1 && !denso[i]; a++) for (let b = -1; b <= 1 && !denso[i]; b++)
+      for (const j of celulas.get((cx + a) + ',' + (cz + b)) || []) if (Math.hypot(lista[j][0] - x, lista[j][1] - z) < 0.6 * (lista[j][2] + k)) { denso[i] = true; break; }
+    if (!denso[i]) { const c = cx + ',' + cz; if (!celulas.has(c)) celulas.set(c, []); celulas.get(c).push(i); }
+  });
+  [[new THREE.CylinderGeometry(0.12, 0.18, 1.1, 6), 0.55, 0x6b4a2b], [new THREE.ConeGeometry(1.1, 1.5, 7), 1.4, 0x2a6b40],
+   [new THREE.ConeGeometry(0.85, 1.3, 7), 2.2, 0x2f7a4a], [new THREE.ConeGeometry(0.55, 1.1, 7), 3.0, 0x2a6b40]]
+    .forEach(([geo, yy, cor]) => malhaInstanciada(geo, lista.map(([x, z, k0], i) => {
+      // ocultas (escala 0): sobre caminhos/praças, na clareira da ponte ou coladas demais a outra árvore; sorteios continuam idênticos
+      const k = (denso[i] || naRede(x, z, 1.5) || ((x + 27) / 9) ** 2 + ((z + 1) / 7) ** 2 < 1) ? 0 : k0;
+      return [x, yy * k, z, k, k, k, tom(cor), sorte() * 6.28, 0];
+    })));
 }
 // arbustos em pequenos grupos (floresta e margens do campo)
 {
@@ -867,10 +1042,10 @@ function lagoDestaque(cx, cz) {
   const brilhos = [], aneis = [];
   for (let i = 0; i < 7; i++) {
     const a = sorte() * 6.28, r = 0.25 + sorte() * 0.45;
-    const m = plano(new THREE.PlaneGeometry(0.5 + sorte() * 0.7, 0.05), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 }), Math.cos(a) * rx * r, 0.125, Math.sin(a) * rz * r);
+    const m = plano(new THREE.PlaneGeometry(0.5 + sorte() * 0.7, 0.05), brilhoNoturno(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 })), Math.cos(a) * rx * r, 0.125, Math.sin(a) * rz * r);
     m.rotation.z = sorte() * 3; brilhos.push(m);
   }
-  const anel = (x, z, s0, s1, vel, fase) => aneis.push([plano(new THREE.RingGeometry(0.92, 1, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide }), x, 0.14, z), s0, s1, vel, fase]);
+  const anel = (x, z, s0, s1, vel, fase) => aneis.push([plano(new THREE.RingGeometry(0.92, 1, 32), brilhoNoturno(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, side: THREE.DoubleSide })), x, 0.14, z), s0, s1, vel, fase]);
   for (let i = 0; i < 3; i++) anel(0, 0, 1.8, 3.8, 0.3, i / 3);
   [[-3, 1.2], [2.6, -1.4], [-1.2, -2.2]].forEach(([x, z], i) => anel(x, z, 0.3, 1, 0.22, i * 0.33));
   animacoesDoCenario.push(t => {
@@ -887,7 +1062,7 @@ function lagoDestaque(cx, cz) {
   criarCilindro(0.8, 0.5, 0.24, clara, 0, 1.5, 0, g, 10);
   criarCilindro(0.68, 0.68, 0.05, 0x7fe0f0, 0, 1.63, 0, g, 12);
   criarCilindro(0.1, 0.18, 0.35, pedraC, 0, 1.8, 0, g, 8); criarEsfera(0.16, clara, 0, 2.02, 0, g);
-  const gotas = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07, 6, 5), new THREE.MeshBasicMaterial({ color: 0xd8f4ff, transparent: true, opacity: 0.85 }), 48);
+  const gotas = new THREE.InstancedMesh(new THREE.SphereGeometry(0.07, 6, 5), brilhoNoturno(new THREE.MeshBasicMaterial({ color: 0xd8f4ff, transparent: true, opacity: 0.85 })), 48);
   gotas.frustumCulled = false; g.add(gotas);
   const o = new THREE.Object3D();
   animacoesDoCenario.push(t => {
@@ -949,6 +1124,45 @@ function lagoDestaque(cx, cz) {
 }
 lagoDestaque(32, 35);
 
+// ---- Placa de boas-vindas: dois mourões, tábuas e moldura de madeira; o texto é uma textura aplicada na face frontal ----
+function placaDeBoasVindas(px, pz) {
+  const g = new THREE.Group();
+  g.position.set(px, 0, pz); g.scale.setScalar(1.2);
+  g.rotation.y = Math.atan2(-11.5 - px, 62 - pz); // de frente para a câmera inicial
+  cena.add(g);
+  const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 400;
+  const c = cv.getContext('2d');
+  c.fillStyle = '#a9743f'; c.fillRect(0, 0, 1024, 400);
+  for (let i = 0; i < 5; i++) { c.fillStyle = i % 2 ? '#a06b38' : '#b27c46'; c.fillRect(0, i * 80, 1024, 78); c.fillStyle = 'rgba(60,35,15,0.35)'; c.fillRect(0, i * 80 + 78, 1024, 3); }
+  c.strokeStyle = '#5e3b1e'; c.lineWidth = 18; c.strokeRect(9, 9, 1006, 382);
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round';
+  const linha = (texto, y, tam) => {
+    const fonte = t => `900 ${t}px "Arial Black", Impact, Arial, sans-serif`;
+    c.font = fonte(tam);
+    while (c.measureText(texto).width > 930 && tam > 40) { tam -= 4; c.font = fonte(tam); } // sempre cabe, com qualquer fonte
+    c.lineWidth = tam * 0.16; c.strokeStyle = '#3b2410'; c.strokeText(texto, 512, y);
+    c.fillStyle = '#fff3cf'; c.fillText(texto, 512, y);
+  };
+  linha('BEM VINDO A', 118, 118); linha('FARMEDU', 284, 172);
+  const tex = new THREE.CanvasTexture(cv);
+  const L = 7.4, A = 2.9, yC = 2.55;
+  for (const sd of [-1, 1]) {
+    criarCaixa(0.28, 3.7, 0.28, 0x6b4226, sd * 3.3, 1.85, 0, g);          // mourão
+    criarCaixa(0.7, 0.3, 0.7, 0x8a8d86, sd * 3.3, 0.15, 0, g);            // sapata de pedra
+    criarEsfera(0.2, 0xc98a4a, sd * 3.3, 3.8, 0, g);
+  }
+  criarCaixa(L, A, 0.16, 0x8a5a2b, 0, yC, 0.22, g);                        // tabuleiro (encostado na frente dos mourões)
+  for (const dy of [-1, 1]) criarCaixa(L + 0.3, 0.2, 0.26, 0x5e3b1e, 0, yC + dy * (A / 2 + 0.05), 0.22, g); // moldura
+  const texto = new THREE.Mesh(new THREE.PlaneGeometry(L - 0.3, (L - 0.3) * 400 / 1024), new THREE.MeshLambertMaterial({ map: tex }));
+  texto.position.set(0, yC, 0.31); g.add(texto);
+  // canteiros de flores nos pés da placa (posições fixas, sem sorteio)
+  for (const sd of [-1, 1]) {
+    criarEsfera(0.34, 0x4a9e3a, sd * 3.3, 0.22, 0.75, g, 0.7); criarEsfera(0.26, 0x3f8a35, sd * 3.8, 0.17, 0.5, g, 0.7);
+    [[-0.45, 0.95, 0xff8fb1], [0.35, 1.0, 0xffd23f], [0, 0.6, 0xffffff], [0.7, 0.7, 0xb48cf2], [-0.2, 1.25, 0xff6b6b]].forEach(([dx, dz, cor]) => criarEsfera(0.1, cor, sd * 3.3 + dx, 0.38, dz, g));
+  }
+}
+placaDeBoasVindas(PLACA.x, PLACA.z);
+
 // margens: pedras, pinheiros e capim (menos perto da ponte)
 for (let u = 0.02; u < 0.98; u += 0.012) {
   const p = curvaDoRio.getPointAt(u), tg = curvaDoRio.getTangentAt(u);
@@ -956,14 +1170,14 @@ for (let u = 0.02; u < 0.98; u += 0.012) {
   const lado = sorte() < 0.5 ? -1 : 1, off = larguraDoRio(u) / 2 + 1.1 + sorte() * 1.6, sorteado = sorte();
   const x = p.x + tg.z * lado * off, z = p.z - tg.x * lado * off;
   if (sorteado < 0.45) pedra(cena, x, z, 0.2 + sorte() * 0.35);
-  else if (sorteado < 0.7) pinheiro(cena, x, z, 0.7 + sorte() * 0.5);
+  else if (sorteado < 0.7) pinheiro(cena, x, z, 0.7 + sorte() * 0.5, relevoEm(x, z)[0]);
   else capim(cena, x, z);
 }
 // pinheiros do vale, ao redor do paredão da cachoeira (nunca na frente dela)
 for (let i = 0, ok = 0; i < 800 && ok < 26; i++) {
   const x = -42 + sorte() * 48, z = -38 + sorte() * 22;
-  if (distanciaDoRio(x, z) < 7 || Math.abs(x - CX) < 13 || ocupado(x, z, 1.5)) continue;
-  pinheiro(cena, x, z, 0.8 + sorte() * 0.7); ok++;
+  if (distanciaDoRio(x, z) < 7 || Math.abs(x - CX) < 13 || ocupado(x, z, 1.5) || relevoEm(x, z)[1]) continue;
+  pinheiro(cena, x, z, 0.8 + sorte() * 0.5, relevoEm(x, z)[0]); ok++; // y = altura do relevo (antes ficavam enterrados nos morros)
 }
 
 // --- Cachoeira: paredão de pedra em degraus, lago em cima, cortina de água animada e névoa embaixo ---
@@ -979,7 +1193,7 @@ for (const lado of [-1, 1]) {                                           // pedra
 pinheiro(cena, CX - 3.6, CZ_FRENTE - 4, 1.1, 15.3); pinheiro(cena, CX + 3.4, CZ_FRENTE - 5.5, 0.9, 15.3); pinheiro(cena, CX + 4, CZ_FRENTE - 2.5, 0.8, 15.3);
 const texturaDaCachoeira = texturaDeAgua(64, 256, '#8fd3f0', 40, 90, 0.8, 5);
 texturaDaCachoeira.repeat.set(1, 3);
-const cortina = new THREE.Mesh(new THREE.PlaneGeometry(3.4, ALTURA_CLIFF), new THREE.MeshBasicMaterial({ map: texturaDaCachoeira, transparent: true, opacity: 0.92 }));
+const cortina = new THREE.Mesh(new THREE.PlaneGeometry(3.4, ALTURA_CLIFF), brilhoNoturno(new THREE.MeshBasicMaterial({ map: texturaDaCachoeira, transparent: true, opacity: 0.92 })));
 cortina.position.set(CX, ALTURA_CLIFF / 2, CZ_FRENTE + 0.15);
 cena.add(cortina);
 animacoesDoCenario.push((t, dt) => { texturaDaCachoeira.offset.y += dt * 0.7; }); // a água desce
@@ -991,7 +1205,7 @@ for (let i = 0; i < 7; i++) {                                                  /
   animacoesDoCenario.push(t => espuma.scale.set(1 + 0.12 * Math.sin(t * 4 + i), 0.7 + 0.1 * Math.sin(t * 5 + i), 1 + 0.12 * Math.sin(t * 4 + i)));
 }
 for (let i = 0; i < 8; i++) {                                                  // névoa subindo
-  const nevoa = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
+  const nevoa = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), brilhoNoturno(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })));
   cena.add(nevoa);
   const dx = (sorte() - 0.5) * 3.2;
   animacoesDoCenario.push(t => {
@@ -1030,7 +1244,7 @@ for (let i = 0; i < 8; i++) {                                                  /
         for (const [cx, cy, cz, alt] of chamines) criarCaixa(0.55, alt, 0.55, 0xe6dfd0, cx, cy, cz, g);
         const [fx, fy, fz] = chamines[0];
         for (let i = 0; i < 4; i++) {
-          const b = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
+          const b = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), brilhoNoturno(new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })));
           g.add(b);
           anim.push(t => { const p = (t * 0.3 + i / 4) % 1; b.position.set(fx + p * 0.8, fy + 1 + p * 2.2, fz); b.scale.setScalar(0.5 + p); b.material.opacity = 0.7 * (1 - p); });
         }
@@ -1119,10 +1333,10 @@ for (let i = 0; i < 8; i++) {                                                  /
       curral(g, n, anim) {
         const w = [6, 7.2, 8.8][n - 1], d = [5, 6, 7.2][n - 1];
         base(g, w + 0.9, d + 0.9, 0x7fc650);
-        cerca(g, w, d, { S: 2.1 });
+        cerca(g, w, d, { S: 1.6 });
         arvore(g, w / 2 - 0.3, -d / 2 - 0.6, 1);
         abrigo(g, w / 2 - 1.6, -d / 2 + 1.4);
-        cocho(g, 0.5, d / 2 - 0.9);
+        cocho(g, -0.1, d / 2 - 0.9);
         placa(g, -w / 2 - 0.2, d / 2 - 0.5);
         if (n === 3) {
           abrigo(g, -w / 2 + 1.6, -d / 2 + 1.4);
@@ -1138,7 +1352,7 @@ for (let i = 0; i < 8; i++) {                                                  /
         const MOSTRAR_HITBOXES = false; // hitboxes de depuração ocultas no jogo final
         const retangulos = [
           [w / 2 - 1.6, -d / 2 + 1.4, 2.3, 1.9], // abrigo
-          [0.5, d / 2 - 0.9, 1.6, 0.6],          // cocho
+          [-0.1, d / 2 - 0.9, 1.6, 0.6],         // cocho
         ];
         if (n === 3) retangulos.push(
           [-w / 2 + 1.6, -d / 2 + 1.4, 2.3, 1.9], // segundo abrigo
@@ -1197,12 +1411,12 @@ for (let i = 0; i < 8; i++) {                                                  /
         cocho(v, w / 2 - 1.3, d / 2 - 0.8);
         fardo(v, -w / 2 + 1, 0.25, d / 2 - 0.8);
         if (n >= 2) { fardo(v, -w / 2 + 1, 0.75, d / 2 - 0.8); barril(v, w / 2 - 0.7, zFrente + 0.8); }
-        if (n === 3) { cocho(v, 0.3, d / 2 - 0.8); fardo(v, -w / 2 + 1.9, 0.25, d / 2 - 0.8); }
+        if (n === 3) { cocho(v, -1.9, d / 2 - 0.8); fardo(v, -w / 2 + 1.9, 0.25, d / 2 - 0.8); } // cocho longe do portão
         // hitboxes no sistema do grupo g (modelo girado: x e z invertidos)
         const ret = (x, z, l, p) => ({ minX: -x - l / 2, maxX: -x + l / 2, minZ: -z - p / 2, maxZ: -z + p / 2 });
         const obstaculos = [{ minX: -w / 2, maxX: w / 2, minZ: -(zFrente + 0.3), maxZ: d / 2 }, ret(w / 2 - 1.3, d / 2 - 0.8, 1.8, 0.8), ret(-w / 2 + 1.2, d / 2 - 0.8, 1.6, 0.9)];
         if (n >= 2) obstaculos.push(ret(w / 2 - 0.7, zFrente + 0.8, 0.8, 0.8));
-        if (n === 3) obstaculos.push(ret(0.3, d / 2 - 0.8, 1.8, 0.8));
+        if (n === 3) obstaculos.push(ret(-1.9, d / 2 - 0.8, 1.8, 0.8));
         const cercado = { limiteX: w / 2 - 0.2, limiteZ: d / 2 - 0.2, animais: [], obstaculos };
         for (let i = 0; i < [1, 2, 4][n - 1]; i++) criarAnimal(g, anim, 'cavalo', cercado);
       },
@@ -1397,6 +1611,7 @@ for (let i = 0; i < 8; i++) {                                                  /
         cercaLinha(g, -w / 2, d / 2, w / 2, d / 2);
         cercaLinha(g, -w / 2, -d / 2, -1.5, -d / 2); cercaLinha(g, 1.5, -d / 2, w / 2, -d / 2); // entrada ao norte
         cercaLinha(g, -w / 2, -d / 2, -w / 2, d / 2); cercaLinha(g, w / 2, -d / 2, w / 2, d / 2);
+        for (const sd of [-1, 1]) { criarCaixa(0.2, 1.3, 0.2, COR.madeira, sd * 1.5, 0.65, -d / 2, g); criarEsfera(0.11, 0xc98a4a, sd * 1.5, 1.38, -d / 2, g); } // mourões da entrada
         placa(g, -2.6, -d / 2 - 0.5);
         barril(g, w / 2 - 0.9, d / 2 + 0.7); caixote(g, -w / 2 + 0.9, d / 2 + 0.7);
         // espantalho no corredor central
@@ -1458,14 +1673,233 @@ for (let i = 0; i < 8; i++) {                                                  /
     }
     AREAS.forEach(a => reconstruirArea(a.id));
 
-    // ======================= CÉU: CÚPULA EM GRADIENTE E SOL =======================
-    const domo = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 14), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+    // ======================= POSTES DE ILUMINAÇÃO =======================
+    // Poste de madeira sobre sapata de pedra, braço e escora de ferro e lanterna hexagonal de vidro (luz quente).
+    // Eficiência: vidro, halo (sprite aditivo) e mancha de luz no chão são materiais COMPARTILHADOS (um ajuste por quadro);
+    // só alguns postes têm PointLight real (intensidade 0 de dia, nunca criadas/removidas em tempo de execução).
+    const LAMPADAS = { vidro: new THREE.MeshBasicMaterial({ color: 0xcaa766 }), halo: null, chao: null, luzes: [] };
     {
-      const pos = domo.geometry.attributes.position, cores = new Float32Array(pos.count * 3), horizonte = new THREE.Color(0x9fd8f5), alto = new THREE.Color(0x4d9de6), c = new THREE.Color();
-      for (let i = 0; i < pos.count; i++) { c.copy(horizonte).lerp(alto, Math.pow(Math.min(1, Math.max(0, pos.getY(i) / 300)), 0.7)); cores[i * 3] = c.r; cores[i * 3 + 1] = c.g; cores[i * 3 + 2] = c.b; }
-      domo.geometry.setAttribute('color', new THREE.BufferAttribute(cores, 3));
+      const radial = (stops) => { const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c = cv.getContext('2d'), gr = c.createRadialGradient(64, 64, 0, 64, 64, 64); stops.forEach(([p, cor]) => gr.addColorStop(p, cor)); c.fillStyle = gr; c.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(cv); };
+      LAMPADAS.halo = new THREE.SpriteMaterial({ map: radial([[0, 'rgba(255,225,160,1)'], [0.25, 'rgba(255,190,100,0.5)'], [1, 'rgba(255,170,80,0)']]), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
+      LAMPADAS.chao = new THREE.MeshBasicMaterial({ map: radial([[0, 'rgba(255,190,100,0.9)'], [0.5, 'rgba(255,170,80,0.32)'], [1, 'rgba(255,160,70,0)']]), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
     }
+    const GEO_MANCHA = new THREE.PlaneGeometry(1, 1);
+    // [x, z, ponto da estrada para onde o braço aponta (x, z), PointLight real?]
+    const POSTES = [
+      [-14.4, -18.3, -12, -16.5, true],   // mirante da cachoeira
+      [-27.7, -2.3, -26, -1, true],       // fim da estrada oeste
+      [30.9, 26.3, 29, 27.5, true],       // praça do lago
+      [2.1, -3.1, 0, -1, true],           // cruzamento central
+      [26.6, 11.4, 29, 13.5, true],       // entroncamento leste
+      [45.2, 2.6, 43, 2, true],           // entrada da grande plantação
+      [-5.6, -3.0, -5.6, -1, false],      // frente da casa
+      [13, -3.2, 13, -1, false],          // entre celeiro e chiqueiro
+      [26, -3.2, 26, -1, false],
+      [37.2, -3.0, 39, -1, false],        // plantação de hortaliças
+      [-2.3, 11.4, 0, 13.5, false],
+      [11, 11.5, 11, 13.5, false],        // curral / ovelhal
+      [-14, 1.8, -16, -1, false],         // cabeceira leste da ponte
+      [-1.9, -10, 0, -10, false],         // espinha norte-sul
+      [-7.2, -14.8, -7.2, -16.5, false],  // caminho do mirante
+      [27.2, 20.5, 29, 20.5, false],      // anel leste
+      [-4.6, 22.5, -4.6, 24, false],      // gramado da placa
+    ];
+    function criarPoste(x, z, hx, hz, comLuz) {
+      const g = new THREE.Group(), n = Math.hypot(hx - x, hz - z) || 1, dx = (hx - x) / n, dz = (hz - z) / n, ferro = 0x2b2b30;
+      g.position.set(x, 0, z); g.rotation.y = Math.atan2(-dz, dx); cena.add(g);       // +x local aponta para a estrada
+      criarCilindro(0.34, 0.42, 0.3, 0x7a7c78, 0, 0.15, 0, g, 8);                      // sapata de pedra
+      criarCilindro(0.1, 0.15, 2.7, 0x5a3b25, 0, 1.65, 0, g, 6);                       // poste de madeira
+      criarCilindro(0.17, 0.17, 0.08, ferro, 0, 0.62, 0, g, 6); criarCilindro(0.17, 0.17, 0.08, ferro, 0, 2.7, 0, g, 6); // abraçadeiras
+      criarCaixa(0.78, 0.07, 0.07, ferro, 0.36, 2.9, 0, g);                             // braço
+      criarCaixa(0.6, 0.05, 0.05, ferro, 0.23, 2.62, 0, g).rotation.z = 0.8;            // escora
+      criarCaixa(0.04, 0.2, 0.04, ferro, 0.68, 2.78, 0, g);                             // gancho
+      criarCilindro(0.15, 0.15, 0.05, ferro, 0.68, 2.34, 0, g, 6);                      // fundo da lanterna
+      const vidro = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.34, 6), LAMPADAS.vidro); vidro.position.set(0.68, 2.53, 0); g.add(vidro);
+      for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; criarCaixa(0.025, 0.36, 0.025, ferro, 0.68 + Math.cos(a) * 0.16, 2.53, Math.sin(a) * 0.16, g); } // armação
+      const topo = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.16, 6), material(ferro)); topo.position.set(0.68, 2.78, 0); g.add(topo);
+      const lx = x + dx * 0.68, lz = z + dz * 0.68;
+      const halo = new THREE.Sprite(LAMPADAS.halo); halo.position.set(lx, 2.55, lz); halo.scale.setScalar(3.6); cena.add(halo);
+      const mancha = new THREE.Mesh(GEO_MANCHA, LAMPADAS.chao); mancha.rotation.x = -Math.PI / 2; mancha.position.set(lx, 0.13, lz); mancha.scale.set(10, 10, 1); mancha.renderOrder = 1; cena.add(mancha);
+      if (comLuz) { const L = new THREE.PointLight(0xffb45a, 0, 15, 2); L.position.set(lx, 2.6, lz); cena.add(L); LAMPADAS.luzes.push(L); }
+    }
+    POSTES.forEach(p => criarPoste(...p));
+
+    // ======================= FAZENDEIROS (3 personagens 3D, caminhando pela rede de caminhos) =======================
+    // Cada fazendeiro anda de nó em nó de um grafo que só usa caminhos/gramados livres (verificado fora do jogo): nunca atravessa
+    // construções, cercas, rio ou montanhas, nem sai do mapa. Há pausas, giro gradual e balanço de braços/pernas.
+    const GRAFO = {
+      nos: {
+        n0: [0, -16.5], n1: [-12.2, -16.5], n2: [0, -1], n3: [29, -1], n4: [43, -1], n5: [43, 3.8], n7: [29, 13.5],
+        n8: [-8, 13.5], n9: [0, 13.5], n10: [29, 24.5], n12: [-14, -1], n13: [0, 22.5], n14: [-10, 22.5], n15: [0, 30], n16: [-10, 30],
+      },
+      arestas: [['n0', 'n1'], ['n0', 'n2'], ['n2', 'n3'], ['n3', 'n4'], ['n4', 'n5'], ['n3', 'n7'], ['n7', 'n10'], ['n7', 'n9'], ['n9', 'n8'],
+        ['n2', 'n9'], ['n2', 'n12'], ['n9', 'n13'], ['n13', 'n14'], ['n13', 'n15'], ['n15', 'n16'], ['n14', 'n16']],
+    };
+    const VIZINHOS = {};
+    GRAFO.arestas.forEach(([a, b]) => { (VIZINHOS[a] = VIZINHOS[a] || []).push(b); (VIZINHOS[b] = VIZINHOS[b] || []).push(a); });
+    const FAZENDEIROS = [];
+    function criarFazendeiro(c) {
+      const g = new THREE.Group(), esfera = (r, cor, x, y, z, pai, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), material(cor)); m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.castShadow = true; pai.add(m); return m; };
+      const perna = sd => { // pivô no quadril; calça + bota + bico da bota (o pé encosta em y = 0)
+        const p = new THREE.Group(); p.position.set(sd * 0.14, 0.86, 0); g.add(p);
+        criarCilindro(0.1, 0.085, 0.6, c.calca, 0, -0.3, 0, p, 8); criarCilindro(0.115, 0.1, 0.3, c.bota, 0, -0.7, 0, p, 8); criarCaixa(0.2, 0.1, 0.3, c.bota, 0, -0.8, 0.06, p);
+        return p;
+      };
+      const braco = sd => { // pivô no ombro; manga + mão
+        const p = new THREE.Group(); p.position.set(sd * 0.34, 1.4, 0); g.add(p);
+        criarCilindro(0.075, 0.065, 0.55, c.camisa, 0, -0.28, 0, p, 8); esfera(0.075, c.pele, 0, -0.6, 0, p);
+        return p;
+      };
+      const pernaE = perna(-1), pernaD = perna(1), bracoE = braco(-1), bracoD = braco(1);
+      criarCilindro(0.25, 0.22, 0.6, c.camisa, 0, 1.17, 0, g, 8);                       // tronco
+      criarCilindro(0.235, 0.235, 0.07, 0x3a2616, 0, 0.9, 0, g, 8);                     // cinto
+      esfera(0.12, c.camisa, -0.27, 1.42, 0, g); esfera(0.12, c.camisa, 0.27, 1.42, 0, g); // ombros
+      if (c.macacao) { criarCaixa(0.34, 0.36, 0.04, c.macacao, 0, 1.2, 0.23, g); for (const sd of [-1, 1]) criarCaixa(0.06, 0.34, 0.04, c.macacao, sd * 0.12, 1.4, 0.22, g); }
+      criarCilindro(0.08, 0.09, 0.1, c.pele, 0, 1.5, 0, g, 8);                          // pescoço
+      const cabeca = new THREE.Group(); cabeca.position.set(0, 1.7, 0); g.add(cabeca);
+      esfera(0.2, c.pele, 0, 0, 0, cabeca); esfera(0.04, c.pele, 0, -0.03, 0.2, cabeca);                   // cabeça, nariz
+      for (const sd of [-1, 1]) esfera(0.025, 0x222222, sd * 0.075, 0.03, 0.18, cabeca);                   // olhos
+      criarCaixa(0.08, 0.015, 0.02, 0x8a3b2b, 0, -0.1, 0.19, cabeca);                                      // boca
+      esfera(0.205, c.cabelo, 0, 0.03, -0.04, cabeca, 1, 0.9, 0.95);                                       // cabelo (atrás)
+      if (c.barba) esfera(0.17, c.barba, 0, -0.14, 0.07, cabeca, 1, 0.8, 0.9);
+      const raio = c.chapeu === 'sol' ? 0.55 : c.chapeu === 'feltro' ? 0.38 : 0.46, alto = c.chapeu === 'sol' ? 0.16 : 0.22;
+      criarCilindro(raio, raio, 0.035, c.corChapeu, 0, 0.16, 0, cabeca, 16);                               // aba
+      criarCilindro(0.2, 0.23, alto, c.corChapeu, 0, 0.16 + alto / 2, 0, cabeca, 12);                      // copa
+      criarCilindro(0.235, 0.235, 0.05, c.faixa, 0, 0.2, 0, cabeca, 12);                                   // faixa do chapéu
+      g.scale.setScalar(0.9); cena.add(g);
+      return { g, pernaE, pernaD, bracoE, bracoD, cabeca, no: c.no, anterior: null, destino: null, x: 0, z: 0, yaw: 0, fase: 0, parado: 1 + Math.random() * 2, velocidade: 1.4 + Math.random() * 0.3, y: 0.06, rx: 0, rz: 0 };
+    }
+    [
+      { no: 'n0', camisa: 0xc0392b, calca: 0x3b5b8c, macacao: 0x3b5b8c, bota: 0x5a3b25, pele: 0xf0c8a0, cabelo: 0x6b4a2b, chapeu: 'palha', corChapeu: 0xe3c36a, faixa: 0xb03a2e },
+      { no: 'n10', camisa: 0x4f8a3a, calca: 0x6a4b2e, bota: 0x2b2b2b, pele: 0xd9a77c, cabelo: 0x777777, barba: 0x8a8a8a, chapeu: 'feltro', corChapeu: 0x6b4a2b, faixa: 0x2b2b2b },
+      { no: 'n14', camisa: 0xe0b030, calca: 0x2f4a73, bota: 0x7a4a24, pele: 0x8d5a3c, cabelo: 0x1b1b1b, chapeu: 'sol', corChapeu: 0xf3ecd2, faixa: 0x4a9e3a },
+    ].forEach(cfg => {
+      const f = criarFazendeiro(cfg); [f.x, f.z] = GRAFO.nos[cfg.no]; f.yaw = Math.random() * 6.28; FAZENDEIROS.push(f);
+    });
+    function escolherDestino(f) {
+      const op = VIZINHOS[f.no], sem = op.filter(n => n !== f.anterior), lista = sem.length ? sem : op;
+      f.destino = lista[Math.floor(Math.random() * lista.length)];
+    }
+    function atualizarFazendeiros(dt, tempo) {
+      for (const f of FAZENDEIROS) {
+        let andando = false;
+        if (f.parado > 0) f.parado -= dt;
+        else {
+          if (!f.destino) escolherDestino(f);
+          const [tx, tz] = GRAFO.nos[f.destino], dx = tx - f.x, dz = tz - f.z, dist = Math.hypot(dx, dz);
+          if (dist < 0.08) { f.anterior = f.no; f.no = f.destino; f.destino = null; f.parado = Math.random() < 0.55 ? 1.2 + Math.random() * 2.5 : 0; }
+          else {
+            const alvoYaw = Math.atan2(dx, dz); let d = alvoYaw - f.yaw; d -= Math.round(d / 6.2832) * 6.2832;
+            f.yaw += Math.sign(d) * Math.min(Math.abs(d), 5 * dt);                      // giro gradual
+            if (Math.abs(d) < 0.9) {                                                      // só anda quando já está virado para o destino
+              const outro = FAZENDEIROS.find(o => FAZENDEIROS.indexOf(o) < FAZENDEIROS.indexOf(f) && Math.hypot(o.x - f.x, o.z - f.z) < 0.9);
+              if (outro) f.parado = 0.3 + Math.random() * 0.3;                            // só o de índice maior cede: nunca trava os dois
+              else { const passo = Math.min(dist, f.velocidade * dt); f.x += dx / dist * passo; f.z += dz / dist * passo; f.fase += passo * 3.2; andando = true; }
+            }
+            if (Math.random() < dt * 0.04) f.parado = 1 + Math.random() * 2;              // pausa ocasional no meio do caminho
+          }
+        }
+        const balanco = andando ? Math.sin(f.fase) : 0;
+        f.pernaE.rotation.x = balanco * 0.6; f.pernaD.rotation.x = -balanco * 0.6;
+        f.bracoE.rotation.x = -balanco * 0.55; f.bracoD.rotation.x = balanco * 0.55;
+        if (!andando) { f.bracoE.rotation.x *= 0.8; f.bracoD.rotation.x *= 0.8; f.bracoE.rotation.z = 0.05 + Math.sin(tempo * 1.5 + f.fase) * 0.02; f.bracoD.rotation.z = -f.bracoE.rotation.z; }
+        f.cabeca.rotation.y = andando ? 0 : Math.sin(tempo * 0.7 + f.x) * 0.35;           // olha em volta quando parado
+        f.rx = f.x - Math.cos(f.yaw) * 0.35; f.rz = f.z + Math.sin(f.yaw) * 0.35;           // faixa da direita: quem vem no sentido oposto passa pelo outro lado
+        f.g.position.set(f.rx, f.y + (andando ? Math.abs(Math.sin(f.fase)) * 0.04 : 0), f.rz); f.g.rotation.y = f.yaw;
+      }
+    }
+
+    // ======================= PEDRA SECRETA (Easter egg da floresta) =======================
+    const PEDRA_SECRETA = { grupo: null, hit: null, matCristal: new THREE.MeshLambertMaterial({ color: 0x6ee0d8, emissive: 0x1b6f6a, flatShading: true }), pulso: 0 };
+    {
+      const g = new THREE.Group(); g.position.set(PEDRA.x, 0, PEDRA.z); g.rotation.y = 0.5; cena.add(g);
+      const bloco = (esc, cor, x, y, z, ry) => { const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), materialPlano(cor)); m.scale.set(...esc); m.position.set(x, y, z); m.rotation.set(0.1, ry, 0.05); m.castShadow = true; g.add(m); };
+      bloco([1.45, 1.05, 1.25], 0x6f7a86, 0, 0.75, 0, 0.5); bloco([0.8, 0.6, 0.7], 0x7d8794, 1.5, 0.35, 0.5, 1.2); bloco([0.5, 0.4, 0.45], 0x66707b, -1.4, 0.25, 0.7, 2.1);
+      criarEsfera(0.55, 0x4f8f3a, -0.35, 1.5, 0.1, g, 0.35);                                  // musgo no topo
+      [[0.4, 1.7, -0.3, 0.9, 0.35, 0.2], [-0.5, 1.5, 0.15, 0.7, -0.3, 0.1], [0.1, 1.55, 0.5, 0.55, 0.15, -0.35]].forEach(([x, y, z, h, rz, rx]) => {
+        const c = new THREE.Mesh(new THREE.ConeGeometry(0.17, h, 5), PEDRA_SECRETA.matCristal); c.position.set(x, y, z); c.rotation.set(rx, 0, rz); g.add(c);   // cristais
+      });
+      // tábua de pedra entalhada com um símbolo espiral (textura de canvas), encostada na frente da pedra
+      const cv = document.createElement('canvas'); cv.width = cv.height = 128; const c2 = cv.getContext('2d');
+      c2.fillStyle = '#8a929b'; c2.fillRect(0, 0, 128, 128); c2.strokeStyle = '#3a4350'; c2.lineWidth = 7; c2.lineCap = 'round'; c2.beginPath();
+      for (let t = 0; t < 14; t += 0.2) { const r = 4 + t * 3.6, x = 64 + Math.cos(t) * r, y = 64 + Math.sin(t) * r; if (t) c2.lineTo(x, y); else c2.moveTo(x, y); }
+      c2.stroke(); c2.fillStyle = '#3a4350'; c2.beginPath(); c2.arc(64, 64, 6, 0, 7); c2.fill();
+      const laje = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.0, 0.14), new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(cv) })); laje.position.set(0, 0.55, 1.5); laje.rotation.x = -0.2; laje.castShadow = true; g.add(laje);
+      for (let k = 0; k < 5; k++) { const a = k * 1.3 + 0.4; bloco([0.2, 0.14, 0.18], 0x777b78, Math.cos(a) * 2.4, 0.1, Math.sin(a) * 2.2, a); } // pedrinhas ao redor
+      const hit = new THREE.Mesh(new THREE.SphereGeometry(2.3, 8, 6), new THREE.MeshBasicMaterial({ visible: false })); hit.position.y = 0.9; g.add(hit);
+      g.userData.segredo = 'pedra'; PEDRA_SECRETA.grupo = g; PEDRA_SECRETA.hit = hit;
+    }
+    function ativarPedraSecreta() { PEDRA_SECRETA.pulso = 1; tocarSegredo('pedra'); }  // ponto de extensão: futuras recompensas/segredos entram aqui
+    function atualizarPedraSecreta(dt) {
+      PEDRA_SECRETA.pulso = Math.max(0, PEDRA_SECRETA.pulso - dt * 1.4);
+      PEDRA_SECRETA.matCristal.emissiveIntensity = 0.5 + CEU.noite * 1.2 + PEDRA_SECRETA.pulso * 2.5;
+      PEDRA_SECRETA.grupo.position.y = Math.sin(PEDRA_SECRETA.pulso * Math.PI) * 0.1;
+    }
+    {
+      const raycaster = new THREE.Raycaster(), ponteiro = new THREE.Vector2(); let inicio = null;
+      canvas.addEventListener('pointerdown', e => { inicio = [e.clientX, e.clientY, performance.now()]; });
+      canvas.addEventListener('pointerup', e => {
+        if (!inicio) return;
+        const [x0, y0, t0] = inicio; inicio = null;
+        if (Math.hypot(e.clientX - x0, e.clientY - y0) > 6 || performance.now() - t0 > 600) return; // arrastar (câmera) não é clique
+        ponteiro.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+        raycaster.setFromCamera(ponteiro, camera);
+        if (raycaster.intersectObject(PEDRA_SECRETA.hit, false).length) ativarPedraSecreta();
+      });
+    }
+
+    // ======================= CICLO DE DIA E NOITE · CÉU · SOL · LUA · ESTRELAS =======================
+    const CICLO_DIA_NOITE = {
+      duracaoSegundos: 600,        // ← duração de UM ciclo completo (dia + noite) em segundos reais (600 = 10 min)
+      horaInicial: 0.46,           // 0 = meia-noite · 0,25 = amanhecer · 0,5 = meio-dia · 0,75 = pôr do sol
+      horaDoDiaFixo: 0.46,         // horário usado no modo "Dia fixo"
+      horaDaNoiteFixa: 0.90,       // horário usado no modo "Noite fixa"
+      velocidadeDeTransicao: 0.06, // voltas/s: ao escolher dia/noite fixos o relógio gira até lá (sem saltos)
+    };
+    const CEU = { modo: 'auto', hora: CICLO_DIA_NOITE.horaInicial, sol: [0, 1, 0], lua: [0, -1, 0], noite: 0, luzes: 0, opacNuvem: 1, corNuvem: new THREE.Color(), ultimoTexto: -1 };
+    const NOMES_DOS_MODOS = { auto: 'Automático', pausa: 'Pausado', dia: 'Dia fixo', noite: 'Noite fixa' };
+    const suave = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    const CHAVES_DO_SOL = [-0.25, -0.10, -0.02, 0.05, 0.18, 0.40]; // altura do sol (seno da elevação) onde cada cor-chave vale
+    const cores = lista => lista.map(h => new THREE.Color(h));
+    const PAL = {
+      horizonte: cores([0x0c1730, 0x24285a, 0xff7a45, 0xffb27a, 0xbfe3f2, 0x9fd8f5]),
+      zenite: cores([0x050a1c, 0x0c1438, 0x35508f, 0x4f84cc, 0x4d9de6, 0x4d9de6]),
+      hemiCeu: cores([0x4b5f9e, 0x5a6aa8, 0xe0a07a, 0xffe4c4, 0xffffff, 0xffffff]),
+      hemiChao: cores([0x1b2a36, 0x24343a, 0x6e6450, 0x6a8f4a, 0x6a8f4a, 0x6a8f4a]),
+      luzSol: cores([0xff8040, 0xff8040, 0xff8f4a, 0xffa660, 0xffd9a0, 0xfff2cc]),
+      nuvem: cores([0x8896c4, 0x8c8cb8, 0xffb9a0, 0xfff0e6, 0xf8fbff, 0xf8fbff]),
+    };
+    const NUM = { hemiInt: [0.5, 0.52, 0.64, 0.72, 0.75, 0.75], nuvemOp: [0.55, 0.6, 0.85, 0.92, 0.92, 0.92] };
+    function segmento(s) { const n = CHAVES_DO_SOL.length; if (s <= CHAVES_DO_SOL[0]) return [0, 0, 0]; if (s >= CHAVES_DO_SOL[n - 1]) return [n - 1, n - 1, 0]; let i = 0; while (s > CHAVES_DO_SOL[i + 1]) i++; return [i, i + 1, (s - CHAVES_DO_SOL[i]) / (CHAVES_DO_SOL[i + 1] - CHAVES_DO_SOL[i])]; }
+    const amostrarCor = (pal, sg, out) => out.copy(pal[sg[0]]).lerp(pal[sg[1]], sg[2]);
+    const amostrarNum = (v, sg) => v[sg[0]] + (v[sg[1]] - v[sg[0]]) * sg[2];
+    const cH = new THREE.Color(), cZ = new THREE.Color(), cT = new THREE.Color(), cB = new THREE.Color(), cBrilho = new THREE.Color(0xff7a3c);
+    // trajetória do sol: do nascente (nordeste) ao ponto mais alto (sudeste, como a luz original do jogo) e ao poente (sudoeste); a lua é o oposto
+    const ROTA_SOL = { nascente: [0.6, 0, -0.8], zenite: [0.468, 0.797, 0.398] };
+
+    // cúpula do céu (gradiente por vértice, atualizada conforme a hora)
+    const domo = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 14), new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false, depthWrite: false }));
+    const domoDir = [], coresDoDomo = [];
+    {
+      const pos = domo.geometry.attributes.position, n = pos.count;
+      for (let i = 0; i < n; i++) { const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), l = Math.hypot(x, y, z) || 1; domoDir.push(x / l, y / l, z / l); }
+      coresDoDomo.length = n * 3; coresDoDomo.fill(0);
+    }
+    const atributoDeCor = new THREE.BufferAttribute(new Float32Array(Math.max(1, coresDoDomo.length)), 3);
+    domo.geometry.setAttribute('color', atributoDeCor);
     domo.renderOrder = -3; domo.frustumCulled = false; cena.add(domo);
+    // estrelas (criadas uma vez; só a opacidade e a rotação mudam)
+    const estrelas = (() => {
+      const n = 850, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), rn = sorteio(77);
+      for (let i = 0; i < n; i++) {
+        const u = rn() * 2 - 1, a = rn() * 6.2832, r = Math.sqrt(1 - u * u), b = 0.55 + rn() * 0.45, tom = rn();
+        pos.set([Math.cos(a) * r * 270, u * 270, Math.sin(a) * r * 270], i * 3);
+        col.set([b * (0.85 + 0.15 * tom), b * 0.92, b * (1 - 0.15 * tom)], i * 3);
+      }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const p = new THREE.Points(geo, new THREE.PointsMaterial({ size: 2.3, sizeAttenuation: false, vertexColors: true, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+      p.renderOrder = -2.5; p.frustumCulled = false; cena.add(p); return p;
+    })();
     function texturaDoSol(soRaios) {
       const cv = document.createElement('canvas'); cv.width = cv.height = 512;
       const x = cv.getContext('2d'), m = 256;
@@ -1484,25 +1918,91 @@ for (let i = 0; i < 8; i++) {                                                  /
       }
       return new THREE.CanvasTexture(cv);
     }
-    const materialDoSol = tex => new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false });
-    const raiosDoSol = new THREE.Mesh(new THREE.PlaneGeometry(95, 95), materialDoSol(texturaDoSol(true)));
-    const discoDoSol = new THREE.Mesh(new THREE.PlaneGeometry(95, 95), materialDoSol(texturaDoSol(false)));
-    raiosDoSol.renderOrder = -2; discoDoSol.renderOrder = -1; raiosDoSol.frustumCulled = discoDoSol.frustumCulled = false;
-    cena.add(raiosDoSol); cena.add(discoDoSol);
-    const DIRECAO_DO_SOL = [0.124, 0.407, -0.905]; // ~24° acima do horizonte, à direita da vista inicial
-    function atualizarCeu(tempo) {
+    function texturaDaLua() { // disco claro com sombreado de volume, crateras suaves e halo azulado
+      const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+      const x = cv.getContext('2d'), m = 128;
+      let gr = x.createRadialGradient(m, m, 40, m, m, 128); gr.addColorStop(0, 'rgba(190,210,255,0.35)'); gr.addColorStop(1, 'rgba(190,210,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 256, 256);
+      gr = x.createRadialGradient(m - 14, m - 14, 8, m, m, 78); gr.addColorStop(0, '#fbfcff'); gr.addColorStop(0.7, '#dfe5f2'); gr.addColorStop(1, '#b9c3d9');
+      x.fillStyle = gr; x.beginPath(); x.arc(m, m, 74, 0, Math.PI * 2); x.fill();
+      x.fillStyle = 'rgba(150,162,190,0.45)';
+      [[98, 100, 14], [140, 92, 10], [120, 138, 17], [92, 146, 8], [152, 134, 9], [130, 108, 6]].forEach(([cx, cy, r]) => { x.beginPath(); x.arc(cx, cy, r, 0, Math.PI * 2); x.fill(); });
+      return new THREE.CanvasTexture(cv);
+    }
+    const materialCeleste = tex => new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false });
+    const raiosDoSol = new THREE.Mesh(new THREE.PlaneGeometry(95, 95), materialCeleste(texturaDoSol(true)));
+    const discoDoSol = new THREE.Mesh(new THREE.PlaneGeometry(95, 95), materialCeleste(texturaDoSol(false)));
+    const discoDaLua = new THREE.Mesh(new THREE.PlaneGeometry(46, 46), materialCeleste(texturaDaLua()));
+    raiosDoSol.renderOrder = -2; discoDoSol.renderOrder = -1; discoDaLua.renderOrder = -1.5;
+    for (const m of [raiosDoSol, discoDoSol, discoDaLua]) { m.frustumCulled = false; cena.add(m); }
+
+    function atualizarPainelDoCeu() {
+      const h = CEU.hora * 24, hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
+      selecionar('#ceu-status').textContent = 'Modo: ' + NOMES_DOS_MODOS[CEU.modo] + ' · ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+      document.querySelectorAll('#painel-ceu [data-modo]').forEach(b => b.classList.toggle('ativo', b.dataset.modo === CEU.modo));
+    }
+    function definirModoDoCeu(modo) { CEU.modo = modo; atualizarPainelDoCeu(); }
+    document.querySelectorAll('#painel-ceu [data-modo]').forEach(b => { b.onclick = () => definirModoDoCeu(b.dataset.modo); });
+
+    function atualizarCiclo(dt, tempo) {
+      const C = CICLO_DIA_NOITE;
+      if (CEU.modo === 'auto') CEU.hora = (CEU.hora + dt / C.duracaoSegundos) % 1;
+      else if (CEU.modo === 'dia' || CEU.modo === 'noite') { // gira o relógio pelo caminho mais curto até o horário fixo, desacelerando ao chegar
+        let d = (CEU.modo === 'dia' ? C.horaDoDiaFixo : C.horaDaNoiteFixa) - CEU.hora; d -= Math.round(d);
+        const passo = Math.min(Math.abs(d), C.velocidadeDeTransicao * dt * Math.min(1, 0.25 + Math.abs(d) * 4));
+        CEU.hora = (CEU.hora + Math.sign(d) * passo + 1) % 1;
+      } // 'pausa': a hora não muda
+      const a = (CEU.hora - 0.25) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a), E = ROTA_SOL.nascente, Z = ROTA_SOL.zenite;
+      const sx = E[0] * ca + Z[0] * sa, sy = E[1] * ca + Z[1] * sa, sz = E[2] * ca + Z[2] * sa;
+      CEU.sol[0] = sx; CEU.sol[1] = sy; CEU.sol[2] = sz; CEU.lua[0] = -sx; CEU.lua[1] = -sy; CEU.lua[2] = -sz;
+      const sg = segmento(sy), dia = suave(-0.1, 0.25, sy);
+      CEU.noite = 1 - suave(-0.18, 0.06, sy);                 // estrelas / cristais
+      CEU.luzes = 1 - suave(-0.04, 0.16, sy);                 // postes acendem ao entardecer
+      amostrarCor(PAL.horizonte, sg, cH); amostrarCor(PAL.zenite, sg, cZ);
+      cena.background.copy(cH); cena.fog.color.copy(cH);
+      // luzes da cena
+      luzHemisferio.color.copy(amostrarCor(PAL.hemiCeu, sg, cT)); luzHemisferio.groundColor.copy(amostrarCor(PAL.hemiChao, sg, cB)); luzHemisferio.intensity = amostrarNum(NUM.hemiInt, sg);
+      sol.color.copy(amostrarCor(PAL.luzSol, sg, cT)); sol.intensity = 0.9 * suave(-0.03, 0.2, sy);
+      sol.position.set(12 + sx * 70, sy * 70, 6 + sz * 70);
+      luaLuz.intensity = 0.42 * suave(0.02, 0.35, -sy); luaLuz.position.set(12 - sx * 70, -sy * 70, 6 - sz * 70);
+      // nuvens (cor e transparência seguem o céu; continuam visíveis à noite sem apagar lua e estrelas)
+      amostrarCor(PAL.nuvem, sg, CEU.corNuvem); CEU.opacNuvem = amostrarNum(NUM.nuvemOp, sg);
+      // postes: vidro brilhante, halos, manchas de luz no chão e PointLights
+      LAMPADAS.vidro.color.setRGB(0.79 + 0.21 * CEU.luzes, 0.65 + 0.2 * CEU.luzes, 0.4 + 0.14 * CEU.luzes);
+      LAMPADAS.halo.opacity = CEU.luzes * 0.85; LAMPADAS.chao.opacity = CEU.luzes * 0.6;
+      LAMPADAS.luzes.forEach((L, i) => { L.intensity = CEU.luzes * 1.6 * (1 + 0.04 * Math.sin(tempo * 7 + i * 2)); });
+      // água/névoa (materiais sem iluminação) escurecem à noite
+      const k = 0.38 + 0.62 * dia;
+      for (const m of MATERIAIS_DE_BRILHO) m.color.copy(m.userData.base).multiplyScalar(k);
+      // gradiente da cúpula, com brilho de crepúsculo perto do sol
+      const tw = Math.exp(-(((sy - 0.03) / 0.13) ** 2)), n = domoDir.length / 3;
+      for (let i = 0; i < n; i++) {
+        const dx = domoDir[i * 3], dy = domoDir[i * 3 + 1], dz = domoDir[i * 3 + 2], t = Math.pow(Math.min(1, Math.max(0, dy)), 0.7);
+        const brilho = tw * Math.pow(Math.max(0, dx * sx + dy * sy + dz * sz), 5) * 0.9 * (1 - t * 0.6);
+        atributoDeCor.array[i * 3] = Math.min(1, cH.r + (cZ.r - cH.r) * t + cBrilho.r * brilho);
+        atributoDeCor.array[i * 3 + 1] = Math.min(1, cH.g + (cZ.g - cH.g) * t + cBrilho.g * brilho);
+        atributoDeCor.array[i * 3 + 2] = Math.min(1, cH.b + (cZ.b - cH.b) * t + cBrilho.b * brilho);
+      }
+      atributoDeCor.needsUpdate = true;
+      if (tempo - CEU.ultimoTexto > 0.4) { CEU.ultimoTexto = tempo; atualizarPainelDoCeu(); }
+    }
+    function atualizarCeu(tempo) { // posiciona cúpula, sol, lua e estrelas em torno da câmera (sem paralaxe)
       const p = camera.position;
       domo.position.set(p.x, p.y, p.z);
-      for (const m of [raiosDoSol, discoDoSol]) { m.position.set(p.x + DIRECAO_DO_SOL[0] * 250, p.y + DIRECAO_DO_SOL[1] * 250, p.z + DIRECAO_DO_SOL[2] * 250); m.lookAt(p); }
-      raiosDoSol.rotateZ(tempo * 0.04); // raios giram devagar
+      estrelas.position.set(p.x, p.y, p.z); estrelas.rotation.set(0.45, CEU.hora * 2.2, 0.2); estrelas.material.opacity = CEU.noite * (0.9 + 0.1 * Math.sin(tempo * 2.1));
+      const sy = CEU.sol[1], visSol = suave(-0.08, 0.06, sy), aquec = suave(0, 0.35, sy);
+      for (const m of [raiosDoSol, discoDoSol]) { m.position.set(p.x + CEU.sol[0] * 250, p.y + sy * 250, p.z + CEU.sol[2] * 250); m.lookAt(p); m.material.opacity = visSol; m.material.color.setRGB(1, 0.62 + 0.38 * aquec, 0.38 + 0.62 * aquec); }
+      raiosDoSol.rotateZ(tempo * 0.04);
+      discoDaLua.position.set(p.x + CEU.lua[0] * 240, p.y + CEU.lua[1] * 240, p.z + CEU.lua[2] * 240); discoDaLua.lookAt(p);
+      discoDaLua.material.opacity = suave(-0.02, 0.16, CEU.lua[1]) * (0.35 + 0.65 * CEU.noite);
     }
+    atualizarCiclo(0, 0); atualizarPainelDoCeu();
 
     // ======================= CÂMERA E CONTROLES =======================
-    let anguloHorizontal = 0.3, anguloVertical = 0.85, jogadorMexeu = false, olharParaCima = 0;
+    let anguloHorizontal = -0.2, anguloVertical = 0.5, jogadorMexeu = false, olharParaCima = 0;
     const OLHAR_MAXIMO = 1.0, ELEVACAO_MINIMA = 0.35, ELEVACAO_MAXIMA = 1.35;
-    let distanciaDaCamera = innerWidth < innerHeight ? 40 : 31;
+    let distanciaDaCamera = innerWidth < innerHeight ? 66 : 47;
     const DISTANCIA_MINIMA = 12, DISTANCIA_MAXIMA = 100;
-    const alvoAtualDaCamera = new THREE.Vector3(-2, 0, -10), alvoDestinoDaCamera = alvoAtualDaCamera.clone();
+    const alvoAtualDaCamera = new THREE.Vector3(0, 0, 6), alvoDestinoDaCamera = alvoAtualDaCamera.clone();
     function focarCameraNaArea(id) {
       jogadorMexeu = true; olharParaCima = 0;
       const area = AREAS.find(a => a.id === id);
@@ -1536,23 +2036,15 @@ for (let i = 0; i < 8; i++) {                                                  /
     function posicionarCamera() {
       camera.position.set(
         alvoAtualDaCamera.x + distanciaDaCamera * Math.cos(anguloVertical) * Math.sin(anguloHorizontal),
-        distanciaDaCamera * Math.sin(anguloVertical),
+        alvoAtualDaCamera.y + distanciaDaCamera * Math.sin(anguloVertical), // acompanha a altura do alvo (Espaço/Ctrl)
         alvoAtualDaCamera.z + distanciaDaCamera * Math.cos(anguloVertical) * Math.cos(anguloHorizontal)
       );
       camera.lookAt(alvoAtualDaCamera);
       if (olharParaCima) camera.rotateX(olharParaCima);
     }
-    // Enquadramento inicial: menor distância em que a cachoeira e a área principal cabem na tela (celular ou PC).
-    const CACHOEIRA_NA_TELA = [[CX, ALTURA_CLIFF, CZ_FRENTE - 5], [CX, 0, CZ_FRENTE + 2]];
-    const PONTOS_PC = CACHOEIRA_NA_TELA.concat([[-8, 2, -9], [19, 2, -9], [-8, 1, 6], [19, 1, 6]]);
-    const PONTOS_CELULAR = CACHOEIRA_NA_TELA.concat([[-8, 2, -9], [7, 2, -9], [7, 1, 6]]);
-    function enquadrarInicio() {
-      const v = new THREE.Vector3();
-      for (let d = 22; d <= DISTANCIA_MAXIMA; d += 0.5) {
-        distanciaDaCamera = d; posicionarCamera(); camera.updateMatrixWorld(true);
-        if ((camera.aspect < 1 ? PONTOS_CELULAR : PONTOS_PC).every(p => { v.set(p[0], p[1], p[2]).project(camera); return Math.abs(v.x) < 0.9 && v.y > -0.62 && v.y < 0.88; })) return;
-      }
-    }
+    // Posição inicial fixa (alvo, ângulos e altura); só a distância muda conforme a tela (retrato precisa de mais recuo).
+    // Câmera a ~22 de altura sobre o gramado: acima de qualquer árvore/edifício e fora de montanhas.
+    function enquadrarInicio() { distanciaDaCamera = camera.aspect < 0.9 ? 66 : 47; }
     function ajustarTamanhoDaTela() {
       renderizador.setSize(innerWidth, innerHeight);
       camera.aspect = innerWidth / innerHeight;
@@ -1582,13 +2074,19 @@ for (let i = 0; i < 8; i++) {                                                  /
     canvas.addEventListener('wheel', e => { jogadorMexeu = true; distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera + e.deltaY * 0.03)); });
 
     // ======================= MOVIMENTO WASD DO ALVO DA CÂMERA =======================
-    const teclas = { KeyW: false, KeyA: false, KeyS: false, KeyD: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+    const teclas = { KeyW: false, KeyA: false, KeyS: false, KeyD: false, ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, Space: false, ControlLeft: false, ControlRight: false, KeyC: false };
+    const ALTURA_MAXIMA_DO_ALVO = 45, VELOCIDADE_VERTICAL = 14; // Espaço sobe · Ctrl (ou C) desce
     const LIMITE_DO_MAPA = 75;       // limite reduzido para acompanhar o mapa compacto
     const VELOCIDADE_BASE = 0.6;     // unidades/s para cada unidade de distância da câmera
     const VELOCIDADE_COM_SHIFT = 1.8; // multiplicador ao segurar Shift
 
-    addEventListener('keydown', e => { if (e.code in teclas) { jogadorMexeu = true; teclas[e.code] = true; e.preventDefault(); } });
-    addEventListener('keyup', e => { if (e.code in teclas) teclas[e.code] = false; });
+    addEventListener('keydown', e => {
+      if (e.code in teclas) {
+        jogadorMexeu = true; teclas[e.code] = true; e.preventDefault();
+        if (e.code === 'Space' && document.activeElement && document.activeElement.blur) document.activeElement.blur(); // Espaço não aciona o botão focado
+      }
+    });
+    addEventListener('keyup', e => { if (e.code in teclas) { teclas[e.code] = false; if (e.code === 'Space') e.preventDefault(); } });
     addEventListener('blur', () => { for (const k in teclas) teclas[k] = false; }); // evita tecla "presa" ao trocar de aba
 
     const frente = new THREE.Vector3(), direita = new THREE.Vector3(), deslocamento = new THREE.Vector3();
@@ -1596,6 +2094,9 @@ for (let i = 0; i < 8; i++) {                                                  /
     function atualizarMovimento(dt, shift) {
       anguloHorizontal += ((teclas.ArrowLeft ? 1 : 0) - (teclas.ArrowRight ? 1 : 0)) * 1.4 * dt;   // setas: girar e inclinar
       ajustarInclinacao(((teclas.ArrowDown ? 1 : 0) - (teclas.ArrowUp ? 1 : 0)) * 1.2 * dt);
+      const vertical = (teclas.Space ? 1 : 0) - ((teclas.ControlLeft || teclas.ControlRight || teclas.KeyC) ? 1 : 0);
+      if (vertical) for (const alvo of [alvoDestinoDaCamera, alvoAtualDaCamera]) // altura do alvo ≥ 0: a câmera nunca desce abaixo do chão
+        alvo.y = Math.max(0, Math.min(ALTURA_MAXIMA_DO_ALVO, alvo.y + vertical * VELOCIDADE_VERTICAL * (shift ? VELOCIDADE_COM_SHIFT : 1) * dt));
       let avanco = (teclas.KeyW ? 1 : 0) - (teclas.KeyS ? 1 : 0);
       let lateral = (teclas.KeyD ? 1 : 0) - (teclas.KeyA ? 1 : 0);
       if (!avanco && !lateral) return;
@@ -1622,12 +2123,166 @@ for (let i = 0; i < 8; i++) {                                                  /
     addEventListener('keydown', e => { if (e.key === 'Shift') shiftPressionado = true; });
     addEventListener('keyup', e => { if (e.key === 'Shift') shiftPressionado = false; });
 
+    // ======================= CONFIGURAÇÃO DOS ÁUDIOS — ADICIONE SEUS ARQUIVOS AQUI =======================
+    // Nenhum arquivo de áudio acompanha o jogo: coloque os seus nestes caminhos (relativos a este HTML) ou edite os caminhos abaixo.
+    // Se um arquivo não existir, o jogo continua normalmente: aquele som fica "indisponível" e o painel avisa. Nada é simulado.
+    const AUDIO_CONFIG = {
+      musica: { arquivo: 'assets/audio/musica-fundo.mp3', volume: 0.5 },                              // trilha sonora de fundo (em loop)
+      animais: {
+        volume: 0.7,                    // volume inicial da categoria "Animais"
+        intervaloEntreSons: [4, 11],    // segundos (mín., máx.) entre dois sons de animais quaisquer
+        maxSimultaneos: 2,              // no máximo dois animais fazendo barulho ao mesmo tempo
+        tipos: {                        // arquivo · volume relativo · intervalo (s) entre sons do MESMO tipo · alcance (distância da câmera)
+          vaca: { arquivo: 'assets/audio/animais/vaca.mp3', volume: 1.0, intervalo: [20, 45], alcance: 80 },        // mugido
+          galinha: { arquivo: 'assets/audio/animais/galinha.mp3', volume: 0.8, intervalo: [12, 30], alcance: 60 },  // cacarejo
+          ovelha: { arquivo: 'assets/audio/animais/ovelha.mp3', volume: 0.9, intervalo: [18, 40], alcance: 70 },    // balido
+          porco: { arquivo: 'assets/audio/animais/porco.mp3', volume: 0.9, intervalo: [20, 45], alcance: 70 },      // grunhido
+          cavalo: { arquivo: 'assets/audio/animais/cavalo.mp3', volume: 1.0, intervalo: [25, 55], alcance: 80 },    // relincho
+        },
+      },
+      ambiente: {
+        cachoeira: { arquivo: 'assets/audio/ambiente/cachoeira.mp3', volume: 0.6, alcance: 90 },    // som contínuo (loop), mais alto perto da cachoeira
+        fonte: { arquivo: 'assets/audio/ambiente/fonte.mp3', volume: 0.5, alcance: 45 },            // som contínuo (loop) do chafariz do lago
+      },
+      segredos: { pedra: { arquivo: 'assets/audio/segredos/pedra-secreta.mp3', volume: 0.8 } },    // Easter egg: clique na pedra da floresta
+    };
+
+    // ======================= SISTEMA DE ÁUDIO =======================
+    // Um elemento <audio> por som (criados uma vez e reutilizados). Nada toca antes de uma interação explícita (botão "Ativar áudio").
+    const CHAVE_AUDIO = 'farmedu-audio'; // ajustes de áudio ficam separados do progresso do jogo
+    const SOM = {
+      ativo: false, bloqueado: false, musicaPausada: false, el: {}, indisponivel: {}, proximoAnimal: 0, livreEm: {},
+      cat: { musica: { ligado: true, volume: AUDIO_CONFIG.musica.volume }, animais: { ligado: true, volume: AUDIO_CONFIG.animais.volume },
+        cachoeira: { ligado: true, volume: AUDIO_CONFIG.ambiente.cachoeira.volume }, fonte: { ligado: true, volume: AUDIO_CONFIG.ambiente.fonte.volume } },
+    };
+    const NOMES_DO_AUDIO = { musica: 'Música', animais: 'Animais', cachoeira: 'Cachoeira', fonte: 'Fonte' };
+    try { const salvo = JSON.parse(localStorage.getItem(CHAVE_AUDIO) || '{}'); for (const k in SOM.cat) if (salvo[k]) { if (typeof salvo[k].ligado === 'boolean') SOM.cat[k].ligado = salvo[k].ligado; if (typeof salvo[k].volume === 'number') SOM.cat[k].volume = Math.min(1, Math.max(0, salvo[k].volume)); } } catch (e) { /* ajustes inválidos: usa os padrões */ }
+    const salvarAjustesDeAudio = () => { try { localStorage.setItem(CHAVE_AUDIO, JSON.stringify(SOM.cat)); } catch (e) { /* sem armazenamento: ignora */ } };
+    const aleatorioEntre = ([a, b]) => a + Math.random() * (b - a);
+    const ganhoPorDistancia = (d, alcance) => Math.pow(Math.max(0, 1 - Math.max(0, d - 6) / alcance), 1.5);
+    function criarAudio(chave, arquivo, loop) {
+      const el = new Audio(); el.preload = 'none'; el.loop = loop; el.src = arquivo;
+      el.addEventListener('error', () => { SOM.indisponivel[chave] = true; atualizarPainelDeAudio(); });   // arquivo ausente/ilegível: marca e segue
+      ['playing', 'pause', 'ended'].forEach(ev => el.addEventListener(ev, atualizarPainelDeAudio));
+      SOM.el[chave] = el; return el;
+    }
+    criarAudio('musica', AUDIO_CONFIG.musica.arquivo, true);
+    for (const t in AUDIO_CONFIG.animais.tipos) criarAudio('animal:' + t, AUDIO_CONFIG.animais.tipos[t].arquivo, false);
+    for (const k in AUDIO_CONFIG.ambiente) criarAudio(k, AUDIO_CONFIG.ambiente[k].arquivo, true);
+    criarAudio('segredo:pedra', AUDIO_CONFIG.segredos.pedra.arquivo, false);
+    function tocarAudio(chave, volume) {
+      const el = SOM.el[chave]; if (!el || SOM.indisponivel[chave]) return;
+      el.volume = Math.min(1, Math.max(0, volume));
+      let p; try { p = el.play(); } catch (e) { SOM.indisponivel[chave] = true; return; }
+      if (p && p.catch) p.catch(e => {
+        const nome = e && e.name;
+        if (nome === 'NotAllowedError') SOM.bloqueado = true;                  // o navegador exigiu um gesto do usuário
+        else if (nome !== 'AbortError') SOM.indisponivel[chave] = true;         // arquivo inexistente / formato não suportado
+        atualizarPainelDeAudio();
+      });
+    }
+    const estaTocando = chave => !!SOM.el[chave] && !SOM.el[chave].paused && !SOM.indisponivel[chave];
+    function aplicarMusica() {
+      const el = SOM.el.musica, deve = SOM.ativo && SOM.cat.musica.ligado && !SOM.musicaPausada && !document.hidden;
+      if (deve) { if (el.paused) tocarAudio('musica', SOM.cat.musica.volume); else el.volume = SOM.cat.musica.volume; }
+      else if (!el.paused) el.pause();
+    }
+    function aplicarAmbiente() {
+      for (const k in AUDIO_CONFIG.ambiente) {
+        const el = SOM.el[k], deve = SOM.ativo && SOM.cat[k].ligado && !document.hidden;
+        if (deve) { if (el.paused) tocarAudio(k, 0); } else if (!el.paused) el.pause();
+      }
+    }
+    // fontes sonoras no mundo: o volume do som contínuo cai com a distância da câmera
+    const FONTES_SONORAS = { cachoeira: [CX, 6, CZ_FRENTE], fonte: [32, 2, 35] };
+    setInterval(() => {
+      if (!SOM.ativo) return;
+      const p = camera.position;
+      for (const k in FONTES_SONORAS) {
+        if (!estaTocando(k)) continue;
+        const f = FONTES_SONORAS[k], cfg = AUDIO_CONFIG.ambiente[k];
+        SOM.el[k].volume = Math.min(1, SOM.cat[k].volume * cfg.volume * ganhoPorDistancia(Math.hypot(p.x - f[0], p.y - f[1], p.z - f[2]), cfg.alcance));
+      }
+    }, 150);
+    // sons dos animais: ocasionais, com intervalos aleatórios, limite de simultâneos e volume pela distância
+    const posicaoTemporaria = new THREE.Vector3();
+    function sortearSomDeAnimal() {
+      if (!SOM.ativo || !SOM.cat.animais.ligado || document.hidden) return;
+      const agora = performance.now() / 1000; if (agora < SOM.proximoAnimal) return;
+      const A = AUDIO_CONFIG.animais;
+      SOM.proximoAnimal = agora + aleatorioEntre(A.intervaloEntreSons);
+      if (Object.keys(A.tipos).filter(t => estaTocando('animal:' + t)).length >= A.maxSimultaneos) return;
+      for (let i = REGISTRO_SONS_ANIMAIS.length - 1; i >= 0; i--) if (!REGISTRO_SONS_ANIMAIS[i][1].parent) REGISTRO_SONS_ANIMAIS.splice(i, 1); // animais removidos pela evolução
+      const candidatos = REGISTRO_SONS_ANIMAIS.filter(([tipo]) => A.tipos[tipo] && !SOM.indisponivel['animal:' + tipo] && agora >= (SOM.livreEm[tipo] || 0));
+      if (!candidatos.length) return;
+      const [tipo, grupo] = candidatos[Math.floor(Math.random() * candidatos.length)], cfg = A.tipos[tipo];
+      grupo.getWorldPosition(posicaoTemporaria);
+      const ganho = ganhoPorDistancia(camera.position.distanceTo(posicaoTemporaria), cfg.alcance);
+      if (ganho < 0.05) return;                                              // longe demais para ser ouvido
+      SOM.livreEm[tipo] = agora + aleatorioEntre(cfg.intervalo);
+      SOM.el['animal:' + tipo].currentTime = 0;
+      tocarAudio('animal:' + tipo, SOM.cat.animais.volume * cfg.volume * ganho);
+    }
+    setInterval(sortearSomDeAnimal, 500);
+    function tocarSegredo(nome) { // som do Easter egg (o clique já é um gesto do usuário, então o navegador permite tocar)
+      const chave = 'segredo:' + nome, el = SOM.el[chave];
+      if (!el) return;
+      if (SOM.indisponivel[chave]) { console.info('[FarmEdu] Som secreto indisponível. Adicione o arquivo em: ' + AUDIO_CONFIG.segredos[nome].arquivo); return; }
+      try { el.currentTime = 0; } catch (e) { /* ainda sem metadados */ }
+      tocarAudio(chave, AUDIO_CONFIG.segredos[nome].volume);
+    }
+    function ativarAudio() { SOM.ativo = true; SOM.bloqueado = false; SOM.proximoAnimal = performance.now() / 1000 + 3; aplicarMusica(); aplicarAmbiente(); atualizarPainelDeAudio(); }
+    document.addEventListener('visibilitychange', () => { aplicarMusica(); aplicarAmbiente(); });
+
+    // painel de áudio (linhas geradas por categoria)
+    {
+      const html = Object.keys(SOM.cat).map(k => `<div class="linha-audio"><label><input type="checkbox" id="audio-${k}-on"> ${NOMES_DO_AUDIO[k]}</label><input type="range" id="audio-${k}-vol" min="0" max="100" aria-label="Volume: ${NOMES_DO_AUDIO[k]}">` +
+        (k === 'musica' ? `<button class="botao" id="audio-musica-play" style="grid-column:1/-1">⏸ Pausar música</button>` : '') + `<small id="audio-${k}-status"></small></div>`).join('');
+      selecionar('#audio-linhas').innerHTML = html;
+      for (const k in SOM.cat) {
+        selecionar(`#audio-${k}-on`).addEventListener('change', e => { SOM.cat[k].ligado = e.target.checked; salvarAjustesDeAudio(); aplicarMusica(); aplicarAmbiente(); atualizarPainelDeAudio(); });
+        selecionar(`#audio-${k}-vol`).addEventListener('input', e => { SOM.cat[k].volume = e.target.value / 100; salvarAjustesDeAudio(); if (k === 'musica') aplicarMusica(); });
+      }
+      selecionar('#audio-musica-play').addEventListener('click', () => { SOM.musicaPausada = !SOM.musicaPausada; aplicarMusica(); atualizarPainelDeAudio(); });
+      selecionar('#audio-ativar').addEventListener('click', ativarAudio);
+    }
+    function atualizarPainelDeAudio() {
+      selecionar('#audio-ativar').textContent = !SOM.ativo ? 'Ativar áudio' : SOM.bloqueado ? 'O navegador bloqueou: toque para ativar' : '✔ Áudio ativo';
+      selecionar('#audio-ativar').classList.toggle('ativo', SOM.ativo && !SOM.bloqueado);
+      for (const k in SOM.cat) {
+        selecionar(`#audio-${k}-on`).checked = SOM.cat[k].ligado; selecionar(`#audio-${k}-vol`).value = Math.round(SOM.cat[k].volume * 100);
+        let texto;
+        if (!SOM.cat[k].ligado) texto = 'Desligado';
+        else if (!SOM.ativo) texto = 'Aguardando "Ativar áudio"';
+        else if (k === 'animais') { const tipos = Object.keys(AUDIO_CONFIG.animais.tipos), faltam = tipos.filter(t => SOM.indisponivel['animal:' + t]).length; texto = faltam === tipos.length ? 'Arquivos não encontrados' : faltam ? `Ativo (${faltam} arquivo(s) ausente(s))` : 'Ativo: sons ocasionais'; }
+        else if (SOM.indisponivel[k]) texto = 'Arquivo não encontrado: ' + (k === 'musica' ? AUDIO_CONFIG.musica.arquivo : AUDIO_CONFIG.ambiente[k].arquivo);
+        else if (k === 'musica') texto = SOM.musicaPausada ? 'Pausada' : estaTocando('musica') ? 'Tocando (loop)' : 'Carregando…';
+        else texto = estaTocando(k) ? 'Tocando (volume pela distância)' : 'Carregando…';
+        selecionar(`#audio-${k}-status`).textContent = texto;
+      }
+      const bp = selecionar('#audio-musica-play'); bp.textContent = SOM.musicaPausada ? '▶ Tocar música' : '⏸ Pausar música'; bp.disabled = !SOM.ativo || !SOM.cat.musica.ligado || !!SOM.indisponivel.musica;
+    }
+    atualizarPainelDeAudio();
+
+    // botões da barra superior: um painel aberto por vez
+    {
+      const botoes = [['#botao-ceu', '#painel-ceu'], ['#botao-audio', '#painel-audio']];
+      botoes.forEach(([b, p]) => selecionar(b).addEventListener('click', () => {
+        const abrir = selecionar(p).hidden;
+        botoes.forEach(([b2, p2]) => { selecionar(p2).hidden = true; selecionar(b2).classList.remove('ativo'); });
+        selecionar(p).hidden = !abrir; selecionar(b).classList.toggle('ativo', abrir);
+      }));
+    }
+
     // ======================= LOOP PRINCIPAL =======================
     const relogio = new THREE.Clock();
     function animarCena() {
       requestAnimationFrame(animarCena);
       const dt = Math.min(relogio.getDelta(), 0.05), tempo = relogio.elapsedTime;
       atualizarMovimento(dt, shiftPressionado);   // <-- adicione esta linha
+      atualizarCiclo(dt, tempo);
+      atualizarFazendeiros(dt, tempo);
+      atualizarPedraSecreta(dt);
       for (const animar of animacoesDoCenario) animar(tempo, dt);
       for (const id in animacoesDaArea) for (const animar of animacoesDaArea[id]) animar(tempo, dt);
       for (const id in grupoDaArea) {
@@ -1642,7 +2297,8 @@ for (let i = 0; i < 8; i++) {                                                  /
         n.position[u.eixo] += dt * u.velocidade;
         if (n.position[u.eixo] > borda) n.position[u.eixo] = -borda; // reaparece já invisível (fade), sem salto
         n.position.y = u.yBase + Math.sin(tempo * 0.1 + u.fase) * 0.6;
-        u.mat.opacity = 0.92 * Math.min(1, Math.max(0, (borda - Math.abs(n.position[u.eixo])) / 20));
+        u.mat.opacity = CEU.opacNuvem * Math.min(1, Math.max(0, (borda - Math.abs(n.position[u.eixo])) / 20));
+        u.mat.color.copy(CEU.corNuvem);
       }
       alvoAtualDaCamera.lerp(alvoDestinoDaCamera, 0.06);
       posicionarCamera();

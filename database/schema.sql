@@ -132,7 +132,6 @@ CREATE TABLE atividades (
   descricao            TEXT          NULL,
   tipo_atividade       ENUM('codigo', 'quiz', 'texto') NOT NULL DEFAULT 'codigo',
   linguagem            VARCHAR(30)   NULL,
-  resposta_referencia  TEXT          NULL,
   criterios_correcao   JSON          NULL,
   data_entrega         DATETIME      NOT NULL,
   criado_em            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -277,3 +276,12 @@ CREATE TABLE notificacoes (
     ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX idx_notificacoes_usuario (id_usuario, lida)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE arquivos (
+  id_arquivo         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_atividade        INT UNSIGNED NOT NULL,
+  descricao_arquivo   VARCHAR(45) NOT NULL,
+  caminho             VARCHAR(255) NOT NULL,
+  FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
+  INDEX id_arquivo_atividade (id_atividade),
+)

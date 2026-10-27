@@ -10,6 +10,10 @@
         require_once __DIR__ . '/view/sendAvaliacao.php';
     }
 
+    public function sendRespostaReferencia(): void {
+        require_once __DIR__ . '/view/respostaReferencia.php';
+    }
+
     public function sendFile(): void {
         $type = $_GET['type'] ?? null;
         $file = $_GET['file'] ?? null;

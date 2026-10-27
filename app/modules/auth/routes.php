@@ -13,3 +13,5 @@ Router::get('/auth/logout', [UsuarioController::class, 'sair']);
 
 Router::get('/auth/loginAluno', [UsuarioController::class, 'showLoginAluno']);
 Router::post('/auth/loginAluno', [UsuarioController::class, 'entrarAluno']);
+
+Router::get('/auth/file', [UsuarioController::class, 'sendFile']);

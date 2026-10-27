@@ -1,0 +1,188 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --azul-btn: #0088FF;
+    --azul-texto: #2276E3;
+    --azul-escuro: #0b2a3a;
+    --borda-input: #5f7f86;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: "Poppins", sans-serif;
+    background: #fff;
+}
+
+
+.tela-login {
+    display: flex;
+    min-height: 100vh;
+}
+
+.painel-login {
+    flex: 0 0 47.5%;            
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 60px 54px 40px;
+}
+
+.titulo-login {
+    font-size: 30px;
+    font-weight: 500;
+    color: var(--azul-escuro);
+    margin-bottom: 50px;
+    text-align: center;
+}
+
+.mensagem {
+    width: 100%;
+    max-width: 265px;
+    font-size: 13px;
+    color: var(--azul-escuro);
+    margin-bottom: 14px;
+    text-align: center;
+}
+
+
+.form-login {
+    width: 100%;
+    max-width: 265px;
+    display: flex;
+    flex-direction: column;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 28px;
+}
+
+.campo label {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--azul-escuro);
+    margin: 0 0 8px 14px;
+}
+
+.campo input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--azul-escuro);
+    background: #fff;
+    border: 1px solid var(--borda-input);
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.campo input:focus {
+    border-color: var(--azul-btn);
+    box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+}
+
+.links-campo {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.links-campo a,
+.link-verde {
+    font-size: 11px;
+    color: var(--azul-texto);
+    text-decoration: none;
+}
+
+.links-campo a:hover,
+.link-verde:hover {
+    text-decoration: underline;
+}
+
+#btn-entrar {
+    width: 100%;
+    height: 42px;
+    margin-top: -4px;
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 500;
+    color: #fff;
+    background: var(--azul-btn);
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 3px 4px rgba(255, 166, 77, 0.45);
+    cursor: pointer;
+    transition: filter 0.2s, transform 0.1s;
+}
+
+#btn-entrar:hover {
+    filter: brightness(0.95);
+}
+
+#btn-entrar:active {
+    transform: translateY(1px);
+}
+
+.criar-conta {
+    margin-top: 22px;
+    font-size: 18px;
+    font-weight: 400;
+    color: var(--azul-texto);
+    text-decoration: none;
+}
+
+.criar-conta:hover {
+    text-decoration: underline;
+}
+
+.painel-imagem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 22%;
+    background: url("../img/fundo-fazenda.png") center / cover no-repeat;
+    image-rendering: pixelated;
+}
+
+.logo {
+    width: 122px;
+    height: 122px;
+    border-radius: 50%;
+    object-fit: cover;
+    image-rendering: auto;
+}
+
+.nome-marca {
+    margin-top: 8px;
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
+    letter-spacing: 0.3px;
+}
+
+@media (max-width: 760px) {
+    .tela-login {
+        flex-direction: column-reverse;
+    }
+
+    .painel-login {
+        flex: none;
+        padding: 40px 24px;
+    }
+
+    .painel-imagem {
+        min-height: 260px;
+        padding-top: 40px;
+    }
+}

@@ -55,7 +55,7 @@ header .titulo-modulo {
 header .usuario-avatar {
     width: 35px;
     height: 35px;
-    border-radius: 50%;
+    border-radius: 60%;
     background: var(--Verde-bg);
     border: 2px solid var(--Branco);
     margin-left: auto;

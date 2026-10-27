@@ -4,5 +4,4 @@
 
     // Registra as rotas usando os métodos estáticos do Router
     Router::get('/fazenda/fazenda', [baseFazenda::class, 'showFazenda']);
-
 ?>

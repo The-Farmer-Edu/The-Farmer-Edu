@@ -3,6 +3,10 @@ const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta' };
 const nomeDaLinguagem = { php: 'PHP', javascript: 'JavaScript', python: 'Python', java: 'Java', c: 'C', cpp: 'C++' };
 const paginasDoMenu = ['mural', 'pessoas'];
 
+const nomeInstrutor = document.body.dataset.instrutor;
+
+const iconeAtividade = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M8 11l1.2 1.2L11 10.4M13 11.5h3M8 16l1.2 1.2L11 15.4M13 16.5h3"/></svg>';
+
 let atividades = [];
 
 function criar(tag, classe, texto) {
@@ -21,6 +25,11 @@ function formatarData(valor) {
     return `${dia}/${mes}/${ano}`;
 }
 
+function formatarDia(valor) {
+    const [ano, mes, dia] = valor.slice(0, 10).split('-').map(Number);
+    return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+}
+
 async function pedir(url, opcoes) {
     let resposta;
     try {
@@ -33,7 +42,7 @@ async function pedir(url, opcoes) {
     try {
         dados = await resposta.json();
     } catch (erro) {
-        // resposta sem json, cai na mensagem padrão abaixo
+
     }
 
     if (!resposta.ok) {
@@ -55,7 +64,6 @@ function abrirPagina(nome) {
     document.querySelectorAll('.pagina').forEach(pagina => pagina.classList.add('hidden'));
     document.getElementById('pagina-' + nome).classList.remove('hidden');
 
-    // as telas de cadastro pertencem ao item "Atividades" do menu
     const menu = paginasDoMenu.includes(nome) ? nome : 'atividades';
     document.querySelectorAll('.sidebar .menu-item[data-menu]').forEach(botao => {
         botao.classList.toggle('active', botao.dataset.menu === menu);
@@ -86,12 +94,26 @@ function preencherCampos(dados) {
     });
 }
 
+function atualizarCabecalho(turmas) {
+    const titulo = document.getElementById('cabecalho-titulo');
+    const sub = document.getElementById('cabecalho-sub');
+
+    if (turmas.length === 1) {
+        titulo.textContent = turmas[0].nome_curso.toUpperCase();
+        sub.textContent = turmas[0].nome_turma;
+    } else if (turmas.length > 1) {
+        titulo.textContent = 'MINHAS TURMAS';
+        sub.textContent = turmas.length + ' turmas';
+    }
+}
+
 async function carregarDados() {
     try {
         const dados = await pedir('atividades/instrutor/dados');
         atividades = dados.atividades;
 
         preencherCampos(dados);
+        atualizarCabecalho(dados.turmas);
         desenharLista();
         desenharReutilizar();
 
@@ -111,21 +133,30 @@ function descricaoDaAtividade(atividade) {
     return texto;
 }
 
-function criarInfo(atividade) {
-    const info = criar('div', 'feed-info');
-    info.append(
-        criar('strong', '', atividade.titulo),
-        criar('small', '', descricaoDaAtividade(atividade)),
-        criar('small', '', 'Prazo: ' + formatarData(atividade.data_entrega))
-    );
-    return info;
-}
-
 function criarBotao(texto, classe, acao) {
     const botao = criar('button', classe, texto);
     botao.type = 'button';
     botao.addEventListener('click', acao);
     return botao;
+}
+
+function criarItemAtividade(atividade, titulo, acoes) {
+    const icone = criar('span', 'item-icone');
+    icone.innerHTML = iconeAtividade;
+
+    const info = criar('div', 'feed-info');
+    info.append(
+        criar('strong', '', titulo),
+        criar('small', '', `${formatarDia(atividade.criado_em)} · Prazo: ${formatarData(atividade.data_entrega)}`),
+        criar('small', '', descricaoDaAtividade(atividade))
+    );
+
+    const lado = criar('div', 'feed-lado');
+    lado.append(icone, info);
+
+    const item = criar('div', 'feed-item');
+    item.append(lado, acoes);
+    return item;
 }
 
 function desenharLista() {
@@ -137,7 +168,7 @@ function desenharLista() {
         return;
     }
 
-    atividades.forEach(atividade => {
+    atividades.forEach((atividade, posicao) => {
         const envios = Number(atividade.total_submissoes);
         const acoes = criar('div', 'feed-acoes');
         acoes.append(
@@ -146,8 +177,10 @@ function desenharLista() {
             criarBotao('Remover', 'secondary pequeno', () => removerAtividade(atividade))
         );
 
-        const item = criar('div', 'feed-item');
-        item.append(criarInfo(atividade), acoes);
+        const item = criarItemAtividade(atividade, `${nomeInstrutor} lançou uma nova atividade: ${atividade.titulo}`, acoes);
+        if (posicao === 0) {
+            item.classList.add('destaque');
+        }
         lista.append(item);
     });
 }
@@ -162,12 +195,10 @@ function desenharReutilizar() {
     }
 
     atividades.forEach(atividade => {
-        const item = criar('div', 'feed-item');
-        item.append(
-            criarInfo(atividade),
-            criarBotao('Usar como base', 'primary pequeno', () => abrirFormulario(atividade, true))
-        );
-        lista.append(item);
+        const acoes = criar('div', 'feed-acoes');
+        acoes.append(criarBotao('Usar como base', 'primary pequeno', () => abrirFormulario(atividade, true)));
+
+        lista.append(criarItemAtividade(atividade, atividade.titulo, acoes));
     });
 }
 

@@ -716,3 +716,46 @@ button:disabled,
     opacity: 1;
     transform: translate(-50%, 0);
 }
+
+/* mesemplass para mobile */
+@media (max-width: 780px) {
+    .card{
+
+    }
+
+    .preview {
+
+    }
+
+    .editor {
+
+    }
+
+    .explorer {
+
+    }
+
+    .btn-voltar {
+
+    }
+
+    .topbar {
+
+    }
+
+    .brand {
+
+    }
+
+    .btn {
+
+    }
+
+    .btn-verde {
+
+    }
+
+    .btn-laranja {
+
+    }
+}

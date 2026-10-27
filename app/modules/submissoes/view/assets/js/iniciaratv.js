@@ -206,7 +206,7 @@ const adiar = (fn, ms) => {
 const salvarEExecutar = adiar(() => { salvar(); executar(); }, 500);
 
 const modalEntrega = $('modalEntrega');
-const LIMITE_CLICKS = 10;
+const LIMITE_CLICKS = 3;
 const contagensBotoes = { executar: 0, sophia: 0 };
 const contadorVisual = document.getElementById('contadorLimite');
 

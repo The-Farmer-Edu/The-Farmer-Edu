@@ -4,6 +4,7 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
+require_once __DIR__ . '/Sessao.php';
  
 class UsuarioController
 {
@@ -89,8 +90,93 @@ class UsuarioController
     }
 
     
+    private function autenticar(string $tipo, string $view): void {
+        $email = (string) ($_POST['email'] ?? '');
+        $senha = (string) ($_POST['senha'] ?? '');
 
-    private function autenticar(string $tipo, string $view): void
+        $mensagem = '';
+        $sucesso = false;
+        
+        try {
+        $pdo = iniciarPDO();
+        $usuario = Usuario::buscarPorEmail($pdo, $email);
+
+        if ($usuario === null || $usuario->tipo !== $tipo) {
+        throw new InvalidArgumentException('E-mail ou senha incorretos.');
+        }
+
+        $usuario->liberarSeBloqueioExpirou($pdo);
+        $segundos = $usuario->segundosDeBloqueio($pdo);
+        if ($segundos > 0) {
+        throw new InvalidArgumentException($this->mensagemBloqueio($segundos));
+        }
+
+        if (!$usuario->verificarSenha($senha)) {
+            $restantes = $usuario->registrarFalhaLogin($pdo);
+            if ($restantes === 0) {
+            throw new InvalidArgumentException($this->mensagemBloqueio(Usuario::MINUTOS_BLOQUEIO * 60));
+            }
+            throw new InvalidArgumentException('E-mail ou senha incorretos. Você ainda tem ' . $restantes . ' ' . ($restantes === 1 ? 'tentativa' : 'tentativas') . '.');
+            }
+
+            $usuario->zerarTentativasLogin($pdo);
+            login([
+            'idUsuario' => $usuario->id,
+            'nome' => $usuario->nome,
+            'email' => $usuario->email,
+            'perfilAcesso' => $usuario->tipo,
+            ]);
+
+            registrarAtividadeSessao();
+            $mensagem = 'Login realizado com sucesso!';
+            $sucesso = true;
+            } catch (InvalidArgumentException $e) {
+            $mensagem = $e->getMessage();
+            } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+            }
+
+            $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
+            }
+
+            private function mensagemBloqueio(int $segundos): string {
+            $minutos = max(1, (int) ceil($segundos / 60));
+            return 'Muitas tentativas incorretas. Tente novamente em ' . $minutos . ' ' . ($minutos === 1 ? 'minuto' : 'minutos') . '.';
+            }
+
+
+ 
+ 
+    private function lerMaterias(): array
+    {
+        $bruto = $_POST['materias'] ?? [];
+ 
+        if (is_string($bruto)) {
+            $bruto = explode(',', $bruto); // "PHP, SQL" vira ["PHP", " SQL"]
+        }
+        if (!is_array($bruto)) {
+            return [];
+        }
+ 
+        // trim em cada item e descarta os vazios
+        return array_values(array_filter(array_map(
+            static fn($m) => is_string($m) ? trim($m) : '',
+            $bruto
+        )));
+    }
+ 
+    //$dados vira variáveis dentro dela ($mensagem, $sucesso)
+    private function view(string $nome, array $dados = []): void
+    {
+        extract($dados);
+        require __DIR__ . '/views/' . $nome . '.php';
+    }
+}
+ 
+
+
+private function autenticar(string $tipo, string $view): void
     {
         $email = (string) ($_POST['email'] ?? '');
         $senha = (string) ($_POST['senha'] ?? '');
@@ -123,31 +209,3 @@ class UsuarioController
 
         $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
     }
- 
- 
-    private function lerMaterias(): array
-    {
-        $bruto = $_POST['materias'] ?? [];
- 
-        if (is_string($bruto)) {
-            $bruto = explode(',', $bruto); // "PHP, SQL" vira ["PHP", " SQL"]
-        }
-        if (!is_array($bruto)) {
-            return [];
-        }
- 
-        // trim em cada item e descarta os vazios
-        return array_values(array_filter(array_map(
-            static fn($m) => is_string($m) ? trim($m) : '',
-            $bruto
-        )));
-    }
- 
-    //$dados vira variáveis dentro dela ($mensagem, $sucesso)
-    private function view(string $nome, array $dados = []): void
-    {
-        extract($dados);
-        require __DIR__ . '/views/' . $nome . '.php';
-    }
-}
- 

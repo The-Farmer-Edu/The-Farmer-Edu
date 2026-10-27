@@ -128,18 +128,11 @@ function criarItem(elemento, a, ativo) {
 }
 
 function montarAbas() {
-    $('tabs').innerHTML = '';
     $('arquivos').innerHTML = '';
 
 
     ARQUIVOS.forEach(a => {
         const ativo = a.lang === atual;
-
-
-        const aba = document.createElement('button');
-        aba.className = 'tab';
-        $('tabs').appendChild(criarItem(aba, a, ativo));
-
 
         const item = document.createElement('li');
         $('arquivos').appendChild(criarItem(item, a, ativo));
@@ -213,7 +206,54 @@ const adiar = (fn, ms) => {
 const salvarEExecutar = adiar(() => { salvar(); executar(); }, 500);
 
 const modalEntrega = $('modalEntrega');
+const LIMITE_CLICKS = 10;
+const contagensBotoes = { executar: 0, sophia: 0 };
+const contadorVisual = document.getElementById('contadorLimite');
 
+function atualizarContadorVisual() {
+    const executarRestante = Math.max(0, LIMITE_CLICKS - contagensBotoes.executar);
+    const sophiaRestante = Math.max(0, LIMITE_CLICKS - contagensBotoes.sophia);
+
+    const executarEl = document.getElementById('contadorExecutar');
+    const sophiaEl = document.getElementById('contadorSophia');
+
+    if (executarEl) executarEl.textContent = `${executarRestante}/${LIMITE_CLICKS}`;
+    if (sophiaEl) sophiaEl.textContent = `${sophiaRestante}/${LIMITE_CLICKS}`;
+
+    if (contadorVisual) {
+        contadorVisual.classList.toggle('is-limitado', executarRestante === 0 || sophiaRestante === 0);
+    }
+}
+
+function configurarLimiteDeCliques(botao, chave, acao) {
+    if (!botao) return;
+
+    const atualizarEstado = () => {
+        const atingiuLimite = contagensBotoes[chave] >= LIMITE_CLICKS;
+        botao.disabled = atingiuLimite;
+        botao.setAttribute('aria-disabled', String(atingiuLimite));
+        botao.classList.toggle('disabled', atingiuLimite);
+        atualizarContadorVisual();
+    };
+
+    botao.addEventListener('click', () => {
+        if (botao.disabled) return;
+
+        const totalDepois = (contagensBotoes[chave] || 0) + 1;
+        if (totalDepois > LIMITE_CLICKS) {
+            botao.disabled = true;
+            atualizarEstado();
+            return;
+        }
+
+        contagensBotoes[chave] = totalDepois;
+        if (acao) acao();
+        atualizarEstado();
+    });
+
+    atualizarEstado();
+}
+// 
 function formatarData(iso) {
     return new Date(iso).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -303,7 +343,7 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') fecharModalEntrega();
 });
 
-$('btnRodar').onclick = executar;
+configurarLimiteDeCliques($('btnRodar'), 'executar', executar);
 $('btnVoltar').onclick = () => {
     if (document.referrer) {
         location.href = document.referrer;
@@ -317,7 +357,7 @@ $('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : abrirModalEntreg
 $('btnConfirmar').onclick = confirmarEntrega;
 $('btnCancelarModal').onclick = fecharModalEntrega;
 modalEntrega.addEventListener('click', e => { if (e.target === modalEntrega) fecharModalEntrega(); });
-$('btnSophia').onclick = () => sophiaFala('Oi, eu sou a Sophia! Escreva seu código e entregue quando terminar.');
+configurarLimiteDeCliques($('btnSophia'), 'sophia', () => sophiaFala('Oi, eu sou a Sophia! Escreva seu código e entregue quando terminar.'));
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(img => {
     const semImagem = () => img.parentElement.classList.add('sem-img');

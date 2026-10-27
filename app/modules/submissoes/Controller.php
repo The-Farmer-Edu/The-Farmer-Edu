@@ -15,6 +15,9 @@ class atividadesSub {
     public function showiniciarAtv() {
         require_once __DIR__ . '/view/iniciaratv.html';
     }
+       public function showrespostas() {
+        require_once __DIR__ . '/view/respostas.html';
+    }
 
     public function sendFile(): void {
         $type = $_GET['type'] ?? null;

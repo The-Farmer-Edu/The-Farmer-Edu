@@ -118,7 +118,7 @@
 
     #aviso {
       position: fixed;
-      z-index: 11;
+      z-index: 20;   /* Mark 8.3.1: acima da barra de ferramentas (12), para os motivos ("casa cheia", "XP insuficiente") ficarem legíveis; não bloqueia cliques */
       left: 50%;
       top: 70px;
       transform: translateX(-50%);
@@ -159,6 +159,60 @@
     .botao-pequeno { font-size: 11px; padding: 5px 8px; border-radius: 8px; border: 0; background: var(--destaque); color: #fff; cursor: pointer; margin-top: 2px }
     .botao-pequeno.secundario { background: #7f8c8d } .botao-pequeno.sem-xp { opacity: .55 }
     .abas button { font-size: 12px }
+    /* ===== Painel Fazenda (plantio, animais e mina) — Mark 8.3.1: mais largo, legível e organizado; só afeta #painel-fazenda ===== */
+    #painel-fazenda { width: min(480px, calc(100vw - 24px)); max-height: max(320px, calc(100vh - 270px)); max-height: max(320px, calc(100dvh - 270px));   /* para acima dos cartões do rodapé; o resto rola */ padding: 16px 18px; font-size: 14px; box-sizing: border-box; overscroll-behavior: contain }
+    #painel-fazenda h3 { font-size: 19px; margin: 0 0 10px }
+    #painel-fazenda h4 { font-size: 15px; margin: 16px 0 8px; padding-top: 12px; border-top: 1px solid #0001 }
+    #painel-fazenda h4.titulo-da-plantacao { border-top: 0; padding-top: 0; margin-top: 12px } #painel-fazenda h4 small { font-weight: 600; opacity: .65; margin-left: 4px }
+    #painel-fazenda .dica { font-size: 13px; line-height: 1.45 }
+    #painel-fazenda .linha-recursos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px }
+    #painel-fazenda .recurso { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: 12px; background: #0000000d; line-height: 1.15 }
+    #painel-fazenda .recurso i { font-style: normal; font-size: 20px } #painel-fazenda .recurso b { font-size: 16px } #painel-fazenda .recurso small { font-size: 10px; opacity: .7 }
+    #painel-fazenda .abas { margin-top: 12px } #painel-fazenda .abas button { min-height: 44px; font-size: 14px }
+    #painel-fazenda .passos { font-size: 12px; margin: 4px 0 10px; line-height: 1.9; opacity: .85 }
+    #painel-fazenda .passos b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--destaque); color: #fff; font-size: 11px; margin: 0 3px 0 6px }
+    #painel-fazenda .culturas { grid-template-columns: repeat(4, 1fr); gap: 6px }
+    #painel-fazenda .culturas button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; min-height: 70px; line-height: 1.15 }
+    #painel-fazenda .culturas i { font-style: normal; font-size: 24px } #painel-fazenda .culturas span { font-size: 13px } #painel-fazenda .culturas small { font-size: 10px; font-weight: 500; opacity: .75 }
+    #painel-fazenda .grade-canteiros { gap: 7px; margin-top: 12px; padding: 10px; border-radius: 14px; background: #7a4c2826 }
+    #painel-fazenda .grade-canteiros button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 62px; padding: 6px 2px 10px; font-size: 12px; border-radius: 10px; overflow: hidden; transition: transform .1s }
+    #painel-fazenda .grade-canteiros button:active { transform: scale(.96) }
+    #painel-fazenda .grade-canteiros i { font-style: normal; font-size: 22px; line-height: 1 } #painel-fazenda .grade-canteiros small { font-size: 11px; font-weight: 700 }
+    #painel-fazenda .canteiro.vazio { background: #f6ecd8; border: 2px dashed #c9a77a; color: #8a6a44 }
+    #painel-fazenda .canteiro.crescendo { background: #e6f4d8; border: 2px solid #9fcf7a; color: #3d6b28 }
+    #painel-fazenda .canteiro.pronto { background: linear-gradient(#c6f59a, #9fe36a); border: 2px solid #5fae3a; color: #24521a; box-shadow: 0 0 0 2px #fff8, 0 0 10px #8fdc5a }
+    #painel-fazenda .canteiro.selecionado { outline: 3px solid #e67e22; outline-offset: 1px }
+    #painel-fazenda .progresso-do-canteiro { position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; border-radius: 2px; background: #0002 }
+    #painel-fazenda .progresso-do-canteiro span { display: block; height: 100%; border-radius: 2px; background: #5fae3a }
+    #painel-fazenda .legenda-dos-canteiros { display: flex; gap: 12px; justify-content: center; margin-top: 6px; font-size: 11px; opacity: .8 }
+    #painel-fazenda .legenda-dos-canteiros span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px }
+    #painel-fazenda .legenda-dos-canteiros .vazio::before { background: #f6ecd8; border: 1px dashed #c9a77a } #painel-fazenda .legenda-dos-canteiros .crescendo::before { background: #e6f4d8; border: 1px solid #9fcf7a } #painel-fazenda .legenda-dos-canteiros .pronto::before { background: #9fe36a; border: 1px solid #5fae3a }
+    #painel-fazenda .escolha-de-colheita { margin-top: 10px; padding: 10px; gap: 6px; font-size: 13px; border: 1px solid #e6c99a }
+    #painel-fazenda .escolha-de-colheita .botao-pequeno { font-size: 12px; padding: 7px 10px }
+    #painel-fazenda .acoes { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px }
+    #painel-fazenda .botao-colher-tudo { width: 100%; min-height: 46px; font-size: 15px }
+    #painel-fazenda .botao-plantar-todos { width: 100%; min-height: 40px; border: 2px solid var(--destaque); border-radius: 10px; background: transparent; color: var(--texto); font-weight: 700; font-size: 13px; cursor: pointer }
+    #painel-fazenda .ordens-da-equipe { margin-top: 12px; padding: 10px; font-size: 13px }
+    #painel-fazenda .linha-painel { font-size: 13px; padding: 8px 0; gap: 10px }
+    #painel-fazenda .linha-painel .botao-pequeno { font-size: 12px; padding: 7px 10px; white-space: nowrap }
+    #painel-fazenda .barrinha { width: 76px; height: 8px; border-radius: 4px }
+    @media (max-width: 520px) {
+      #painel-fazenda { width: calc(100vw - 16px); padding: 12px; font-size: 13px }
+      #painel-fazenda .recurso small { display: none }
+      #painel-fazenda .culturas small { display: none } #painel-fazenda .culturas button { min-height: 58px }
+      #painel-fazenda .grade-canteiros { gap: 5px; padding: 6px } #painel-fazenda .grade-canteiros button { min-height: 52px } #painel-fazenda .grade-canteiros i { font-size: 18px }
+    }
+    /* Mark 8.3: botão COLHER TUDO (jogador), ordens da equipe e nome da fazenda */
+    .botao-colher-tudo { font-weight: 800; font-size: 13px; padding: 8px 12px; border: 0; border-radius: 10px; background: #e67e22; color: #fff; cursor: pointer; box-shadow: 0 2px 0 #a8561a }
+    .botao-colher-tudo small { font-weight: 600; opacity: .9 }
+    .ordens-da-equipe { margin-top: 8px; padding: 6px 8px; border-radius: 10px; background: #eef6ff; font-size: 12px }
+    #botao-nome-da-fazenda { margin-left: 8px; border: 0; border-radius: 999px; padding: 3px 10px; background: #fff3cf; color: #5e3b1e; font-weight: 700; cursor: pointer; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+    #janela-nome-da-fazenda { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: #0006 }
+    #janela-nome-da-fazenda[hidden] { display: none }
+    .cartao-nome { width: min(380px, calc(100vw - 32px)); background: #fffdf5; color: #3b2a1a; border-radius: 16px; padding: 18px; border: 3px solid #c98a4a; box-shadow: 0 10px 30px #0005 }
+    .cartao-nome h3 { margin: 0 0 6px } .cartao-nome input { width: 100%; box-sizing: border-box; font-size: 16px; padding: 10px; border-radius: 10px; border: 2px solid #c98a4a; margin: 6px 0 }
+    .cartao-nome .previa { font: 900 14px "Arial Black", Arial, sans-serif; background: #a9743f; color: #fff3cf; border: 3px solid #5e3b1e; border-radius: 8px; padding: 8px; text-align: center; margin: 6px 0; word-break: break-word }
+    .cartao-nome .erro { color: #c0392b; font-size: 12px; min-height: 16px } .cartao-nome .acoes { justify-content: flex-end }
     .canteiro.selecionado { outline: 3px solid #e67e22 }
     .escolha-de-colheita { margin-top: 6px; padding: 6px; border-radius: 10px; background: #fff6e5; font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center }
     .ficha { border: 1px solid #0002; border-radius: 10px; padding: 4px 8px; margin: 4px 0; font-size: 12px }
@@ -282,7 +336,7 @@
        barra do XP, lista de cartões das áreas, aviso temporário, faixa de invasão e painéis flutuantes "Tempo" e "Áudio".
        Os ids abaixo são usados pelo JavaScript: não os renomeie.
        O atributo "inert" deixa a interface sem foco e sem clique até a fazenda estar pronta (a SEÇÃO 00 o remove). -->
-  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora e minérios"></span><button id="botao-teste-xp">+5000 XP (teste)</button>
+  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora e minérios"></span><button id="botao-nome-da-fazenda" title="Mudar o nome da fazenda (aparece na placa de boas-vindas)">🏡 <span id="nome-da-fazenda-na-barra">FarmEdu</span> ✏️</button><button id="botao-teste-xp">+5000 XP (teste)</button>
   </div>
   <div id="lista-cards" inert></div>
   <div id="aviso"></div>
@@ -319,6 +373,17 @@
     <section class="painel painel-largo" id="painel-fazenda" hidden></section>
     <section class="painel painel-largo" id="painel-equipe" hidden></section>
   </div>
+  <!-- Mark 8.3: janela para escolher o nome da fazenda (placa "BEM-VINDO À ...") -->
+  <div id="janela-nome-da-fazenda" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-nome-da-fazenda">
+    <div class="cartao-nome">
+      <h3 id="titulo-nome-da-fazenda">🏡 Nome da sua fazenda</h3>
+      <small>Aparece na placa de boas-vindas. Até 28 caracteres; acentos são bem-vindos.</small>
+      <input id="campo-nome-da-fazenda" type="text" maxlength="28" autocomplete="off" placeholder="Ex.: Fazenda do Totti">
+      <div class="previa" id="previa-nome-da-fazenda">BEM-VINDO À FARMEDU</div>
+      <div class="erro" id="erro-nome-da-fazenda" role="alert"></div>
+      <div class="acoes"><button class="botao-pequeno secundario" id="cancelar-nome-da-fazenda" type="button">Agora não</button><button class="botao-pequeno" id="salvar-nome-da-fazenda" type="button">Salvar nome</button></div>
+    </div>
+  </div>
   <!-- Vigia da tela de carregamento: se o script principal do jogo nem chegar a rodar (por exemplo, um erro de sintaxe),
        mostra uma mensagem em vez de deixar o jogador preso numa tela de carregamento infinita. -->
   <script>
@@ -349,6 +414,10 @@
     //  • Os caminhos dos arquivos de áudio ficam em AUDIO_CONFIG, no bloco "CONFIGURAÇÃO DOS ÁUDIOS" logo depois da seção 02.
     //  • Posição e tamanho da praça central: PRACA_CENTRAL (seção 09). Ajustes da iluminação noturna: ILUMINACAO_NOTURNA (seção 02).
     //  • Modo Leve (desempenho gráfico): estado em MODO_LEVE (seção 02), aplicação e botão na seção 21.
+    //  • Mark 8.3: placa com o nome da fazenda e brilho noturno (seção 11 + seção 20), caverna com face de rocha e túnel
+    //    escurecendo (seção 11), ponte quebrada no nível 0 (seção 13), ordens de colheita e "COLHER TUDO" (seção 29),
+    //    quantidade de monstros proporcional à equipe (MONSTROS_NOTURNOS_CONFIG.quantidade, seção 01; fórmula na seção 30),
+    //    evolução visual da mina nos níveis 2 e 3 (seção 12) e janela do nome da fazenda (seção 32).
     //
     // ÍNDICE
     //  00. TELA DE CARREGAMENTO E INICIALIZAÇÃO EM ETAPAS
@@ -494,7 +563,9 @@
       // (seção 13). A CASA é a única construção física inicial: começa na BASE (nível 0, uma casa menor) e evolui até o 3.
       // A PONTE também começa no nível 0, mas a travessia do rio nunca some: no nível 0 há uma passarela provisória de tábuas
       // (infraestrutura fixa) dentro do lote demarcado; construir a ponte troca a passarela pela ponte evolutiva.
-      const AREAS_COM_BASE_FISICA_NO_NIVEL_0 = ['casa'];
+      // Mark 8.3: a ponte também existe desde o início — QUEBRADA (sem demarcação de obra); "reparar" a leva ao nível 1.
+      const AREAS_COM_BASE_FISICA_NO_NIVEL_0 = ['casa', 'ponte'];
+      const ROTULOS_DO_NIVEL_0 = { casa: { estado: '🏠 Base', acao: 'Evoluir' }, ponte: { estado: '🌉 Quebrada', acao: 'Reparar' } };
       const CUSTO_DE_CONSTRUCAO = { padrao: 60, casa: 100, ponte: 80, plantacaoGrande: 120, novaPlantacao: 120, moinho: 150, mina: 200 };
       // Custo (XP) para sair do nível atual: a partir do 0 (tabela acima; na casa é a 1ª evolução) ou evoluir 1 → 2 e 2 → 3.
       const custoParaProximoNivel = (idDaArea, nivelAtual) => nivelAtual === 0 ? (CUSTO_DE_CONSTRUCAO[idDaArea] ?? CUSTO_DE_CONSTRUCAO.padrao) : CUSTO_PARA_PROXIMO_NIVEL[nivelAtual - 1];
@@ -572,13 +643,21 @@
       };
       const TRABALHADORES_CONFIG = {
         candidatosNoMenu: 3, vidaRecuperadaPorMinutoDeDia: 10, segundosCaidoAntesDeSumir: 4, xpPorMonstroDerrotado: 5, segundosEntreDecisoes: 0.25,
+        // Mark 8.3: trabalhadores só colhem quando o JOGADOR manda (um canteiro ou a plantação inteira). Com true, voltariam a
+        // procurar canteiros maduros sozinhos quando ociosos (comportamento da 8.2, que parecia "colher sem parar").
+        colheitaEspontanea: false,
         nomes: ['Aninha', 'Arrascaeta', 'Carlinhos', 'Dora', 'Eita', 'Lule', 'Gina', 'Harry', 'Yasmin', 'Jão', 'Liamey', 'Malu-ka', 'Nico B', 'Otário', 'Pretobrás', 'Ui', 'Salamaleca', 'Téopai', 'Veraverao', 'Zecapgordinho'],
       };
       // ---- Monstros noturnos: atacam SOMENTE trabalhadores (nunca construções) ----
       const MONSTROS_NOTURNOS_CONFIG = {
         tipos: { zumbi: { vida: 60, dano: [6, 10], precisao: 0.55, velocidade: 2.0 }, esqueleto: { vida: 45, dano: [5, 9], precisao: 0.65, velocidade: 2.3 }, vampiro: { vida: 75, dano: [8, 12], precisao: 0.6, velocidade: 2.5 } },
-        maximoSimultaneo: { normal: 5, leve: 3, semTrabalhadores: 2 },  // teto de criaturas vivas ao mesmo tempo (desempenho)
-        maximoPorNoite: 12, segundosEntreSurgimentos: 16, alcanceDoAtaque: 1.5, segundosEntreAtaques: 1.3, segundosEntreDecisoes: 0.5,
+        // Mark 8.3 — QUANTIDADE DE MONSTROS acompanha a equipe (fórmula em limiteDeMonstrosSimultaneos, seção 30):
+        //   disponíveis = trabalhadores vivos já em campo (mortos, caídos e os que ainda saem da casa não contam);
+        //   simultâneos = 0 se ninguém está disponível; senão mín(teto, máx(minimo, porTrabalhadorDisponivel × disponíveis));
+        //   por noite = simultâneos × multiplicadorPorNoite (o total de uma noite nunca passa disso).
+        //   Ex.: 1 trabalhador → 2 · 2 → 4 · 3+ → 6 (teto; 4 no Modo Leve). A capacidade máxima da casa é 4.
+        quantidade: { minimo: 2, porTrabalhadorDisponivel: 2, teto: { normal: 6, leve: 4 }, multiplicadorPorNoite: 2 },
+        segundosEntreSurgimentos: 16, alcanceDoAtaque: 1.5, segundosEntreAtaques: 1.3, segundosEntreDecisoes: 0.5,
         distanciaDeSurgimento: [11, 17],   // os monstros surgem a esta distância (mín., máx.) de um guarda ou de outro membro da equipe
         distanciaMinimaDosTrabalhadoresAoSurgir: 9, horaDeInicio: 19.5, horaDeFim: 5,
       };
@@ -606,7 +685,8 @@
       const ILUMINACAO_NOTURNA = {
         forcaDosLampioes: 0.8,          // intensidade relativa da luz real quando ela acompanha um lampião de construção (poste = 1)
         luzDaCasa: { cor: 0xffb565, intensidade: 1.25, alcance: 9 },              // luz quente que "sai" pela porta e pelas janelas da casa
-        intensidadeDasJanelas: 1,       // brilho máximo (emissivo) das janelas da casa à noite
+        intensidadeDasJanelas: 1,
+      brilhoDaPlacaANoite: 0.6,       // brilho próprio do texto da placa de boas-vindas à noite (legibilidade sem estourar)       // brilho máximo (emissivo) das janelas da casa à noite
         farois: { cor: 0xfff1d6, intensidade: 2.4, alcance: 17, abertura: 0.42 }, // faróis do trator (luz de foco apontada para a frente)
       };
 
@@ -739,9 +819,10 @@
       const nivelInicialDaArea = () => 0;   // todas as áreas começam no nível 0 (a casa no nível 0 é a "base", que já existe)
       let estado = { versao: VERSAO_DO_SALVAMENTO, xp: 0, niveis: Object.fromEntries(AREAS.map(area => [area.id, 0])) };
       const avisosDaMigracao = [];   // mensagens mostradas uma vez ao abrir (seção 33)
+      let existiaSalvamento = false; // false = fazenda nova (a seção 32 pergunta o nome da fazenda)
       try {
         const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
-        if (salvo && salvo.niveis) estado = salvo;
+        if (salvo && salvo.niveis) { estado = salvo; existiaSalvamento = true; }
       } catch (erro) { }
       if (!estado.niveis || typeof estado.niveis !== 'object') estado.niveis = {};
       if (!Number.isFinite(estado.xp)) estado.xp = 0;
@@ -845,6 +926,11 @@
         if (!estado.trabalhadores.length) estado.trabalhadores.push(normalizarTrabalhador({ ...FAZENDEIRO_INICIAL, id: estado.proximoIdDeTrabalhador++, inicial: true, xpInvestido: 0, vida: FAZENDEIRO_INICIAL.vidaMaxima, estado: 'ativo' }, false));
         estado.fazendeiroInicialConcedido = true;
       }
+      // Mark 8.3: nome da fazenda escolhido pelo jogador (placa "BEM-VINDO À ..."). Campo novo: saves antigos ficam com o padrão.
+      const NOME_PADRAO_DA_FAZENDA = 'FarmEdu', LIMITE_DE_CARACTERES_DO_NOME = 28;
+      // Limpa o nome digitado: tira caracteres de controle, junta espaços repetidos e corta no limite. Acentos são preservados.
+      const limparNomeDaFazenda = texto => String(texto || '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, LIMITE_DE_CARACTERES_DO_NOME).trim();
+      estado.nomeDaFazenda = limparNomeDaFazenda(estado.nomeDaFazenda) || NOME_PADRAO_DA_FAZENDA;
       estado.versao = VERSAO_DO_SALVAMENTO;
       // Quantos animais a instalação tem no nível atual, e quantos estão vivos (os mortos de fome só voltam se forem repostos).
       function totalDeAnimais(idDaArea) { const nivel = estado.niveis[idDaArea]; return nivel ? ANIMAIS_DAS_AREAS[idDaArea].porNivel[nivel - 1] : 0; }
@@ -2115,21 +2201,45 @@
       // volume do túnel (afastarDoTunel garante isso), para o escuro continuar escuro.
       function construirEntradaDaCaverna() {
         const grupo = new THREE.Group(); grupo.position.copy(MINA_GEOMETRIA.boca); grupo.rotation.y = MINA_GEOMETRIA.giroDaEntrada; grupo.userData.nome = 'entrada-da-caverna'; cena.add(grupo);
-        const meiaLargura = 1.35, altura = 2.5, profundidade = MINA_GEOMETRIA.profundidadeDoTunel;
-        // O piso do túnel ficava a 1 cm do chão do mapa e, de longe, o chão VERDE vencia a disputa de profundidade (z-fighting):
-        // a entrada parecia verde. Agora o piso fica mais alto e com polygonOffset, e o preto não recebe a névoa da cena.
-        const materialDoEscuro = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide, fog: false }); materialDoEscuro.userData.ignorarCiclo = true;
-        const materialDoPisoEscuro = new THREE.MeshBasicMaterial({ color: 0x000000, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }); materialDoPisoEscuro.userData.ignorarCiclo = true;
-        const planoEscuro = (largura, alturaDoPlano, posicaoX, posicaoY, posicaoZ, giroX, giroY) => { const plano = new THREE.Mesh(new THREE.PlaneGeometry(largura, alturaDoPlano), materialDoEscuro); plano.position.set(posicaoX, posicaoY, posicaoZ); plano.rotation.set(giroX, giroY, 0); grupo.add(plano); };
-        planoEscuro(meiaLargura * 2, altura, 0, altura / 2, -profundidade, 0, 0);                       // fundo
-        planoEscuro(profundidade, altura, -meiaLargura, altura / 2, -profundidade / 2, 0, Math.PI / 2); // parede esquerda
-        planoEscuro(profundidade, altura, meiaLargura, altura / 2, -profundidade / 2, 0, Math.PI / 2);  // parede direita
-        planoEscuro(meiaLargura * 2, profundidade, 0, altura, -profundidade / 2, Math.PI / 2, 0);       // teto
-        const pisoDoTunel = new THREE.Mesh(new THREE.PlaneGeometry(meiaLargura * 2 + 0.2, profundidade + 0.3), materialDoPisoEscuro);   // chão
-        pisoDoTunel.rotation.x = -Math.PI / 2; pisoDoTunel.position.set(0, 0.035, -profundidade / 2 + 0.15); pisoDoTunel.renderOrder = 1; grupo.add(pisoDoTunel);
-        // empurra o centro de uma rocha para fora do túnel (caixa |x| < meiaLargura, 0 < y < altura, −profundidade < z < 0)
+        // Mark 8.3 — CORREÇÃO ESTRUTURAL. Causa do "fundo verde": a abertura era uma caixa de planos pretos cercada por rochas
+        // soltas; entre as rochas sobravam frestas por onde se via o terreno e a floresta atrás, e o piso disputava profundidade
+        // com o chão. Agora a entrada é uma FACE DE ROCHA contínua (extrudada, 1,4 de espessura) com um furo em arco; atrás
+        // dela há um túnel fechado (paredes, abóbada, piso e fundo) que escurece com a profundidade. Nenhuma superfície do
+        // cenário fica visível pela abertura, e as rochas em volta só decoram (afastarDoTunel impede que invadam o túnel).
+        const meiaLargura = 1.35, alturaDaParede = 1.15, altura = alturaDaParede + meiaLargura, profundidadeDaFace = 1.4, profundidade = MINA_GEOMETRIA.profundidadeDoTunel;
+        const fundoDoTunel = -(profundidadeDaFace + profundidade), centroDoTunelZ = -(profundidadeDaFace + profundidade / 2);
+        const pontosDoArco = [[meiaLargura, 0]];                                  // contorno da abertura: paredes retas + meia-lua
+        for (let passo = 0; passo <= 18; passo++) { const angulo = passo / 18 * Math.PI; pontosDoArco.push([Math.cos(angulo) * meiaLargura, alturaDaParede + Math.sin(angulo) * meiaLargura]); }
+        pontosDoArco.push([-meiaLargura, 0]);
+        const paraVetores = pontos => pontos.map(([posicaoX, posicaoY]) => new THREE.Vector2(posicaoX, posicaoY));
+        // 1) face de rocha com o furo (a base vai abaixo do chão, então o furo fica inteiro dentro da face)
+        const formaDaFace = new THREE.Shape(paraVetores([[-4.8, -0.4], [4.8, -0.4], [4.3, 3.6], [2.6, 5.0], [0.2, 5.6], [-2.4, 5.1], [-4.4, 3.4]]));
+        formaDaFace.holes.push(new THREE.Path(paraVetores(pontosDoArco.slice().reverse())));
+        const face = new THREE.Mesh(new THREE.ExtrudeGeometry(formaDaFace, { depth: profundidadeDaFace, bevelEnabled: false, curveSegments: 4 }), material(0x7b8691));
+        face.position.z = -profundidadeDaFace; face.castShadow = face.receiveShadow = true; face.userData.nome = 'face-da-caverna'; grupo.add(face);
+        // 2) túnel fechado atrás da face: as cores dos vértices vão de um cinza-escuro perto da boca ao preto no fundo
+        //    (transição de luz para escuridão). Material sem iluminação nem névoa: o interior não fica claro de dia.
+        const materialDoInterior = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide, fog: false }); materialDoInterior.userData.ignorarCiclo = true;
+        const materialDoPisoDoInterior = new THREE.MeshBasicMaterial({ vertexColors: true, fog: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 }); materialDoPisoDoInterior.userData.ignorarCiclo = true;
+        const corDaBoca = new THREE.Color(0x2a2520), corDoFundo = new THREE.Color(0x000000), corAuxiliar = new THREE.Color();
+        function escurecerComAProfundidade(geometria) {
+          const posicoes = geometria.attributes.position, cores = [];
+          for (let vertice = 0; vertice < posicoes.count; vertice++) {
+            const fracao = Math.max(0, Math.min(1, (-posicoes.getZ(vertice) - profundidadeDaFace) / (profundidade * 0.75)));
+            corAuxiliar.copy(corDaBoca).lerp(corDoFundo, Math.pow(fracao, 0.55)); cores.push(corAuxiliar.r, corAuxiliar.g, corAuxiliar.b);
+          }
+          geometria.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
+          return geometria;
+        }
+        const pecaDoTunel = (geometria, materialDaPeca) => { const malha = new THREE.Mesh(escurecerComAProfundidade(geometria), materialDaPeca); malha.userData.nome = 'interior-da-caverna'; grupo.add(malha); return malha; };
+        for (const lado of [-1, 1]) { const parede = new THREE.PlaneGeometry(profundidade, alturaDaParede, 8, 1); parede.rotateY(Math.PI / 2); parede.translate(lado * meiaLargura, alturaDaParede / 2, centroDoTunelZ); pecaDoTunel(parede, materialDoInterior); }
+        const abobada = new THREE.CylinderGeometry(meiaLargura, meiaLargura, profundidade, 18, 8, true, Math.PI / 2, Math.PI); abobada.rotateX(Math.PI / 2); abobada.translate(0, alturaDaParede, centroDoTunelZ); pecaDoTunel(abobada, materialDoInterior);
+        const piso = new THREE.PlaneGeometry(meiaLargura * 2 + 0.1, profundidade + 0.2, 1, 8); piso.rotateX(-Math.PI / 2); piso.translate(0, 0.035, centroDoTunelZ); pecaDoTunel(piso, materialDoPisoDoInterior).renderOrder = 1;
+        const fundo = new THREE.ShapeGeometry(new THREE.Shape(paraVetores(pontosDoArco))); fundo.translate(0, 0, fundoDoTunel); pecaDoTunel(fundo, materialDoInterior);
+
+        // empurra o centro de uma rocha para fora do túnel (caixa |x| < meiaLargura, 0 < y < altura, fundoDoTunel < z < 0)
         function afastarDoTunel(centro, raio) {
-          const maisProximo = new THREE.Vector3(Math.max(-meiaLargura, Math.min(meiaLargura, centro.x)), Math.max(0, Math.min(altura, centro.y)), Math.max(-profundidade, Math.min(0.4, centro.z)));
+          const maisProximo = new THREE.Vector3(Math.max(-meiaLargura, Math.min(meiaLargura, centro.x)), Math.max(0, Math.min(altura, centro.y)), Math.max(fundoDoTunel, Math.min(0.4, centro.z)));
           const afastamento = centro.clone().sub(maisProximo), distancia = afastamento.length();
           if (distancia < raio) { if (distancia < 1e-3) afastamento.set(0, 1, 0); centro.add(afastamento.normalize().multiplyScalar(raio - distancia + 0.05)); }
           return centro;
@@ -2468,43 +2578,66 @@
       lagoDestaque(PRACA_CENTRAL.x, PRACA_CENTRAL.z);   // o chafariz é o centro visual da praça central
 
       // ---- Placa de boas-vindas: dois mourões, tábuas e moldura de madeira; o texto é uma textura aplicada na face frontal ----
-      function placaDeBoasVindas(posicaoX, posicaoZ) {
-        const grupoDaPlaca = new THREE.Group();
-        grupoDaPlaca.position.set(posicaoX, 0, posicaoZ); grupoDaPlaca.scale.setScalar(1.2);
-        grupoDaPlaca.rotation.y = Math.atan2(-11.5 - posicaoX, 62 - posicaoZ); // de frente para a câmera inicial
-        cena.add(grupoDaPlaca);
-        const canvasDaImagem = document.createElement('canvas'); canvasDaImagem.width = 1024; canvasDaImagem.height = 400;
-        const contexto2d = canvasDaImagem.getContext('2d');
+      // ---- Placa de boas-vindas com o nome da fazenda (Mark 8.3) ----
+      // O texto é "BEM-VINDO À" + nome escolhido pelo jogador (estado.nomeDaFazenda). O canvas é redesenhado quando o nome muda
+      // (atualizarTextoDaPlaca), sem reconstruir a placa. À noite o texto ganha brilho próprio (emissivo, seção 20) e dois
+      // lampiões iluminam o quadro; de dia a placa fica com a aparência natural de madeira.
+      const placaDeBoasVindas = { canvas: null, textura: null, materialDoTexto: null };
+      function desenharTextoDaPlaca() {
+        const contexto2d = placaDeBoasVindas.canvas.getContext('2d'), nome = (estado.nomeDaFazenda || NOME_PADRAO_DA_FAZENDA).toLocaleUpperCase('pt-BR');
         contexto2d.fillStyle = '#a9743f'; contexto2d.fillRect(0, 0, 1024, 400);
         for (let indice = 0; indice < 5; indice++) { contexto2d.fillStyle = indice % 2 ? '#a06b38' : '#b27c46'; contexto2d.fillRect(0, indice * 80, 1024, 78); contexto2d.fillStyle = 'rgba(60,35,15,0.35)'; contexto2d.fillRect(0, indice * 80 + 78, 1024, 3); }
         contexto2d.strokeStyle = '#5e3b1e'; contexto2d.lineWidth = 18; contexto2d.strokeRect(9, 9, 1006, 382);
         contexto2d.textAlign = 'center'; contexto2d.textBaseline = 'middle'; contexto2d.lineJoin = 'round';
-        const linha = (texto, posicaoY, tamanho) => {
-          const fonte = tamanhoDaFonte => `900 ${tamanhoDaFonte}px "Arial Black", Impact, Arial, sans-serif`;
+        const fonte = tamanhoDaFonte => `900 ${tamanhoDaFonte}px "Arial Black", Impact, Arial, sans-serif`;
+        const escreverLinha = (texto, posicaoY, tamanho, larguraMaxima = 930) => {
           contexto2d.font = fonte(tamanho);
-          while (contexto2d.measureText(texto).width > 930 && tamanho > 40) { tamanho -= 4; contexto2d.font = fonte(tamanho); } // sempre cabe, com qualquer fonte
+          while (contexto2d.measureText(texto).width > larguraMaxima && tamanho > 30) { tamanho -= 3; contexto2d.font = fonte(tamanho); }   // sempre cabe
           contexto2d.lineWidth = tamanho * 0.16; contexto2d.strokeStyle = '#3b2410'; contexto2d.strokeText(texto, 512, posicaoY);
           contexto2d.fillStyle = '#fff3cf'; contexto2d.fillText(texto, 512, posicaoY);
         };
-        linha('BEM VINDO A', 118, 118); linha('FARMEDU', 284, 172);
-        const textura = new THREE.CanvasTexture(canvasDaImagem);
+        escreverLinha('BEM-VINDO À', 104, 104);
+        // nome curto: uma linha grande; nome longo: quebra em duas linhas pelo espaço mais próximo do meio
+        contexto2d.font = fonte(150);
+        if (contexto2d.measureText(nome).width <= 930 * 1.35 || !nome.includes(' ')) escreverLinha(nome, 270, 150);
+        else {
+          const palavras = nome.split(' '); let melhor = 1, menorDiferenca = Infinity;
+          for (let corte = 1; corte < palavras.length; corte++) { const diferenca = Math.abs(palavras.slice(0, corte).join(' ').length - palavras.slice(corte).join(' ').length); if (diferenca < menorDiferenca) { menorDiferenca = diferenca; melhor = corte; } }
+          escreverLinha(palavras.slice(0, melhor).join(' '), 222, 96); escreverLinha(palavras.slice(melhor).join(' '), 318, 96);
+        }
+        placaDeBoasVindas.textura.needsUpdate = true;
+      }
+      function construirPlacaDeBoasVindas(posicaoX, posicaoZ) {
+        const grupoDaPlaca = new THREE.Group();
+        grupoDaPlaca.position.set(posicaoX, 0, posicaoZ); grupoDaPlaca.scale.setScalar(1.2);
+        grupoDaPlaca.rotation.y = Math.atan2(-11.5 - posicaoX, 62 - posicaoZ); // de frente para a câmera inicial
+        cena.add(grupoDaPlaca);
+        placaDeBoasVindas.canvas = document.createElement('canvas'); placaDeBoasVindas.canvas.width = 1024; placaDeBoasVindas.canvas.height = 400;
+        placaDeBoasVindas.textura = new THREE.CanvasTexture(placaDeBoasVindas.canvas);
+        desenharTextoDaPlaca();
         const larguraDoQuadro = 7.4, alturaDoQuadro = 2.9, alturaDoCentro = 2.55;
         for (const lado of [-1, 1]) {
           criarCaixa(0.28, 3.7, 0.28, 0x6b4226, lado * 3.3, 1.85, 0, grupoDaPlaca);          // mourão
           criarCaixa(0.7, 0.3, 0.7, 0x8a8d86, lado * 3.3, 0.15, 0, grupoDaPlaca);            // sapata de pedra
           criarEsfera(0.2, 0xc98a4a, lado * 3.3, 3.8, 0, grupoDaPlaca);
+          // lampião em braço de ferro saindo do mourão, voltado para o quadro (acende com o ciclo, como os postes)
+          criarCaixa(0.6, 0.05, 0.05, 0x2c2a2e, lado * 3.55, 3.55, 0.45, grupoDaPlaca).rotation.y = lado * 0.6;
+          criarCabecaDeLampiao(grupoDaPlaca, lado * 3.8, 3.3, 0.75, { escala: 0.9 });
         }
         criarCaixa(larguraDoQuadro, alturaDoQuadro, 0.16, 0x8a5a2b, 0, alturaDoCentro, 0.22, grupoDaPlaca);                        // tabuleiro (encostado na frente dos mourões)
         for (const deslocamentoY of [-1, 1]) criarCaixa(larguraDoQuadro + 0.3, 0.2, 0.26, 0x5e3b1e, 0, alturaDoCentro + deslocamentoY * (alturaDoQuadro / 2 + 0.05), 0.22, grupoDaPlaca); // moldura
-        const texto = new THREE.Mesh(new THREE.PlaneGeometry(larguraDoQuadro - 0.3, (larguraDoQuadro - 0.3) * 400 / 1024), new THREE.MeshLambertMaterial({ map: textura }));
+        // texto: mesma textura como cor e como brilho próprio (emissiveIntensity 0 de dia → legível à noite, seção 20)
+        placaDeBoasVindas.materialDoTexto = new THREE.MeshLambertMaterial({ map: placaDeBoasVindas.textura, emissive: 0xffffff, emissiveMap: placaDeBoasVindas.textura, emissiveIntensity: 0 });
+        const texto = new THREE.Mesh(new THREE.PlaneGeometry(larguraDoQuadro - 0.3, (larguraDoQuadro - 0.3) * 400 / 1024), placaDeBoasVindas.materialDoTexto);
         texto.position.set(0, alturaDoCentro, 0.31); grupoDaPlaca.add(texto);
+        criarManchaDeLuzNoChao(grupoDaPlaca, materialDoBrilhoNoChao, 0, 0.05, 1.6, 7.5, 2.6);                                     // luz dos lampiões no gramado à frente
         // canteiros de flores nos pés da placa (posições fixas, sem sorteio)
         for (const lado of [-1, 1]) {
           criarEsfera(0.34, 0x4a9e3a, lado * 3.3, 0.22, 0.75, grupoDaPlaca, 0.7); criarEsfera(0.26, 0x3f8a35, lado * 3.8, 0.17, 0.5, grupoDaPlaca, 0.7);
           [[-0.45, 0.95, 0xff8fb1], [0.35, 1.0, 0xffd23f], [0, 0.6, 0xffffff], [0.7, 0.7, 0xb48cf2], [-0.2, 1.25, 0xff6b6b]].forEach(([deslocamentoX, deslocamentoZ, cor]) => criarEsfera(0.1, cor, lado * 3.3 + deslocamentoX, 0.38, deslocamentoZ, grupoDaPlaca));
         }
       }
-      placaDeBoasVindas(PLACA.x, PLACA.z);
+      construirPlacaDeBoasVindas(PLACA.x, PLACA.z);
 
       // margens: pedras, pinheiros e capim (menos perto da ponte)
       for (let fracaoDoRio = 0.02; fracaoDoRio < 0.98; fracaoDoRio += 0.012) {
@@ -3096,6 +3229,33 @@
             const placa = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.5, 0.08), new THREE.MeshLambertMaterial({ map: criarTexturaDeTexto('⛏ MINA', '#f2dfb4', '#5c3a1e') }));
             placa.position.set(0, 3.25, 0.36); portico.add(placa);
           }
+          // Mark 8.3 — evolução visual pontual da entrada da mina. Coordenadas do pórtico: x lateral, z para fora (rumo ao
+          // depósito), face da rocha em z = 0. Os trilhos passam em x = ±0,42: nada é colocado no caminho do carrinho.
+          if (nivel >= 2) {
+            for (const lado of [-1, 1]) {
+              criarCaixa(0.9, 1.1, 1.6, 0x8a8f96, lado * 2.15, 0.55, 0.6, portico);               // muretas de pedra ladeando a boca
+              criarCaixa(1.0, 0.12, 1.7, 0x6f747b, lado * 2.15, 1.16, 0.6, portico);              // coroamento das muretas
+              criarCaixa(0.2, 3.0, 0.2, 0x5c3a1e, lado * 1.75, 1.5, 1.7, portico);                // esteios do alpendre
+            }
+            criarCaixa(4.0, 0.12, 1.9, 0x7a2f1e, 0, 3.12, 0.95, portico).rotation.x = -0.12;      // alpendre de tábuas sobre a entrada
+            for (const posicaoX of [-1.5, -0.5, 0.5, 1.5]) criarCaixa(0.1, 0.1, 1.9, 0x5c3a1e, posicaoX, 3.02, 0.95, portico);   // caibros
+            for (const [posicaoX, giro] of [[2.75, 0.3], [2.98, -0.2]]) {                           // picaretas encostadas na mureta
+              criarCaixa(0.06, 1.1, 0.06, 0x8a5a2a, posicaoX, 0.6, 1.5, portico).rotation.z = giro;
+              criarCaixa(0.5, 0.08, 0.08, 0x6f7680, posicaoX - Math.sin(giro) * 0.5, 1.12, 1.5, portico).rotation.z = giro;
+            }
+            criarCaixote(portico, -2.9, 1.7); criarCaixote(portico, -2.75, 2.4); criarBarril(portico, -3.4, 2.9);
+          }
+          if (nivel === 3) {
+            const castelete = new THREE.Group(); castelete.position.set(4.4, 0, 2.1); portico.add(castelete);   // castelete: torre de madeira com roldana
+            for (const [posicaoX, posicaoZ] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { const perna = criarCaixa(0.16, 4.6, 0.16, 0x5c3a1e, posicaoX * 0.52, 2.25, posicaoZ * 0.52, castelete); perna.rotation.set(posicaoZ * 0.08, 0, -posicaoX * 0.08); }
+            for (const alturaDaTravessa of [1.4, 2.8]) for (const lado of [-1, 1]) { criarCaixa(1.3, 0.1, 0.1, 0x6b4a2e, 0, alturaDaTravessa, lado * 0.5, castelete); criarCaixa(0.1, 0.1, 1.3, 0x6b4a2e, lado * 0.5, alturaDaTravessa, 0, castelete); }
+            criarCaixa(1.3, 0.14, 1.3, 0x5c3a1e, 0, 4.55, 0, castelete);
+            const roldana = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.07, 6, 16), material(0x3a3a3a)); roldana.position.set(0, 5.2, 0); roldana.castShadow = true; castelete.add(roldana);
+            criarCaixa(0.05, 0.9, 0.05, 0x2a2a2a, 0.55, 4.75, 0, castelete);                          // cabo da roldana
+            criarCaixa(0.6, 0.12, 2.6, 0x7a5636, 3.3, 1.2, 2.3, portico).rotation.x = 0.35;           // calha de minério inclinada
+            criarCaixa(0.05, 1.5, 0.05, 0x3a2f28, -2.15, 1.95, 0.6, portico); criarCaixa(0.55, 0.32, 0.02, 0xf2c14e, -1.85, 2.5, 0.6, portico);   // bandeira sobre a mureta
+            criarCabecaDeLampiao(portico, 0, 2.92, 1.75, { escala: 0.9, brilhoNoChao: 3, alturaDoChao: 0.02 });   // lampião pendurado no alpendre
+          }
           // carrinho: chassi, caçamba (madeira → ferro → reforçada), 4 rodas nos trilhos e a carga de minério (visível só quando volta cheio)
           const carrinho = new THREE.Group(); carrinho.userData.nome = 'carrinho-da-mina'; carrinho.rotation.y = giroDosTrilhos; grupo.add(carrinho);
           const corDaCacamba = [0x8a5a2a, 0x6f7680, 0x5d6b78][nivel - 1];
@@ -3279,15 +3439,41 @@
         const quadro = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.75, 0.06), new THREE.MeshLambertMaterial({ map: criarTexturaDeTexto(area.icone + ' ' + area.nome, '#3b2410', '#f2dfb4', 'Lote reservado') }));
         quadro.position.set(0, 1.05, 0.06); quadro.castShadow = true; placa.add(quadro);
       }
-      // Passarela provisória de tábuas sobre o rio (infraestrutura FIXA do mapa): existe enquanto a ponte não é construída, para
-      // a travessia nunca sumir. Construir a ponte (nível 1) substitui a passarela pela ponte evolutiva.
-      function construirPassarelaProvisoria(grupo) {
-        const comprimento = 7.2, larguraDaPassarela = 1.7, quantidadeDeTabuas = 18;
-        for (let indice = 0; indice < quantidadeDeTabuas; indice++) criarCaixa(comprimento / quantidadeDeTabuas - 0.05, 0.08, larguraDaPassarela, [0xa97443, 0xb78049, 0x9c6a3c][indice % 3], -comprimento / 2 + (indice + 0.5) * comprimento / quantidadeDeTabuas, 0.32, 0, grupo);
-        for (const lado of [-1, 1]) {
-          criarCaixa(comprimento, 0.12, 0.14, 0x6b4a2e, 0, 0.22, lado * (larguraDaPassarela / 2 - 0.1), grupo);                  // vigas
-          for (const posicaoX of [-3.2, -1.1, 1.1, 3.2]) criarCaixa(0.1, 0.9, 0.1, 0x6b4a2e, posicaoX, 0.55, lado * (larguraDaPassarela / 2), grupo);   // mourões
-          criarCaixa(comprimento * 0.9, 0.04, 0.04, 0xe8dcc0, 0, 0.92, lado * (larguraDaPassarela / 2), grupo);                  // corda de apoio
+      // Ponte quebrada (nível 0): a MESMA ponte do nível 1 (mesmas medidas e posição), mas antiga e destruída — apoios de pedra
+      // gastos, uma viga partida e afundando na água, tábuas faltando no meio (lacuna visível), tábuas soltas e tortas,
+      // uma rampa caída e o guarda-corpo incompleto. Não tem demarcação de obra. Reparar (nível 1) troca tudo pela ponte inteira.
+      // Todas as peças são fixas (sem sorteio): o visual é sempre o mesmo e nada sobra depois da reconstrução.
+      function construirPonteQuebrada(grupo) {
+        const comprimento = 7, rampa = 1.3, alturaDoCentro = 0.5, profundidade = 2.6, pedraGasta = 0x6f716c, madeiraVelha = [0x7d5a3a, 0x8a6442, 0x6e4e33];
+        const quantidadeDeTabuas = Math.round(comprimento / 0.4), larguraDaTabua = comprimento / quantidadeDeTabuas - 0.04;
+        const TABUAS_QUE_FALTAM = [7, 8, 9, 11], TABUAS_TORTAS = { 5: [0.12, 0.08], 6: [-0.18, -0.1], 10: [0.25, 0.14], 13: [-0.08, 0.05] };   // índice → [giro em Y, inclinação]
+        for (let indice = 0; indice < quantidadeDeTabuas; indice++) {
+          if (TABUAS_QUE_FALTAM.includes(indice)) continue;
+          const tabua = criarCaixa(larguraDaTabua, 0.1, indice === 12 ? profundidade * 0.55 : profundidade, madeiraVelha[indice % 3], -comprimento / 2 + (indice + 0.5) * comprimento / quantidadeDeTabuas, alturaDoCentro, indice === 12 ? -profundidade * 0.22 : 0, grupo);
+          if (TABUAS_TORTAS[indice]) { tabua.rotation.y = TABUAS_TORTAS[indice][0]; tabua.rotation.z = TABUAS_TORTAS[indice][1]; tabua.position.y -= Math.abs(TABUAS_TORTAS[indice][1]) * 0.4; }
+        }
+        // vigas: a de trás inteira; a da frente partida ao meio, com as duas metades caídas em direção à água
+        criarCaixa(comprimento, 0.2, 0.22, 0x4f3420, 0, alturaDoCentro - 0.2, -profundidade / 2 + 0.25, grupo);
+        for (const lado of [-1, 1]) { const metade = criarCaixa(comprimento / 2 - 0.25, 0.2, 0.22, 0x4f3420, lado * (comprimento / 4 + 0.15), alturaDoCentro - 0.32, profundidade / 2 - 0.25, grupo); metade.rotation.z = lado * 0.16; }
+        // apoios de pedra nas margens (um com um canto quebrado) e entulho de pedra ao pé do apoio
+        for (const lado of [-1, 1]) criarCaixa(0.8, alturaDoCentro - 0.1, profundidade + 0.2, pedraGasta, lado * (comprimento / 2 - 0.4), (alturaDoCentro - 0.1) / 2, 0, grupo);
+        criarCaixa(0.42, 0.22, 0.6, 0x5f615c, comprimento / 2 - 0.3, alturaDoCentro - 0.05, profundidade / 2 - 0.15, grupo).rotation.y = 0.4;
+        criarPedra(grupo, -comprimento / 2 + 0.95, profundidade / 2 + 0.25, 0.22); criarPedra(grupo, comprimento / 2 - 1.0, -profundidade / 2 - 0.2, 0.18);
+        // rampas: a oeste inteira; a leste caída (mais curta, apoiada no chão)
+        const angulo = Math.atan(alturaDoCentro / rampa);
+        criarCaixa(Math.hypot(rampa, alturaDoCentro), 0.1, profundidade, 0x8a6442, -(comprimento / 2 + rampa / 2), alturaDoCentro / 2 - 0.05, 0, grupo).rotation.z = angulo;
+        const rampaCaida = criarCaixa(rampa * 0.8, 0.1, profundidade * 0.85, 0x7d5a3a, comprimento / 2 + rampa * 0.55, 0.08, 0.15, grupo); rampaCaida.rotation.set(0, 0.18, -0.06);
+        // guarda-corpo: postes faltando e um inclinado; corrimãos partidos (só trechos nas pontas)
+        const quantidadeDePostes = Math.round(comprimento / 1.2), POSTES_QUE_FALTAM = { [-1]: [2, 3], [1]: [3, 4] };
+        for (const ladoZ of [-1, 1]) {
+          const posicaoZ = ladoZ * (profundidade / 2 - 0.1);
+          for (let indice = 0; indice <= quantidadeDePostes; indice++) {
+            if (POSTES_QUE_FALTAM[ladoZ].includes(indice)) continue;
+            const poste = criarCaixa(0.13, 0.85, 0.13, 0x5a3f2a, -comprimento / 2 + indice * comprimento / quantidadeDePostes, alturaDoCentro + 0.425, posicaoZ, grupo);
+            if (indice === 1 && ladoZ === 1) { poste.rotation.z = 0.35; poste.position.y -= 0.05; }
+          }
+          criarCaixa(comprimento * 0.3, 0.1, 0.1, 0x7d5a3a, -comprimento * 0.35, alturaDoCentro + 0.82, posicaoZ, grupo);
+          const trechoDireito = criarCaixa(comprimento * 0.22, 0.1, 0.1, 0x7d5a3a, comprimento * 0.39, alturaDoCentro + 0.78, posicaoZ, grupo); trechoDireito.rotation.z = ladoZ * 0.12;
         }
       }
       // Casa base (nível 0): a casa do nível 1 em escala menor. É a construção física inicial da fazenda.
@@ -3389,7 +3575,8 @@
         idDaAreaEmConstrucao = idDaArea;   // os lampiões criados pelo construtor ficam registrados nesta área
         try {
           const nivelAtual = estado.niveis[idDaArea];
-          if (!nivelAtual && !AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(idDaArea)) { construirDemarcacao(grupo, idDaArea); if (idDaArea === 'ponte') construirPassarelaProvisoria(grupo); }   // nível 0: lote reservado
+          if (!nivelAtual && !AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(idDaArea)) construirDemarcacao(grupo, idDaArea);   // nível 0: lote reservado
+          else if (!nivelAtual && idDaArea === 'ponte') construirPonteQuebrada(grupo);                       // ponte antiga e quebrada (nível 0)
           else if (!nivelAtual) construirCasaBase(grupo, animacoesDaArea[idDaArea]);                        // casa base (nível 0)
           else if (destruida) construirRuinas(grupo, idDaArea, estado.niveis[idDaArea], animacoesDaArea[idDaArea]);
           else construtoresDasAreas[idDaArea](grupo, estado.niveis[idDaArea], animacoesDaArea[idDaArea]);
@@ -3757,6 +3944,7 @@
       // bloqueia. Ctrl sozinho continua servindo para descer a câmera (sem preventDefault, para não interferir em atalhos).
       const ehTeclaDeControle = codigo => codigo === 'ControlLeft' || codigo === 'ControlRight';
       addEventListener('keydown', evento => {
+        if (evento.target && evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]')) return;   // Mark 8.3: digitando (ex.: nome da fazenda)
         if (evento.code in teclas && (ehTeclaDeControle(evento.code) || !(evento.ctrlKey || evento.metaKey || evento.altKey))) {
           jogadorMexeu = true; teclas[evento.code] = true;
           if (!ehTeclaDeControle(evento.code)) evento.preventDefault();
@@ -3868,6 +4056,7 @@
         const acesas = CICLO_DE_DIA_E_NOITE.acesas || 0;
         // casa: janelas com luz de dentro (oscilação mínima, como uma lâmpada quente) e luz real saindo pela frente
         materialDaJanelaAcesa.emissiveIntensity = acesas * ILUMINACAO_NOTURNA.intensidadeDasJanelas * (0.96 + 0.04 * Math.sin(tempo * 1.7));
+        placaDeBoasVindas.materialDoTexto.emissiveIntensity = acesas * ILUMINACAO_NOTURNA.brilhoDaPlacaANoite;   // Mark 8.3: placa legível à noite (0 de dia)
         if (!MODO_LEVE.ativo && marcadorDaLuzDaCasa && marcadorDaLuzDaCasa.parent && acesas > 0.001) {
           marcadorDaLuzDaCasa.getWorldPosition(luzDaCasa.position);
           luzDaCasa.intensity = acesas * ILUMINACAO_NOTURNA.luzDaCasa.intensidade;
@@ -5253,7 +5442,7 @@
         const porta = pontoDaPortaDaCasa(), [livreX, livreZ] = saindoDaCasa ? [porta.x, porta.z] : pontoLivre(porta.x, porta.saidaZ);
         const entidade = { dados, ...modelo, barra: criarBarraDeVida(dados.classe === 'guarda' ? 0x3498db : 0x2ecc71), x: livreX, z: livreZ, rot: 0, vel: 0, velAlvo: 0, velMax: atributosDoTrabalhador(dados).velocidade,
           estado: saindoDaCasa ? 'saindo' : 'andando', tempoSaindo: 0, caminho: null, indice: 0, parado: 0, ux: livreX, uz: livreZ, passo: 0, fase: Math.random() * 6, decisao: Math.random() * 0.25,
-          recarga: 0, alvo: null, espera: 0.3, tarefa: null, tempoCaido: 0, indiceDaRonda: Math.floor(Math.random() * PONTOS_DE_RONDA.length), ultimoAlvoPlanejado: null };
+          recarga: 0, alvo: null, espera: 0.3, tarefa: null, ordem: null, tempoCaido: 0, indiceDaRonda: Math.floor(Math.random() * PONTOS_DE_RONDA.length), ultimoAlvoPlanejado: null };
         if (saindoDaCasa) modelo.raiz.scale.setScalar(0.2);
         trabalhadoresNaCena.set(dados.id, entidade);
         return entidade;
@@ -5264,52 +5453,105 @@
       }
       const trabalhadorDisponivel = entidade => !entidade.removido && entidade.estado !== 'caido' && entidade.estado !== 'saindo';
 
-      // ---- tarefas de colheita (manual assistida e automática) ----
+      // ---- ORDENS DE COLHEITA (Mark 8.3) ----
+      // Na 8.2 todo trabalhador ocioso procurava sozinho o próximo canteiro maduro, então uma ordem individual "virava" uma
+      // colheita sem fim. Agora o trabalho é sempre uma ORDEM do jogador, com começo, meio e fim:
+      //   { tipo: 'canteiro', area, indice }            → exatamente UMA colheita daquele canteiro; depois a ordem termina;
+      //   { tipo: 'plantacao', area, colhidos, ignorados } → colhe, um por vez, os canteiros maduros e livres daquela plantação
+      //                                                     e termina quando não resta nenhum.
+      // entidade.tarefa = alvo atual { area, indice, fase: 'indo' | 'colhendo', restante, alvoX, alvoZ }, com reserva do canteiro.
+      // Concluir, cancelar ou substituir uma ordem SEMPRE libera a reserva e devolve o trabalhador à exploração ('andando').
+      // Estados do trabalhador: andando (explorando) · indo colher · colhendo · procurando (próximo alvo da ordem geral) ·
+      // combatendo · caido · saindo. O combate interrompe a ordem e, quando termina, o trabalhador retoma de onde parou.
       function cancelarTarefa(entidade) {
         if (!entidade.tarefa) return;
         const chave = chaveDoCanteiro(entidade.tarefa.area, entidade.tarefa.indice);
         if (reservasDeColheita.get(chave) === entidade.dados.id) reservasDeColheita.delete(chave);
         entidade.tarefa = null;
       }
-      // Manda o trabalhador colher um canteiro maduro: reserva o canteiro (tirando de quem o tinha) e calcula o caminho até a
-      // célula livre mais próxima dele (a borda da plantação, porque a cerca não é atravessada).
-      function atribuirColheita(entidade, idDaArea, indice, manual) {
+      function concluirOrdem(entidade, mensagem) {
+        cancelarTarefa(entidade); entidade.ordem = null;
+        if (!entidade.alvo && entidade.estado !== 'caido') { entidade.estado = 'andando'; entidade.caminho = null; entidade.espera = 0.2; }
+        if (mensagem) mostrarAviso(mensagem);
+        atualizarPaineisDaMark82(false);
+      }
+      const cancelarOrdem = entidade => concluirOrdem(entidade, null);
+      // Reserva o canteiro e calcula o caminho até a célula livre mais próxima dele (a borda da plantação: a cerca não é
+      // atravessada). Devolve false se não houver caminho (a ordem decide o que fazer, sem repetir tentativas para sempre).
+      function irAteOCanteiro(entidade, idDaArea, indice) {
         const chave = chaveDoCanteiro(idDaArea, indice), dono = reservasDeColheita.get(chave);
-        if (dono !== undefined && dono !== entidade.dados.id) { const outro = trabalhadoresNaCena.get(dono); if (outro) cancelarTarefa(outro); }
+        if (dono !== undefined && dono !== entidade.dados.id) { const outro = trabalhadoresNaCena.get(dono); if (outro) cancelarTarefa(outro); }   // ordem do jogador tem prioridade
         cancelarTarefa(entidade);
         const [canteiroX, canteiroZ] = posicaoDoCanteiroNoMundo(idDaArea, indice), [pontoX, pontoZ] = pontoLivre(canteiroX, canteiroZ);
         const caminho = GRADE_DAS_PESSOAS.acharCaminho(entidade.x, entidade.z, pontoX, pontoZ);
         if (!caminho) return false;
         reservasDeColheita.set(chave, entidade.dados.id);
-        entidade.tarefa = { area: idDaArea, indice, fase: 'indo', restante: 0, manual, alvoX: canteiroX, alvoZ: canteiroZ };
+        entidade.tarefa = { area: idDaArea, indice, fase: 'indo', restante: 0, alvoX: canteiroX, alvoZ: canteiroZ };
         entidade.caminho = caminho; entidade.indice = 0; entidade.parado = 0; entidade.ux = entidade.x; entidade.uz = entidade.z;
-        if (entidade.estado !== 'combatendo') entidade.estado = 'indo colher';
+        if (!entidade.alvo) entidade.estado = 'indo colher';
         return true;
       }
+      // Escolhe o próximo alvo da ordem atual, ou encerra a ordem quando não há mais o que fazer.
+      function proximoAlvoDaOrdem(entidade) {
+        const ordem = entidade.ordem, nome = entidade.dados.nome;
+        if (!ordem) return;
+        if (ordem.tipo === 'canteiro') {
+          if (estagioDoCanteiro(canteirosDaArea(ordem.area)[ordem.indice]) < 3) return concluirOrdem(entidade, ordem.silenciosa ? null : nome + ': o canteiro já foi colhido ou não está maduro. Voltou a explorar.');
+          if (!irAteOCanteiro(entidade, ordem.area, ordem.indice)) return concluirOrdem(entidade, ordem.silenciosa ? null : nome + ' não consegue chegar a esse canteiro. Voltou a explorar.');
+          return;
+        }
+        entidade.estado = 'procurando';
+        const candidatos = [];
+        for (let indice = 0; indice < quantidadeDeCanteiros(ordem.area); indice++) {
+          const dono = reservasDeColheita.get(chaveDoCanteiro(ordem.area, indice));
+          if (estagioDoCanteiro(canteirosDaArea(ordem.area)[indice]) === 3 && (dono === undefined || dono === entidade.dados.id) && !ordem.ignorados.has(indice)) {
+            const [canteiroX, canteiroZ] = posicaoDoCanteiroNoMundo(ordem.area, indice); candidatos.push([Math.hypot(canteiroX - entidade.x, canteiroZ - entidade.z), indice]);
+          }
+        }
+        candidatos.sort((primeiro, segundo) => primeiro[0] - segundo[0]);
+        for (const [, indice] of candidatos) { if (irAteOCanteiro(entidade, ordem.area, indice)) return; ordem.ignorados.add(indice); }   // inalcançável: não tenta de novo nesta ordem
+        concluirOrdem(entidade, ordem.colhidos ? '🧺 ' + nome + ' terminou a colheita de ' + nomeDaArea(ordem.area) + ' (' + ordem.colhidos + ' canteiro(s)) e voltou a explorar.' : nome + ': não há canteiros maduros livres em ' + nomeDaArea(ordem.area) + '. Voltou a explorar.');
+      }
+      function darOrdem(entidade, ordem) { cancelarOrdem(entidade); entidade.ordem = ordem; proximoAlvoDaOrdem(entidade); return !!entidade.ordem; }
       // Estimativa (s) para um trabalhador chegar e colher: distância / velocidade + tempo de colheita (atributos e classe).
       const estimativaDeColheita = (entidade, idDaArea, indice) => { const [canteiroX, canteiroZ] = posicaoDoCanteiroNoMundo(idDaArea, indice); return Math.hypot(canteiroX - entidade.x, canteiroZ - entidade.z) * 1.25 / atributosDoTrabalhador(entidade.dados).velocidade + tempoDeColheita(entidade.dados); };
-      // Colheita escolhida pelo jogador: o trabalhador indicado (ou o que terminaria mais rápido) vai até o canteiro e colhe.
-      // Sem nenhum trabalhador vivo, o jogador colhe com as próprias mãos (para a fazenda nunca travar).
-      function colheitaManual(idDaArea, indice, idDoTrabalhador) {
+      const trabalhadoresLivresParaOrdens = () => [...trabalhadoresNaCena.values()].filter(entidade => trabalhadorDisponivel(entidade) && entidade.estado !== 'combatendo');
+      // ORDEM INDIVIDUAL: o trabalhador indicado (ou o que terminaria mais rápido) colhe só este canteiro e volta a explorar.
+      function ordenarColheitaDoCanteiro(idDaArea, indice, idDoTrabalhador) {
         const canteiro = canteirosDaArea(idDaArea)[indice];
         if (!canteiro || estagioDoCanteiro(canteiro) < 3) { if (canteiro && canteiro.cultura) mostrarAviso(CULTURAS[canteiro.cultura].nome + ' ainda não está madura.'); return; }
         registrarAtividade();
-        const vivos = [...trabalhadoresNaCena.values()].filter(trabalhadorDisponivel);
-        if (!vivos.length && !estado.trabalhadores.some(dados => dados.estado === 'ativo')) { colherCanteiro(idDaArea, indice); return; }
-        let escolhido = idDoTrabalhador ? trabalhadoresNaCena.get(idDoTrabalhador) : null;
-        if (idDoTrabalhador && (!escolhido || !trabalhadorDisponivel(escolhido))) { mostrarAviso('Este trabalhador não está disponível agora.'); return; }
-        if (!escolhido) escolhido = vivos.filter(entidade => entidade.estado !== 'combatendo').sort((a, b) => estimativaDeColheita(a, idDaArea, indice) - estimativaDeColheita(b, idDaArea, indice))[0];
-        if (!escolhido) { mostrarAviso('Todos os trabalhadores estão ocupados no combate.'); return; }
-        if (!atribuirColheita(escolhido, idDaArea, indice, true)) { mostrarAviso(escolhido.dados.nome + ' não encontrou caminho até o canteiro.'); return; }
-        mostrarAviso(CLASSES_DE_TRABALHADORES[escolhido.dados.classe].icone + ' ' + escolhido.dados.nome + ' vai colher (≈ ' + Math.ceil(estimativaDeColheita(escolhido, idDaArea, indice)) + ' s).');
+        let escolhido = idDoTrabalhador ? trabalhadoresNaCena.get(idDoTrabalhador) : trabalhadoresLivresParaOrdens().sort((primeiro, segundo) => estimativaDeColheita(primeiro, idDaArea, indice) - estimativaDeColheita(segundo, idDaArea, indice))[0];
+        if (!escolhido || !trabalhadorDisponivel(escolhido)) { mostrarAviso(idDoTrabalhador ? 'Este trabalhador não está disponível agora.' : 'Nenhum trabalhador disponível agora. Você pode colher pessoalmente.'); return; }
+        if (darOrdem(escolhido, { tipo: 'canteiro', area: idDaArea, indice }))
+          mostrarAviso(CLASSES_DE_TRABALHADORES[escolhido.dados.classe].icone + ' ' + escolhido.dados.nome + ' vai colher este canteiro (≈ ' + Math.ceil(estimativaDeColheita(escolhido, idDaArea, indice)) + ' s) e depois volta a explorar.');
       }
-      // Colheita automática: trabalhador livre procura o canteiro maduro e não reservado mais próximo.
+      // ORDEM GERAL: o trabalhador colhe todos os canteiros maduros e livres da plantação indicada e depois volta a explorar.
+      function ordenarColheitaGeral(idDaArea, idDoTrabalhador) {
+        const entidade = trabalhadoresNaCena.get(idDoTrabalhador);
+        if (!entidade || !trabalhadorDisponivel(entidade)) { mostrarAviso('Este trabalhador não está disponível agora.'); return; }
+        registrarAtividade();
+        if (darOrdem(entidade, { tipo: 'plantacao', area: idDaArea, colhidos: 0, ignorados: new Set() }))
+          mostrarAviso(CLASSES_DE_TRABALHADORES[entidade.dados.classe].icone + ' ' + entidade.dados.nome + ' vai colher toda a ' + nomeDaArea(idDaArea) + '.');
+      }
+      // COLHEITA PELO JOGADOR (sem trabalhadores): um canteiro ou "COLHER TUDO" de UMA plantação. Cada canteiro é esvaziado ao
+      // ser colhido (colherCanteiro), então nenhum é colhido duas vezes; canteiros imaturos ficam como estão.
+      function colherCanteiroPeloJogador(idDaArea, indice) { registrarAtividade(); colherCanteiro(idDaArea, indice); }
+      function colherTudoPeloJogador(idDaArea) {
+        registrarAtividade();
+        const recursosAntes = { ...estado.recursos }, xpAntes = estado.xp; let colhidos = 0;
+        for (let indice = 0; indice < quantidadeDeCanteiros(idDaArea); indice++) if (estagioDoCanteiro(canteirosDaArea(idDaArea)[indice]) === 3 && colherCanteiro(idDaArea, indice, true)) colhidos++;
+        if (!colhidos) { mostrarAviso('Nada maduro para colher em ' + nomeDaArea(idDaArea) + '.'); return; }
+        const ganhos = Object.keys(CULTURAS).filter(recurso => estado.recursos[recurso] > recursosAntes[recurso]).map(recurso => '+' + (estado.recursos[recurso] - recursosAntes[recurso]) + ' ' + CULTURAS[recurso].icone).join(' ');
+        mostrarAviso('🧺 Você colheu ' + colhidos + ' canteiro(s) em ' + nomeDaArea(idDaArea) + ': ' + ganhos + ' · +' + (estado.xp - xpAntes) + ' XP');
+      }
+      // Colheita espontânea (desligada por padrão: TRABALHADORES_CONFIG.colheitaEspontanea). Se ligada, vira uma ordem
+      // individual silenciosa, com o mesmo ciclo de início e fim.
       function procurarColheitaAutomatica(entidade, noite) {
-        const classe = CLASSES_DE_TRABALHADORES[entidade.dados.classe];
-        if (noite && !classe.colheDeNoite) return false;
+        if (!TRABALHADORES_CONFIG.colheitaEspontanea || (noite && !CLASSES_DE_TRABALHADORES[entidade.dados.classe].colheDeNoite)) return false;
         let melhor = null, menor = 80;
         for (const [idDaArea, indice] of canteirosMadurosLivres()) { const [canteiroX, canteiroZ] = posicaoDoCanteiroNoMundo(idDaArea, indice), distancia = Math.hypot(canteiroX - entidade.x, canteiroZ - entidade.z); if (distancia < menor) { menor = distancia; melhor = [idDaArea, indice]; } }
-        return melhor ? atribuirColheita(entidade, melhor[0], melhor[1], false) : false;
+        return melhor ? darOrdem(entidade, { tipo: 'canteiro', area: melhor[0], indice: melhor[1], silenciosa: true }) : false;
       }
 
       // ---- dano recebido ----
@@ -5318,7 +5560,7 @@
         entidade.dados.vida = Math.max(0, entidade.dados.vida - dano); marcarParaSalvar();
         if (!entidade.alvo && atacante && !atacante.morto) { entidade.alvo = atacante; entidade.estado = 'combatendo'; }   // reage a quem o atacou
         if (entidade.dados.vida > 0) return;
-        cancelarTarefa(entidade);
+        cancelarTarefa(entidade); entidade.ordem = null;                            // morto não continua nenhuma ordem
         entidade.dados.estado = 'morto'; entidade.estado = 'caido'; entidade.tempoCaido = 0; entidade.alvo = null; entidade.vel = entidade.velAlvo = 0;
         salvarProgresso();
         mostrarAviso('💀 ' + entidade.dados.nome + ' (' + CLASSES_DE_TRABALHADORES[entidade.dados.classe].nome + ') foi derrotado(a). Recupere-o(a) no menu 👷 Equipe.');
@@ -5340,13 +5582,16 @@
           }
           return;
         }
-        if (entidade.alvo || entidade.estado === 'combatendo') {                  // fim do combate: retoma a tarefa, se houver
+        if (entidade.alvo || entidade.estado === 'combatendo') {                  // fim do combate: retoma a ordem (se houver) ou volta a explorar
           entidade.alvo = null; entidade.estado = 'andando'; entidade.caminho = null;
-          if (entidade.tarefa) { const { area, indice, manual } = entidade.tarefa; if (!atribuirColheita(entidade, area, indice, manual)) cancelarTarefa(entidade); }
+          if (entidade.ordem) { cancelarTarefa(entidade); proximoAlvoDaOrdem(entidade); return; }
         }
-        if (entidade.tarefa) {
-          const { area, indice } = entidade.tarefa;
-          if (estagioDoCanteiro(canteirosDaArea(area)[indice]) < 3 || reservasDeColheita.get(chaveDoCanteiro(area, indice)) !== entidade.dados.id) { cancelarTarefa(entidade); entidade.estado = 'andando'; entidade.caminho = null; }
+        if (entidade.ordem) {
+          const tarefa = entidade.tarefa;
+          if (!tarefa) { proximoAlvoDaOrdem(entidade); return; }                                       // ordem geral procurando o próximo canteiro
+          if (tarefa.fase === 'indo' && (estagioDoCanteiro(canteirosDaArea(tarefa.area)[tarefa.indice]) < 3 || reservasDeColheita.get(chaveDoCanteiro(tarefa.area, tarefa.indice)) !== entidade.dados.id)) {
+            cancelarTarefa(entidade); proximoAlvoDaOrdem(entidade);                                    // o alvo deixou de valer no caminho (colhido por outro)
+          }
           return;
         }
         if (entidade.estado === 'andando' && (!entidade.caminho || entidade.indice >= entidade.caminho.length)) {
@@ -5405,11 +5650,13 @@
           } else if (entidade.tarefa && entidade.tarefa.fase === 'colhendo') {          // colhendo: o tempo depende da velocidade de tarefa e da classe
             entidade.velAlvo = 0; colhendo = true; virarPara(entidade, entidade.tarefa.alvoX, entidade.tarefa.alvoZ, segundosDesdeUltimoFrame);
             entidade.tarefa.restante -= segundosDesdeUltimoFrame;
-            if (entidade.tarefa.restante <= 0) {
-              const { area, indice, manual } = entidade.tarefa;
-              cancelarTarefa(entidade);
-              if (colherCanteiro(area, indice, true) && manual) mostrarAviso('🧺 ' + dados.nome + ' colheu em ' + nomeDaArea(area) + '.');
-              entidade.estado = 'andando'; entidade.espera = 0.2;
+            if (entidade.tarefa.restante <= 0) {                                         // fim da colheita: UMA colheita deste canteiro
+              const { area, indice } = entidade.tarefa, ordem = entidade.ordem;
+              cancelarTarefa(entidade);                                                 // libera a reserva antes de colher
+              const colheu = colherCanteiro(area, indice, true);
+              if (!ordem) { entidade.estado = 'andando'; entidade.espera = 0.2; }
+              else if (ordem.tipo === 'canteiro') concluirOrdem(entidade, ordem.silenciosa ? null : colheu ? '🧺 ' + dados.nome + ' colheu o canteiro em ' + nomeDaArea(area) + ' e voltou a explorar.' : dados.nome + ': o canteiro já tinha sido colhido. Voltou a explorar.');
+              else { if (colheu) ordem.colhidos++; proximoAlvoDaOrdem(entidade); }        // ordem geral: próximo canteiro ou fim
             }
           } else if (entidade.caminho && andarMob(entidade, segundosDesdeUltimoFrame, grade)) {
             entidade.caminho = null;
@@ -5442,7 +5689,16 @@
       let monstrosNestaNoite = 0, temporizadorDeSurgimento = 4, eraNoite = false;
       function ehNoiteParaMonstros() { const hora = CICLO_DE_DIA_E_NOITE.hora; return hora >= MONSTROS_NOTURNOS_CONFIG.horaDeInicio || hora < MONSTROS_NOTURNOS_CONFIG.horaDeFim; }
       const trabalhadoresAtacaveis = () => [...trabalhadoresNaCena.values()].filter(entidade => entidade.estado !== 'caido' && entidade.estado !== 'saindo' && !entidade.removido);
-      function limiteDeMonstrosSimultaneos() { const limites = MONSTROS_NOTURNOS_CONFIG.maximoSimultaneo; return !trabalhadoresAtacaveis().length ? limites.semTrabalhadores : MODO_LEVE.ativo ? limites.leve : limites.normal; }
+      // Mark 8.3 — quantidade de monstros proporcional à equipe disponível (regras em MONSTROS_NOTURNOS_CONFIG.quantidade).
+      // Decisão: contam os trabalhadores VIVOS e EM CAMPO (fazendeiros e guardas). Mortos, caídos e quem ainda está saindo da
+      // casa não contam; sem ninguém em campo não surge monstro (não há quem defender nem quem atacar).
+      function limiteDeMonstrosSimultaneos() {
+        const regra = MONSTROS_NOTURNOS_CONFIG.quantidade, disponiveis = trabalhadoresAtacaveis().length;
+        if (!disponiveis) return 0;
+        return Math.min(MODO_LEVE.ativo ? regra.teto.leve : regra.teto.normal, Math.max(regra.minimo, regra.porTrabalhadorDisponivel * disponiveis));
+      }
+      const limiteDeMonstrosPorNoite = () => limiteDeMonstrosSimultaneos() * MONSTROS_NOTURNOS_CONFIG.quantidade.multiplicadorPorNoite;
+      const monstrosVivos = () => monstrosNoturnos.filter(monstro => !monstro.morto).length;
       function monstroMaisProximo(posicaoX, posicaoZ, raio) {
         let melhor = null, menor = raio;
         for (const monstro of monstrosNoturnos) { if (monstro.morto || monstro.estado === 'fugindo') continue; const distancia = Math.hypot(monstro.x - posicaoX, monstro.z - posicaoZ); if (distancia < menor) { menor = distancia; melhor = monstro; } }
@@ -5538,7 +5794,7 @@
           temporizadorDeSurgimento -= segundosDesdeUltimoFrame;
           if (temporizadorDeSurgimento <= 0) {
             temporizadorDeSurgimento = configuracao.segundosEntreSurgimentos;
-            if (monstrosNoturnos.filter(monstro => !monstro.morto).length < limiteDeMonstrosSimultaneos() && monstrosNestaNoite < configuracao.maximoPorNoite) surgirMonstro();
+            if (monstrosVivos() < limiteDeMonstrosSimultaneos() && monstrosNestaNoite < limiteDeMonstrosPorNoite()) surgirMonstro();   // um por vez, nunca acima dos limites
           }
         }
         if (!monstrosNoturnos.length) return;
@@ -5611,8 +5867,9 @@
       let interagindoComPainel = false;               // não redesenha o painel enquanto o dedo/mouse está pressionado (o clique não se perde)
       for (const painel of [painelDaFazenda, painelDaEquipe]) {
         painel.addEventListener('pointerdown', () => { interagindoComPainel = true; });
-        // a ação é executada e o painel é redesenhado NA HORA (o próximo toque já encontra os botões novos)
-        painel.addEventListener('click', evento => { const botao = evento.target.closest('[data-acao]'); if (botao) { evento.preventDefault(); executarAcaoDoPainel(botao); } interagindoComPainel = false; atualizarPaineisDaMark82(true); });
+        // Botão de ação: executa e redesenha NA HORA (o próximo toque já encontra os botões novos). Outros cliques (ex.: abrir
+        // a ficha de um trabalhador pelo <summary>) NÃO redesenham: antes o redesenho no meio do clique desfazia a abertura.
+        painel.addEventListener('click', evento => { const botao = evento.target.closest('[data-acao]'); interagindoComPainel = false; if (botao) { evento.preventDefault(); executarAcaoDoPainel(botao); atualizarPaineisDaMark82(true); } });
       }
       painelDaEquipe.addEventListener('toggle', evento => { const ficha = evento.target; if (ficha.dataset && ficha.dataset.ficha) { if (ficha.open) trabalhadoresExpandidos.add(+ficha.dataset.ficha); else trabalhadoresExpandidos.delete(+ficha.dataset.ficha); } }, true);
       addEventListener('pointerup', () => setTimeout(() => { interagindoComPainel = false; }, 250));
@@ -5627,7 +5884,11 @@
           else if (estagio === 3) canteiroSelecionado = +indice;
           else { canteiroSelecionado = null; mostrarAviso(CULTURAS[canteiro.cultura].icone + ' ' + CULTURAS[canteiro.cultura].nome + ': ' + Math.floor(progressoDoCanteiro(canteiro) * 100) + '% — ainda crescendo.'); }
         }
-        else if (acao === 'colher-com') { colheitaManual(area, +indice, id ? +id : null); canteiroSelecionado = null; }
+        else if (acao === 'colher-com') { ordenarColheitaDoCanteiro(area, +indice, id ? +id : null); canteiroSelecionado = null; }   // ordem individual a um trabalhador
+        else if (acao === 'colher-eu') { colherCanteiroPeloJogador(area, +indice); canteiroSelecionado = null; }                  // o próprio jogador colhe este canteiro
+        else if (acao === 'colher-tudo-jogador') { colherTudoPeloJogador(area); canteiroSelecionado = null; }                     // COLHER TUDO (jogador, só esta plantação)
+        else if (acao === 'ordem-geral') ordenarColheitaGeral(area, +id);                                                          // trabalhador colhe a plantação inteira
+        else if (acao === 'cancelar-ordem') { const entidade = trabalhadoresNaCena.get(+id); if (entidade && entidade.ordem) { cancelarOrdem(entidade); mostrarAviso(entidade.dados.nome + ' parou e voltou a explorar.'); } }
         else if (acao === 'plantar-todos') { plantarEmTodosOsVazios(area); registrarAtividade(); }
         else if (acao === 'alimentar') alimentarAnimais(area);
         else if (acao === 'repor') reporAnimal(area);
@@ -5641,32 +5902,48 @@
       }
       const barrinha = (valor, cor) => `<span class="barrinha"><i style="width:${Math.max(0, Math.min(100, valor))}%;background:${cor}"></i></span>`;
       function desenharPainelDaFazenda() {
-        const partes = ['<h3>🌾 Fazenda</h3>', `<div class="linha-recursos">${Object.entries(ICONES_DOS_RECURSOS).map(([recurso, icone]) => `<span title="${recurso}">${icone} <b>${estado.recursos[recurso]}</b></span>`).join('')}</div>`];
+        const NOMES_DOS_RECURSOS = { trigo: 'Trigo', milho: 'Milho', cenoura: 'Cenoura', abobora: 'Abóbora', minerios: 'Minérios' };
+        const partes = ['<h3>🌾 Fazenda</h3>', `<div class="linha-recursos">${Object.entries(ICONES_DOS_RECURSOS).map(([recurso, icone]) => `<span class="recurso" title="${NOMES_DOS_RECURSOS[recurso]}"><i>${icone}</i><b>${estado.recursos[recurso]}</b><small>${NOMES_DOS_RECURSOS[recurso]}</small></span>`).join('')}</div>`];
         // abas das plantações: cada uma é administrada separadamente
         partes.push(`<div class="segmentos abas">${PLANTACOES_COM_CANTEIROS.map(idDaArea => `<button data-acao="aba" data-area="${idDaArea}" class="${idDaArea === plantacaoSelecionada ? 'ativo' : ''}">${AREAS.find(area => area.id === idDaArea).icone} ${nomeDaArea(idDaArea)}</button>`).join('')}</div>`);
         const idDaArea = plantacaoSelecionada, nivel = estado.niveis[idDaArea];
-        partes.push(`<h4>🌱 ${nomeDaArea(idDaArea)}${nivel ? ' · nível ' + nivel : ''}</h4>`);
+        partes.push(`<h4 class="titulo-da-plantacao">🌱 ${nomeDaArea(idDaArea)}${nivel ? ' <small>nível ' + nivel + '</small>' : ''}</h4>`);
         if (!nivel) partes.push(`<p class="dica">Construa <b>${nomeDaArea(idDaArea)}</b> (cartão ${AREAS.find(area => area.id === idDaArea).icone}) para plantar trigo, milho, cenoura e abóbora.</p>`);
         else if (instalacaoDestruida(idDaArea)) partes.push('<p class="dica">Esta plantação está destruída. Repare-a no cartão.</p>');
         else {
           const { colunas } = quantidadeDeCanteirosNoNivel(nivel);
-          partes.push('<p class="dica">1) Escolha a cultura · 2) toque num canteiro vazio para plantar · canteiros maduros: escolha quem colhe (os trabalhadores também colhem sozinhos).</p>');
-          partes.push(`<div class="segmentos">${Object.entries(CULTURAS).map(([id, cultura]) => `<button data-acao="cultura" data-cultura="${id}" class="${id === culturaSelecionada ? 'ativo' : ''}" title="${cultura.minutosParaCrescer} min · rende ${cultura.colheita}">${cultura.icone} ${cultura.nome}</button>`).join('')}</div>`);
+          partes.push('<p class="passos"><b>1</b> Escolha a cultura <b>2</b> Toque num canteiro vazio para plantar <b>3</b> Canteiro maduro: escolha quem colhe</p>');
+          partes.push(`<div class="segmentos culturas">${Object.entries(CULTURAS).map(([id, cultura]) => `<button data-acao="cultura" data-cultura="${id}" class="${id === culturaSelecionada ? 'ativo' : ''}" title="${cultura.minutosParaCrescer} min · rende ${cultura.colheita}"><i>${cultura.icone}</i><span>${cultura.nome}</span><small>${cultura.minutosParaCrescer} min · rende ${cultura.colheita}</small></button>`).join('')}</div>`);
           partes.push(`<div class="grade-canteiros" style="grid-template-columns:repeat(${colunas},1fr)">` + canteirosDaArea(idDaArea).slice(0, quantidadeDeCanteiros(idDaArea)).map((canteiro, indice) => {
             const estagio = estagioDoCanteiro(canteiro), cultura = CULTURAS[canteiro.cultura], dono = reservasDeColheita.get(chaveDoCanteiro(idDaArea, indice)), quem = dono !== undefined && trabalhadoresNaCena.get(dono);
             const selecionado = indice === canteiroSelecionado ? ' selecionado' : '', atributos = `data-acao="canteiro" data-area="${idDaArea}" data-indice="${indice}"`;
-            if (estagio < 0) return `<button class="canteiro vazio" ${atributos} title="Plantar ${CULTURAS[culturaSelecionada].nome}">+${CULTURAS[culturaSelecionada].icone}</button>`;
-            if (estagio === 3) return `<button class="canteiro pronto${selecionado}" ${atributos}>${cultura.icone}<br><small>${quem ? '🧺 ' + quem.dados.nome : 'pronto'}</small></button>`;
-            return `<button class="canteiro crescendo" ${atributos}>${cultura.icone}<br><small>${Math.floor(progressoDoCanteiro(canteiro) * 100)}%</small></button>`;
+            if (estagio < 0) return `<button class="canteiro vazio" ${atributos} title="Plantar ${CULTURAS[culturaSelecionada].nome}"><i>＋${CULTURAS[culturaSelecionada].icone}</i><small>plantar</small></button>`;
+            if (estagio === 3) return `<button class="canteiro pronto${selecionado}" ${atributos} title="Maduro: escolher quem colhe"><i>${cultura.icone}</i><small>${quem ? '🧺 ' + quem.dados.nome : 'colher!'}</small></button>`;
+            const porcentagem = Math.floor(progressoDoCanteiro(canteiro) * 100);
+            return `<button class="canteiro crescendo" ${atributos} title="${cultura.nome}: ${porcentagem}%"><i>${cultura.icone}</i><small>${porcentagem}%</small><span class="progresso-do-canteiro"><span style="width:${porcentagem}%"></span></span></button>`;
           }).join('') + '</div>');
+          partes.push('<div class="legenda-dos-canteiros"><span class="vazio">vazio</span><span class="crescendo">crescendo</span><span class="pronto">maduro</span></div>');
           if (canteiroSelecionado !== null && estagioDoCanteiro(canteirosDaArea(idDaArea)[canteiroSelecionado] || {}) === 3) {
             const disponiveis = [...trabalhadoresNaCena.values()].filter(entidade => trabalhadorDisponivel(entidade));
-            partes.push('<div class="escolha-de-colheita"><b>Quem colhe este canteiro?</b><br>' + (disponiveis.length
-              ? `<button class="botao-pequeno" data-acao="colher-com" data-area="${idDaArea}" data-indice="${canteiroSelecionado}">⚡ O mais rápido</button>` + disponiveis.map(entidade => `<button class="botao-pequeno secundario" data-acao="colher-com" data-area="${idDaArea}" data-indice="${canteiroSelecionado}" data-id="${entidade.dados.id}">${CLASSES_DE_TRABALHADORES[entidade.dados.classe].icone} ${entidade.dados.nome} · ≈${Math.ceil(estimativaDeColheita(entidade, idDaArea, canteiroSelecionado))} s</button>`).join('')
-              : `<button class="botao-pequeno" data-acao="colher-com" data-area="${idDaArea}" data-indice="${canteiroSelecionado}">🧺 Colher à mão (sem trabalhadores disponíveis)</button>`) + '</div>');
+            partes.push('<div class="escolha-de-colheita"><b>Quem colhe este canteiro?</b> <small>(só este canteiro; depois volta a explorar)</small><br>'
+              + `<button class="botao-pequeno" data-acao="colher-eu" data-area="${idDaArea}" data-indice="${canteiroSelecionado}">✋ Eu mesmo</button>`
+              + (disponiveis.length ? `<button class="botao-pequeno" data-acao="colher-com" data-area="${idDaArea}" data-indice="${canteiroSelecionado}">⚡ O trabalhador mais rápido</button>` + disponiveis.map(entidade => `<button class="botao-pequeno secundario" data-acao="colher-com" data-area="${idDaArea}" data-indice="${canteiroSelecionado}" data-id="${entidade.dados.id}">${CLASSES_DE_TRABALHADORES[entidade.dados.classe].icone} ${entidade.dados.nome} · ≈${Math.ceil(estimativaDeColheita(entidade, idDaArea, canteiroSelecionado))} s</button>`).join('') : '') + '</div>');
           }
           const aceleracao = aceleracaoDaLavoura();
-          partes.push(`<div class="acoes"><button class="botao-pequeno" data-acao="plantar-todos" data-area="${idDaArea}">Plantar ${CULTURAS[culturaSelecionada].icone} nos vazios</button></div>${aceleracao ? `<p class="dica">🧑‍🌾 Fazendeiros aceleram o crescimento em ${Math.round(aceleracao * 100)}%.</p>` : ''}`);
+          const prontos = canteirosDaArea(idDaArea).slice(0, quantidadeDeCanteiros(idDaArea)).filter(canteiro => estagioDoCanteiro(canteiro) === 3).length;
+          partes.push(`<div class="acoes"><button class="botao-colher-tudo" data-acao="colher-tudo-jogador" data-area="${idDaArea}" title="Você mesmo colhe todos os canteiros maduros desta plantação">🧺 COLHER TUDO <small>(você · ${prontos} pronto(s))</small></button>
+            <button class="botao-plantar-todos" data-acao="plantar-todos" data-area="${idDaArea}">🌱 Plantar ${CULTURAS[culturaSelecionada].icone} nos vazios</button></div>${aceleracao ? `<p class="dica">🧑‍🌾 Fazendeiros aceleram o crescimento em ${Math.round(aceleracao * 100)}%.</p>` : ''}`);
+          // ordens da equipe para ESTA plantação (colheita geral por trabalhador)
+          const equipeEmCampo = [...trabalhadoresNaCena.values()].filter(trabalhadorDisponivel);
+          if (equipeEmCampo.length) {
+            partes.push('<div class="ordens-da-equipe"><b>Mandar um trabalhador colher tudo aqui</b>');
+            for (const entidade of equipeEmCampo) {
+              const ordem = entidade.ordem, icone = CLASSES_DE_TRABALHADORES[entidade.dados.classe].icone;
+              const descricao = !ordem ? 'explorando' : ordem.tipo === 'canteiro' ? 'colhendo 1 canteiro em ' + nomeDaArea(ordem.area) : 'colhendo tudo em ' + nomeDaArea(ordem.area) + ' (' + ordem.colhidos + ' feito(s))';
+              partes.push(`<div class="linha-painel"><span>${icone} ${entidade.dados.nome}<br><small>${entidade.estado === 'combatendo' ? '⚔️ combatendo · ' : ''}${descricao}</small></span>${ordem ? `<button class="botao-pequeno secundario" data-acao="cancelar-ordem" data-id="${entidade.dados.id}">Cancelar ordem</button>` : `<button class="botao-pequeno" data-acao="ordem-geral" data-area="${idDaArea}" data-id="${entidade.dados.id}">Colher tudo aqui</button>`}</div>`);
+            }
+            partes.push('</div>');
+          }
         }
         partes.push('<h4>🐾 Animais</h4>');
         for (const idDaAreaAnimal in ANIMAIS_DAS_AREAS) {
@@ -5686,7 +5963,7 @@
         partes.push('<h4>Sua equipe</h4>', estado.trabalhadores.length ? '' : '<p class="dica">Ninguém na equipe. Contrate abaixo.</p>');
         for (const dados of estado.trabalhadores) {
           const classe = CLASSES_DE_TRABALHADORES[dados.classe], entidade = trabalhadoresNaCena.get(dados.id), atributos = atributosDoTrabalhador(dados);
-          const situacao = dados.estado === 'morto' ? '💀 Morto' : !entidade ? '…' : { saindo: '🚪 Saindo da casa', andando: '🚶 Patrulhando', 'indo colher': '🧺 Indo colher', colhendo: '🧺 Colhendo', combatendo: '⚔️ Combatendo', caido: '💀 Caído' }[entidade.estado] || '🚶 Patrulhando';
+          const situacao = dados.estado === 'morto' ? '💀 Morto' : !entidade ? '…' : ({ saindo: '🚪 Saindo da casa', andando: '🚶 Explorando', 'indo colher': '🧺 Indo colher', colhendo: '🧺 Colhendo', procurando: '🔎 Procurando o próximo canteiro', combatendo: '⚔️ Combatendo', caido: '💀 Caído' }[entidade.estado] || '🚶 Explorando') + (entidade.ordem ? ' · ordem: ' + (entidade.ordem.tipo === 'canteiro' ? '1 canteiro' : 'colher tudo em ' + nomeDaArea(entidade.ordem.area)) : '');
           const linhas = Object.entries(MELHORIAS_DOS_TRABALHADORES.atributos).map(([atributo, regra]) => {
             const custo = custoDaProximaMelhoria(dados, atributo), valor = atributos[atributo].toFixed(regra.casas), proximo = (atributos[atributo] + regra.incremento);
             return `<div class="linha-atributo"><span>${regra.icone} ${regra.nome}: <b>${valor}</b>${atributo === 'precisao' ? '%' : ''} <small>(nível ${dados.melhorias[atributo]}/${MELHORIAS_DOS_TRABALHADORES.nivelMaximo})</small></span>${custo === null ? '<small>máximo</small>' : `<button class="botao-pequeno${estado.xp < custo ? ' sem-xp' : ''}" data-acao="melhorar" data-id="${dados.id}" data-atributo="${atributo}" title="Vai para ${(regra.maximo ? Math.min(regra.maximo, proximo) : proximo).toFixed(regra.casas)}">+${regra.incremento} · ${custo} XP</button>`}</div>`;
@@ -5724,8 +6001,9 @@
       selecionar('#teste-monstros').onclick = () => {                         // vira noite e chama três monstros perto da equipe
         definirModoDoCiclo('noite'); atualizarPainelDeTempo(true);
         if (!ehNoiteParaMonstros()) CICLO_DE_DIA_E_NOITE.hora = 0;
-        eraNoite = true; let criados = 0; for (let vez = 0; vez < 3; vez++) if (monstrosNoturnos.filter(monstro => !monstro.morto).length < limiteDeMonstrosSimultaneos() + 1 && surgirMonstro()) criados++;
-        mostrarAviso(criados ? '👾 ' + criados + ' monstro(s) apareceram perto da equipe!' : 'Limite de monstros simultâneos atingido.');
+        eraNoite = true; let criados = 0;
+        while (monstrosVivos() < limiteDeMonstrosSimultaneos() && criados < 8 && surgirMonstro()) criados++;   // respeita a mesma fórmula da noite
+        mostrarAviso(criados ? '👾 ' + criados + ' monstro(s) apareceram perto da equipe (limite atual: ' + limiteDeMonstrosSimultaneos() + ').' : limiteDeMonstrosSimultaneos() ? 'Limite de monstros simultâneos atingido.' : 'Nenhum trabalhador em campo: os monstros não aparecem.');
       };
       selecionar('#teste-avancar').onclick = () => {                         // avança 10 minutos no relógio das plantações, dos animais e da mina
         estado.tempoDeTesteMs += 10 * 60000; salvarProgresso(); atualizarAlimentacao(); atualizarVisualDaLavoura(); atualizarPaineisDaMark82(true); desenharCards();
@@ -5824,7 +6102,7 @@
         reconstruirArea(idDaArea);
         focarCameraNaArea(idDaArea);
         desenharCards();
-        mostrarAviso(construindo ? nome + ' construído! 🏗️' : nome + ' evoluiu para o nível ' + (nivel + 1) + '! 🎉' + (idDaArea === 'casa' ? ' Agora cabem ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel + 1] + ' trabalhadores.' : ''));
+        mostrarAviso(construindo ? nome + ' construído! 🏗️' : nivel === 0 && idDaArea === 'ponte' ? nome + ' reparada! 🛠️ A travessia está inteira de novo.' : nome + ' evoluiu para o nível ' + (nivel + 1) + '! 🎉' + (idDaArea === 'casa' ? ' Agora cabem ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel + 1] + ' trabalhadores.' : ''));
         atualizarPaineisDaMark82(true);
       }
       // Clique em um cartão de área: conta como atividade do jogador e foca a câmera na área.
@@ -5846,9 +6124,9 @@
           const temBase = AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(area.id), loteVazio = !nivel && !temBase;
           return `<div class="card${loteVazio ? ' nao-construido' : ''}" onclick="aoClicarNoCard('${area.id}')">
         <div>${area.icone} <b>${area.nome}</b></div>
-        <div class="pontos-nivel">${nivel ? '●'.repeat(nivel) + '○'.repeat(NIVEL_MAXIMO - nivel) : temBase ? '🏠 Base' : '🚧 Não construído'}${area.id === 'casa' ? ' · ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s)' : ''}</div>
+        <div class="pontos-nivel">${nivel ? '●'.repeat(nivel) + '○'.repeat(NIVEL_MAXIMO - nivel) : temBase ? ROTULOS_DO_NIVEL_0[area.id].estado : '🚧 Não construído'}${area.id === 'casa' ? ' · ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s)' : ''}</div>
         ${informacaoExtraDoCard(area.id)}
-        <button class="${semXp ? 'sem-xp' : ''}" ${maximo ? 'disabled' : ''} title="${semXp ? 'Faltam ' + (custo - estado.xp) + ' XP' : ''}" onclick="event.stopPropagation(); evoluirArea('${area.id}')">${maximo ? 'Nível máximo' : (loteVazio ? 'Construir · ' : 'Evoluir · ') + custo + ' XP'}</button>
+        <button class="${semXp ? 'sem-xp' : ''}" ${maximo ? 'disabled' : ''} title="${semXp ? 'Faltam ' + (custo - estado.xp) + ' XP' : ''}" onclick="event.stopPropagation(); evoluirArea('${area.id}')">${maximo ? 'Nível máximo' : (loteVazio ? 'Construir · ' : !nivel && temBase ? ROTULOS_DO_NIVEL_0[area.id].acao + ' · ' : 'Evoluir · ') + custo + ' XP'}</button>
       </div>`;
         }).join('');
         lista.scrollLeft = rolagem;
@@ -5859,6 +6137,26 @@
       // Os cartões usam onclick="evoluirArea(...)" etc. no HTML; como o jogo roda dentro de iniciarFarmEdu(), essas funções
       // são publicadas em window com os mesmos nomes de antes.
       Object.assign(window, { evoluirArea, repararArea, aoClicarNoCard });
+      // ---- Nome da fazenda (Mark 8.3): botão na barra superior → janela com prévia → placa redesenhada na hora ----
+      const janelaDoNome = selecionar('#janela-nome-da-fazenda'), campoDoNome = selecionar('#campo-nome-da-fazenda'), previaDoNome = selecionar('#previa-nome-da-fazenda'), erroDoNome = selecionar('#erro-nome-da-fazenda');
+      const atualizarNomeNaInterface = () => { selecionar('#nome-da-fazenda-na-barra').textContent = estado.nomeDaFazenda; };
+      const atualizarPreviaDoNome = () => { previaDoNome.textContent = 'BEM-VINDO À ' + (limparNomeDaFazenda(campoDoNome.value) || NOME_PADRAO_DA_FAZENDA).toLocaleUpperCase('pt-BR'); erroDoNome.textContent = ''; };
+      function abrirJanelaDoNome() { campoDoNome.value = estado.nomeDaFazenda === NOME_PADRAO_DA_FAZENDA ? '' : estado.nomeDaFazenda; atualizarPreviaDoNome(); janelaDoNome.hidden = false; setTimeout(() => campoDoNome.focus(), 50); }
+      const fecharJanelaDoNome = () => { janelaDoNome.hidden = true; };
+      function salvarNomeDaFazenda() {
+        const nome = limparNomeDaFazenda(campoDoNome.value);
+        if (!nome) { erroDoNome.textContent = 'Digite um nome (não pode ficar vazio nem só com espaços).'; return; }
+        estado.nomeDaFazenda = nome; registrarAtividade();
+        desenharTextoDaPlaca(); atualizarNomeNaInterface(); fecharJanelaDoNome();
+        mostrarAviso('🏡 Placa atualizada: BEM-VINDO À ' + nome.toLocaleUpperCase('pt-BR'));
+      }
+      selecionar('#botao-nome-da-fazenda').onclick = abrirJanelaDoNome;
+      selecionar('#salvar-nome-da-fazenda').onclick = salvarNomeDaFazenda;
+      selecionar('#cancelar-nome-da-fazenda').onclick = fecharJanelaDoNome;
+      campoDoNome.addEventListener('input', atualizarPreviaDoNome);
+      campoDoNome.addEventListener('keydown', evento => { if (evento.key === 'Enter') salvarNomeDaFazenda(); if (evento.key === 'Escape') fecharJanelaDoNome(); });
+      janelaDoNome.addEventListener('click', evento => { if (evento.target === janelaDoNome) fecharJanelaDoNome(); });
+      atualizarNomeNaInterface();
       desenharCards();
       // ====================================================================================================
       // SEÇÃO 33 — FINALIZAÇÃO DO CARREGAMENTO
@@ -5871,6 +6169,7 @@
       await new Promise((resolver, rejeitar) => { aoTerminarPrimeiroQuadro = { resolver, rejeitar }; animarCena(); });
       carregamento.concluir();
       iniciarSistemaDeInvasoes();
+      if (!existiaSalvamento) setTimeout(abrirJanelaDoNome, 1200);   // Mark 8.3: fazenda nova → pergunta o nome (pode deixar para depois)
       if (avisosDaMigracao.length) setTimeout(() => mostrarFaixaDeInvasao('🏗️ Fazenda atualizada (Mark 8.2)', avisosDaMigracao.join(' '), 14000), 900);
       // A grade de navegação dos monstros (~0,2 s de cálculo) é preparada logo após a abertura, num momento ocioso, para a
       // primeira noite não travar quando o primeiro monstro surgir.

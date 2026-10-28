@@ -3,6 +3,8 @@ $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[
 
 // usuarioLogado() é do core, devolve os dados da sessão ou null
 $logado = usuarioLogado();
+sessaoExpirouPorInatividade();
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

@@ -253,7 +253,7 @@ function configurarLimiteDeCliques(botao, chave, acao) {
 
     atualizarEstado();
 }
-// 
+
 function formatarData(iso) {
     return new Date(iso).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -369,3 +369,62 @@ atualizarEntrega();
 trocar(atual);
 executar();
 setTimeout(() => sophiaFala('Oi, eu sou a Sophia! Bora codar?', 4500), 600);
+
+//Judge0
+ async function enviarSubmissao() {
+        const atividadeId = document.getElementById('atividade_id').value;
+        const idLinguagem = document.getElementById('id_linguagem').value;
+        const codigo = document.getElementById('codigo_aluno').value;
+        const loading = document.getElementById('loading');
+        const resultadoDiv = document.getElementById('resultado-ia');
+        if (!codigo.trim()) {
+            alert('Por favor, insira o código da submissão!');
+            return;
+        }
+        loading.style.display = 'block';
+        resultadoDiv.style.display = 'none';
+        const payload = {
+            id_linguagem: parseInt(idLinguagem),
+            codigo_aluno: codigo,
+            objetivo_atividade: atividadeId,
+            nota_max: "10",
+            nota_min: "6"
+        };
+        try {
+            const response = await fetch('enviarSubmissao', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            console.log(data);
+            if (data.sucesso) {
+                document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida + " / 10";
+                document.getElementById('status-avaliacao').innerText = data.avaliacao.status_avaliacao;
+                document.getElementById('status-compilador').innerText = data.compilacao.status.description || data.compilacao.status;
+                document.getElementById('terminal-saida').innerText = data.compilacao.saida_terminal;
+                document.getElementById('feedback-geral').innerText = data.avaliacao.feedback_geral;
+                const ulMelhoria = document.getElementById('pontos-melhoria');
+                ulMelhoria.innerHTML = '';
+                if (data.avaliacao.pontos_melhoria && data.avaliacao.pontos_melhoria.length > 0) {
+                    data.avaliacao.pontos_melhoria.forEach(ponto => {
+                        let li = document.createElement('li');
+                        li.innerText = ponto;
+                        ulMelhoria.appendChild(li);
+                    });
+                } else {
+                    ulMelhoria.innerHTML = '<li>Parabéns! Nenhuma correção necessária.</li>';
+                }
+                resultadoDiv.style.display = 'block';
+            } else {
+                alert("Erro na submissão: " + (data.erro || 'Erro desconhecido.'));
+            }
+        } catch (error) {
+            console.error("Erro ao comunicar com o servidor:", error);
+            alert("Erro de comunicação com o servidor.");
+        } finally {
+            loading.style.display = 'none';
+        }
+    }

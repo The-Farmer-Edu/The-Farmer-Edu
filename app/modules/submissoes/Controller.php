@@ -10,7 +10,7 @@ class atividadesSub {
         require_once __DIR__ . '/view/testarApi.php';
         }
     public function processarSubmisssaoJudge0() {
-        require_once __DIR__ . '/view/atvSub.php';
+        require_once __DIR__ . '/view/processar_submissao.php';
     }
     public function showiniciarAtv() {
         require_once __DIR__ . '/view/iniciaratv.html';

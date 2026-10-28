@@ -25,11 +25,11 @@ body {
 }
 
 .painel-login {
-    flex: 0 0 47.5%;            
+    flex: 0 0 50%;            
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 60px 54px 40px;
+    padding: 300px 150px;
 }
 
 .titulo-login {
@@ -118,7 +118,7 @@ body {
     background: var(--azul-btn);
     border: none;
     border-radius: 5px;
-    box-shadow: 0 3px 4px rgba(255, 166, 77, 0.45);
+    box-shadow: 0 3px 4px var(--azul-escuro);
     cursor: pointer;
     transition: filter 0.2s, transform 0.1s;
 }
@@ -150,7 +150,7 @@ body {
     align-items: center;
     justify-content: flex-start;
     padding-top: 22%;
-    background: url("../img/fundo-fazenda.png") center / cover no-repeat;
+    background: url("file?type=images&file=lua_cheia.png") center / cover no-repeat;
     image-rendering: pixelated;
 }
 

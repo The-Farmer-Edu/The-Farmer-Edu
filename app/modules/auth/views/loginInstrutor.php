@@ -2,7 +2,10 @@
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
 
 // usuarioLogado: devolve os dados da sessão ou null
+
+
 $logado = usuarioLogado();
+sessaoExpirouPorInatividade();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

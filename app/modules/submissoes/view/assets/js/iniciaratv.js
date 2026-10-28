@@ -300,6 +300,7 @@ function confirmarEntrega() {
     
     fecharModalEntrega();
     atualizarEntrega();
+    enviarSubmissao();
     sophiaFala('Atividade entregue! Em breve eu te mando o feedback por aqui.', 6000);
 }
 
@@ -372,21 +373,22 @@ setTimeout(() => sophiaFala('Oi, eu sou a Sophia! Bora codar?', 4500), 600);
 
 //Judge0
  async function enviarSubmissao() {
-        const atividadeId = document.getElementById('atividade_id').value;
-        const idLinguagem = document.getElementById('id_linguagem').value;
-        const codigo = document.getElementById('codigo_aluno').value;
-        const loading = document.getElementById('loading');
-        const resultadoDiv = document.getElementById('resultado-ia');
+        const atividadeId = 1;
+        const idLinguagem = 71;
+        const codigo = "print('Hello')";
+        // const loading = document.getElementById('loading');
+        // const resultadoDiv = document.getElementById('resultado-ia');
         if (!codigo.trim()) {
             alert('Por favor, insira o código da submissão!');
             return;
         }
-        loading.style.display = 'block';
-        resultadoDiv.style.display = 'none';
+        // loading.style.display = 'block';
+        // resultadoDiv.style.display = 'none';
         const payload = {
             id_linguagem: parseInt(idLinguagem),
             codigo_aluno: codigo,
-            objetivo_atividade: atividadeId,
+            atividadeId: atividadeId,
+            objetivo_atividade: "Imprimir Hello",
             nota_max: "10",
             nota_min: "6"
         };
@@ -401,23 +403,23 @@ setTimeout(() => sophiaFala('Oi, eu sou a Sophia! Bora codar?', 4500), 600);
             const data = await response.json();
             console.log(data);
             if (data.sucesso) {
-                document.getElementById('nota-final').innerText = "Nota Atribuída: " + data.avaliacao.nota_atribuida + " / 10";
-                document.getElementById('status-avaliacao').innerText = data.avaliacao.status_avaliacao;
-                document.getElementById('status-compilador').innerText = data.compilacao.status.description || data.compilacao.status;
-                document.getElementById('terminal-saida').innerText = data.compilacao.saida_terminal;
-                document.getElementById('feedback-geral').innerText = data.avaliacao.feedback_geral;
-                const ulMelhoria = document.getElementById('pontos-melhoria');
-                ulMelhoria.innerHTML = '';
+                sophiaFala("Nota Atribuída: " + data.avaliacao.nota_atribuida + " / 10", 10000);
+                console.log(data.avaliacao.status_avaliacao);
+                console.log(data.compilacao.status.description || data.compilacao.status);
+                console.log(data.compilacao.saida_terminal);
+                console.log(data.avaliacao.feedback_geral);
+                // const ulMelhoria = document.getElementById('pontos-melhoria');
+                // ulMelhoria.innerHTML = '';
                 if (data.avaliacao.pontos_melhoria && data.avaliacao.pontos_melhoria.length > 0) {
                     data.avaliacao.pontos_melhoria.forEach(ponto => {
-                        let li = document.createElement('li');
-                        li.innerText = ponto;
-                        ulMelhoria.appendChild(li);
+                        // let li = document.createElement('li');
+                        console.log(ponto);
+                        // ulMelhoria.appendChild(li);
                     });
                 } else {
-                    ulMelhoria.innerHTML = '<li>Parabéns! Nenhuma correção necessária.</li>';
+                    console.log('Parabéns! Nenhuma correção necessária.');
                 }
-                resultadoDiv.style.display = 'block';
+                // resultadoDiv.style.display = 'block';
             } else {
                 alert("Erro na submissão: " + (data.erro || 'Erro desconhecido.'));
             }
@@ -425,6 +427,6 @@ setTimeout(() => sophiaFala('Oi, eu sou a Sophia! Bora codar?', 4500), 600);
             console.error("Erro ao comunicar com o servidor:", error);
             alert("Erro de comunicação com o servidor.");
         } finally {
-            loading.style.display = 'none';
+            // loading.style.display = 'none';
         }
     }

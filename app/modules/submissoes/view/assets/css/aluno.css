@@ -55,9 +55,9 @@ header .titulo-modulo {
 header .usuario-avatar {
     width: 35px;
     height: 35px;
-    border-radius: 60%;
+    border-radius: 50%;
     background: var(--Verde-bg);
-    border: 2px solid var(--Branco);
+    border: none;
     margin-left: auto;
     flex-shrink: 0;
 }
@@ -72,6 +72,11 @@ header .usuario-avatar {
     justify-content: center;
     cursor: pointer;
     padding: 0;
+}
+
+.usuario-avatar img {
+    height: 55px;
+    width: 55px;
 }
 
 #botaoIconi {
@@ -332,13 +337,14 @@ aside {
     background: none;
     border-radius: 50%;
 }
+
 .mascote-container button:hover {
     transform: scale(0.93);
 }
 
 .mascote-container img {
-  -webkit-filter: drop-shadow(8px 8px 5px var(--Sombra));
-  filter: drop-shadow(8px 8px 5px var(--Sombra));
+    -webkit-filter: drop-shadow(8px 8px 5px var(--Sombra));
+    filter: drop-shadow(8px 8px 5px var(--Sombra));
 }
 
 .modal-overlay {

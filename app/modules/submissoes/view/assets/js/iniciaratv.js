@@ -1,32 +1,65 @@
 const ARQUIVOS = [
     { nome: 'index.html', lang: 'html', rotulo: 'HTML' },
-    { nome: 'style.css', lang: 'css', rotulo: 'CSS' },
-    { nome: 'script.js', lang: 'js', rotulo: 'JavaScript' }
+    { nome: 'style.css',  lang: 'css',  rotulo: 'CSS' },
+    { nome: 'script.js',  lang: 'js',   rotulo: 'JavaScript' }
 ];
 
 const INICIAL = {
-    html: `<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n<meta charset="UTF-8">\n<title>Minha Fazenda</title>\n</head>\n<body>\n<h1>Minha Fazenda</h1>\n<p>Edite o código e veja o resultado aqui ao lado.</p>\n<button id="btn">Clique aqui</button>\n</body>\n</html>`,
-    css: `body {\n  font-family: sans-serif;\n  text-align: center;\n  padding: 40px;\n  background: #f1f8e9;\n}\nh1 { color: #1b5e20; }\nbutton {\n  background: #34C759;\n  color: white;\n  border: none;\n  padding: 10px 22px;\n  border-radius: 20px;\n  cursor: pointer;\n}`,
-    js: `const btn = document.getElementById('btn');\nbtn.addEventListener('click', () => {\n  btn.textContent = 'Cocoricó!';\n  console.log('Botão clicado!');\n});`
+    html: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Minha Fazenda</title>
+</head>
+<body>
+  <h1>Minha Fazenda</h1>
+  <p>Edite o código e veja o resultado aqui ao lado.</p>
+  <button id="btn">Clique aqui</button>
+</body>
+</html>`,
+    css: `body {
+  font-family: sans-serif;
+  text-align: center;
+  padding: 40px;
+  background: #f1f8e9;
+}
+
+h1 { color: #1b5e20; }
+
+button {
+  background: #34C759;
+  color: white;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 20px;
+  cursor: pointer;
+}`,
+    js: `const btn = document.getElementById('btn');
+
+
+btn.addEventListener('click', () => {
+  btn.textContent = 'Cocoricó!';
+  console.log('Botão clicado!');
+});`
 };
 
 const REGRAS = {
     html: [
         ['c', '<!--[\\s\\S]*?-->'],
-        ['t', '<\\/?[a-zA-Z!][^>]*>'],
+        ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'],
         ['s', '"[^"]*"|\'[^\']*\''],
-        ['a', '\\b[\\w-]+(?==)']
+        ['a', '[\\w-]+(?==)']
     ],
     css: [
         ['c', '\\/\\*[\\s\\S]*?\\*\\/'],
         ['s', '"[^"]*"|\'[^\']*\''],
-        ['k', '[\\w-]+(?=\\s*:)'],
-        ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d+\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'],
-        ['p', '[\\w-]+(?=\\s*:[^;]*;)']
+        ['k', '@[\\w-]+'],
+        ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'],
+        ['p', '[\\w-]+(?=\\s*:)']
     ],
     js: [
         ['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/'],
-        ['s', '"[^"]*"|\'[^\']*\'|`[^`]*`'],
+        ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
         ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
         ['n', '\\b\\d+(?:\\.\\d+)?\\b'],
         ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']
@@ -46,9 +79,7 @@ try {
 }
 
 let entrega = null;
-try {
-    entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA));
-} catch (e) {}
+try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) {}
 
 const pedida = new URLSearchParams(location.search).get('lang');
 let atual = ARQUIVOS.some(a => a.lang === pedida) ? pedida : 'html';
@@ -58,11 +89,11 @@ const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&
 function colorir(codigo, regras) {
     const re = new RegExp(regras.map(r => '(' + r[1] + ')').join('|'), 'g');
     let saida = '', ultimo = 0, m;
-    while ((m = re.exec(codigo)) !== null) {
-        if (m.index < ultimo) continue;
-        saida += esc(codigo.slice(ultimo, m.index));
+    while ((m = re.exec(codigo))) {
+        if (!m[0]) { re.lastIndex++; continue; }
         const i = m.slice(1).findIndex(x => x !== undefined);
-        saida += '<span class="' + regras[i][0] + '">' + esc(m[0]) + '</span>';
+        saida += esc(codigo.slice(ultimo, m.index)) +
+                 `<span class="${regras[i][0]}">${esc(m[0])}</span>`;
         ultimo = re.lastIndex;
     }
     return saida + esc(codigo.slice(ultimo));
@@ -98,11 +129,16 @@ function criarItem(elemento, a, ativo) {
 
 function montarAbas() {
     $('arquivos').innerHTML = '';
+
+
     ARQUIVOS.forEach(a => {
         const ativo = a.lang === atual;
+
         const item = document.createElement('li');
         $('arquivos').appendChild(criarItem(item, a, ativo));
     });
+
+
     $('stLang').textContent = ARQUIVOS.find(a => a.lang === atual).rotulo;
 }
 
@@ -116,9 +152,8 @@ function trocar(lang) {
 }
 
 const PONTE = '<script>(function(){' +
-    'var s=function(t,a){parent.postMessage({farm:true,t:t,m:[].map.call(a,function(x){' +
-    'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}' +
-    '}).join("")},"*")};' +
+    'var s=function(t,a){parent.postMessage({farm:1,t:t,m:[].map.call(a,function(x){' +
+    'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")},"*")};' +
     '["log","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);o.apply(console,arguments)}});' +
     'window.addEventListener("error",function(e){s("error",[e.message])});' +
     '})()<\/script>';
@@ -128,8 +163,8 @@ function executar() {
     const css = `<style>${dados.css}</style>`;
     const js = PONTE + `<script>${dados.js}<\/script>`;
     let doc = dados.html;
-    doc = doc.includes('</head>') ? doc.replace('</head>', css + '</head>') : css + doc;
-    doc = doc.includes('</body>') ? doc.replace('</body>', js + '</body>') : doc + js;
+    doc = doc.includes('</head>') ? doc.replace('</head>', () => css + '</head>') : css + doc;
+    doc = doc.includes('</body>') ? doc.replace('</body>', () => js + '</body>') : doc + js;
     pv.srcdoc = doc;
 }
 
@@ -137,7 +172,7 @@ window.addEventListener('message', e => {
     if (e.source !== pv.contentWindow || !e.data || !e.data.farm) return;
     const linha = document.createElement('div');
     linha.className = e.data.t;
-    linha.textContent = (e.data.t === 'error' ? 'Erro: ' : '') + e.data.m;
+    linha.textContent = (e.data.t === 'error' ? '✖ ' : '› ') + e.data.m;
     con.appendChild(linha);
     con.scrollTop = con.scrollHeight;
 });
@@ -168,20 +203,23 @@ const adiar = (fn, ms) => {
     let t;
     return () => { clearTimeout(t); t = setTimeout(fn, ms); };
 };
-
 const salvarEExecutar = adiar(() => { salvar(); executar(); }, 500);
+
 const modalEntrega = $('modalEntrega');
-const LIMITE_CLICKS = 3;
+const LIMITE_CLICKS = 10;
 const contagensBotoes = { executar: 0, sophia: 0 };
 const contadorVisual = document.getElementById('contadorLimite');
 
 function atualizarContadorVisual() {
     const executarRestante = Math.max(0, LIMITE_CLICKS - contagensBotoes.executar);
     const sophiaRestante = Math.max(0, LIMITE_CLICKS - contagensBotoes.sophia);
+
     const executarEl = document.getElementById('contadorExecutar');
     const sophiaEl = document.getElementById('contadorSophia');
+
     if (executarEl) executarEl.textContent = `${executarRestante}/${LIMITE_CLICKS}`;
     if (sophiaEl) sophiaEl.textContent = `${sophiaRestante}/${LIMITE_CLICKS}`;
+
     if (contadorVisual) {
         contadorVisual.classList.toggle('is-limitado', executarRestante === 0 || sophiaRestante === 0);
     }
@@ -189,6 +227,7 @@ function atualizarContadorVisual() {
 
 function configurarLimiteDeCliques(botao, chave, acao) {
     if (!botao) return;
+
     const atualizarEstado = () => {
         const atingiuLimite = contagensBotoes[chave] >= LIMITE_CLICKS;
         botao.disabled = atingiuLimite;
@@ -196,21 +235,25 @@ function configurarLimiteDeCliques(botao, chave, acao) {
         botao.classList.toggle('disabled', atingiuLimite);
         atualizarContadorVisual();
     };
+
     botao.addEventListener('click', () => {
         if (botao.disabled) return;
+
         const totalDepois = (contagensBotoes[chave] || 0) + 1;
         if (totalDepois > LIMITE_CLICKS) {
             botao.disabled = true;
             atualizarEstado();
             return;
         }
+
         contagensBotoes[chave] = totalDepois;
         if (acao) acao();
         atualizarEstado();
     });
+
     atualizarEstado();
 }
-
+// 
 function formatarData(iso) {
     return new Date(iso).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
@@ -221,7 +264,7 @@ function atualizarEntrega() {
     const entregue = !!entrega;
     ed.readOnly = entregue;
     $('chipEntrega').hidden = !entregue;
-    if (entregue) $('chipEntrega').textContent = `Entregue em ${formatarData(entrega.data)}`;
+    if (entregue) $('chipEntrega').textContent = '✔ Entregue em ' + formatarData(entrega.data);
     $('btnEntregar').textContent = entregue ? 'Cancelar entrega' : 'Entregar atividade';
     $('btnEntregar').className = entregue ? 'btn btn-cinza' : 'btn btn-verde';
 }
@@ -239,7 +282,7 @@ function abrirModalEntrega() {
         const bolinha = document.createElement('span');
         bolinha.className = 'dot dot-' + a.lang;
         li.appendChild(bolinha);
-        li.appendChild(document.createTextNode(`${a.nome} - ${linhas} ${linhas === 1 ? 'linha' : 'linhas'}`));
+        li.appendChild(document.createTextNode(`${a.nome} — ${linhas} ${linhas === 1 ? 'linha' : 'linhas'}`));
         $('resumoEntrega').appendChild(li);
     });
     modalEntrega.classList.add('active');
@@ -250,43 +293,14 @@ function fecharModalEntrega() {
     modalEntrega.classList.remove('active');
 }
 
-async function confirmarEntregaAPI() {
-    const codigoHtml = dados.html || '';
-    const codigoCss = dados.css || '';
-    const codigoJs = dados.js || '';
+function confirmarEntrega() {
+    salvar();
+    entrega = { data: new Date().toISOString(), arquivos: { ...dados } };
+    try { localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega)); } catch (e) {}
     
-    const codigoCompleto = JSON.stringify({ html: codigoHtml, css: codigoCss, js: codigoJs });
-
-    const formData = new URLSearchParams();
-    formData.append('atividade_id', 1); 
-    formData.append('turma_id', 1);     
-    formData.append('linguagem_id', 63);
-    formData.append('codigo', codigoCompleto);
-
-    try {
-        const resposta = await fetch('/submissoes/enviar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: formData.toString()
-        });
-
-        const resultado = await resposta.json();
-        
-        if (!resposta.ok) {
-            aviso(resultado.erro || 'Erro ao processar submissão.');
-            return;
-        }
-
-        salvar();
-        entrega = { data: new Date().toISOString(), arquivos: { ...dados } };
-        try { localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega)); } catch (e) {}
-
-        fecharModalEntrega();
-        atualizarEntrega();
-        sophiaFala('Atividade enviada e validada com sucesso pelo Judge0!', 5000);
-    } catch (e) {
-        aviso('Erro de conexão ao enviar atividade.');
-    }
+    fecharModalEntrega();
+    atualizarEntrega();
+    sophiaFala('Atividade entregue! Em breve eu te mando o feedback por aqui.', 6000);
 }
 
 function cancelarEntrega() {
@@ -330,28 +344,20 @@ document.addEventListener('keydown', e => {
 });
 
 configurarLimiteDeCliques($('btnRodar'), 'executar', executar);
-
 $('btnVoltar').onclick = () => {
     if (document.referrer) {
         location.href = document.referrer;
     } else if (history.length > 1) {
         history.back();
     } else {
-        location.href = 'aluno';
+        location.href = 'aluno'
     }
 };
-
 $('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : abrirModalEntrega());
-$('btnConfirmar').onclick = confirmarEntregaAPI;
+$('btnConfirmar').onclick = confirmarEntrega;
 $('btnCancelarModal').onclick = fecharModalEntrega;
-
-modalEntrega.addEventListener('click', e => {
-    if (e.target === modalEntrega) fecharModalEntrega();
-});
-
-configurarLimiteDeCliques($('btnSophia'), 'sophia', () =>
-    sophiaFala('Oi, eu sou a Sophia! Escreva seu código e entregue quando terminar.')
-);
+modalEntrega.addEventListener('click', e => { if (e.target === modalEntrega) fecharModalEntrega(); });
+configurarLimiteDeCliques($('btnSophia'), 'sophia', () => sophiaFala('Oi, eu sou a Sophia! Escreva seu código e entregue quando terminar.'));
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(img => {
     const semImagem = () => img.parentElement.classList.add('sem-img');

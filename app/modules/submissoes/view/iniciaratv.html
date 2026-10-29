@@ -2,48 +2,65 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Farm Edu - Execução da Resposta</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
 </head>
 <body>
     <header class="topbar">
         <div class="brand">
-
+            <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
             <span class="logo">
                 <img src="submissoes/file?type=img&file=logo_icone.png" alt="The Farm Edu">
             </span>
-
             <span class="nome">The Farm <b>Edu</b></span>
             <span class="modulo">Escrever código</span>
         </div>
 
+        <span class="chip-entrega" id="chipEntrega" hidden></span>
+
         <div class="acoes">
-            <span class="chip-entrega" id="chipEntrega" hidden></span>
             <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
             <button class="btn btn-verde" id="btnEntregar">Entregar atividade</button>
         </div>
     </header>
 
-    <main class="ide">
+    <!-- Informações da atividade: preenchidas pelo JS a partir do bloco #dadosAtividade -->
+    <section class="atividade" id="atividade" aria-label="Informações da atividade">
+        <div class="atv-linha">
+            <span class="atv-tag" id="atvId"></span>
+            <strong class="atv-titulo" id="atvTitulo"></strong>
+            <span class="atv-lang" id="atvLang"></span>
+        </div>
+        <p class="atv-desc" id="atvDescricao"></p>
+        <details class="atv-detalhes">
+            <summary id="atvResumo">O que fazer</summary>
+            <ol id="atvRequisitos"></ol>
+        </details>
+    </section>
+
+    <nav class="abas-mobile" id="abasMobile" aria-label="Alternar painel">
+        <button class="aba on" type="button" data-aba="codigo">Código</button>
+        <button class="aba" type="button" data-aba="resultado" id="abaResultado" disabled>Resultado</button>
+    </nav>
+
+    <main class="ide" id="ide" data-aba="codigo">
 
         <aside class="explorer">
             <h2>Arquivos</h2>
             <ul id="arquivos"></ul>
             <div class="contador-limite" id="contadorLimite">
-                <span class="contador-limite__titulo">Limite</span>
-                <div class="contador-limite__linha">
-                    <span>Executar</span>
-                    <strong id="contadorExecutar">0/10</strong>
-                </div>
-                <div class="contador-limite__linha">
-                    <span>Sophia</span>
-                    <strong id="contadorSophia">0/10</strong>
-                </div>
+                <span class="contador-limite__titulo">Limites</span>
+                <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong></div>
+                <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div>
+                <div class="contador-limite__linha"><span>Cancelar entrega</span><strong id="contadorCancelar">3/3</strong></div>
             </div>
         </aside>
 
-        <section class="card editor">
+        <section class="card editor" id="painelCodigo">
             <div class="editor-wrap">
                 <pre class="gutter" id="gutter" aria-hidden="true"></pre>
                 <div class="code">
@@ -58,13 +75,17 @@
             </div>
         </section>
 
-        <section class="card preview">
-            <div class="pv-head"><span class="con-head">Resultado</span></div>
-            <iframe id="pv" title="Pré-visualização" sandbox="allow-scripts"></iframe>
+        <section class="card preview" id="painelResultado" hidden>
+            <div class="pv-head">
+                <span class="chip">Resultado</span>
+                <span class="desatualizado" id="pvStale" hidden>Código alterado: execute de novo</span>
+            </div>
+            <iframe id="pv" title="Pré-visualização" sandbox="allow-scripts" hidden></iframe>
+            <pre class="terminal" id="pvPy" hidden></pre>
             <div class="console">
                 <div class="con-head">
                     <span>Console</span>
-                    <button id="btnLimpar">Limpar</button>
+                    <button id="btnLimpar" type="button">Limpar</button>
                 </div>
                 <div class="con-corpo" id="console"></div>
             </div>
@@ -74,7 +95,6 @@
 
     <div class="sophia">
         <div class="balao" id="balao"></div>
-
         <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
             <img src="submissoes/file?type=img&file=sophia_ia.webp" alt="Sophia">
         </button>
@@ -83,20 +103,38 @@
     <div class="modal-overlay" id="modalEntrega" role="dialog" aria-modal="true" aria-labelledby="tituloEntrega">
         <div class="modal-card">
             <h3 id="tituloEntrega">Entregar atividade?</h3>
-            <p>Você vai entregar estes arquivos:</p>
+            <p>Você viu o resultado e vai entregar estes arquivos:</p>
             <ul class="resumo" id="resumoEntrega"></ul>
+            <p class="modal-aviso" id="avisoCancelar"></p>
             <div class="modal-acoes">
-                <button class="btn btn-cinza" id="btnCancelarModal">Voltar ao editor</button>
-                <button class="btn btn-verde" id="btnConfirmar">Confirmar entrega</button>
+                <button class="btn btn-cinza" id="btnCancelarModal" type="button">Voltar ao editor</button>
+                <button class="btn btn-verde" id="btnConfirmar" type="button">Confirmar entrega</button>
             </div>
         </div>
     </div>
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status"></div>
 
-    <article>
-        <button id="btnVoltar" class="btn-voltar">⬅ Voltar</button>
-    </article>
-    
+    <!-- DADOS DA ATIVIDADE (depois o PHP preenche a partir do banco) -->
+<script type="application/json" id="dadosAtividade">
+{
+  "id": 1,
+  "titulo": "Minha Fazenda — página interativa",
+  "descricao": "Turma, vocês vão criar uma página simples para a fazenda: um título, um parágrafo e um botão que reage ao clique.",
+  "requisitos": [
+    "Criar um título h1 com o texto \"Minha Fazenda\" e um parágrafo de apresentação",
+    "Adicionar um botão com id \"btn\" e o texto \"Clique aqui\"",
+    "Estilizar o fundo da página e o botão no CSS",
+    "Ao clicar, trocar o texto do botão para \"Cocoricó!\" e escrever uma mensagem no console"
+  ],
+  "objetivo": "Criar uma página 'Minha Fazenda' com título, parágrafo e um botão que, ao ser clicado, muda o texto para 'Cocoricó!' e registra uma mensagem no console.",
+  "idLinguagem": "web",
+  "notaMax": 10,
+  "notaMin": 6,
+  "entrada": ""
+}
+</script>
+
+    <script src="submissoes/file?type=js&file=atividade.js"></script>
     <script src="submissoes/file?type=js&file=iniciaratv.js"></script>
 </body>
 </html>

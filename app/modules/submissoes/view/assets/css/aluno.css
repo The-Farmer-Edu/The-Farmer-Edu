@@ -1,6 +1,5 @@
 :root {
     --Cabecalho-aluno: #A0FDA3;
-    /* --Ativo: #089C2F; */
     --Verde-principal: #34C759;
     --Verde-Hoover: #35ad53;
     --Texto: #555;
@@ -10,9 +9,6 @@
     --Verde-bg: #f6fcf9;
     --Hoover: #e8f5e9;
     --Sombra: #38353548;
-}
-
-:root {
     --Raio-pilula: 20px;
     --Raio-card: 25px;
     --Fonte-ui: 'Poppins', 'Segoe UI', Tahoma, sans-serif;
@@ -62,7 +58,6 @@ header .usuario-avatar {
     flex-shrink: 0;
 }
 
-/* style do menu */
 .botao-iconi,
 .botao-usuario {
     border: none;
@@ -83,7 +78,6 @@ header .usuario-avatar {
     display: flex;
     border-radius: 50px;
 }
-
 
 .menu-iconi,
 .menu-usuario {
@@ -155,8 +149,6 @@ header .usuario-avatar {
 .menu-item:active {
     transform: scale(0.99);
 }
-
-/*style do menu */
 
 main {
     flex: 1;
@@ -233,12 +225,10 @@ main {
     transform: scale(0.98);
 }
 
-/*  */
 aside {
     display: flex;
     justify-content: center;
     align-self: start;
-    /* auto */
 }
 
 .card_trabalhos {
@@ -273,8 +263,6 @@ aside {
 .status.entregue {
     background: rgba(52, 199, 89, 0.18);
 }
-
-/*  */
 
 .btn-comecar-principal {
     background-color: var(--Verde-principal);
@@ -433,4 +421,51 @@ aside {
 
 .option-box button:hover {
     background-color: var(--Verde-Hoover);
+}
+
+/*Atividade*/
+.atv-sub { font-size: 1.15rem; color: var(--Titulo); margin: 6px 0 12px; }
+.atv-requisitos { margin: 0 0 24px 22px; display: flex; flex-direction: column; gap: 10px; line-height: 1.6; }
+.atv-meta { font-size: 0.95rem; line-height: 1.8; margin-bottom: 0 !important; }
+.atv-meta b { color: var(--Titulo); }
+.badge-outra { background: var(--Titulo); }
+.status .ponto { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #FF8D28; margin-right: 8px; }
+.status.entregue .ponto { background: var(--Verde-principal); }
+
+/* balão do mascote (usado por aluno.js) */
+.mascote-container { align-items: flex-end; gap: 10px; position: relative; }
+.balao {
+    align-self: center; max-width: 260px; background: var(--Branco); color: var(--Titulo); font-weight: 700;
+    font-size: 0.9rem; line-height: 1.4; padding: 12px 20px; border-radius: 49px; box-shadow: 0 4px 4px #00000040;
+    opacity: 0; transform: translateY(6px); transition: 0.25s; pointer-events: none;
+}
+.balao.on { opacity: 1; transform: none; }
+header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/*Mobile*/
+@media (max-width: 780px) {
+    header { padding: 10px 12px; gap: 10px; }
+    header .titulo-modulo { font-size: 0.8rem; letter-spacing: 0; }
+    .botao-iconi img { width: 44px; height: 44px; }
+    .menu-iconi, .menu-usuario { top: 66px; width: min(240px, calc(100vw - 24px)); }
+    .menu-iconi { left: 12px; }
+    .menu-usuario { right: 12px; }
+
+    main { grid-template-columns: 1fr; gap: 16px; width: calc(100% - 24px); margin: 14px auto; }
+    aside { order: -1; }                       /* status e botão "Começar" primeiro */
+    .card_trabalhos { width: 100%; padding: 20px 16px; border-radius: 20px; }
+    .card_trabalhos p { margin-bottom: 18px; }
+    .btn-comecar-principal { min-height: 52px; padding: 12px; font-size: 1.1rem; margin-bottom: 18px; }
+
+    .conteudo { padding: 22px 18px; border-radius: 20px; gap: 6px; }
+    .titulo { margin-bottom: 14px; }
+    .titulo h1 { font-size: 1.5rem; }
+    .conteudo p { font-size: 1rem; margin-bottom: 18px; }
+    .atv-requisitos { margin-bottom: 18px; }
+    .btn-voltar { width: 100%; justify-content: center; padding: 14px; margin-top: 8px; }
+
+    .tech-badges { flex-wrap: wrap; }
+    .mascote-container { padding: 0 12px 12px; }
+    .mascote-container img { width: 96px; height: 96px; }
+    .modal-options { grid-template-columns: 1fr; }
 }

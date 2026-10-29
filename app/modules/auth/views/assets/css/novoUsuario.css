@@ -1,0 +1,232 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --azul-escuro: #0b2a3a;
+    --borda-input: #5f7f86;
+    --amarelo: #f2dc50;
+    --link: #0a64d8;
+    --erro: #d93025;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+#pagina-cadastro {
+    font-family: "Poppins", sans-serif;
+    background: #fff;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+#tela-cadastro {
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+}
+
+#painel-cadastro {
+    flex: 0 0 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #fff;
+}
+
+#titulo-cadastro {
+    margin-bottom: 24px;
+    font-size: 34px;
+    font-weight: 500;
+    color: var(--azul-escuro);
+    text-align: center;
+}
+
+.mensagem {
+    width: 100%;
+    max-width: 297px;
+    margin-bottom: 14px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--erro);
+    background: rgba(217, 48, 37, 0.08);
+    border-radius: 6px;
+    text-align: center;
+}
+
+#form-cadastro {
+    width: 100%;
+    max-width: 297px;
+    display: flex;
+    flex-direction: column;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 14px;
+}
+
+.campo label {
+    margin: 0 0 4px 16px;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--azul-escuro);
+}
+
+.campo input {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--azul-escuro);
+    background: #fff;
+    border: 1px solid var(--borda-input);
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.campo input::placeholder {
+    color: #9aaab0;
+}
+
+.campo input:focus,
+.select-wrap select:focus {
+    border-color: var(--azul-escuro);
+    box-shadow: 0 0 0 3px rgba(11, 42, 58, 0.15);
+}
+
+#campo-tipo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 16px 0 24px;
+    flex-direction: row;
+}
+
+#campo-tipo label {
+    margin-left: 22px;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--azul-escuro);
+}
+
+.select-wrap {
+    position: relative;
+    width: 195px;
+}
+
+.select-wrap select {
+    width: 100%;
+    height: 41px;
+    padding: 0 52px 0 12px;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--azul-escuro);
+    text-align: center;
+    text-align-last: center;
+    background: #fff;
+    border: 1px solid var(--borda-input);
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#btn-cadastrar {
+    width: 100%;
+    height: 48px;
+    font-family: inherit;
+    font-size: 24px;
+    font-weight: 500;
+    color: #111;
+    background: var(--amarelo);
+    border: none;
+    border-radius: 6px;
+    box-shadow: 0 3px 5px rgba(255, 150, 110, 0.5);
+    cursor: pointer;
+    transition: filter 0.2s, transform 0.1s;
+}
+
+#btn-cadastrar:hover {
+    filter: brightness(0.96);
+}
+
+#btn-cadastrar:active {
+    transform: translateY(1px);
+}
+
+#texto-login {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #111;
+    text-align: center;
+}
+
+#link-entrar {
+    color: var(--link);
+    text-decoration: underline;
+}
+
+#link-entrar:hover {
+    filter: brightness(0.85);
+}
+
+#painel-imagem {
+        display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    image-rendering: pixelated;
+    flex: 1 1 0%;
+    background: url(file?type=images&file=tarde.png) center center / cover no-repeat;
+}
+
+#logo {
+    width: 138px;
+    height: 138px;
+    border-radius: 50%;
+    object-fit: cover;
+    image-rendering: auto;
+}
+
+#nome-marca {
+    margin-top: 8px;
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+    text-shadow:
+        -1px -1px 0 rgba(0, 0, 0, 0.6),
+         1px -1px 0 rgba(0, 0, 0, 0.6),
+        -1px  1px 0 rgba(0, 0, 0, 0.6),
+         1px  1px 0 rgba(0, 0, 0, 0.6),
+         0 3px 5px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 760px) {
+    #tela-cadastro {
+        flex-direction: column-reverse;
+    }
+
+    #painel-cadastro {
+        flex: none;
+        padding: 32px 24px;
+    }
+
+    #painel-imagem {
+        min-height: 260px;
+        padding-top: 40px;
+    }
+}

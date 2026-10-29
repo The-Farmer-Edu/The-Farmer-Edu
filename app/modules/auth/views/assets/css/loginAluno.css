@@ -7,6 +7,7 @@
 :root {
     --verde: #34c759;
     --verde-texto: #2ecc5a;
+    --verde-borda:#0e3f1c;
     --azul-escuro: #0b2a3a;
     --borda-input: #5f7f86;
 }
@@ -28,7 +29,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 300px 150px;
 }
 
 .titulo-login {
@@ -116,7 +116,7 @@ body {
     background: var(--verde);
     border: none;
     border-radius: 5px;
-    box-shadow: 0 3px 4px rgba(255, 166, 77, 0.45);
+    box-shadow: 0 3px 4px var(--verde-borda);
     cursor: pointer;
     transition: filter 0.2s, transform 0.1s;
 }
@@ -147,8 +147,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: 22%;
-    background: url("file?type=images&file=dia_ensolarado.png") center / cover no-repeat;
+    background: url("file?type=images&file=images.jpg") center / cover no-repeat;
     image-rendering: pixelated;
 }
 

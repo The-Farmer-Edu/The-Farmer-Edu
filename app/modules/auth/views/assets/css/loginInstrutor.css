@@ -29,7 +29,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 300px 150px;
 }
 
 .titulo-login {
@@ -149,8 +148,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding-top: 22%;
-    background: url("file?type=images&file=lua_cheia.png") center / cover no-repeat;
+    background: url("file?type=images&file=lua_cheia.jpg") center / cover no-repeat;
     image-rendering: pixelated;
 }
 

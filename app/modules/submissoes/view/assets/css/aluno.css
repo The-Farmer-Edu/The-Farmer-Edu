@@ -434,3 +434,62 @@ aside {
 .option-box button:hover {
     background-color: var(--Verde-Hoover);
 }
+@media (max-width: 780px) {
+   
+
+    main {
+        grid-template-columns: 1fr;
+        margin: 16px auto;
+        gap: 16px;
+        width: 95%;
+    }
+
+    .conteudo {
+        padding: 24px 20px;
+    }
+
+    .titulo h1 {
+        font-size: 1.7rem;
+    }
+
+    #btnVoltar,
+    .btn-voltar {
+        display: none !important;
+    }
+
+    aside {
+        align-self: stretch;
+    }
+
+    .card_trabalhos {
+        padding: 20px 16px;
+        width: 100%;
+    }
+
+    .btn-comecar-principal {
+        font-size: 1.1rem;
+        padding: 14px;
+    }
+
+    .mascote-container {
+        justify-content: center;
+    }
+
+    .mascote-container img {
+        height: 120px;
+        width: 120px;
+    }
+
+    .menu-usuario {
+        right: 10px;
+        top: 66px;
+    }
+
+    .modal-card {
+        padding: 28px 20px;
+    }
+
+    .modal-options {
+        grid-template-columns: 1fr;
+    }
+}

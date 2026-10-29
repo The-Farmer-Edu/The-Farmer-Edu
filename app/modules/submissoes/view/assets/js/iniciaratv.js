@@ -119,10 +119,14 @@ function posicao() {
 
 function criarItem(elemento, a, ativo) {
     elemento.className = (elemento.className.split(' ')[0] || '') + (ativo ? ' on' : '');
+    elemento.title = a.nome;
     const bolinha = document.createElement('span');
     bolinha.className = 'dot dot-' + a.lang;
+    const rotulo = document.createElement('span');
+    rotulo.className = 'item-nome';
+    rotulo.textContent = a.nome;
     elemento.appendChild(bolinha);
-    elemento.appendChild(document.createTextNode(a.nome));
+    elemento.appendChild(rotulo);
     elemento.onclick = () => trocar(a.lang);
     return elemento;
 }

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Minha Fazenda 3D</title>
+  <!-- Estilos (Fase 1 da refatoração): antes ficavam num bloco <style> aqui. Caminhos relativos ao HTML, para funcionar
+       também abrindo o arquivo direto (file://). A ORDEM dos arquivos é a ordem original da cascata: não reordene. -->
+  <link rel="stylesheet" href="assets/css/01-base.css">
+  <link rel="stylesheet" href="assets/css/02-interface.css">
+  <link rel="stylesheet" href="assets/css/03-barra-ferramentas.css">
+  <link rel="stylesheet" href="assets/css/04-painel-fazenda.css">
+  <link rel="stylesheet" href="assets/css/05-paineis.css">
+  <link rel="stylesheet" href="assets/css/06-invasoes.css">
+  <link rel="stylesheet" href="assets/css/07-carregamento.css">
+</head>
+
+<body>
+  <!-- TELA DE CARREGAMENTO: aparece antes de tudo e cobre o jogo até a fazenda estar pronta (SEÇÃO 00 do script).
+       O estado inicial abaixo (4%, "Carregando a biblioteca 3D...") é real: o Three.js é baixado logo em seguida. -->
+  <div id="tela-de-carregamento" role="dialog" aria-modal="true" aria-labelledby="carregamento-titulo" aria-describedby="carregamento-mensagem">
+    <span class="carregamento-sol" aria-hidden="true"></span>
+    <span class="carregamento-nuvem n1" aria-hidden="true"></span>
+    <span class="carregamento-nuvem n2" aria-hidden="true"></span>
+    <div class="carregamento-morros" aria-hidden="true"></div>
+    <div class="carregamento-cartao">
+      <svg class="carregamento-emblema" viewBox="0 0 120 90" aria-hidden="true">
+        <rect x="88" y="22" width="18" height="58" rx="3" fill="#c0392b"/><path d="M86 24 Q97 6 108 24 Z" fill="#c4c8cc"/>
+        <rect x="90" y="36" width="14" height="3" fill="#f2f2ea"/><rect x="90" y="52" width="14" height="3" fill="#f2f2ea"/>
+        <path d="M14 44 L44 18 L74 44 L74 82 L14 82 Z" fill="#c0392b"/><path d="M8 46 L44 14 L80 46" fill="none" stroke="#4b5060" stroke-width="7" stroke-linejoin="round"/>
+        <rect x="32" y="56" width="24" height="26" fill="#f2f2ea"/><path d="M34 58 L54 80 M54 58 L34 80" stroke="#a82e22" stroke-width="3"/>
+        <rect x="38" y="34" width="12" height="11" fill="#f2f2ea"/><rect x="40" y="36" width="8" height="7" fill="#7a2a20"/>
+        <rect x="0" y="80" width="120" height="8" rx="3" fill="#6aa843"/>
+      </svg>
+      <h1 id="carregamento-titulo" class="carregamento-placa">FARMEDU</h1>
+      <p class="carregamento-subtitulo">🌱 Sua fazenda em 3D</p>
+      <div class="carregamento-barra" role="progressbar" aria-label="Progresso do carregamento" aria-valuemin="0" aria-valuemax="100" aria-valuenow="4">
+        <div class="carregamento-preenchimento" id="carregamento-preenchimento" style="width: 4%"></div>
+      </div>
+      <div class="carregamento-linha"><span id="carregamento-mensagem" aria-live="polite">Carregando a biblioteca 3D...</span><b id="carregamento-porcentagem">4%</b></div>
+      <div id="carregamento-erro" hidden role="alert">
+        <b>Não foi possível preparar a fazenda.</b>
+        <p id="carregamento-erro-texto"></p>
+        <button type="button" id="carregamento-tentar">Tentar novamente</button>
+      </div>
+    </div>
+  </div>
+  <!-- ESTRUTURA DA INTERFACE (o canvas 3D é criado pelo JavaScript e inserido antes destes elementos):
+       barra do XP, lista de cartões das áreas, aviso temporário, faixa de invasão e painéis flutuantes "Tempo" e "Áudio".
+       Os ids abaixo são usados pelo JavaScript: não os renomeie.
+       O atributo "inert" deixa a interface sem foco e sem clique até a fazenda estar pronta (a SEÇÃO 00 o remove). -->
+  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora e minérios"></span><button id="botao-nome-da-fazenda" title="Mudar o nome da fazenda (aparece na placa de boas-vindas)">🏡 <span id="nome-da-fazenda-na-barra">FarmEdu</span> ✏️</button><button id="botao-teste-xp">+5000 XP (teste)</button>
+  </div>
+  <div id="lista-cards" inert></div>
+  <div id="aviso"></div>
+  <div id="faixa-invasao" hidden role="alert" inert><b id="faixa-titulo"></b><span id="faixa-texto"></span></div>
+  <div id="barra-ferramentas" inert>
+    <div class="botoes-ferramentas">
+      <button class="botao-ferramenta" id="botao-painel-tempo" aria-expanded="false" aria-controls="painel-tempo">🌗 Tempo</button>
+      <button class="botao-ferramenta" id="botao-painel-audio" aria-expanded="false" aria-controls="painel-audio">🔇 Áudio</button>
+      <!-- Mark 8.2: lavoura, animais e mina (SEÇÃO 27/28) e contratação de trabalhadores (SEÇÃO 29) -->
+      <button class="botao-ferramenta" id="botao-painel-fazenda" aria-expanded="false" aria-controls="painel-fazenda">🌾 Fazenda</button>
+      <button class="botao-ferramenta" id="botao-painel-equipe" aria-expanded="false" aria-controls="painel-equipe">👷 Equipe</button>
+      <!-- Modo Leve (SEÇÃO 21): menos custo gráfico para computadores fracos; a escolha fica salva no navegador -->
+      <button class="botao-ferramenta" id="botao-modo-leve" aria-pressed="false" title="Modo Leve: desliga sombras e luzes dinâmicas e reduz a resolução de renderização">⚡ Modo Leve <span class="estado-modo-leve">desligado</span></button>
+    </div>
+    <section class="painel" id="painel-tempo" hidden>
+      <h3>🌗 Dia e noite</h3>
+      <div class="estado-tempo"><span id="tempo-relogio">08:30</span> <small>· <span id="tempo-periodo">Manhã</span></small></div>
+      <div class="segmentos" role="group" aria-label="Modo do ciclo">
+        <button data-modo="auto" class="ativo" aria-pressed="true">⏱ Automático</button>
+        <button data-modo="pausa" aria-pressed="false">⏸ Pausar</button>
+        <button data-modo="dia" aria-pressed="false">☀️ Dia fixo</button>
+        <button data-modo="noite" aria-pressed="false">🌙 Noite fixa</button>
+      </div>
+      <div class="modo-ativo">Modo ativo: <b id="tempo-modo">Automático</b></div>
+      <div class="testes-invasao"><h4>🧪 Testes de invasão (regra dos 5 dias reais)</h4>
+        <button id="teste-invasao">🧟 Simular 5 dias sem jogar</button>
+        <button id="teste-reparar">🔧 Reparar tudo</button>
+        <h4>🧪 Testes da Mark 8.2</h4>
+        <button id="teste-monstros">👾 Monstros noturnos agora (vira noite)</button>
+        <button id="teste-avancar">⏩ Avançar 10 min (plantações, animais e mina)</button>
+        <div id="invasao-info"></div></div>
+    </section>
+    <section class="painel" id="painel-audio" hidden></section>
+    <section class="painel painel-largo" id="painel-fazenda" hidden></section>
+    <section class="painel painel-largo" id="painel-equipe" hidden></section>
+  </div>
+  <!-- Mark 8.3: janela para escolher o nome da fazenda (placa "BEM-VINDO À ...") -->
+  <div id="janela-nome-da-fazenda" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-nome-da-fazenda">
+    <div class="cartao-nome">
+      <h3 id="titulo-nome-da-fazenda">🏡 Nome da sua fazenda</h3>
+      <small>Aparece na placa de boas-vindas. Até 28 caracteres; acentos são bem-vindos.</small>
+      <input id="campo-nome-da-fazenda" type="text" maxlength="28" autocomplete="off" placeholder="Ex.: Fazenda do Totti">
+      <div class="previa" id="previa-nome-da-fazenda">BEM-VINDO À FARMEDU</div>
+      <div class="erro" id="erro-nome-da-fazenda" role="alert"></div>
+      <div class="acoes"><button class="botao-pequeno secundario" id="cancelar-nome-da-fazenda" type="button">Agora não</button><button class="botao-pequeno" id="salvar-nome-da-fazenda" type="button">Salvar nome</button></div>
+    </div>
+  </div>
+  <!-- Vigia da tela de carregamento: se o script principal do jogo nem chegar a rodar (por exemplo, um erro de sintaxe),
+       mostra uma mensagem em vez de deixar o jogador preso numa tela de carregamento infinita. -->
+  <script src="assets/js/vigia.js"></script>
+  <!-- Biblioteca Three.js (versão fixa r128), carregada antes do script do jogo. As marcas abaixo informam à tela de
+       carregamento se o download deu certo. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onload="window.THREE_CARREGADO = true" onerror="window.FALHA_AO_CARREGAR_THREE = true"></script>
+  <!-- Script principal do jogo (seções 00 a 33). Script clássico, sem módulos, para abrir também direto pelo arquivo (file://). -->
+  <script src="assets/js/fazenda.js"></script>
+</body>
+
+</html>

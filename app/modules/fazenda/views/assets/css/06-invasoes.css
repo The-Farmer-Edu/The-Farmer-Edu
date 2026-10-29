@@ -1,0 +1,12 @@
+/* Fazenda 3D — CSS 6 de 7: faixa de invasão, cartão destruído e testes. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Invasões: faixa de aviso, cartão destruído e testes ===== */
+#faixa-invasao { position: fixed; z-index: 11; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 100px); transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); box-sizing: border-box;
+  background: #3b1218ee; color: #fff; border: 2px solid #c0392b; border-radius: 14px; padding: 10px 14px; box-shadow: 0 4px 16px #0006; cursor: pointer; font-size: 13px }
+#faixa-invasao[hidden] { display: none }
+#faixa-invasao b { display: block; font-size: 15px; margin-bottom: 2px }
+.card.destruida { outline: 2px solid #c0392b; background: #3b1218; color: #fff }
+.card.destruida button { background: #c0392b; color: #fff }
+.testes-invasao { margin-top: 10px; padding-top: 8px; border-top: 1px solid #0002 }
+.testes-invasao h4 { margin: 0 0 6px; font-size: 13px }
+.testes-invasao button { width: 100%; min-height: 36px; margin-bottom: 6px; border: 0; border-radius: 10px; background: #0001; color: var(--texto); font-weight: 600; cursor: pointer }
+#invasao-info { font-size: 11px; opacity: .8 }

@@ -1,0 +1,87 @@
+/* Fazenda 3D — CSS 2 de 7: barra superior, cartões das áreas e aviso. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Barra superior (XP e botão de teste), cartões das áreas no rodapé e aviso temporário ===== */
+#barra-topo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 8px;
+  z-index: 10;
+  pointer-events: none
+}
+
+#barra-topo>* {
+  pointer-events: auto;
+  background: var(--fundo-card);
+  color: var(--texto);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 15px;
+  box-shadow: 0 2px 8px #0003;
+  border: 0
+}
+
+#lista-cards {
+  position: fixed;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 10px)
+}
+
+.card {
+  flex: 0 0 150px;
+  background: var(--fundo-card);
+  color: var(--texto);
+  border-radius: 14px;
+  padding: 10px;
+  box-shadow: 0 2px 8px #0003
+}
+
+.pontos-nivel {
+  letter-spacing: 2px;
+  color: var(--destaque);
+  margin: 4px 0 8px;
+  font-size: 13px
+}
+
+.card button {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--destaque);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px
+}
+
+.card button:disabled {
+  background: var(--desativado);
+  opacity: .7
+}
+
+#aviso {
+  position: fixed;
+  z-index: 20;   /* Mark 8.3.1: acima da barra de ferramentas (12), para os motivos ("casa cheia", "XP insuficiente") ficarem legíveis; não bloqueia cliques */
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  background: var(--fundo-card);
+  color: var(--texto);
+  padding: 10px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px #0004;
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+  font-size: 14px;
+  text-align: center
+}

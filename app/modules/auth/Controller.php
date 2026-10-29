@@ -4,7 +4,8 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
- 
+require_once __DIR__ . '/sessao.php';
+
 class UsuarioController
 {
     // só o formulário vazio
@@ -89,40 +90,62 @@ class UsuarioController
     }
 
     
-
-    private function autenticar(string $tipo, string $view): void
-    {
+    private function autenticar(string $tipo, string $view): void {
         $email = (string) ($_POST['email'] ?? '');
         $senha = (string) ($_POST['senha'] ?? '');
 
         $mensagem = '';
-        $sucesso  = false;
-
+        $sucesso = false;
+        
         try {
-            $usuario = Usuario::buscarPorEmail(iniciarPDO(), $email);
-            if ($usuario === null || $usuario->tipo !== $tipo || !$usuario->verificarSenha($senha)) {
-                throw new InvalidArgumentException('E-mail ou senha incorretos.');
-            }
+        $pdo = iniciarPDO();
+        $usuario = Usuario::buscarPorEmail($pdo, $email);
 
-            // login() é do core, gera de novo o id da sessão e guarda esses 4 
-            login([
-                'idUsuario'    => $usuario->id,
-                'nome'         => $usuario->nome,
-                'email'        => $usuario->email,
-                'perfilAcesso' => $usuario->tipo, // 'aluno' ou 'instrutor'
-            ]);
-
-            $mensagem = 'Login realizado com sucesso!';
-            $sucesso  = true;
-        } catch (InvalidArgumentException $e) {
-            $mensagem = $e->getMessage();
-        } catch (Throwable $e) {
-            error_log($e->getMessage());
-            $mensagem = 'Erro interno. Tente novamente.';
+        if ($usuario === null || $usuario->tipo !== $tipo) {
+        throw new InvalidArgumentException('E-mail ou senha incorretos.');
         }
 
-        $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
-    }
+        $usuario->liberarSeBloqueioExpirou($pdo);
+        $segundos = $usuario->segundosDeBloqueio($pdo);
+        if ($segundos > 0) {
+        throw new InvalidArgumentException($this->mensagemBloqueio($segundos));
+        }
+
+        if (!$usuario->verificarSenha($senha)) {
+            $restantes = $usuario->registrarFalhaLogin($pdo);
+            if ($restantes === 0) {
+            throw new InvalidArgumentException($this->mensagemBloqueio(Usuario::MINUTOS_BLOQUEIO * 60));
+            }
+            throw new InvalidArgumentException('E-mail ou senha incorretos. Você ainda tem ' . $restantes . ' ' . ($restantes === 1 ? 'tentativa' : 'tentativas') . '.');
+            }
+
+            $usuario->zerarTentativasLogin($pdo);
+            login([
+            'idUsuario' => $usuario->id,
+            'nome' => $usuario->nome,
+            'email' => $usuario->email,
+            'perfilAcesso' => $usuario->tipo,
+            ]);
+
+            registrarAtividadeSessao();
+            $mensagem = 'Login realizado com sucesso!';
+            $sucesso = true;
+            } catch (InvalidArgumentException $e) {
+            $mensagem = $e->getMessage();
+            } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+            }
+
+            $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
+            }
+
+            private function mensagemBloqueio(int $segundos): string {
+            $minutos = max(1, (int) ceil($segundos / 60));
+            return 'Muitas tentativas incorretas. Tente novamente em ' . $minutos . ' ' . ($minutos === 1 ? 'minuto' : 'minutos') . '.';
+            }
+
+
  
  
     private function lerMaterias(): array
@@ -151,3 +174,5 @@ class UsuarioController
     }
 }
  
+
+

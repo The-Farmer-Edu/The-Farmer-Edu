@@ -2,7 +2,7 @@
 
 function iniciarSessao(): void {
     if (session_status() === PHP_SESSION_NONE){
-        ini_set('session.gc_maxlifetime', 60*60*4); // Segundos * Minutos * Horas
+        ini_set('session.gc_maxlifetime', 5); // Segundos * Minutos * Horas
         session_start([
             'cookie_httponly' => true,
             'cookie_samesite' => 'Lax'

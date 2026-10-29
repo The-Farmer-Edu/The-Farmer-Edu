@@ -7,6 +7,7 @@
     <title>The Farm Edu - Execução da Resposta</title>
     <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
     <link rel="stylesheet" href="submissoes/file?type=css&file=padrao.css">
+    <script src="https://kit.fontawesome.com/7d729e43cb.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -28,8 +29,58 @@
         </div>
     </header>
 
+    <div id="menuIconi" class="menu-iconi" role="menu" aria-hidden="true">
+        <div class="menu-coluna">
+            <button class="menu-item" type="button">
+                <i class="fa-regular fa-calendar"></i>
+                calendario
+            </button>
 
-    <main class="ide">
+            <button class="menu-item" type="button">
+                <i class="fa-solid fa-medal"></i>
+                visão geral
+            </button>
+        </div>
+    </div>
+
+    <div id="menuUsuario" class="menu-usuario" role="menu" aria-hidden="true">
+        <div class="menu-coluna">
+            <button class="menu-item" type="button">
+                <i class="fa-solid fa-gear"></i>
+                configurações
+            </button>
+
+            <button class="menu-item" type="button">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                logout
+            </button>
+
+            <button class="menu-item" type="button">
+                <i class="fa-regular fa-envelope"></i>
+                meus dados
+            </button>
+        </div>
+    </div>
+
+    <section class="atividade" id="atividade" aria-label="Informações da atividade">
+        <div class="atv-linha">
+            <span class="atv-tag" id="atvId"></span>
+            <strong class="atv-titulo" id="atvTitulo"></strong>
+            <span class="atv-lang" id="atvLang"></span>
+        </div>
+        <p class="atv-desc" id="atvDescricao"></p>
+        <details class="atv-detalhes">
+            <summary id="atvResumo">O que fazer</summary>
+            <ol id="atvRequisitos"></ol>
+        </details>
+    </section>
+
+    <nav class="abas-mobile" id="abasMobile" aria-label="Alternar painel">
+        <button class="aba on" type="button" data-aba="codigo">Código</button>
+        <button class="aba" type="button" data-aba="resultado" id="abaResultado" disabled>Resultado</button>
+    </nav>
+
+    <main class="ide" id="ide" data-aba="codigo">
 
         <aside class="explorer">
             <h2>Arquivos</h2>
@@ -43,6 +94,11 @@
                 <div class="contador-limite__linha">
                     <span>Sophia</span>
                     <strong id="contadorSophia">0/10</strong>
+                </div>
+                <div class="contador-limite__linha">
+                    <span>Cancelar entrega</span>
+                    <strong id="contadorCancelar">3/3
+                    </strong>
                 </div>
             </div>
         </aside>
@@ -62,13 +118,17 @@
             </div>
         </section>
 
-        <section class="card preview">
-            <div class="pv-head"><span class="con-head">Resultado</span></div>
-            <iframe id="pv" title="Pré-visualização" sandbox="allow-scripts"></iframe>
+        <section class="card preview" id="painelResultado" hidden>
+            <div class="pv-head">
+                <span class="chip">Resultado</span>
+                <span class="desatualizado" id="pvStale" hidden>Código alterado: execute de novo</span>
+            </div>
+            <iframe id="pv" title="Pré-visualização" sandbox="allow-scripts" hidden></iframe>
+            <pre class="terminal" id="pvPy" hidden></pre>
             <div class="console">
                 <div class="con-head">
                     <span>Console</span>
-                    <button id="btnLimpar">Limpar</button>
+                    <button id="btnLimpar" type="button">Limpar</button>
                 </div>
                 <div class="con-corpo" id="console"></div>
             </div>
@@ -78,7 +138,6 @@
 
     <div class="sophia">
         <div class="balao" id="balao"></div>
-
         <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
             <img src="submissoes/file?type=img&file=sophia_ia.webp" alt="Sophia">
         </button>
@@ -89,6 +148,7 @@
             <h3 id="tituloEntrega">Entregar atividade?</h3>
             <p>Você vai entregar estes arquivos:</p>
             <ul class="resumo" id="resumoEntrega"></ul>
+            <p class="modal-aviso" id="avisoCancelar"></p>
             <div class="modal-acoes">
                 <button class="btn btn-cinza" id="btnCancelarModal">Voltar ao editor</button>
                 <button class="btn btn-verde" id="btnConfirmar">Confirmar entrega</button>
@@ -100,8 +160,27 @@
     <article>
         <button id="btnVoltar" class="btn-voltar">⬅ Voltar</button>
     </article>
-
-    <script src="submissoes/file?type=js&file=iniciaratv.js"></script>
 </body>
+<script type="application/json" id="dadosAtividade">
+{
+  "id": 1,
+  "titulo": "Minha Fazenda — página interativa",
+  "descricao": "Turma, vocês vão criar uma página simples para a fazenda: um título, um parágrafo e um botão que reage ao clique.",
+  "requisitos": [
+    "Criar um título h1 com o texto \"Minha Fazenda\" e um parágrafo de apresentação",
+    "Adicionar um botão com id \"btn\" e o texto \"Clique aqui\"",
+    "Estilizar o fundo da página e o botão no CSS",
+    "Ao clicar, trocar o texto do botão para \"Cocoricó!\" e escrever uma mensagem no console"
+  ],
+  "objetivo": "Criar uma página 'Minha Fazenda' com título, parágrafo e um botão que, ao ser clicado, muda o texto para 'Cocoricó!' e registra uma mensagem no console.",
+  "idLinguagem": "web",
+  "notaMax": 10,
+  "notaMin": 6,
+  "entrada": ""
+}
+</script>
+<script src="submissoes/file?type=js&file=atividade.js"></script>
+<script src="submissoes/file?type=js&file=iniciaratv.js"></script>
+<script src="submissoes/file?type=js&file=script.js"></script>
 
 </html>

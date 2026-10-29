@@ -1,7 +1,5 @@
 <?php
 
-// require_once __DIR__ . '/Model.php';
-
 class atividadesSub {
     public function showaluno() {
         require_once __DIR__ . '/view/aluno.html';
@@ -9,11 +7,14 @@ class atividadesSub {
     public function showtestarApi() {
         require_once __DIR__ . '/view/testarApi.php';
         }
-    public function enviarSubmissao() {
-        require_once __DIR__ . '/view/enviarSubmissao.php';
+    public function processarSubmisssao() {
+        require_once __DIR__ . '/view/processar_submissao.php';
     }
     public function showiniciarAtv() {
         require_once __DIR__ . '/view/iniciaratv.html';
+    }
+       public function showrespostas() {
+        require_once __DIR__ . '/view/respostas.html';
     }
 
     public function sendFile(): void {
@@ -21,12 +22,6 @@ class atividadesSub {
         $file = $_GET['file'] ?? null;
         $caminhoArquivo = __DIR__ . "/view/assets/$type/$file";
         if(file_exists($caminhoArquivo)) {
-            // $finfo = new finfo(FILEINFO_MIME_TYPE);
-            // $mimeType = $finfo->file($caminhoArquivo);
-            // if (!$mimeType) {
-            //     $mimeType = 'application/octet-stream';
-            // }
-
             $mimeType = $this->
             get_content_mime_type($caminhoArquivo);
 

@@ -1,0 +1,26 @@
+/* Fazenda 3D — CSS 3 de 7: barra de ferramentas, recursos e elementos da Mark 8.2. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Painéis de Tempo e Áudio ===== */
+#barra-ferramentas { position: fixed; z-index: 12; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 58px); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: calc(100vw - 24px); pointer-events: none }
+#barra-ferramentas>* { pointer-events: auto }
+.botoes-ferramentas { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end }
+/* ===== Mark 8.2: recursos, cartões não construídos e painéis Fazenda/Equipe ===== */
+#recursos-resumo { margin-left: 10px; font-size: 12px; white-space: nowrap; opacity: .9 }
+.card.nao-construido { border: 2px dashed #c98a4a }
+.card button.sem-xp { opacity: .55 }
+.card .info-extra { font-size: 11px; opacity: .85; margin: 2px 0 }
+.card .info-extra.alerta, .linha-painel.alerta { color: #c0392b; font-weight: 600 }
+.painel-largo { width: min(340px, calc(100vw - 24px)) }
+.painel h4 { margin: 10px 0 4px; font-size: 13px }
+.painel .dica { font-size: 12px; opacity: .85; margin: 4px 0 }
+.linha-recursos { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px }
+.grade-canteiros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px }
+.grade-canteiros button { font-size: 11px; padding: 5px 2px; min-height: 42px; border-radius: 8px; border: 1px solid #0002; cursor: pointer; color: #3b2a1a }
+.canteiro.vazio { background: #f3e6cf } .canteiro.crescendo { background: #e8f5dc } .canteiro.pronto { background: #b8ef8a; font-weight: 700 }
+.acoes { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap }
+.linha-painel { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #0001 }
+.linha-painel.apagada { opacity: .55 }
+.barrinha { display: inline-block; vertical-align: middle; width: 58px; height: 6px; border-radius: 3px; background: #0002; overflow: hidden }
+.barrinha > i { display: block; height: 100% }
+.botao-pequeno { font-size: 11px; padding: 5px 8px; border-radius: 8px; border: 0; background: var(--destaque); color: #fff; cursor: pointer; margin-top: 2px }
+.botao-pequeno.secundario { background: #7f8c8d } .botao-pequeno.sem-xp { opacity: .55 }
+.abas button { font-size: 12px }

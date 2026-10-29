@@ -1,0 +1,44 @@
+/* Fazenda 3D — CSS 4 de 7: painel Fazenda (Mark 8.3.1). Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Painel Fazenda (plantio, animais e mina) — Mark 8.3.1: mais largo, legível e organizado; só afeta #painel-fazenda ===== */
+#painel-fazenda { width: min(480px, calc(100vw - 24px)); max-height: max(320px, calc(100vh - 270px)); max-height: max(320px, calc(100dvh - 270px));   /* para acima dos cartões do rodapé; o resto rola */ padding: 16px 18px; font-size: 14px; box-sizing: border-box; overscroll-behavior: contain }
+#painel-fazenda h3 { font-size: 19px; margin: 0 0 10px }
+#painel-fazenda h4 { font-size: 15px; margin: 16px 0 8px; padding-top: 12px; border-top: 1px solid #0001 }
+#painel-fazenda h4.titulo-da-plantacao { border-top: 0; padding-top: 0; margin-top: 12px } #painel-fazenda h4 small { font-weight: 600; opacity: .65; margin-left: 4px }
+#painel-fazenda .dica { font-size: 13px; line-height: 1.45 }
+#painel-fazenda .linha-recursos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px }
+#painel-fazenda .recurso { display: flex; flex-direction: column; align-items: center; padding: 6px 2px; border-radius: 12px; background: #0000000d; line-height: 1.15 }
+#painel-fazenda .recurso i { font-style: normal; font-size: 20px } #painel-fazenda .recurso b { font-size: 16px } #painel-fazenda .recurso small { font-size: 10px; opacity: .7 }
+#painel-fazenda .abas { margin-top: 12px } #painel-fazenda .abas button { min-height: 44px; font-size: 14px }
+#painel-fazenda .passos { font-size: 12px; margin: 4px 0 10px; line-height: 1.9; opacity: .85 }
+#painel-fazenda .passos b { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--destaque); color: #fff; font-size: 11px; margin: 0 3px 0 6px }
+#painel-fazenda .culturas { grid-template-columns: repeat(4, 1fr); gap: 6px }
+#painel-fazenda .culturas button { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; min-height: 70px; line-height: 1.15 }
+#painel-fazenda .culturas i { font-style: normal; font-size: 24px } #painel-fazenda .culturas span { font-size: 13px } #painel-fazenda .culturas small { font-size: 10px; font-weight: 500; opacity: .75 }
+#painel-fazenda .grade-canteiros { gap: 7px; margin-top: 12px; padding: 10px; border-radius: 14px; background: #7a4c2826 }
+#painel-fazenda .grade-canteiros button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 62px; padding: 6px 2px 10px; font-size: 12px; border-radius: 10px; overflow: hidden; transition: transform .1s }
+#painel-fazenda .grade-canteiros button:active { transform: scale(.96) }
+#painel-fazenda .grade-canteiros i { font-style: normal; font-size: 22px; line-height: 1 } #painel-fazenda .grade-canteiros small { font-size: 11px; font-weight: 700 }
+#painel-fazenda .canteiro.vazio { background: #f6ecd8; border: 2px dashed #c9a77a; color: #8a6a44 }
+#painel-fazenda .canteiro.crescendo { background: #e6f4d8; border: 2px solid #9fcf7a; color: #3d6b28 }
+#painel-fazenda .canteiro.pronto { background: linear-gradient(#c6f59a, #9fe36a); border: 2px solid #5fae3a; color: #24521a; box-shadow: 0 0 0 2px #fff8, 0 0 10px #8fdc5a }
+#painel-fazenda .canteiro.selecionado { outline: 3px solid #e67e22; outline-offset: 1px }
+#painel-fazenda .progresso-do-canteiro { position: absolute; left: 6px; right: 6px; bottom: 4px; height: 4px; border-radius: 2px; background: #0002 }
+#painel-fazenda .progresso-do-canteiro span { display: block; height: 100%; border-radius: 2px; background: #5fae3a }
+#painel-fazenda .legenda-dos-canteiros { display: flex; gap: 12px; justify-content: center; margin-top: 6px; font-size: 11px; opacity: .8 }
+#painel-fazenda .legenda-dos-canteiros span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px }
+#painel-fazenda .legenda-dos-canteiros .vazio::before { background: #f6ecd8; border: 1px dashed #c9a77a } #painel-fazenda .legenda-dos-canteiros .crescendo::before { background: #e6f4d8; border: 1px solid #9fcf7a } #painel-fazenda .legenda-dos-canteiros .pronto::before { background: #9fe36a; border: 1px solid #5fae3a }
+#painel-fazenda .escolha-de-colheita { margin-top: 10px; padding: 10px; gap: 6px; font-size: 13px; border: 1px solid #e6c99a }
+#painel-fazenda .escolha-de-colheita .botao-pequeno { font-size: 12px; padding: 7px 10px }
+#painel-fazenda .acoes { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px }
+#painel-fazenda .botao-colher-tudo { width: 100%; min-height: 46px; font-size: 15px }
+#painel-fazenda .botao-plantar-todos { width: 100%; min-height: 40px; border: 2px solid var(--destaque); border-radius: 10px; background: transparent; color: var(--texto); font-weight: 700; font-size: 13px; cursor: pointer }
+#painel-fazenda .ordens-da-equipe { margin-top: 12px; padding: 10px; font-size: 13px }
+#painel-fazenda .linha-painel { font-size: 13px; padding: 8px 0; gap: 10px }
+#painel-fazenda .linha-painel .botao-pequeno { font-size: 12px; padding: 7px 10px; white-space: nowrap }
+#painel-fazenda .barrinha { width: 76px; height: 8px; border-radius: 4px }
+@media (max-width: 520px) {
+  #painel-fazenda { width: calc(100vw - 16px); padding: 12px; font-size: 13px }
+  #painel-fazenda .recurso small { display: none }
+  #painel-fazenda .culturas small { display: none } #painel-fazenda .culturas button { min-height: 58px }
+  #painel-fazenda .grade-canteiros { gap: 5px; padding: 6px } #painel-fazenda .grade-canteiros button { min-height: 52px } #painel-fazenda .grade-canteiros i { font-size: 18px }
+}

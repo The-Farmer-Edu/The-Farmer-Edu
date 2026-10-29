@@ -1,0 +1,41 @@
+/* Fazenda 3D — CSS 1 de 7: tema claro/escuro, página e canvas. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Estilos gerais: cores do tema (claro/escuro) e canvas em tela cheia ===== */
+:root {
+  --fundo-card: #fffdf5;
+  --texto: #3b2a1a;
+  --destaque: #4a8f3a;
+  --desativado: #a89a82
+}
+
+@media(prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) {
+    --fundo-card: #2b3424;
+    --texto: #f1e8d0;
+    --destaque: #7fc15f;
+    --desativado: #6f7a62
+  }
+}
+
+:root[data-theme="dark"] {
+  --fundo-card: #2b3424;
+  --texto: #f1e8d0;
+  --destaque: #7fc15f;
+  --desativado: #6f7a62
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #9fd8f5;
+  font-family: system-ui, sans-serif
+}
+
+canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  z-index: 0;
+  touch-action: none
+}

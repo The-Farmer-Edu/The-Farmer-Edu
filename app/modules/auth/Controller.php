@@ -76,8 +76,35 @@ class UsuarioController
         $this->autenticar('aluno', 'loginAluno');
     }
 
-    //sair(logout)
+    private function exigirLogin(): array{
+         if (sessaoExpirouPorInatividade() || usuarioLogado() === null) {
+        header('Location: loginAluno');
+        exit;
+     }
+    return usuarioLogado();
+    }
 
+    public function showEditarConta(): void{
+        $logado = $this->exigirLogin();
+        $usuario = Usuario::buscarPorId(iniciarPDO(), (int) $logado['idUsuario']);
+        if ($usuario === null || !$usuario->ativo) {
+        logout();
+        header('Location: loginAluno');
+        exit;
+        }
+    }
+
+    $this->view('editarConta', ['dados' => ['nome' => $usuario->nome, 'email' => $usuario->email]]); }
+        public function editarConta(): void {
+        $logado = $this->exigirLogin();
+        $dados = ['nome' => (string) ($_POST['nome'] ?? ''), 'email' => (string) ($_POST['email'] ?? '')];
+        $senhaAtual = (string) ($_POST['senha_atual'] ?? '');
+        $novaSenha = (string) ($_POST['nova_senha'] ?? '');
+        $mensagem = '';
+        $sucesso = false;
+
+    private function
+    //sair(logout)
     public function sair(): void
     {
         // "Descobre" o perfil antes de apagar a sessão
@@ -118,6 +145,10 @@ class UsuarioController
             }
             throw new InvalidArgumentException('E-mail ou senha incorretos. Você ainda tem ' . $restantes . ' ' . ($restantes === 1 ? 'tentativa' : 'tentativas') . '.');
             }
+
+        if (!$usuario->ativo) {
+            throw new InvalidArgumentException('Esta conta está desativada.');
+        }
 
             $usuario->zerarTentativasLogin($pdo);
             login([

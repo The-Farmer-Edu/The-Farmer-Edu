@@ -33,7 +33,27 @@
           if (evento.code === 'Space' && document.activeElement && document.activeElement.blur) document.activeElement.blur(); // Espaço não aciona o botão focado
         }
       });
-      addEventListener('keyup', evento => { if (evento.code in teclas) { teclas[evento.code] = false; if (evento.code === 'Space') evento.preventDefault(); } });
+      let s = '';
+      addEventListener('keyup', evento => { 
+        if (evento.code in teclas) { 
+          teclas[evento.code] = false;
+          if (evento.code === 'Space') {
+            evento.preventDefault();
+          }
+        } else {
+          s = s + evento.key;
+          setTimeout(() => {
+            if (s != "pitufo"){
+              s = '';
+              return;
+            } else {
+              definirModoDesenvolvedor(true);
+              mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
+            }
+          }, 2000)
+
+        }
+      });
       addEventListener('blur', () => { for (const tecla in teclas) teclas[tecla] = false; }); // evita tecla "presa" ao trocar de aba
       // Se o Ctrl+W escapar enquanto o jogador desce com Ctrl, o navegador pergunta antes de fechar a aba (não é garantido: o
       // Chrome só mostra a pergunta se já houve interação com a página, e o texto é o padrão dele).

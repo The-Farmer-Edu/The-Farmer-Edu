@@ -1,15 +1,10 @@
 <?php
-// View: submissoes de uma turma — instrutor lanca notas
-// Variaveis disponiveis: $usuario, $turma, $submissoes
-
-// Agrupa submissoes por aluno
 $porAluno = [];
 foreach ($submissoes as $sub) {
     $porAluno[$sub['id_aluno']]['nome'] = $sub['nome_aluno'];
     $porAluno[$sub['id_aluno']]['atividades'][] = $sub;
 }
 
-// Captura mensagens de feedback na URL
 $msgSucesso = htmlspecialchars($_GET['sucesso'] ?? '');
 $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 ?>
@@ -27,7 +22,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            /* Perfil Verde - Guia de Design (Mesmo do Index) */
             --verde-primario:   #1B5E20;
             --verde-escuro:     #089C2F;
             --verde-header:     #A0FDA3;
@@ -35,13 +29,11 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             --verde:            #1B5E20;
             --verde-claro:      #A0FDA3;
 
-            /* Destaque Secundário (Laranja) - Guia de Design */
             --laranja:          #FF8D28;
             --laranja-suave:    #FFF3E0;
             --amarelo:          #FF8D28;
             --amarelo-claro:    #FFF3E0;
 
-            /* Feedback / Status */
             --vermelho:         #DC2626;
             --vermelho-claro:   #FEE2E2;
             --roxo:             #7E22CE;
@@ -49,7 +41,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             --azul:             #002D38;
             --azul-claro:       #A0FDA3;
 
-            /* Neutros - Guia de Design */
             --texto-principal:  #002D38;
             --texto-preto:      #000000;
             --texto-secundario: #727272;
@@ -64,13 +55,11 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             --cinza-800:        #002D38;
             --cinza-900:        #002D38;
 
-            /* Sombras do Guia de Design */
             --sombra-card:      0px 4px 4px rgba(0, 0, 0, 0.25);
             --sombra-header:    0px 4px 3px rgba(248, 96, 17, 0.5);
             --sombra-sm:        0px 2px 4px rgba(0, 0, 0, 0.08);
             --sombra-md:        0px 4px 4px rgba(0, 0, 0, 0.25);
 
-            /* Geometria do Guia de Design */
             --raio-card:        25px;
             --raio-pill:        20px;
             --raio-icone:       10px;
@@ -85,12 +74,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             min-height: 100vh;
         }
 
-        /* ============================================================
-           TOPBAR (HEADER) - Guia de Design
-           Faixa verde claro (#A0FDA3) de ponta a ponta, logo circular + "The Farmer Edu"
-           com "Edu" em verde (#1B5E20) e o restante em navy (#002D38),
-           avatar em verde escuro (#089C2F) e brilho laranja por baixo.
-           ============================================================ */
         .topbar {
             background: var(--verde-header);
             color: var(--texto-principal);
@@ -116,9 +99,7 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             text-decoration: none;
         }
 
-        .topbar-logo span {
-            color: var(--texto-principal);
-        }
+        .topbar-logo span { color: var(--texto-principal); }
 
         .topbar-user {
             display: flex;
@@ -145,14 +126,12 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             flex-shrink: 0;
         }
 
-        /* CONTAINER */
         .container {
             max-width: 980px;
             margin: 0 auto;
             padding: 28px 20px 60px;
         }
 
-        /* BREADCRUMB */
         .breadcrumb {
             display: flex;
             align-items: center;
@@ -169,14 +148,9 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             text-decoration: none;
         }
 
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
+        .breadcrumb a:hover { text-decoration: underline; }
 
-        /* PAGE HEADER */
-        .page-header {
-            margin-bottom: 24px;
-        }
+        .page-header { margin-bottom: 24px; }
 
         .page-header h1 {
             font-family: 'Poppins', sans-serif;
@@ -192,7 +166,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             color: var(--texto-secundario);
         }
 
-        /* ALERTAS */
         .alerta {
             padding: 12px 16px;
             border-radius: var(--raio-icone);
@@ -217,7 +190,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             border: 1px solid #fecaca;
         }
 
-        /* BUSCA / FILTRO */
         .filtro-bar {
             background: var(--bg-card);
             border: 1px solid var(--borda-card);
@@ -240,14 +212,9 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             background: transparent;
         }
 
-        .filtro-bar input::placeholder {
-            color: var(--texto-secundario);
-        }
+        .filtro-bar input::placeholder { color: var(--texto-secundario); }
 
-        /* SECAO DE ALUNO */
-        .aluno-secao {
-            margin-bottom: 28px;
-        }
+        .aluno-secao { margin-bottom: 28px; }
 
         .aluno-header {
             display: flex;
@@ -259,6 +226,8 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             border-radius: var(--raio-card);
             border: 1px solid var(--borda-card);
             box-shadow: var(--sombra-card);
+            cursor: pointer;
+            user-select: none;
         }
 
         .aluno-avatar {
@@ -288,6 +257,9 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             font-family: 'Inter', sans-serif;
             font-size: .85rem;
             color: var(--texto-secundario);
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .aluno-media strong {
@@ -295,7 +267,30 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             color: var(--texto-principal);
         }
 
-        /* TABELA DE ATIVIDADES */
+        .chevron-icon {
+            transition: transform 0.3s ease;
+            color: var(--texto-secundario);
+            transform: rotate(180deg); 
+        }
+
+        .aluno-secao.fechado .chevron-icon {
+            transform: rotate(0deg);
+        }
+
+        .substatus-prazo {
+            font-size: 0.72rem;
+            color: var(--verde-primario);
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
+        .substatus-atraso {
+            font-size: 0.72rem;
+            color: var(--vermelho);
+            margin-top: 3px;
+            font-weight: 500;
+        }
+
         .tabela-wrap {
             overflow-x: auto;
         }
@@ -310,9 +305,7 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             border: 1px solid var(--borda-card);
         }
 
-        thead {
-            background: var(--verde-suave);
-        }
+        thead { background: var(--verde-suave); }
 
         thead th {
             padding: 12px 16px;
@@ -330,9 +323,7 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             transition: background .15s;
         }
 
-        tbody tr:hover {
-            background: rgba(160, 253, 163, 0.12);
-        }
+        tbody tr:hover { background: rgba(160, 253, 163, 0.12); }
 
         tbody td {
             padding: 14px 16px;
@@ -342,7 +333,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             color: var(--texto-principal);
         }
 
-        /* BADGES (Formato pílula: 20px) */
         .badge {
             display: inline-flex;
             align-items: center;
@@ -355,12 +345,11 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             white-space: nowrap;
         }
 
-        .badge-enviado   { background: #E0F2FE;               color: #0284C7; }
-        .badge-corrigido { background: var(--verde-suave);    color: var(--verde-primario); }
-        .badge-pendente  { background: var(--laranja-suave);  color: var(--laranja); }
-        .badge-ia        { background: var(--roxo-claro);     color: var(--roxo); }
+        .badge-enviado   { background: #E0F2FE; color: #0284C7; }
+        .badge-corrigido { background: var(--verde-suave); color: var(--verde-primario); }
+        .badge-pendente  { background: var(--laranja-suave); color: var(--laranja); }
+        .badge-ia        { background: var(--roxo-claro); color: var(--roxo); }
 
-        /* TIPO ATIVIDADE */
         .tipo-chip {
             display: inline-block;
             padding: 3px 10px;
@@ -373,10 +362,9 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         }
 
         .tipo-codigo { background: var(--laranja-suave); color: var(--laranja); }
-        .tipo-quiz   { background: var(--verde-suave);   color: var(--verde-primario); }
-        .tipo-texto  { background: #E0F2FE;              color: #0284C7; }
+        .tipo-quiz   { background: var(--verde-suave); color: var(--verde-primario); }
+        .tipo-texto  { background: #E0F2FE; color: #0284C7; }
 
-        /* NOTA ATUAL */
         .nota-atual {
             font-family: 'Poppins', sans-serif;
             font-weight: 700;
@@ -388,7 +376,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         .nota-ok   { color: var(--laranja); }
         .nota-ruim { color: var(--vermelho); }
 
-        /* FORM DE LANCAMENTO */
         .form-nota {
             display: flex;
             align-items: center;
@@ -431,23 +418,15 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             gap: 4px;
         }
 
-        .btn-salvar:hover {
-            background: var(--verde-escuro);
-        }
+        .btn-salvar:hover { background: var(--verde-escuro); }
+        .btn-salvar:disabled { opacity: .6; cursor: not-allowed; }
 
-        .btn-salvar:disabled {
-            opacity: .6;
-            cursor: not-allowed;
-        }
-
-        /* Linha sem submissao */
         .sem-envio {
             color: var(--texto-secundario);
             font-size: .82rem;
             font-style: italic;
         }
 
-        /* TOAST */
         #toast {
             position: fixed;
             bottom: 28px;
@@ -474,7 +453,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         .toast-ok  { background: var(--verde); }
         .toast-err { background: var(--vermelho); }
 
-        /* VAZIO */
         .vazio {
             text-align: center;
             padding: 60px 20px;
@@ -482,7 +460,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             font-family: 'Inter', sans-serif;
         }
 
-        /* RESPONSIVO */
         @media (max-width: 680px) {
             .form-nota { flex-direction: column; align-items: flex-start; }
         }
@@ -490,7 +467,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 </head>
 <body>
 
-<!-- TOPBAR -->
 <nav class="topbar">
     <a class="topbar-logo" href="/">🌱 <span>The Farmer</span>Edu</a>
     <div class="topbar-user">
@@ -501,14 +477,12 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
 <div class="container">
 
-    <!-- BREADCRUMB -->
     <nav class="breadcrumb" aria-label="Navegação">
         <a href="/notas/instrutor">Centro de Notas</a>
         <span>›</span>
         <span><?= htmlspecialchars($turma['nome_turma'] ?? 'Turma') ?></span>
     </nav>
 
-    <!-- HEADER -->
     <header class="page-header">
         <h1>📊 <?= htmlspecialchars($turma['nome_turma'] ?? 'Turma') ?></h1>
         <p>
@@ -523,7 +497,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         </p>
     </header>
 
-    <!-- ALERTAS -->
     <?php if ($msgSucesso): ?>
         <div class="alerta alerta-sucesso" role="alert">✅ <?= $msgSucesso ?></div>
     <?php endif; ?>
@@ -531,7 +504,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         <div class="alerta alerta-erro" role="alert">❌ <?= $msgErro ?></div>
     <?php endif; ?>
 
-    <!-- FILTRO DE ALUNO -->
     <div class="filtro-bar">
         <span>🔍</span>
         <input
@@ -543,7 +515,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         >
     </div>
 
-    <!-- LISTA DE ALUNOS E NOTAS -->
     <?php if (empty($porAluno)): ?>
         <div class="vazio">
             <p style="font-size:3rem">🌾</p>
@@ -554,14 +525,12 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             $nome    = $dados['nome'];
             $atvs    = $dados['atividades'];
 
-            // Calcula media do aluno (apenas notas existentes)
             $notas     = array_filter(array_column($atvs, 'nota_valor'), fn($v) => $v !== null);
             $mediaAluno = count($notas) > 0 ? array_sum($notas) / count($notas) : null;
         ?>
             <div class="aluno-secao" data-nome="<?= htmlspecialchars(strtolower($nome)) ?>">
 
-                <!-- CABECALHO DO ALUNO -->
-                <div class="aluno-header">
+                <div class="aluno-header" onclick="toggleAluno(this)">
                     <div class="aluno-avatar"><?= strtoupper(substr($nome, 0, 2)) ?></div>
                     <span class="aluno-nome"><?= htmlspecialchars($nome) ?></span>
                     <div class="aluno-media">
@@ -573,10 +542,13 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
                                 —
                             <?php endif; ?>
                         </strong>
+
+                        <svg class="chevron-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
                     </div>
                 </div>
 
-                <!-- TABELA DE ATIVIDADES -->
                 <div class="tabela-wrap">
                     <table aria-label="Atividades de <?= htmlspecialchars($nome) ?>">
                         <thead>
@@ -607,12 +579,14 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
                                     elseif ($notaVal >= 5)  $classNota = 'nota-ok';
                                     else                    $classNota = 'nota-ruim';
                                 }
+
+                                $dataEntrega = strtotime($atv['data_entrega'] ?? '');
+                                $dataEnvio   = !empty($atv['data_envio']) ? strtotime($atv['data_envio']) : null;
+                                $comAtraso   = $dataEnvio && $dataEnvio > $dataEntrega;
                                 ?>
                                 <tr>
-                                    <!-- NOME DA ATIVIDADE -->
                                     <td><?= htmlspecialchars($atv['titulo_atividade']) ?></td>
 
-                                    <!-- TIPO -->
                                     <td>
                                         <?php $tiposLabel = ['codigo' => '💻 Código', 'quiz' => '📝 Quiz', 'texto' => '📄 Texto']; ?>
                                         <span class="tipo-chip tipo-<?= htmlspecialchars($tipo) ?>">
@@ -620,10 +594,8 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
                                         </span>
                                     </td>
 
-                                    <!-- PRAZO -->
                                     <td><?= date('d/m/Y', strtotime($atv['data_entrega'])) ?></td>
 
-                                    <!-- STATUS -->
                                     <td>
                                         <?php if ($status === 'corrigida'): ?>
                                             <span class="badge badge-corrigido">✔ Corrigida</span>
@@ -632,9 +604,14 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
                                         <?php else: ?>
                                             <span class="badge badge-pendente">⚠ Pendente</span>
                                         <?php endif; ?>
+
+                                        <?php if ($comAtraso): ?>
+                                            <div class="substatus-atraso">Concluída com atraso</div>
+                                        <?php elseif ($status === 'corrigida' || $status === 'enviada'): ?>
+                                            <div class="substatus-prazo">Concluída no prazo</div>
+                                        <?php endif; ?>
                                     </td>
 
-                                    <!-- NOTA ATUAL -->
                                     <td>
                                         <?php if ($notaFmt !== null): ?>
                                             <span class="nota-atual <?= $classNota ?>"><?= $notaFmt ?></span>
@@ -646,7 +623,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
                                         <?php endif; ?>
                                     </td>
 
-                                    <!-- FORM LANCAMENTO -->
                                     <td>
                                         <?php if ($idSub): ?>
                                             <form class="form-nota"
@@ -678,21 +654,30 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </div><!-- /tabela-wrap -->
+                </div>
 
-            </div><!-- /aluno-secao -->
+            </div>
         <?php endforeach; ?>
     <?php endif; ?>
 
-</div><!-- /container -->
+</div>
 
-<!-- TOAST DE FEEDBACK -->
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
-// ============================================================
-// Filtra alunos pelo nome ao digitar
-// ============================================================
+function toggleAluno(headerElement) {
+    const secao = headerElement.closest('.aluno-secao');
+    const tabela = secao.querySelector('.tabela-wrap');
+
+    secao.classList.toggle('fechado');
+
+    if (tabela.style.display === 'none') {
+        tabela.style.display = 'block';
+    } else {
+        tabela.style.display = 'none';
+    }
+}
+
 function filtrarAlunos(termo) {
     const secoes = document.querySelectorAll('.aluno-secao');
     const q = termo.toLowerCase().trim();
@@ -702,9 +687,6 @@ function filtrarAlunos(termo) {
     });
 }
 
-// ============================================================
-// Lança nota via fetch (AJAX) sem recarregar a pagina
-// ============================================================
 function lancarNota(event, form) {
     event.preventDefault();
 
@@ -714,13 +696,11 @@ function lancarNota(event, form) {
     const btn         = form.querySelector('button');
     const valor       = parseFloat(inputNota.value);
 
-    // Validacao no front
     if (isNaN(valor) || valor < 0 || valor > 10) {
         mostrarToast('⚠ Nota deve ser entre 0 e 10.', false);
         return;
     }
 
-    // Desabilita o botao enquanto salva
     btn.disabled = true;
     btn.textContent = '⏳ Salvando...';
 
@@ -743,7 +723,6 @@ function lancarNota(event, form) {
         if (data.sucesso) {
             mostrarToast('✅ ' + data.mensagem, true);
 
-            // Atualiza a nota exibida na celula ao lado
             const tr     = form.closest('tr');
             const tdNota = tr.querySelector('td:nth-child(5)');
             if (tdNota) {
@@ -756,13 +735,11 @@ function lancarNota(event, form) {
                 tdNota.innerHTML = `<span class="nota-atual ${classe}">${notaFmt}</span>`;
             }
 
-            // Atualiza o badge de status
             const tdStatus = tr.querySelector('td:nth-child(4)');
             if (tdStatus) {
                 tdStatus.innerHTML = '<span class="badge badge-corrigido">✔ Corrigida</span>';
             }
 
-            // Recalcula a media do aluno
             recalcularMedia(form);
 
         } else {
@@ -776,14 +753,10 @@ function lancarNota(event, form) {
     });
 }
 
-// ============================================================
-// Recalcula a media do aluno na mesma secao
-// ============================================================
 function recalcularMedia(formElement) {
     const secao = formElement.closest('.aluno-secao');
     if (!secao) return;
 
-    // Pega todos os inputs de nota dentro desta secao
     const inputs = secao.querySelectorAll('input.input-nota');
     const valores = [];
     inputs.forEach(inp => {
@@ -802,16 +775,12 @@ function recalcularMedia(formElement) {
     }
 }
 
-// ============================================================
-// Exibe o toast de feedback
-// ============================================================
 function mostrarToast(msg, sucesso) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
     toast.className   = sucesso ? 'toast-ok' : 'toast-err';
     toast.style.display = 'flex';
 
-    // Esconde apos 3 segundos
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 </script>

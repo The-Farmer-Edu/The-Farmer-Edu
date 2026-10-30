@@ -298,7 +298,7 @@
                 $turnoLabel = ['manha' => '☀️ Manhã', 'tarde' => '🌤️ Tarde', 'noite' => '🌙 Noite'];
                 $turnoExib = $turnoLabel[$turma['turno']] ?? $turma['turno'];
             ?>
-                <a class="card-turma" href="/notas/turma?id=<?= (int)$turma['id_turma'] ?>">
+                <a class="card-turma" href="turma?id=<?= (int)$turma['id_turma'] ?>">
                     <span class="icone-turma"><?= $icone ?></span>
                     <h2><?= htmlspecialchars($turma['nome_turma']) ?></h2>
                     <p class="curso"><?= htmlspecialchars($turma['nome_curso']) ?></p>

@@ -10,6 +10,7 @@
 -- Ordem de criação respeita as dependências de chave estrangeira —
 -- execute o arquivo de cima para baixo, sem pular trechos.
 -- =====================================================================
+DROP DATABASE IF EXISTS the_farmer_edu;
 
 CREATE DATABASE IF NOT EXISTS the_farmer_edu
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -27,10 +28,7 @@ CREATE TABLE usuarios (
   email          VARCHAR(150)    NOT NULL,
   senha_hash     VARCHAR(255)    NOT NULL,   -- gerado com password_hash() do PHP
   tipo_usuario   ENUM('instrutor', 'aluno') NOT NULL,
-  tentativas_login INT NOT NULL DEFAULT 0,
-  bloqueado_ate DATETIME NULL,
   criado_em      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  ativo TINYINT(1) NOT NULL DEFAULT 1,
   UNIQUE KEY uq_usuarios_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -135,8 +133,7 @@ CREATE TABLE atividades (
   descricao            TEXT          NULL,
   tipo_atividade       ENUM('codigo', 'quiz', 'texto') NOT NULL DEFAULT 'codigo',
   linguagem            VARCHAR(30)   NULL,
-  resposta_referencia  TEXT          NULL,
-  criterios_correcao   JSON          NULL,
+  criterios_correcao   TEXT          NULL, -- Converter JSON->TEXT e TEXT->JSON, dependendo da operação, no JavaScript
   data_entrega         DATETIME      NOT NULL,
   criado_em            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_atividades_turma
@@ -280,3 +277,12 @@ CREATE TABLE notificacoes (
     ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX idx_notificacoes_usuario (id_usuario, lida)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE arquivos (
+  id_arquivo         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_atividade        INT UNSIGNED NOT NULL,
+  descricao_arquivo   VARCHAR(45) NOT NULL,
+  caminho             VARCHAR(255) NOT NULL,
+  FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
+  INDEX id_arquivo_atividade (id_atividade)
+);

@@ -1,152 +1,132 @@
 ﻿-- =====================================================================
--- seeds.sql — dados de exemplo para The Farmer Edu
--- Execute APOS o schema.sql
--- Senhas em texto: todos usam "senha123"
--- hash gerado com: password_hash("senha123", PASSWORD_DEFAULT)
+-- The Farmer Edu — seed.sql (População de Dados de Teste)
+-- SENAI · Aprendizagem em Assistente de Programação Web
+-- Banco: MySQL / MariaDB
+--
+-- Executar este arquivo após a criação do schema.
+-- Os hashes de senha de exemplo utilizam a senha '12345678' gerada via BCRYPT.
 -- =====================================================================
 
 USE the_farmer_edu;
 
--- Desabilita verificacao de FK para inserir em ordem livre
-SET FOREIGN_KEY_CHECKS = 0;
+-- ---------------------------------------------------------------------
+-- 1. USUÁRIOS
+-- IDs 1 e 2: Instrutores | IDs 3, 4 e 5: Alunos
+-- ---------------------------------------------------------------------
+INSERT INTO usuarios (id_usuario, nome, email, senha_hash, tipo_usuario, tentativas_login, bloqueado_ate, ativo) VALUES
+(1, 'Carlos Alberto Silva', 'carlos.instrutor@senai.br', '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae', 'instrutor', 0, NULL, 1),
+(2, 'Mariana Costa Rocha', 'mariana.instrutor@senai.br', '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae', 'instrutor', 0, NULL, 1),
+(3, 'Lucas Andrade Pereira', 'lucas.aluno@aluno.senai.br', '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae', 'aluno', 0, NULL, 1),
+(4, 'Beatriz Souza Lima', 'beatriz.aluno@aluno.senai.br', '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae', 'aluno', 0, NULL, 1),
+(5, 'Gabriel Ferreira Santos', 'gabriel.aluno@aluno.senai.br', '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae', 'aluno', 0, NULL, 1);
 
--- Limpa dados antigos (ordem inversa de dependencia)
-TRUNCATE TABLE notas;
-TRUNCATE TABLE feedback_ia;
-TRUNCATE TABLE submissoes;
-TRUNCATE TABLE atividades;
-TRUNCATE TABLE matriculas;
-TRUNCATE TABLE turmas;
-TRUNCATE TABLE cursos;
-TRUNCATE TABLE materias_instrutores;
-TRUNCATE TABLE materias;
-TRUNCATE TABLE alunos;
-TRUNCATE TABLE instrutores;
-TRUNCATE TABLE usuarios;
+-- ---------------------------------------------------------------------
+-- 2. INSTRUTORES E MATÉRIAS
+-- ---------------------------------------------------------------------
+INSERT INTO instrutores (id_usuario) VALUES
+(1),
+(2);
 
-SET FOREIGN_KEY_CHECKS = 1;
+INSERT INTO materias (id_materia, nome_materia, descricao) VALUES
+(1, 'Lógica de Programação e Algoritmos', 'Fundamentos de lógica, estruturas de controle e funções.'),
+(2, 'Desenvolvimento Web Front-End', 'HTML5, CSS3 e JavaScript moderno.'),
+(3, 'Banco de Dados Relacional', 'Modelagem, DDL, DML e consultas em SQL.');
 
--- ---------------------------------------------------------------
--- USUARIOS (2 instrutores + 4 alunos)
--- Senha de todos: senha123
--- ---------------------------------------------------------------
-INSERT INTO usuarios (id_usuario, nome, email, senha_hash, tipo_usuario) VALUES
-(1, 'Prof. Pedro Lucas de Oliveira', 'pedro@farmeredu.com',  '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uFutB./iy', 'instrutor'),
-(2, 'Prof. Ana Carolina Sousa',       'ana@farmeredu.com',   '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uFutB./iy', 'instrutor'),
-(3, 'Carlos Eduardo Silva',           'carlos@aluno.com',    '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uFutB./iy', 'aluno'),
-(4, 'Juliana Aparecida Lima',         'juliana@aluno.com',   '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uFutB./iy', 'aluno'),
-(5, 'Rafael Henrique Costa',          'rafael@aluno.com',    '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uFutB./iy', 'aluno'),
-(6, 'Marina Fernanda Rocha',          'marina@aluno.com',    '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uFutB./iy', 'aluno');
+INSERT INTO materias_instrutores (id_materia, id_instrutor) VALUES
+(1, 1),
+(2, 1),
+(3, 2);
 
--- ---------------------------------------------------------------
--- INSTRUTORES
--- ---------------------------------------------------------------
-INSERT INTO instrutores (id_usuario) VALUES (1), (2);
-
--- ---------------------------------------------------------------
--- ALUNOS
--- ---------------------------------------------------------------
+-- ---------------------------------------------------------------------
+-- 3. ALUNOS
+-- ---------------------------------------------------------------------
 INSERT INTO alunos (id_usuario, matricula, xp_total) VALUES
-(3, 'TFE-2024-001', 320),
-(4, 'TFE-2024-002', 150),
-(5, 'TFE-2024-003', 480),
-(6, 'TFE-2024-004',  60);
+(3, '20261001', 350),
+(4, '20261002', 150),
+(5, '20261003', 0);
 
--- ---------------------------------------------------------------
--- MATERIAS
--- ---------------------------------------------------------------
-INSERT INTO materias (id_materia, nome_materia) VALUES
-(1, 'Desenvolvimento Web'),
-(2, 'Logica de Programacao');
-
-INSERT INTO materias_instrutores VALUES (1, 1), (2, 2);
-
--- ---------------------------------------------------------------
--- CURSOS
--- ---------------------------------------------------------------
+-- ---------------------------------------------------------------------
+-- 4. CURSOS
+-- ---------------------------------------------------------------------
 INSERT INTO cursos (id_curso, nome_curso, descricao) VALUES
-(1, 'Aprendizagem em Assistente de Programacao Web', 'Formacao completa em desenvolvimento web com foco em PHP, HTML, CSS e JS.'),
-(2, 'Tecnico em Informatica', 'Curso tecnico com base em logica e algoritmos.');
+(1, 'Assistente de Programação Web', 'Qualificação profissional voltada para criação e manutenção de sistemas web.'),
+(2, 'Técnico em Desenvolvimento de Sistemas', 'Habilitação técnica focada em arquitetura de software, banco de dados e APIs.');
 
--- ---------------------------------------------------------------
--- TURMAS
--- ---------------------------------------------------------------
+-- ---------------------------------------------------------------------
+-- 5. TURMAS
+-- ---------------------------------------------------------------------
 INSERT INTO turmas (id_turma, nome_turma, turno, id_curso, id_instrutor) VALUES
-(1, 'Turma A — Modulo Web 2024',   'manha', 1, 1),
-(2, 'Turma B — Logica Avancada',   'tarde',  2, 2);
+(1, 'WebDev 2026.1 - Matutino', 'manha', 1, 1),
+(2, 'TécDS 2026.1 - Vespertino', 'tarde', 2, 2);
 
--- ---------------------------------------------------------------
--- MATRICULAS
--- ---------------------------------------------------------------
-INSERT INTO matriculas (id_turma, id_aluno) VALUES
-(1, 3), (1, 4), (1, 5),   -- Carlos, Juliana e Rafael na Turma A
-(2, 6);                    -- Marina na Turma B
+-- ---------------------------------------------------------------------
+-- 6. MATRÍCULAS
+-- ---------------------------------------------------------------------
+INSERT INTO matriculas (id_turma, id_aluno, data_matricula) VALUES
+(1, 3, '2026-02-01 08:00:00'),
+(1, 4, '2026-02-01 08:30:00'),
+(2, 5, '2026-02-02 13:00:00');
 
--- ---------------------------------------------------------------
--- ATIVIDADES (Turma A)
--- ---------------------------------------------------------------
-INSERT INTO atividades (id_atividade, id_turma, titulo, descricao, tipo_atividade, data_entrega) VALUES
-(1, 1, 'Criacao de Estrutura HTML5',                  'Crie uma pagina HTML5 semantica com header, main e footer.', 'codigo',  '2024-03-10 14:00:00'),
-(2, 1, 'Desafio CSS Grid: Dashboard Responsivo',      'Recrie um layout de dashboard usando CSS Grid.',             'codigo',  '2024-03-28 23:59:00'),
-(3, 1, 'Questionario Teorico: Introducao ao PHP',     'Responda as questoes teoricas sobre PHP estruturado.',       'quiz',    '2024-04-14 11:30:00'),
-(4, 1, 'Mini-projeto: Sistema de Login com Sessoes',  'Implemente login com session_start() e protecao de rotas.',  'codigo',  '2024-05-02 23:59:00'),
-(5, 1, 'Exercicio: Manipulacao de Arrays e Loops',    'Use foreach, array_map e array_filter para resolver os desafios.', 'codigo', '2024-05-15 18:00:00');
+-- ---------------------------------------------------------------------
+-- 7. ATIVIDADES
+-- ---------------------------------------------------------------------
+INSERT INTO atividades (id_atividade, id_turma, titulo, descricao, tipo_atividade, linguagem, resposta_referencia, criterios_correcao, data_entrega) VALUES
+(1, 1, 'Função de Verificação de Aprovado/Reprovado', 'Crie uma função em JavaScript chamada "verificarStatus" que receba uma nota decimal (0 a 10) e retorne "Aprovado" se >= 6 ou "Reprovado" caso contrário.', 'codigo', 'javascript', 'function verificarStatus(nota) { return nota >= 6 ? "Aprovado" : "Reprovado"; }', '{"sintaxe": 30, "logica_correta": 50, "boas_praticas": 20}', '2026-11-15 23:59:59'),
+(2, 1, 'Diferença entre GET e POST', 'Explique sucintamente qual a diferença fundamental entre os métodos HTTP GET e POST em aplicações Web.', 'texto', NULL, 'O método GET envia dados através da URL, sendo usado para recuperar informações. O método POST envia dados no corpo da requisição, sendo mais adequado para envio de formulários e dados sensíveis.', '{"clareza": 40, "precisao_tecnica": 60}', '2026-11-20 23:59:59'),
+(3, 2, 'Criação de Tabela de Produtos', 'Escreva o comando SQL DDL para criar uma tabela chamada "produtos" com id, nome e preco.', 'codigo', 'sql', 'CREATE TABLE produtos (id INT PRIMARY KEY AUTO_INCREMENT, nome VARCHAR(100) NOT NULL, preco DECIMAL(10,2) NOT NULL);', '{"sintaxe_sql": 50, "tipos_de_dados": 50}', '2026-11-10 23:59:59');
 
--- ---------------------------------------------------------------
--- ATIVIDADES (Turma B)
--- ---------------------------------------------------------------
-INSERT INTO atividades (id_atividade, id_turma, titulo, descricao, tipo_atividade, data_entrega) VALUES
-(6, 2, 'Algoritmo: Ordenacao por Selecao',  'Implemente Selection Sort em pseudocodigo e em Python.', 'texto',  '2024-04-20 18:00:00'),
-(7, 2, 'Quiz: Estruturas de Dados Basicas', 'Questoes sobre pilha, fila e lista encadeada.',           'quiz',   '2024-05-10 20:00:00');
+-- ---------------------------------------------------------------------
+-- 8. SUBMISSÕES
+-- ---------------------------------------------------------------------
+INSERT INTO submissoes (id_submissao, id_atividade, id_aluno, conteudo_resposta, tentativa_num, status, resultado_execucao, data_envio) VALUES
+(1, 1, 3, 'function verificarStatus(nota) {\n  if (nota >= 6) {\n    return "Aprovado";\n  } else {\n    return "Reprovado";\n  }\n}', 1, 'corrigida', 'Todos os 4 testes de unidade passaram.', '2026-11-10 10:15:00'),
+(2, 1, 4, 'function verificarStatus(nota) {\n  if (nota > 6) {\n    return "Aprovado";\n  }\n}', 1, 'corrigida', 'Falhou no caso de teste: nota = 6 (Esperado: "Aprovado", Retornado: undefined).', '2026-11-11 14:20:00'),
+(3, 2, 3, 'O método GET passa os parâmetros pela URL, ideal para busca. O POST passa os dados no corpo da mensagem, ideal para formulários.', 1, 'corrigida', NULL, '2026-11-12 09:00:00');
 
--- ---------------------------------------------------------------
--- SUBMISSOES
--- ---------------------------------------------------------------
-INSERT INTO submissoes (id_submissao, id_atividade, id_aluno, conteudo_resposta, tentativa_num, status) VALUES
--- Carlos (id=3) — enviou e foi corrigido em varias atividades
-(1, 1, 3, '<!DOCTYPE html><html>...</html>', 1, 'corrigida'),
-(2, 2, 3, '.container { display: grid; }',   1, 'corrigida'),
-(3, 3, 3, 'Respostas do questionario PHP.',  1, 'corrigida'),
-(4, 4, 3, '<?php session_start(); ?>',       1, 'enviada'),   -- entregue, sem nota ainda
+-- ---------------------------------------------------------------------
+-- 9. FEEDBACK DA IA
+-- ---------------------------------------------------------------------
+INSERT INTO feedback_ia (id_feedback, id_submissao, pontos_positivos, pontos_negativos, sugestao_resposta) VALUES
+(1, 1, 'Algoritmo perfeito, cobriu todas as regras condicionais e tratou corretamente o limite da nota 6.', 'Nenhum ponto negativo encontrado.', 'Poderia utilizar o operador ternário para resumir o código em uma única linha.'),
+(2, 2, 'Entendeu a lógica da estrutura condicional (if).', 'Esqueceu de tratar a nota exata 6 como aprovada (usou > em vez de >=) e não implementou o caso de reprovação.', 'function verificarStatus(nota) { return nota >= 6 ? "Aprovado" : "Reprovado"; }');
 
--- Juliana (id=4) — corrigida em 2, pendente nas outras
-(5, 1, 4, '<!DOCTYPE html>...</html>',       1, 'corrigida'),
-(6, 2, 4, 'grid-template-columns: 1fr 1fr;', 1, 'corrigida'),
+-- ---------------------------------------------------------------------
+-- 10. NOTAS
+-- ---------------------------------------------------------------------
+INSERT INTO notas (id_nota, id_submissao, valor, origem, id_instrutor_revisor, data_atribuicao) VALUES
+(1, 1, 10.00, 'instrutor', 1, '2026-11-10 11:00:00'),
+(2, 2, 5.00, 'ia', NULL, '2026-11-11 14:21:00'),
+(3, 3, 9.50, 'instrutor', 1, '2026-11-12 10:30:00');
 
--- Rafael (id=5) — ativo, entregou tudo e tem notas
-(7, 1, 5, '<html lang="pt-BR">...',          1, 'corrigida'),
-(8, 2, 5, 'display: grid; gap: 16px;',       1, 'corrigida'),
-(9, 3, 5, 'Respostas completas.',            1, 'corrigida'),
-(10,4, 5, 'session_start(); $u = $_SESSION', 1, 'corrigida'),
-(11,5, 5, 'array_map("strtolower", $arr);',  1, 'corrigida'),
+-- ---------------------------------------------------------------------
+-- 11. FAZENDAS
+-- ---------------------------------------------------------------------
+INSERT INTO fazendas (id_fazenda, id_aluno, nivel, estado_visual) VALUES
+(1, 3, 3, 'fazenda_prospera'),
+(2, 4, 2, 'fazenda_em_crescimento'),
+(3, 5, 1, 'inicial');
 
--- Marina (id=6) — Turma B
-(12,6, 6, 'Algoritmo: para i = 0 ate n ...',  1, 'corrigida'),
-(13,7, 6, 'Pilha: LIFO. Fila: FIFO...',       1, 'enviada');
+-- ---------------------------------------------------------------------
+-- 12. ELEMENTOS DA FAZENDA
+-- ---------------------------------------------------------------------
+INSERT INTO elementos_fazenda (id_elemento, id_fazenda, tipo, nivel) VALUES
+(1, 1, 'construcao', 2),
+(2, 1, 'plantacao', 3),
+(3, 1, 'animal', 1),
+(4, 2, 'plantacao', 1);
 
--- ---------------------------------------------------------------
--- NOTAS
--- ---------------------------------------------------------------
-INSERT INTO notas (id_submissao, valor, origem, id_instrutor_revisor) VALUES
--- Carlos
-(1,  9.5, 'instrutor', 1),
-(2,  8.0, 'instrutor', 1),
-(3,  9.0, 'ia',        NULL),   -- nota da IA ainda nao revisada
+-- ---------------------------------------------------------------------
+-- 13. HISTÓRICO DE XP (XP_LOGS)
+-- ---------------------------------------------------------------------
+INSERT INTO xp_logs (id_xp, id_aluno, quantidade, motivo, id_submissao, data) VALUES
+(1, 3, 200, 'Conclusão com nota máxima na Atividade #1', 1, '2026-11-10 11:00:00'),
+(2, 3, 150, 'Conclusão da Atividade #2', 3, '2026-11-12 10:30:00'),
+(3, 4, 150, 'Primeiro envio realizado na Atividade #1', 2, '2026-11-11 14:21:00');
 
--- Juliana
-(5,  7.5, 'instrutor', 1),
-(6,  6.0, 'instrutor', 1),
-
--- Rafael
-(7,  10.0, 'instrutor', 1),
-(8,   9.5, 'instrutor', 1),
-(9,   8.5, 'ia',        NULL),
-(10,  9.0, 'instrutor', 1),
-(11,  8.0, 'instrutor', 1),
-
--- Marina
-(12,  7.0, 'instrutor', 2);
-
--- ---------------------------------------------------------------
--- FIM DO SEED
--- ---------------------------------------------------------------
+-- ---------------------------------------------------------------------
+-- 14. NOTIFICAÇÕES
+-- ---------------------------------------------------------------------
+INSERT INTO notificacoes (id_notificacao, id_usuario, tipo, mensagem, lida) VALUES
+(1, 3, 'nota_atribuida', 'Sua nota na atividade "Função de Verificação de Aprovado/Reprovado" foi 10.00.', 1),
+(2, 4, 'nota_atribuida', 'Sua nota na atividade "Função de Verificação de Aprovado/Reprovado" foi 5.00.', 0),
+(3, 5, 'atividade_pendente', 'Você tem uma nova atividade pendente na turma TécDS 2026.1.', 0);

@@ -6,5 +6,6 @@
     Router::get('/fazenda', [baseFazenda::class, 'showFazenda']);
     Router::get('/fazenda/estilo', [baseFazenda::class, 'enviarEstilo']);
     Router::get('/fazenda/script', [baseFazenda::class, 'enviarScript']);
+    Router::get('/fazenda/arquivo', [baseFazenda::class, 'sendFile']);
 
 ?>

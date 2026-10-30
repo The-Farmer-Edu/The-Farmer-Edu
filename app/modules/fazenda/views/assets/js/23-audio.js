@@ -21,19 +21,20 @@
         animais: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.animais, individuais: Object.fromEntries(TIPOS_DE_ANIMAL_COM_SOM.map(tipo => [tipo, true])) },
         cachoeira: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.cachoeira },
         fonte: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.fonte },
+        trator: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.trator },
         silenciado: false,   // Fazenda 8.4 (C4): botão global "🔇"; independente do ligado/volume de cada categoria
       };
       try { // preferências salvas (apenas valores válidos)
         const salvo = JSON.parse(localStorage.getItem(CHAVE_DO_AUDIO));
         if (salvo && typeof salvo.silenciado === 'boolean') ESTADO_DO_AUDIO.silenciado = salvo.silenciado;   // configurações antigas não têm o campo: som ligado
-        if (salvo) for (const categoria of ['musica', 'animais', 'cachoeira', 'fonte']) if (salvo[categoria]) {
+        if (salvo) for (const categoria of ['musica', 'animais', 'cachoeira', 'fonte', 'trator']) if (salvo[categoria]) {
           if (typeof salvo[categoria].ligado === 'boolean') ESTADO_DO_AUDIO[categoria].ligado = salvo[categoria].ligado;
           if (Number.isFinite(salvo[categoria].volume)) ESTADO_DO_AUDIO[categoria].volume = Math.min(1, Math.max(0, salvo[categoria].volume));
           if (categoria === 'animais' && salvo[categoria].individuais) for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) if (typeof salvo[categoria].individuais[tipo] === 'boolean') ESTADO_DO_AUDIO.animais.individuais[tipo] = salvo[categoria].individuais[tipo];
         }
       } catch (erro) { }
       // Grava no localStorage (chave fazenda3d-audio-v1) o que está ligado e os volumes de cada categoria.
-      const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { localStorage.setItem(CHAVE_DO_AUDIO, JSON.stringify({ musica: ESTADO_DO_AUDIO.musica, animais: ESTADO_DO_AUDIO.animais, cachoeira: ESTADO_DO_AUDIO.cachoeira, fonte: ESTADO_DO_AUDIO.fonte, silenciado: ESTADO_DO_AUDIO.silenciado })); } catch (erro) { } };
+      const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { localStorage.setItem(CHAVE_DO_AUDIO, JSON.stringify({ musica: ESTADO_DO_AUDIO.musica, animais: ESTADO_DO_AUDIO.animais, cachoeira: ESTADO_DO_AUDIO.cachoeira, fonte: ESTADO_DO_AUDIO.fonte, trator: ESTADO_DO_AUDIO.trator, silenciado: ESTADO_DO_AUDIO.silenciado })); } catch (erro) { } };
 
       // Mantém o volume entre 0 e 1 (limite do elemento <audio>).
       const limitarVolume = volume => Math.min(1, Math.max(0, volume));
@@ -51,7 +52,7 @@
       };
       const FONTES_DE_SOM = { musica: criarFonteDeSom(AUDIO_CONFIG.musica.arquivo, true), cachoeira: criarFonteDeSom(AUDIO_CONFIG.ambiente.cachoeira.arquivo, true),
                    fonte: criarFonteDeSom(AUDIO_CONFIG.ambiente.fonte.arquivo, true), pedraSecreta: criarFonteDeSom(AUDIO_CONFIG.segredos.pedraSecreta.arquivo, false), animais: {} };
-      for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) FONTES_DE_SOM.animais[tipo] = criarFonteDeSom(AUDIO_CONFIG.animais[tipo].arquivo, false);
+      for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) FONTES_DE_SOM.animais[tipo] = AUDIO_CONFIG.animais[tipo].arquivos.map(arq => criarFonteDeSom(arq, false));
 
       // ---- Fazenda 8.4 (C4): silenciamento global ----
       // Percorre FONTES_DE_SOM inteiro (inclusive grupos como "animais"), para que fontes registradas no futuro também entrem.
@@ -91,6 +92,7 @@
 
       // Volume final da música = volume do painel × volume da configuração.
       const volumeDaMusica = () => limitarVolume(ESTADO_DO_AUDIO.musica.volume * AUDIO_CONFIG.musica.volume);
+      const TRATOR = AREAS.find(areaDaLista => areaDaLista.id === 'maquinario');
       const FONTES_DOS_AMBIENTES = { cachoeira: () => [CENTRO_X_DA_CACHOEIRA, Z_DA_FRENTE_DA_CACHOEIRA], fonte: () => [PRACA_CENTRAL.x, PRACA_CENTRAL.z] };   // chafariz no centro da praça central
       // Volume de cachoeira/fonte: volume do painel × configuração × fator de distância entre a câmera e a fonte
       // do som (nunca abaixo do mínimo configurado).
@@ -120,7 +122,7 @@
       const liberarAudio = function liberarAudio() { // chamado dentro de um clique do jogador: é o que permite o navegador tocar
         ESTADO_DO_AUDIO.liberado = true;
         sincronizarMusica(); sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte');
-        for (const fonteDeSom of [...Object.values(FONTES_DE_SOM.animais), FONTES_DE_SOM.pedraSecreta]) { // "destrava" os demais elementos (necessário no iOS); mudo e só por um instante
+        for (const fonteDeSom of [...Object.values(FONTES_DE_SOM.animais).flat(), FONTES_DE_SOM.pedraSecreta]) { // "destrava" os demais elementos (necessário no iOS); mudo e só por um instante
           try {
             fonteDeSom.el.src = fonteDeSom.arquivo; fonteDeSom.estado = 'carregando'; fonteDeSom.el.muted = true;
             const promessa = fonteDeSom.el.play();
@@ -143,7 +145,7 @@
       const definirCategoriaDeAudio = function definirCategoriaDeAudio(categoria, ligado) {
         ESTADO_DO_AUDIO[categoria].ligado = ligado;
         if (ligado) { // religar tenta de novo arquivos que falharam
-          if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (categoria === 'animais') Object.values(FONTES_DE_SOM.animais).forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
+          if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (categoria === 'animais') Object.values(FONTES_DE_SOM.animais).flat().forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
         }
         if (categoria === 'musica') sincronizarMusica(); else if (categoria !== 'animais') sincronizarAmbiente(categoria);
         aoMudarOAudio(); salvarPreferenciasDeAudio();
@@ -166,11 +168,12 @@
         if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.animais.ligado || ESTADO_DO_AUDIO.animais.volume <= 0.001) return;
         const limitesGlobais = AUDIO_CONFIG.animais.global;
         for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {
-          const configuracao = AUDIO_CONFIG.animais[tipo], fonteDeSom = FONTES_DE_SOM.animais[tipo];
+          const configuracao = AUDIO_CONFIG.animais[tipo], variacoes = FONTES_DE_SOM.animais[tipo];   // AQUI: variacoes (lista) no lugar de fonteDeSom
+          const disponiveis = variacoes.filter(f => f.estado !== 'erro'); 
           if (agendaDosAnimais.proximo[tipo] === undefined) agendaDosAnimais.proximo[tipo] = 4 + Math.random() * configuracao.intervaloMax * 0.6;
           if ((agendaDosAnimais.proximo[tipo] -= segundosDesdeUltimoFrame) > 0) continue;
           agendaDosAnimais.proximo[tipo] = sortearIntervalo(configuracao);
-          if (fonteDeSom.estado === 'erro' || !ESTADO_DO_AUDIO.animais.individuais[tipo]) continue;
+          if (!disponiveis.length || fonteDeSom.estado !== 'erro' || !ESTADO_DO_AUDIO.animais.individuais[tipo]) continue;
           const candidatos = animaisParaSom.filter(registro => registro.tipo === tipo && registro.grupo.parent);
           if (!candidatos.length) continue;
           const tocandoAgora = Object.values(FONTES_DE_SOM.animais).filter(tocando).length;
@@ -178,6 +181,10 @@
           const bicho = candidatos[Math.floor(Math.random() * candidatos.length)];
           bicho.grupo.getWorldPosition(vetorDoSom);
           const distancia = Math.hypot(alvoAtualDaCamera.x - vetorDoSom.x, alvoAtualDaCamera.z - vetorDoSom.z);
+          // AQUI (3 linhas): sorteia a variação, evitando repetir a última que tocou
+          const opcoes = disponiveis.length > 1 ? disponiveis.filter(f => f !== agendaDosAnimais['ultima_' + tipo]) : disponiveis;
+          const fonteDeSom = opcoes[Math.floor(Math.random() * opcoes.length)];
+          agendaDosAnimais['ultima_' + tipo] = fonteDeSom;
           try { fonteDeSom.el.currentTime = 0; fonteDeSom.el.playbackRate = 0.94 + Math.random() * 0.12; } catch (erro) { }
           const volume = ESTADO_DO_AUDIO.animais.volume * configuracao.volume * Math.max(0.12, 1 - distancia / limitesGlobais.distanciaMaxima);
           agendaDosAnimais.ultimoSom = tempo;

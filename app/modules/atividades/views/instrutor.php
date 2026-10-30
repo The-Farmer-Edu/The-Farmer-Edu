@@ -160,6 +160,21 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                     </div>
 
                     <div class="field">
+                        <label for="gabarito-normal">Gabarito</label>
+                        <input type="file" id="gabarito-normal" name="gabarito[]" multiple>
+                        <div class="arquivos-existentes"></div>
+                    </div>
+
+                    <div class="field">
+                        <label for="criterios-normal">Critérios de avaliação da IA</label>
+                        <input type="hidden" name="criterios" value="[]">
+                        <button id="criterios-normal" class="secondary pequeno btn-criterios" type="button"
+                            onclick="abrirCriterios(this)">
+                            Definir critérios <span class="contagem">(0)</span>
+                        </button>
+                    </div>
+
+                    <div class="field">
                         <label for="prazo-normal">Prazo de entrega</label>
                         <input type="date" id="prazo-normal" name="prazo" required>
                     </div>
@@ -201,6 +216,21 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                         <textarea id="conteudo-texto" name="descricao"
                             placeholder=""
                             required></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="gabarito-texto">Gabarito</label>
+                        <input type="file" id="gabarito-texto" name="gabarito[]" multiple>
+                        <div class="arquivos-existentes"></div>
+                    </div>
+
+                    <div class="field">
+                        <label for="criterios-texto">Critérios de avaliação da IA</label>
+                        <input type="hidden" name="criterios" value="[]">
+                        <button id="criterios-texto" class="secondary pequeno btn-criterios" type="button"
+                            onclick="abrirCriterios(this)">
+                            Definir critérios <span class="contagem">(0)</span>
+                        </button>
                     </div>
 
                     <div class="field">
@@ -265,6 +295,21 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                     </div>
 
                     <div class="field">
+                        <label for="gabarito-pergunta">Gabarito</label>
+                        <input type="file" id="gabarito-pergunta" name="gabarito[]" multiple>
+                        <div class="arquivos-existentes"></div>
+                    </div>
+
+                    <div class="field">
+                        <label for="criterios-pergunta">Critérios de avaliação da IA</label>
+                        <input type="hidden" name="criterios" value="[]">
+                        <button id="criterios-pergunta" class="secondary pequeno btn-criterios" type="button"
+                            onclick="abrirCriterios(this)">
+                            Definir critérios <span class="contagem">(0)</span>
+                        </button>
+                    </div>
+
+                    <div class="field">
                         <label for="prazo-pergunta">Prazo de entrega</label>
                         <input type="date" id="prazo-pergunta" name="prazo" required>
                     </div>
@@ -320,6 +365,19 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             </div>
         </section>
     </main>
+</div>
+
+<div id="modal-criterios" class="modal hidden" role="dialog" aria-modal="true" aria-label="Critérios de avaliação">
+    <div class="modal-janela">
+        <div class="modal-topo">
+            <button type="button" class="modal-fechar" onclick="fecharCriterios()" aria-label="Fechar">×</button>
+        </div>
+        <div id="modal-corpo" class="modal-corpo"></div>
+        <div class="form-actions modal-rodape">
+            <button type="button" class="primary" onclick="aplicarCriterios()">Concluir</button>
+            <button type="button" class="secondary" onclick="fecharCriterios()">Cancelar</button>
+        </div>
+    </div>
 </div>
 
 <script src="atividades/file?type=js&file=instrutor.js"></script>

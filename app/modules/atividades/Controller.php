@@ -6,10 +6,17 @@ require_once __DIR__ . '/../../core/session.php';
 
 class AtividadesController
 {
+
     public function showInstrutor(): void
     {
         $usuario = $this->exigirPerfil('instrutor');
         $this->view('instrutor', ['usuario' => $usuario]);
+    }
+
+    public function showCriterios(): void
+    {
+        $this->exigirPerfil('instrutor');
+        $this->view('criteriosAvaliacao');
     }
 
     public function showAluno(): void
@@ -40,19 +47,24 @@ class AtividadesController
         $usuario = $this->exigirPerfil('instrutor', true);
 
         $this->responder(function () use ($usuario) {
+            if (Gabarito::passouDoLimiteDoPost()) {
+                throw new InvalidArgumentException('Os arquivos passaram do limite de envio do servidor.');
+            }
+
             $pdo = iniciarPDO();
             $idInstrutor = (int) $usuario['idUsuario'];
             $idAtividade = (int) ($_POST['id_atividade'] ?? 0);
 
             $atividade = Atividade::doFormulario($_POST);
+            $uploads   = Gabarito::doUpload($_FILES['gabarito'] ?? []);
+            $copiar    = Gabarito::ids($_POST['copiar_arquivos'] ?? []);
+            $remover   = Gabarito::ids($_POST['remover_arquivos'] ?? []);
 
-            if ($idAtividade > 0) {
-                $atividade->atualizar($pdo, $idAtividade, $idInstrutor);
-                return ['mensagem' => 'Atividade atualizada com sucesso!'];
-            }
+            $atividade->gravar($pdo, $idInstrutor, $idAtividade > 0 ? $idAtividade : null, $uploads, $copiar, $remover);
 
-            $atividade->salvar($pdo, $idInstrutor);
-            return ['mensagem' => 'Atividade publicada com sucesso!'];
+            return ['mensagem' => $idAtividade > 0
+                ? 'Atividade atualizada com sucesso!'
+                : 'Atividade publicada com sucesso!'];
         });
     }
 
@@ -66,6 +78,27 @@ class AtividadesController
 
             return ['mensagem' => 'Atividade removida.'];
         });
+    }
+
+    public function baixarArquivo(): void
+    {
+        $usuario = $this->exigirPerfil('instrutor');
+
+        $arquivo = Gabarito::buscarDoInstrutor(iniciarPDO(), (int) ($_GET['id'] ?? 0), (int) $usuario['idUsuario']);
+        $caminho = $arquivo ? Gabarito::caminhoAbsoluto($arquivo['caminho']) : null;
+
+        if ($caminho === null) {
+            http_response_code(404);
+            echo 'Arquivo não encontrado.';
+            return;
+        }
+
+        header('Content-Type: application/octet-stream');
+        header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($arquivo['descricao_arquivo']));
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Length: ' . filesize($caminho));
+
+        readfile($caminho);
     }
 
     public function cursosAluno(): void

@@ -34,7 +34,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
         <p id="aviso" class="aviso hidden" role="alert"></p>
 
         <div class="page-header">
-            <h1 id="titulo-curso">ATIVIDADES</h1>
+            <h1 id="titulo-curso">MENU ATIVIDADES</h1>
         </div>
 
         <hr>
@@ -48,6 +48,11 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             <h3 class="barra-titulo">Realizadas <span id="total-realizadas" class="contador">0</span></h3>
             <div id="lista-realizadas" class="feed"></div>
         </section>
+
+        <section>
+            <button class="primary" type="submit">Postar Atividade </button>
+        </section>
+
     </main>
 </div>
 

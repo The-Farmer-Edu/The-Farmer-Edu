@@ -21,5 +21,5 @@
             return $texto;
         }
     }
-    $gabarito = FeedbackIAModel::gabaritosDaAtividade($idAtividade );
-    $resposta = (new Ollama())->gerar("Compare com o gabarito...\n\n$gabarito\n\nResposta do aluno:\n$respostaAluno");
+    // $gabarito = FeedbackIAModel::gabaritosDaAtividade($idAtividade );
+    // $resposta = (new Ollama())->gerar("Compare com o gabarito...\n\n$gabarito\n\nResposta do aluno:\n$respostaAluno");

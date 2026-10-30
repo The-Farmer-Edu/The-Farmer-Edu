@@ -283,5 +283,5 @@ CREATE TABLE arquivos (
   descricao_arquivo   VARCHAR(45) NOT NULL,
   caminho             VARCHAR(255) NOT NULL,
   FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
-  INDEX id_arquivo_atividade (id_atividade),
+  INDEX id_arquivo_atividade (id_atividade);
 )

@@ -1,9 +1,13 @@
 <?php
     require_once __DIR__ . '/../../core/database.php';
+    
 
     class testarAPIController {
     public function showAvaliar(): void {
         require_once __DIR__ . '/view/index.php';
+    }
+    public function testeResposta(): void {
+        require_once __DIR__ . '/view/testeResposta.php';
     }
 
     public function sendAvaliacao(): void {

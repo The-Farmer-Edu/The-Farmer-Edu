@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/session.php';

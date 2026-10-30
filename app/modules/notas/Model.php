@@ -44,19 +44,19 @@ class NotasModel
             INNER JOIN matriculas m    ON m.id_turma  = t.id_turma
                                       AND m.id_aluno  = :idAluno
             LEFT JOIN submissoes s     ON s.id_atividade = a.id_atividade
-                                      AND s.id_aluno     = :idAluno
+                                      AND s.id_aluno     = :idAluno2
                                       AND s.tentativa_num = (
                                           SELECT MAX(s2.tentativa_num)
                                           FROM submissoes s2
                                           WHERE s2.id_atividade = a.id_atividade
-                                            AND s2.id_aluno     = :idAluno
+                                            AND s2.id_aluno     = :idAluno3
                                       )
             LEFT JOIN notas n          ON n.id_submissao = s.id_submissao
             ORDER BY a.data_entrega ASC
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':idAluno' => $idAluno]);
+        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno, ]);
         return $stmt->fetchAll();
     }
 
@@ -74,18 +74,18 @@ class NotasModel
             FROM atividades a
             INNER JOIN turmas t     ON t.id_turma = a.id_turma
             INNER JOIN matriculas m ON m.id_turma = t.id_turma AND m.id_aluno = :idAluno
-            LEFT  JOIN submissoes s ON s.id_atividade = a.id_atividade AND s.id_aluno = :idAluno
+            LEFT  JOIN submissoes s ON s.id_atividade = a.id_atividade AND s.id_aluno = :idAluno2
                                    AND s.tentativa_num = (
                                        SELECT MAX(s2.tentativa_num)
                                        FROM submissoes s2
                                        WHERE s2.id_atividade = a.id_atividade
-                                         AND s2.id_aluno = :idAluno
+                                         AND s2.id_aluno = :idAluno3
                                    )
             LEFT  JOIN notas n      ON n.id_submissao = s.id_submissao
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':idAluno' => $idAluno]);
+        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno, ]);
         return $stmt->fetch() ?: [];
     }
 

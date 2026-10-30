@@ -25,11 +25,22 @@ class UsuarioController
         $sucesso  = false;
  
         try {
-            $usuario = match ($tipo) {
-                'aluno'     => new Aluno($nome, $email, $senha),
-                'instrutor' => new Instrutor($nome, $email, $senha, $this->lerMaterias()),
-                default     => throw new InvalidArgumentException('Tipo de usuário inválido.'),
-            };
+            // $usuario = match ($tipo) {
+            //     'aluno'     => new Aluno($nome, $email, $senha),
+            //     'instrutor' => new Instrutor($nome, $email, $senha, $this->lerMaterias()),
+            //     default     => throw new InvalidArgumentException('Tipo de usuário inválido.'),
+            // };
+
+            switch ($tipo){
+                case 'aluno':
+                    $usuario = new Aluno($nome, $email, $senha);
+                    break;
+                case 'instrutor':
+                    $usuario = new Instrutor($nome, $email, $senha, $this->lerMaterias());
+                    break;
+                default:
+                    throw new InvalidArgumentException('Tipo de usuário inválido.');
+            }
  
             $usuario->salvar(iniciarPDO());
  

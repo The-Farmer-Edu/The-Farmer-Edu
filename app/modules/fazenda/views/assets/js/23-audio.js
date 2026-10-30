@@ -21,9 +21,11 @@
         animais: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.animais, individuais: Object.fromEntries(TIPOS_DE_ANIMAL_COM_SOM.map(tipo => [tipo, true])) },
         cachoeira: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.cachoeira },
         fonte: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.fonte },
+        silenciado: false,   // Fazenda 8.4 (C4): botão global "🔇"; independente do ligado/volume de cada categoria
       };
       try { // preferências salvas (apenas valores válidos)
         const salvo = JSON.parse(localStorage.getItem(CHAVE_DO_AUDIO));
+        if (salvo && typeof salvo.silenciado === 'boolean') ESTADO_DO_AUDIO.silenciado = salvo.silenciado;   // configurações antigas não têm o campo: som ligado
         if (salvo) for (const categoria of ['musica', 'animais', 'cachoeira', 'fonte']) if (salvo[categoria]) {
           if (typeof salvo[categoria].ligado === 'boolean') ESTADO_DO_AUDIO[categoria].ligado = salvo[categoria].ligado;
           if (Number.isFinite(salvo[categoria].volume)) ESTADO_DO_AUDIO[categoria].volume = Math.min(1, Math.max(0, salvo[categoria].volume));
@@ -31,7 +33,7 @@
         }
       } catch (erro) { }
       // Grava no localStorage (chave fazenda3d-audio-v1) o que está ligado e os volumes de cada categoria.
-      const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { localStorage.setItem(CHAVE_DO_AUDIO, JSON.stringify({ musica: ESTADO_DO_AUDIO.musica, animais: ESTADO_DO_AUDIO.animais, cachoeira: ESTADO_DO_AUDIO.cachoeira, fonte: ESTADO_DO_AUDIO.fonte })); } catch (erro) { } };
+      const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { localStorage.setItem(CHAVE_DO_AUDIO, JSON.stringify({ musica: ESTADO_DO_AUDIO.musica, animais: ESTADO_DO_AUDIO.animais, cachoeira: ESTADO_DO_AUDIO.cachoeira, fonte: ESTADO_DO_AUDIO.fonte, silenciado: ESTADO_DO_AUDIO.silenciado })); } catch (erro) { } };
 
       // Mantém o volume entre 0 e 1 (limite do elemento <audio>).
       const limitarVolume = volume => Math.min(1, Math.max(0, volume));
@@ -41,7 +43,7 @@
       // carga marcam o som como indisponível.
       const criarFonteDeSom = function criarFonteDeSom(arquivo, repetirEmLoop) {
         const fonteDeSom = { arquivo, estado: 'ocioso', el: new Audio() }; // estado: ocioso | carregando | erro
-        fonteDeSom.el.preload = 'none'; fonteDeSom.el.loop = repetirEmLoop;
+        fonteDeSom.el.preload = 'none'; fonteDeSom.el.loop = repetirEmLoop; fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
         fonteDeSom.el.addEventListener('error', () => { fonteDeSom.estado = 'erro'; aoMudarOAudio(); });
         fonteDeSom.el.addEventListener('playing', () => { fonteDeSom.estado = 'ok'; aoMudarOAudio(); });
         fonteDeSom.el.addEventListener('pause', () => aoMudarOAudio());
@@ -50,6 +52,18 @@
       const FONTES_DE_SOM = { musica: criarFonteDeSom(AUDIO_CONFIG.musica.arquivo, true), cachoeira: criarFonteDeSom(AUDIO_CONFIG.ambiente.cachoeira.arquivo, true),
                    fonte: criarFonteDeSom(AUDIO_CONFIG.ambiente.fonte.arquivo, true), pedraSecreta: criarFonteDeSom(AUDIO_CONFIG.segredos.pedraSecreta.arquivo, false), animais: {} };
       for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) FONTES_DE_SOM.animais[tipo] = criarFonteDeSom(AUDIO_CONFIG.animais[tipo].arquivo, false);
+
+      // ---- Fazenda 8.4 (C4): silenciamento global ----
+      // Percorre FONTES_DE_SOM inteiro (inclusive grupos como "animais"), para que fontes registradas no futuro também entrem.
+      const todasAsFontesDeSom = function todasAsFontesDeSom(colecao = FONTES_DE_SOM) {
+        return Object.values(colecao).flatMap(item => item && item.el instanceof HTMLMediaElement ? [item] : item && typeof item === 'object' ? todasAsFontesDeSom(item) : []);
+      };
+      // Usa a propriedade "muted" de cada <audio>: os sons seguem a lógica de sempre (tocar, pausar, volume pela distância) e só
+      // não saem no alto-falante. Assim nada das preferências individuais é tocado, e religar continua exatamente de onde estava.
+      const aplicarSilencioGlobal = function aplicarSilencioGlobal() { for (const fonteDeSom of todasAsFontesDeSom()) fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado; };
+      const definirSilencioGlobal = function definirSilencioGlobal(silenciado) {
+        ESTADO_DO_AUDIO.silenciado = silenciado; aplicarSilencioGlobal(); salvarPreferenciasDeAudio(); aoMudarOAudio();
+      };
 
       // Para o som e esquece o arquivo, permitindo uma nova tentativa de carga (útil se o arquivo foi adicionado
       // depois).
@@ -110,9 +124,9 @@
           try {
             fonteDeSom.el.src = fonteDeSom.arquivo; fonteDeSom.estado = 'carregando'; fonteDeSom.el.muted = true;
             const promessa = fonteDeSom.el.play();
-            const soltar = () => { fonteDeSom.el.muted = false; };
+            const soltar = () => { fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado; };   // C4: volta ao estado global, não a "com som"
             if (promessa && promessa.then) promessa.then(() => { fonteDeSom.el.pause(); try { fonteDeSom.el.currentTime = 0; } catch (erro) { } soltar(); }, () => { soltar(); }); else soltar();
-          } catch (erro) { fonteDeSom.el.muted = false; }
+          } catch (erro) { fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado; }
         }
         aoMudarOAudio();
       };

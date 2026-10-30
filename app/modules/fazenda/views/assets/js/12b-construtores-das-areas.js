@@ -124,7 +124,9 @@
           }
         },
 
-        // N1 cercado com vaca · N2 vaca e ovelhas · N3 fazendinha cheia com cata-vento
+        // N1 cercado com vaca · N2 vaca e ovelhas · N3 fazendinha cheia (dois abrigos e dois cochos)
+        // Fazenda 8.4: o N3 ainda trazia o cata-vento de madeira da antiga "fazendinha" (de antes de o moinho de pedra virar uma
+        // construção própria, na Mark 8.2); ele aparecia como um moinho dentro do cercado e foi retirado, com a sua área de colisão.
         curral(grupo, nivel, animacoesDestaArea) {
           const largura = [6, 7.2, 8.8][nivel - 1], profundidade = [5, 6, 7.2][nivel - 1];
           criarBaseDoTerreno(grupo, largura + 0.9, profundidade + 0.9, 0x7fc650);
@@ -137,12 +139,6 @@
           if (nivel === 3) {
             criarAbrigo(grupo, -largura / 2 + 1.6, -profundidade / 2 + 1.4);
             criarCocho(grupo, -2.4, profundidade / 2 - 0.9);
-            const posicaoDoCataVentoX = -largura / 2 + 1, posicaoDoCataVentoZ = profundidade / 2 - 1.3;
-            criarCilindro(0.12, 0.55, 4.2, PALETA_DE_CORES.madeira, posicaoDoCataVentoX, 2.2, posicaoDoCataVentoZ, grupo, 4);
-            const helice = new THREE.Group();
-            helice.position.set(posicaoDoCataVentoX, 4.4, posicaoDoCataVentoZ + 0.35); grupo.add(helice);
-            for (let indiceDaPa = 0; indiceDaPa < 4; indiceDaPa++) { const braco = new THREE.Group(); braco.rotation.z = indiceDaPa * Math.PI / 2; criarCaixa(0.25, 1.4, 0.05, 0xc98a4a, 0, 0.7, 0, braco); helice.add(braco); }
-            animacoesDestaArea.push(tempoDecorrido => { helice.rotation.z = tempoDecorrido * 1.2; });
           }
           // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
           const retangulos = [
@@ -151,8 +147,7 @@
           ];
           if (nivel === 3) retangulos.push(
             [-largura / 2 + 1.6, -profundidade / 2 + 1.4, 2.3, 1.9], // segundo abrigo
-            [-2.4, profundidade / 2 - 0.9, 1.6, 0.6],          // segundo cocho
-            [-largura / 2 + 1, profundidade / 2 - 1.3, 1.1, 1.1]     // base do cata-vento
+            [-2.4, profundidade / 2 - 0.9, 1.6, 0.6]           // segundo cocho
           );
           const cercado = criarCercado(grupo, largura, profundidade, retangulos);
           const quantidadesPorTipo = { vaca: ANIMAIS_DAS_AREAS.curral.porNivel[nivel - 1] }; // ovelhas ficam em um cercado próprio
@@ -286,7 +281,7 @@
           const altura = [6.4, 8.2, 10][nivel - 1], raioDaBase = [1.9, 2.15, 2.4][nivel - 1], raioDoTopo = raioDaBase * 0.68, comprimentoDasPas = [3.0, 3.7, 4.4][nivel - 1];
           const raioNaAltura = posicaoY => raioDaBase + (raioDoTopo - raioDaBase) * Math.max(0, Math.min(1, (posicaoY - 0.5) / altura));
           criarBaseDoTerreno(grupo, 7.8, 7.2, 0x9dce68);
-          criarCilindro(raioDaBase + 0.4, raioDaBase + 0.5, 0.5, 0x8d877b, 0, 0.25, 0, grupo, 16);                     // embasamento
+          criarCilindro(raioDaBase + 0.15, raioDaBase + 0.25, 0.5, 0x8d877b, 0, 0.25, 0, grupo, 16);                   // embasamento (Fazenda 8.4: antes 0,4–0,5 além da torre, uma aba larga demais)
           const torre = new THREE.Mesh(new THREE.CylinderGeometry(raioDoTopo, raioDaBase, altura, 16), obterMaterialDaPedraDoMoinho());
           torre.position.y = 0.5 + altura / 2; torre.castShadow = torre.receiveShadow = true; grupo.add(torre);
           const quantidadeDeFaixas = nivel + 1;                                                                           // faixas de pedra mais escura
@@ -315,9 +310,20 @@
             const corrimao = new THREE.Mesh(new THREE.TorusGeometry(raioDaVaranda - 0.08, 0.035, 5, 32), material(0x3a2f28)); corrimao.rotation.x = Math.PI / 2; corrimao.position.y = alturaDaVaranda + 0.6; grupo.add(corrimao);
           }
           if (nivel === 3) {
-            for (let indice = 0; indice < 4; indice++) {                                                                 // contrafortes
-              const angulo = Math.PI / 4 + indice * Math.PI / 2, contraforte = criarCaixa(0.6, 2.4, 1.3, 0xa79f90, Math.sin(angulo) * (raioDaBase + 0.25), 1.6, Math.cos(angulo) * (raioDaBase + 0.25), grupo);
-              contraforte.rotation.set(0, angulo, 0); contraforte.rotation.x = 0;
+            // Contrafortes. Fazenda 8.4: eram caixas retas (0,6 × 2,75 × 1,3) de pedra mais clara, que pareciam placas soltas ao
+            // lado da torre. Agora são cunhas no raio da torre: pé largo no chão, face externa inclinada até encostar na torre logo
+            // abaixo da primeira faixa, na mesma pedra do embasamento. Perfil em (raio, altura), extrudado na largura.
+            const alturaDoContraforte = 2.35, larguraDoContraforte = 0.55;
+            const perfilDoContraforte = new THREE.Shape([
+              new THREE.Vector2(raioDaBase - 0.3, 0.03), new THREE.Vector2(raioDaBase + 0.8, 0.03), new THREE.Vector2(raioDaBase + 0.8, 0.4),
+              new THREE.Vector2(raioNaAltura(alturaDoContraforte) + 0.1, alturaDoContraforte), new THREE.Vector2(raioNaAltura(alturaDoContraforte) - 0.3, alturaDoContraforte),
+            ]);
+            const geometriaDoContraforte = new THREE.ExtrudeGeometry(perfilDoContraforte, { depth: larguraDoContraforte, bevelEnabled: false });
+            geometriaDoContraforte.translate(0, 0, -larguraDoContraforte / 2);
+            for (let indice = 0; indice < 4; indice++) {
+              const angulo = Math.PI / 4 + indice * Math.PI / 2, contraforte = new THREE.Mesh(geometriaDoContraforte, material(0x8d877b));
+              contraforte.rotation.y = angulo - Math.PI / 2;                                                            // o eixo x do perfil aponta para fora, na direção do ângulo
+              contraforte.castShadow = contraforte.receiveShadow = true; grupo.add(contraforte);
             }
             const lanterna = new THREE.Mesh(new THREE.CylinderGeometry(raioDoTopo - 0.05, raioDoTopo - 0.05, 0.55, 16), materialDaJanelaAcesa);  // "farol": anel envidraçado
             lanterna.position.y = topoDaTorre + 0.28; grupo.add(lanterna);

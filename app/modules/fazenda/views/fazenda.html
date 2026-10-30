@@ -47,24 +47,38 @@
     </div>
   </div>
   <!-- ESTRUTURA DA INTERFACE (o canvas 3D é criado pelo JavaScript e inserido antes destes elementos):
-       barra do XP, lista de cartões das áreas, aviso temporário, faixa de invasão e painéis flutuantes "Tempo" e "Áudio".
+       barra do XP (com o botão global de som e o do menu), gaveta de construções, aviso temporário, faixa de invasão,
+       menu compacto e painéis "Tempo", "Áudio", "Fazenda" e "Equipe".
        Os ids abaixo são usados pelo JavaScript: não os renomeie.
        O atributo "inert" deixa a interface sem foco e sem clique até a fazenda estar pronta (a SEÇÃO 00 o remove). -->
-  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora e minérios"></span><button id="botao-nome-da-fazenda" title="Mudar o nome da fazenda (aparece na placa de boas-vindas)">🏡 <span id="nome-da-fazenda-na-barra">FarmEdu</span> ✏️</button><button id="botao-teste-xp">+5000 XP (teste)</button>
+  <!-- Fazenda 8.4 (C2/C4): a barra superior mostra só o essencial (XP, recursos, som global e menu); os demais controles ficam no menu -->
+  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora e minérios"></span><button id="botao-som-global" aria-pressed="false" aria-label="Silenciar todos os sons" title="Silenciar ou religar todos os sons (os ajustes do painel Áudio são mantidos)"><span class="icone-do-som" aria-hidden="true">🔊</span> <span class="rotulo-do-som">Som ligado</span></button><button id="botao-menu" aria-expanded="false" aria-controls="menu-principal" aria-label="Abrir menu">☰ <span class="rotulo-do-menu">Menu</span></button>
   </div>
-  <div id="lista-cards" inert></div>
+  <!-- Fazenda 8.4 (C3): gaveta de construções. O cabeçalho abre/fecha e resume o estado; os cartões (seção 32) vão no conteúdo -->
+  <section id="lista-cards" class="gaveta-de-construcoes" aria-label="Construções" inert>
+    <button id="botao-gaveta-construcoes" aria-expanded="false" aria-controls="conteudo-da-gaveta"><span class="titulo-da-gaveta">🏗️ Construções</span> <span id="resumo-da-gaveta"></span> <span class="seta-da-gaveta" aria-hidden="true">▲</span></button>
+    <div id="conteudo-da-gaveta" hidden></div>
+  </section>
   <div id="aviso"></div>
   <div id="faixa-invasao" hidden role="alert" inert><b id="faixa-titulo"></b><span id="faixa-texto"></span></div>
   <div id="barra-ferramentas" inert>
-    <div class="botoes-ferramentas">
+    <!-- Menu compacto: abrir um painel esconde o menu; "‹ Menu" volta a ele e "✕" fecha tudo (Esc volta um nível) -->
+    <nav class="botoes-ferramentas" id="menu-principal" aria-label="Menu do jogo" hidden>
+      <div class="cabecalho-do-menu"><b>Menu</b><button class="botao-fechar" id="fechar-menu" aria-label="Fechar menu">✕</button></div>
+      <button class="botao-ferramenta" id="botao-nome-da-fazenda" title="Mudar o nome da fazenda (aparece na placa de boas-vindas)">🏡 <span id="nome-da-fazenda-na-barra">FarmEdu</span> ✏️</button>
       <button class="botao-ferramenta" id="botao-painel-tempo" aria-expanded="false" aria-controls="painel-tempo">🌗 Tempo</button>
-      <button class="botao-ferramenta" id="botao-painel-audio" aria-expanded="false" aria-controls="painel-audio">🔇 Áudio</button>
+      <button class="botao-ferramenta" id="botao-painel-audio" aria-expanded="false" aria-controls="painel-audio">🎚️ Áudio (ativar)</button>
       <!-- Mark 8.2: lavoura, animais e mina (SEÇÃO 27/28) e contratação de trabalhadores (SEÇÃO 29) -->
       <button class="botao-ferramenta" id="botao-painel-fazenda" aria-expanded="false" aria-controls="painel-fazenda">🌾 Fazenda</button>
       <button class="botao-ferramenta" id="botao-painel-equipe" aria-expanded="false" aria-controls="painel-equipe">👷 Equipe</button>
       <!-- Modo Leve (SEÇÃO 21): menos custo gráfico para computadores fracos; a escolha fica salva no navegador -->
       <button class="botao-ferramenta" id="botao-modo-leve" aria-pressed="false" title="Modo Leve: desliga sombras e luzes dinâmicas e reduz a resolução de renderização">⚡ Modo Leve <span class="estado-modo-leve">desligado</span></button>
-    </div>
+      <p class="dica-dos-controles">🎮 WASD andam · Espaço sobe · <b>C</b> ou Ctrl desce · Shift acelera. Para descer e avançar ao mesmo tempo, use <b>C + W</b>: o navegador reserva Ctrl+W para fechar a aba.</p>
+      <!-- Fazenda 8.4 (D2): ferramentas de teste só aparecem com o Modo desenvolvedor (pede senha; começa desligado a cada carregamento) -->
+      <button class="botao-ferramenta" id="botao-modo-desenvolvedor" aria-pressed="false" aria-controls="ferramentas-de-desenvolvedor" title="Ferramentas de teste (pede senha)">🛠️ Modo desenvolvedor <span class="estado-modo-desenvolvedor">desligado</span></button>
+      <div class="testes-do-menu" id="ferramentas-de-desenvolvedor" hidden><h4>🧪 Testes</h4><button id="botao-teste-xp">+5000 XP (teste)</button></div>
+    </nav>
+    <div class="navegacao-do-painel" id="navegacao-do-painel" hidden><button class="botao-ferramenta" id="voltar-ao-menu" aria-label="Voltar ao menu">‹ Menu</button><button class="botao-fechar" id="fechar-painel" aria-label="Fechar painel">✕</button></div>
     <section class="painel" id="painel-tempo" hidden>
       <h3>🌗 Dia e noite</h3>
       <div class="estado-tempo"><span id="tempo-relogio">08:30</span> <small>· <span id="tempo-periodo">Manhã</span></small></div>
@@ -75,7 +89,7 @@
         <button data-modo="noite" aria-pressed="false">🌙 Noite fixa</button>
       </div>
       <div class="modo-ativo">Modo ativo: <b id="tempo-modo">Automático</b></div>
-      <div class="testes-invasao"><h4>🧪 Testes de invasão (regra dos 5 dias reais)</h4>
+      <div class="testes-invasao" id="testes-do-tempo" hidden><h4>🧪 Testes de invasão (regra dos 5 dias reais)</h4>
         <button id="teste-invasao">🧟 Simular 5 dias sem jogar</button>
         <button id="teste-reparar">🔧 Reparar tudo</button>
         <h4>🧪 Testes da Mark 8.2</h4>
@@ -96,6 +110,16 @@
       <div class="previa" id="previa-nome-da-fazenda">BEM-VINDO À FARMEDU</div>
       <div class="erro" id="erro-nome-da-fazenda" role="alert"></div>
       <div class="acoes"><button class="botao-pequeno secundario" id="cancelar-nome-da-fazenda" type="button">Agora não</button><button class="botao-pequeno" id="salvar-nome-da-fazenda" type="button">Salvar nome</button></div>
+    </div>
+  </div>
+  <!-- Fazenda 8.4 (D2): senha do Modo desenvolvedor (proteção de conveniência na interface, não de segurança) -->
+  <div id="janela-modo-desenvolvedor" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-modo-desenvolvedor">
+    <div class="cartao-nome">
+      <h3 id="titulo-modo-desenvolvedor">🛠️ Modo desenvolvedor</h3>
+      <small>Libera as ferramentas de teste (XP extra, avançar o tempo, simular dias sem jogar, monstros e reparos). Digite a senha:</small>
+      <input id="campo-senha-desenvolvedor" type="password" autocomplete="off" aria-describedby="erro-senha-desenvolvedor">
+      <div class="erro" id="erro-senha-desenvolvedor" role="alert"></div>
+      <div class="acoes"><button class="botao-pequeno secundario" id="cancelar-modo-desenvolvedor" type="button">Cancelar</button><button class="botao-pequeno" id="confirmar-modo-desenvolvedor" type="button">Ativar</button></div>
     </div>
   </div>
   <!-- Vigia da tela de carregamento: se o script principal do jogo nem chegar a rodar (por exemplo, um erro de sintaxe),

@@ -27,7 +27,7 @@
 #painel-fazenda .legenda-dos-canteiros { display: flex; gap: 12px; justify-content: center; margin-top: 6px; font-size: 11px; opacity: .8 }
 #painel-fazenda .legenda-dos-canteiros span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px }
 #painel-fazenda .legenda-dos-canteiros .vazio::before { background: #f6ecd8; border: 1px dashed #c9a77a } #painel-fazenda .legenda-dos-canteiros .crescendo::before { background: #e6f4d8; border: 1px solid #9fcf7a } #painel-fazenda .legenda-dos-canteiros .pronto::before { background: #9fe36a; border: 1px solid #5fae3a }
-#painel-fazenda .escolha-de-colheita { margin-top: 10px; padding: 10px; gap: 6px; font-size: 13px; border: 1px solid #e6c99a }
+#painel-fazenda .escolha-de-colheita { margin-top: 10px; padding: 10px; gap: 6px; font-size: 13px; border: 1px solid var(--borda-bloco-colheita) }
 #painel-fazenda .escolha-de-colheita .botao-pequeno { font-size: 12px; padding: 7px 10px }
 #painel-fazenda .acoes { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 12px }
 #painel-fazenda .botao-colher-tudo { width: 100%; min-height: 46px; font-size: 15px }

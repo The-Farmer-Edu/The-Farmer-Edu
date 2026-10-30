@@ -18,9 +18,16 @@
       // Combinações com Ctrl, Cmd ou Alt (Ctrl+S, Ctrl+C, Ctrl+Shift+I...) são do navegador: o jogo não as captura nem as
       // bloqueia. Ctrl sozinho continua servindo para descer a câmera (sem preventDefault, para não interferir em atalhos).
       const ehTeclaDeControle = codigo => codigo === 'ControlLeft' || codigo === 'ControlRight';
+      const descendoComCtrl = () => teclas.ControlLeft || teclas.ControlRight;
+      // Fazenda 8.4 (C2): com o Ctrl do jogo pressionado (descendo), WASD, setas e Espaço continuam valendo e o atalho do navegador
+      // (Ctrl+S, Ctrl+A, Ctrl+D...) é bloqueado só nessas teclas. Ctrl+C fica com o navegador (C já desce sozinho). Ctrl+W, Ctrl+T e
+      // Ctrl+N são reservados pelo Chrome e nem chegam à página: por isso o aviso de saída abaixo e a dica "C + W" no menu.
+      const combinacaoDoJogo = evento => ehTeclaDeControle(evento.code) || !(evento.ctrlKey || evento.metaKey || evento.altKey)
+        || (evento.ctrlKey && !evento.metaKey && !evento.altKey && descendoComCtrl() && evento.code !== 'KeyC');
       addEventListener('keydown', evento => {
         if (evento.target && evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]')) return;   // Mark 8.3: digitando (ex.: nome da fazenda)
-        if (evento.code in teclas && (ehTeclaDeControle(evento.code) || !(evento.ctrlKey || evento.metaKey || evento.altKey))) {
+        if (!evento.ctrlKey && descendoComCtrl()) teclas.ControlLeft = teclas.ControlRight = false;   // Ctrl solto fora da página (keyup perdido)
+        if (evento.code in teclas && combinacaoDoJogo(evento)) {
           jogadorMexeu = true; teclas[evento.code] = true;
           if (!ehTeclaDeControle(evento.code)) evento.preventDefault();
           if (evento.code === 'Space' && document.activeElement && document.activeElement.blur) document.activeElement.blur(); // Espaço não aciona o botão focado
@@ -28,6 +35,9 @@
       });
       addEventListener('keyup', evento => { if (evento.code in teclas) { teclas[evento.code] = false; if (evento.code === 'Space') evento.preventDefault(); } });
       addEventListener('blur', () => { for (const tecla in teclas) teclas[tecla] = false; }); // evita tecla "presa" ao trocar de aba
+      // Se o Ctrl+W escapar enquanto o jogador desce com Ctrl, o navegador pergunta antes de fechar a aba (não é garantido: o
+      // Chrome só mostra a pergunta se já houve interação com a página, e o texto é o padrão dele).
+      addEventListener('beforeunload', evento => { if (descendoComCtrl()) { evento.preventDefault(); evento.returnValue = ''; } });
 
       const frente = new THREE.Vector3(), direita = new THREE.Vector3(), deslocamento = new THREE.Vector3();
 

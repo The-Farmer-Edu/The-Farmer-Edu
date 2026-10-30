@@ -39,30 +39,76 @@
       };
       // Clique em um cartão de área: conta como atividade do jogador e foca a câmera na área.
       const aoClicarNoCard = function aoClicarNoCard(idDaArea) { registrarAtividade(); focarCameraNaArea(idDaArea); if (idDaArea === 'mina' && estado.niveis.mina) mostrarAviso(textoDoEstadoDaMina()); };   // tocar numa área também conta como atividade
+      // ---- Fazenda 8.4 (C3): gaveta de construções ----
+      // Grupos só visuais (não criam dependências). Uma área que não esteja em nenhum grupo aparece em "Outras", para nunca sumir.
+      const GRUPOS_DA_GAVETA = [
+        ['🏠 Moradia', ['casa']],
+        ['🐄 Animais', ['curral', 'ovelhal', 'galinheiro', 'chiqueiro', 'estabulo']],
+        ['🌾 Produção', ['plantacaoGrande', 'novaPlantacao', 'moinho', 'mina']],
+        ['🛠️ Infraestrutura', ['celeiro', 'maquinario', 'ponte']],
+      ];
+      // Mesmas condições de evoluirArea (não destruída, abaixo do máximo, XP suficiente) e de repararArea (destruída).
+      const podeEvoluirAgora = idDaArea => !instalacaoDestruida(idDaArea) && estado.niveis[idDaArea] < NIVEL_MAXIMO && estado.xp >= custoParaProximoNivel(idDaArea, estado.niveis[idDaArea]);
+      const atualizarResumoDaGaveta = function atualizarResumoDaGaveta() {
+        const quantasPodemEvoluir = AREAS.filter(area => podeEvoluirAgora(area.id)).length, quantasPrecisamDeReparo = AREAS.filter(area => instalacaoDestruida(area.id)).length;
+        const html = (quantasPodemEvoluir ? `<span class="selo-resumo evoluir">⬆ ${quantasPodemEvoluir} pode${quantasPodemEvoluir > 1 ? 'm' : ''} evoluir</span>` : '<span class="selo-resumo">⬆ nenhuma pode evoluir agora</span>')
+          + (quantasPrecisamDeReparo ? ` <span class="selo-resumo reparo">💥 ${quantasPrecisamDeReparo} precisa${quantasPrecisamDeReparo > 1 ? 'm' : ''} de reparo</span>` : '');
+        const resumo = selecionar('#resumo-da-gaveta'); if (resumo.innerHTML !== html) resumo.innerHTML = html;
+      };
+      // Trilha 0 → 1 → 2 → 3 em pontos ligados: concluídos cheios, o atual maior e com anel ("aria-current"), os seguintes vazados.
+      // O nome especial do nível 0 (Base, Quebrada) vai no "title" do ponto e na linha de detalhe do cartão.
+      const trilhaDeNiveis = function trilhaDeNiveis(idDaArea, nivel) {
+        const rotuloDoZero = ROTULOS_DO_NIVEL_0[idDaArea] ? ROTULOS_DO_NIVEL_0[idDaArea].estado.replace(/^\S+\s/, '') : 'Lote';
+        return `<ol class="trilha-de-niveis" aria-label="Nível ${nivel} de ${NIVEL_MAXIMO}">${[...Array(NIVEL_MAXIMO + 1).keys()].map(passo =>
+          `<li class="${passo < nivel ? 'feito' : passo === nivel ? 'atual' : 'futuro'}"${passo === nivel ? ' aria-current="step"' : ''} title="${passo === 0 ? rotuloDoZero : 'Nível ' + passo}">${passo}</li>`).join('')}</ol>`;
+      };
+      // Cabeça do cartão: medalhão com o ícone, nome, "Nv X/3" e a trilha.
+      const cabecaDoCartao = (area, nivel) => `<span class="medalhao-do-card" aria-hidden="true">${area.icone}</span>
+        <div class="titulo-do-card"><b>${area.nome}</b><span class="nivel-do-card">Nv ${nivel}/${NIVEL_MAXIMO}</span></div>
+        ${trilhaDeNiveis(area.id, nivel)}`;
+      let interagindoComAGaveta = false, redesenhoDaGavetaPendente = false;
       const desenharCards = function desenharCards() {
-        const lista = selecionar('#lista-cards'), rolagem = lista.scrollLeft;
         selecionar('#valor-xp').textContent = estado.xp;
-        lista.innerHTML = AREAS.map(area => {
+        atualizarResumoDaGaveta();
+        const conteudo = selecionar('#conteudo-da-gaveta');
+        // Com o dedo/mouse pressionado num cartão, o redesenho espera o fim do toque (senão o botão some e o clique se perde).
+        if (interagindoComAGaveta) { redesenhoDaGavetaPendente = true; return; }
+        const rolagem = conteudo.scrollTop, focado = document.activeElement && conteudo.contains(document.activeElement) ? document.activeElement.dataset.foco : null;
+        const cartao = area => {
           const nivel = estado.niveis[area.id], maximo = nivel >= NIVEL_MAXIMO, custo = custoParaProximoNivel(area.id, nivel), semXp = !maximo && estado.xp < custo;
           if (instalacaoDestruida(area.id)) {   // instalação destruída: nível preservado, só dá para reparar
             const reparo = custoDeReparo(area.id);
             return `<div class="card destruida" onclick="aoClicarNoCard('${area.id}')">
-        <div>${area.icone} <b>${area.nome}</b></div>
-        <div class="pontos-nivel">💥 Destruído · nível ${nivel} preservado</div>
-        <button ${estado.xp < reparo ? 'disabled' : ''} onclick="event.stopPropagation(); repararArea('${area.id}')">Reparar · ${reparo} XP</button>
+        ${cabecaDoCartao(area, nivel)}
+        <div class="pontos-nivel"><span class="selo-estado destruida">💥 Destruído</span> nível ${nivel} preservado</div>
+        <button data-foco="${area.id}" ${estado.xp < reparo ? 'disabled' : ''} onclick="event.stopPropagation(); repararArea('${area.id}')">Reparar · ${reparo} XP</button>
       </div>`;
           }
           // nível 0: lote reservado com botão "Construir"; sem XP o botão continua clicável e explica quanto falta
           const temBase = AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(area.id), loteVazio = !nivel && !temBase;
-          return `<div class="card${loteVazio ? ' nao-construido' : ''}" onclick="aoClicarNoCard('${area.id}')">
-        <div>${area.icone} <b>${area.nome}</b></div>
-        <div class="pontos-nivel">${nivel ? '●'.repeat(nivel) + '○'.repeat(NIVEL_MAXIMO - nivel) : temBase ? ROTULOS_DO_NIVEL_0[area.id].estado : '🚧 Não construído'}${area.id === 'casa' ? ' · ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s)' : ''}</div>
-        ${informacaoExtraDoCard(area.id)}
-        <button class="${semXp ? 'sem-xp' : ''}" ${maximo ? 'disabled' : ''} title="${semXp ? 'Faltam ' + (custo - estado.xp) + ' XP' : ''}" onclick="event.stopPropagation(); evoluirArea('${area.id}')">${maximo ? 'Nível máximo' : (loteVazio ? 'Construir · ' : !nivel && temBase ? ROTULOS_DO_NIVEL_0[area.id].acao + ' · ' : 'Evoluir · ') + custo + ' XP'}</button>
+          const selo = maximo ? '<span class="selo-estado maximo">⭐ Nível máximo</span>' : semXp ? `<span class="selo-estado bloqueado">🔒 Faltam ${custo - estado.xp} XP</span>` : '<span class="selo-estado disponivel">⬆ Disponível</span>';
+          const detalhe = [loteVazio ? '🚧 Não construído' : !nivel ? ROTULOS_DO_NIVEL_0[area.id].estado : '', area.id === 'casa' ? CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s)' : ''].filter(Boolean).join(' · ');
+          return `<div class="card${loteVazio ? ' nao-construido' : ''}${maximo ? ' maximo' : semXp ? '' : ' disponivel'}" onclick="aoClicarNoCard('${area.id}')">
+        ${cabecaDoCartao(area, nivel)}
+        <div class="pontos-nivel">${selo}${detalhe ? ` <span class="detalhe-do-card">${detalhe}</span>` : ''}${informacaoExtraDoCard(area.id)}</div>
+        <button data-foco="${area.id}" class="${semXp ? 'sem-xp' : ''}" ${maximo ? 'disabled' : ''} title="${semXp ? 'Faltam ' + (custo - estado.xp) + ' XP' : ''}" onclick="event.stopPropagation(); evoluirArea('${area.id}')">${maximo ? 'Nível máximo' : (loteVazio ? 'Construir · ' : !nivel && temBase ? ROTULOS_DO_NIVEL_0[area.id].acao + ' · ' : 'Evoluir · ') + custo + ' XP'}</button>
       </div>`;
+        };
+        const agrupadas = new Set(GRUPOS_DA_GAVETA.flatMap(([, ids]) => ids));
+        const grupos = [...GRUPOS_DA_GAVETA, ['Outras', AREAS.map(area => area.id).filter(id => !agrupadas.has(id))]];
+        conteudo.innerHTML = grupos.map(([titulo, ids]) => {
+          const areas = ids.map(id => AREAS.find(area => area.id === id)).filter(Boolean);
+          return areas.length ? `<section class="grupo-da-gaveta"><h4>${titulo} <span class="contagem-do-grupo">${areas.length}</span></h4><div class="cartoes-do-grupo">${areas.map(cartao).join('')}</div></section>` : '';
         }).join('');
-        lista.scrollLeft = rolagem;
+        conteudo.scrollTop = rolagem;
+        if (focado) { const botao = conteudo.querySelector(`[data-foco="${focado}"]`); if (botao) botao.focus({ preventScroll: true }); }
       };
+      selecionar('#conteudo-da-gaveta').addEventListener('pointerdown', () => { interagindoComAGaveta = true; });
+      for (const nomeDoEvento of ['pointerup', 'pointercancel']) addEventListener(nomeDoEvento, () => {
+        if (!interagindoComAGaveta) return;
+        interagindoComAGaveta = false;
+        if (redesenhoDaGavetaPendente) { redesenhoDaGavetaPendente = false; setTimeout(desenharCards, 60); }   // depois do "click" do mesmo toque
+      });
       // O sistema de atividades deve chamar window.adicionarXP(quantidade) para creditar XP (isso conta como atividade do jogador).
       window.adicionarXP = quantidade => { estado.xp += quantidade; registrarAtividade(); desenharCards(); atualizarPaineisDaMark82(true); };
       selecionar('#botao-teste-xp').onclick = () => window.adicionarXP(5000);
@@ -88,6 +134,42 @@
       campoDoNome.addEventListener('input', atualizarPreviaDoNome);
       campoDoNome.addEventListener('keydown', evento => { if (evento.key === 'Enter') salvarNomeDaFazenda(); if (evento.key === 'Escape') fecharJanelaDoNome(); });
       janelaDoNome.addEventListener('click', evento => { if (evento.target === janelaDoNome) fecharJanelaDoNome(); });
+      // ---- Fazenda 8.4 (D2): Modo desenvolvedor ----
+      // Reúne as ferramentas de teste que já existiam: +5000 XP (menu) e, no painel Tempo, simular 5 dias sem jogar, reparar tudo,
+      // monstros noturnos agora e avançar 10 minutos. Começa desligado a cada carregamento e pede senha para ligar. É só uma
+      // proteção de conveniência da interface: quem lê este código vê a senha.
+      const SENHA_DO_MODO_DESENVOLVEDOR = 'pitufo';
+      const CONTROLES_DE_TESTE = '#botao-teste-xp, #teste-invasao, #teste-reparar, #teste-monstros, #teste-avancar';
+      let modoDesenvolvedorAtivo = false;
+      const botaoDoModoDesenvolvedor = selecionar('#botao-modo-desenvolvedor'), janelaDoModoDesenvolvedor = selecionar('#janela-modo-desenvolvedor');
+      const campoDaSenha = selecionar('#campo-senha-desenvolvedor'), erroDaSenha = selecionar('#erro-senha-desenvolvedor');
+      const definirModoDesenvolvedor = function definirModoDesenvolvedor(ativo) {
+        modoDesenvolvedorAtivo = ativo;
+        selecionar('#ferramentas-de-desenvolvedor').hidden = !ativo; selecionar('#testes-do-tempo').hidden = !ativo;
+        botaoDoModoDesenvolvedor.setAttribute('aria-pressed', String(ativo));
+        botaoDoModoDesenvolvedor.querySelector('.estado-modo-desenvolvedor').textContent = ativo ? 'ligado' : 'desligado';
+      };
+      const abrirJanelaDoModoDesenvolvedor = function abrirJanelaDoModoDesenvolvedor() { campoDaSenha.value = ''; erroDaSenha.textContent = ''; janelaDoModoDesenvolvedor.hidden = false; setTimeout(() => campoDaSenha.focus(), 50); };
+      const fecharJanelaDoModoDesenvolvedor = () => { janelaDoModoDesenvolvedor.hidden = true; campoDaSenha.value = ''; erroDaSenha.textContent = ''; };
+      const confirmarSenhaDoModoDesenvolvedor = function confirmarSenhaDoModoDesenvolvedor() {
+        if (campoDaSenha.value !== SENHA_DO_MODO_DESENVOLVEDOR) { erroDaSenha.textContent = 'Senha incorreta. O Modo desenvolvedor continua desligado.'; campoDaSenha.select(); return; }
+        fecharJanelaDoModoDesenvolvedor(); definirModoDesenvolvedor(true);
+        mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
+      };
+      botaoDoModoDesenvolvedor.onclick = () => {
+        if (!modoDesenvolvedorAtivo) { abrirJanelaDoModoDesenvolvedor(); return; }
+        definirModoDesenvolvedor(false); mostrarAviso('🛠️ Modo desenvolvedor desligado.');
+      };
+      selecionar('#confirmar-modo-desenvolvedor').onclick = confirmarSenhaDoModoDesenvolvedor;
+      selecionar('#cancelar-modo-desenvolvedor').onclick = fecharJanelaDoModoDesenvolvedor;
+      campoDaSenha.addEventListener('keydown', evento => { if (evento.key === 'Enter') confirmarSenhaDoModoDesenvolvedor(); if (evento.key === 'Escape') fecharJanelaDoModoDesenvolvedor(); });
+      janelaDoModoDesenvolvedor.addEventListener('click', evento => { if (evento.target === janelaDoModoDesenvolvedor) fecharJanelaDoModoDesenvolvedor(); });
+      // Com o modo desligado, um clique (ou Enter) num controle de teste para aqui, antes do handler original: além de escondidos,
+      // eles não funcionam pelos caminhos da interface.
+      document.addEventListener('click', evento => {
+        if (!modoDesenvolvedorAtivo && evento.target.closest && evento.target.closest(CONTROLES_DE_TESTE)) { evento.stopImmediatePropagation(); evento.preventDefault(); }
+      }, true);
+      definirModoDesenvolvedor(false);
       atualizarNomeNaInterface();
       desenharCards();
       arquivoDaMontagemConcluido('32-interface.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

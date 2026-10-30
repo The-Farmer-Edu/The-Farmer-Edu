@@ -16,16 +16,19 @@
       // LAVOURA_CONFIG.larguraPorNivel × profundidade 15) e cada uma tem a própria grade de canteiros, cujo estado fica em
       // estado.lavouras[idDaArea]. Solos e bordas dos canteiros são instanciados (2 desenhos por plantação); as plantas são
       // desenhadas pela seção 27. entrada: 'norte' (Grande, como era) ou 'oeste' (Nova, de frente para a estrada).
-      // alinharOeste: mantém a borda oeste no mesmo lugar em todos os níveis (a estrada da Nova plantação chega por ali).
+      // caminhoAteAEstrada (Fazenda 8.4): as duas plantações ficam CENTRADAS no lote em todos os níveis, alinhadas entre si (antes a
+      // Nova era deslocada para leste nos níveis 1 e 2). Enquanto a cerca oeste ainda não alcança o fim da estrada da Nova plantação
+      // (ROTAS_DA_MARK_8_2, seção 09), um trecho de terra dentro do próprio grupo da área liga a estrada ao portão; no nível 3 a
+      // plantação já encosta na estrada e o trecho não é criado.
       const quantidadeDeCanteirosNoNivel = function quantidadeDeCanteirosNoNivel(nivel) {
         if (!nivel) return { colunas: 0, linhas: 0, total: 0 };
         const { larguraPorNivel, profundidade, tamanhoDoCanteiro, corredor } = LAVOURA_CONFIG;
         const colunas = Math.floor((larguraPorNivel[nivel - 1] - corredor) / (tamanhoDoCanteiro + corredor)), linhas = Math.floor((profundidade - corredor) / (tamanhoDoCanteiro + corredor));
         return { colunas, linhas, total: Math.min(LAVOURA_CONFIG.maximoDeCanteiros, colunas * linhas) };
       };
-      const construirPlantacaoComCanteiros = function construirPlantacaoComCanteiros(grupo, nivel, idDaArea, entrada, alinharOeste) {
+      const construirPlantacaoComCanteiros = function construirPlantacaoComCanteiros(grupo, nivel, idDaArea, entrada, caminhoAteAEstrada) {
         const { larguraPorNivel, profundidade, tamanhoDoCanteiro, corredor } = LAVOURA_CONFIG, largura = larguraPorNivel[nivel - 1];
-        const deslocamentoX = alinharOeste ? (larguraPorNivel[NIVEL_MAXIMO - 1] - largura) / 2 : 0;
+        const deslocamentoX = 0;   // centrada no lote (o valor continua em canteirosVisuais: a seção 27 o soma às posições dos canteiros)
         const campo = new THREE.Group(); campo.position.x = deslocamentoX; grupo.add(campo);
         criarBaseDoTerreno(campo, largura + 1.4, profundidade + 1.4, 0x78bd49);
         criarCaixa(largura, 0.1, profundidade, 0x7a4c28, 0, 0.12, 0, campo);
@@ -44,6 +47,11 @@
           for (const lado of [-1, 1]) { criarCaixa(0.2, 1.3, 0.2, PALETA_DE_CORES.madeira, -largura / 2, 0.65, lado * 1.5, campo); criarEsfera(0.11, 0xc98a4a, -largura / 2, 1.38, lado * 1.5, campo); }
           criarPlacaDeMadeira(campo, -largura / 2 - 0.5, 2.6);
           criarPosteDeLampiao(campo, -largura / 2 - 0.45, -2.5, Math.PI);
+        }
+        if (caminhoAteAEstrada) {   // trecho de terra: do fim da estrada até um pouco por baixo da borda do gramado (fora da cerca e dos canteiros)
+          const [, , xFinalDaEstrada, zDaEstrada, larguraDaEstrada] = ROTAS_DA_MARK_8_2[0];
+          const inicio = xFinalDaEstrada + larguraDaEstrada / 2 - grupo.position.x - deslocamentoX, fim = -largura / 2 - 0.6;
+          if (fim > inicio) criarCaixa(fim - inicio, ALTURA_DO_CAMINHO, larguraDaEstrada, COR_ESTRADA, (inicio + fim) / 2, ALTURA_DO_CAMINHO / 2, zDaEstrada - grupo.position.z, campo).castShadow = false;
         }
         criarBarril(campo, largura / 2 - 0.9, profundidade / 2 + 0.7); criarCaixote(campo, -largura / 2 + 0.9, profundidade / 2 + 0.7);
         if (nivel >= 2) {                                                                                        // espantalho num canto

@@ -28,6 +28,7 @@
       const montanha = function montanha(posicaoX, posicaoZ, raioDaBase, altura) {
         const grupoDaMontanha = new THREE.Group();
         grupoDaMontanha.position.set(posicaoX, 0, posicaoZ);
+        grupoDaMontanha.userData.nome = 'montanha';   // Fazenda 8.4: a entrada da caverna procura as montanhas que atravessam o túnel
         grupoDaMontanha.rotation.y = numeroAleatorioDoCenario() * 6.28;
         const fatorDeTom = 0.94 + numeroAleatorioDoCenario() * 0.12, variar = cor => new THREE.Color(cor).multiplyScalar(fatorDeTom).getHex(); // tom levemente diferente por montanha
         const parte = (raioDaParte, alturaDaParte, cor, deslocamentoX, deslocamentoZ, fracaoInicial = 0, folga = 1) => {
@@ -175,8 +176,41 @@
         const pecaDoTunel = (geometria, materialDaPeca) => { const malha = new THREE.Mesh(escurecerComAProfundidade(geometria), materialDaPeca); malha.userData.nome = 'interior-da-caverna'; grupo.add(malha); return malha; };
         for (const lado of [-1, 1]) { const parede = new THREE.PlaneGeometry(profundidade, alturaDaParede, 8, 1); parede.rotateY(Math.PI / 2); parede.translate(lado * meiaLargura, alturaDaParede / 2, centroDoTunelZ); pecaDoTunel(parede, materialDoInterior); }
         const abobada = new THREE.CylinderGeometry(meiaLargura, meiaLargura, profundidade, 18, 8, true, Math.PI / 2, Math.PI); abobada.rotateX(Math.PI / 2); abobada.translate(0, alturaDaParede, centroDoTunelZ); pecaDoTunel(abobada, materialDoInterior);
-        const piso = new THREE.PlaneGeometry(meiaLargura * 2 + 0.1, profundidade + 0.2, 1, 8); piso.rotateX(-Math.PI / 2); piso.translate(0, 0.035, centroDoTunelZ); pecaDoTunel(piso, materialDoPisoDoInterior).renderOrder = 1;
+        // Fazenda 8.4: o piso vai da frente da face (z = 0) até o fundo. Antes começava em z = −1,3 e, na espessura da face, o chão
+        // verde (y = 0) disputava profundidade com a base do furo da rocha (também y = 0): o verde aparecia na entrada.
+        const comprimentoDoPiso = profundidadeDaFace + profundidade + 0.1;
+        const piso = new THREE.PlaneGeometry(meiaLargura * 2 + 0.1, comprimentoDoPiso, 1, 10); piso.rotateX(-Math.PI / 2); piso.translate(0, 0.035, -0.01 - comprimentoDoPiso / 2); pecaDoTunel(piso, materialDoPisoDoInterior).renderOrder = 1;
         const fundo = new THREE.ShapeGeometry(new THREE.Shape(paraVetores(pontosDoArco))); fundo.translate(0, 0, fundoDoTunel); pecaDoTunel(fundo, materialDoInterior);
+        // Fazenda 8.4: a saia de floresta (e o corpo rochoso) da montanha a oeste da caverna atravessa o fundo do túnel, e a
+        // superfície verde aparecia lá dentro. Sem mexer na montanha (vértices, colisões e sorteios continuam iguais), os
+        // materiais das montanhas cujos triângulos entram no túnel deixam de ser desenhados SÓ dentro do volume do túnel
+        // (planos de corte em interseção: paredes, piso, frente, fundo e a abóbada em 12 faces). Fora dele nada muda; as
+        // sombras continuam inteiras (clipShadows desligado).
+        grupo.updateMatrixWorld(true);
+        const volumeDoTunel = new THREE.Box3(new THREE.Vector3(-meiaLargura, 0, fundoDoTunel), new THREE.Vector3(meiaLargura, altura, 0));
+        const mundoParaEntrada = grupo.matrixWorld.clone().invert(), triangulo = new THREE.Triangle(), materiaisQueAtravessam = new Set();
+        cena.children.filter(objeto => objeto.userData.nome === 'montanha').forEach(montanhaDoCenario => montanhaDoCenario.traverse(malha => {
+          if (!malha.isMesh || materiaisQueAtravessam.has(malha.material)) return;
+          malha.updateWorldMatrix(true, false);
+          const paraEntrada = mundoParaEntrada.clone().multiply(malha.matrixWorld), posicoes = malha.geometry.attributes.position, indices = malha.geometry.index;
+          for (let indice = 0; indice < (indices ? indices.count : posicoes.count); indice += 3) {
+            const vertice = deslocamento => indices ? indices.getX(indice + deslocamento) : indice + deslocamento;
+            triangulo.a.fromBufferAttribute(posicoes, vertice(0)).applyMatrix4(paraEntrada); triangulo.b.fromBufferAttribute(posicoes, vertice(1)).applyMatrix4(paraEntrada); triangulo.c.fromBufferAttribute(posicoes, vertice(2)).applyMatrix4(paraEntrada);
+            if (volumeDoTunel.intersectsTriangle(triangulo)) { materiaisQueAtravessam.add(malha.material); break; }
+          }
+        }));
+        if (materiaisQueAtravessam.size) {
+          const folga = 0.005, planosDeCorte = [   // normal apontando para FORA do túnel: o que fica do lado de dentro de todos é cortado
+            new THREE.Plane(new THREE.Vector3(1, 0, 0), -meiaLargura - folga), new THREE.Plane(new THREE.Vector3(-1, 0, 0), -meiaLargura - folga),
+            new THREE.Plane(new THREE.Vector3(0, -1, 0), -0.05), new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), new THREE.Plane(new THREE.Vector3(0, 0, -1), fundoDoTunel - folga)];
+          for (let face = 0; face < 12; face++) {   // abóbada: faces tangentes a um círculo um pouco maior que o arco (cortam todo o arco)
+            const angulo = (face + 0.5) / 12 * Math.PI, normal = new THREE.Vector3(Math.cos(angulo), Math.sin(angulo), 0);
+            planosDeCorte.push(new THREE.Plane(normal, -(normal.y * alturaDaParede + meiaLargura / Math.cos(Math.PI / 24) + folga)));
+          }
+          planosDeCorte.forEach(plano => plano.applyMatrix4(grupo.matrixWorld));
+          for (const materialDaMontanha of materiaisQueAtravessam) { materialDaMontanha.clippingPlanes = planosDeCorte; materialDaMontanha.clipIntersection = true; materialDaMontanha.needsUpdate = true; }
+          renderizador.localClippingEnabled = true;
+        }
 
         // empurra o centro de uma rocha para fora do túnel (caixa |x| < meiaLargura, 0 < y < altura, fundoDoTunel < z < 0)
         function afastarDoTunel(centro, raio) {

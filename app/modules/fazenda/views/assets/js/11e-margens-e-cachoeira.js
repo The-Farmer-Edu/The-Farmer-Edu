@@ -43,20 +43,35 @@
       animacoesDoCenario.push((tempoDecorrido, segundosDesdeUltimoFrame) => { texturaDaCachoeira.offset.y += segundosDesdeUltimoFrame * 0.7; }); // a água desce
       criarCilindro(4.6, 4.6, 0.05, 0xc2a56b, CENTRO_X_DA_CACHOEIRA, 0.06, Z_DA_FRENTE_DA_CACHOEIRA + 2.5, cena, 24);  // areia ao redor do poço
       criarCilindro(4.2, 4.2, 0.06, 0x57b3dd, CENTRO_X_DA_CACHOEIRA, 0.09, Z_DA_FRENTE_DA_CACHOEIRA + 2.5, cena, 24);  // poço no pé da cachoeira
+      // Fazenda 8.4: a espuma usava o Lambert branco COMPARTILHADO do cache, que fica cinza-esverdeado no lado voltado para a
+      // câmera (o sol vem do norte, por trás do paredão). Agora tem material próprio "Basic" (quase opaco), que entra no registro
+      // do ciclo e escurece à noite como a névoa; um sombreado suave nos vértices (topo branco, laterais azuladas) dá o volume.
+      const materialDaEspuma = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, transparent: true, opacity: 0.92 });
       for (let indice = 0; indice < 7; indice++) {                                                  // espuma pulsando
         const espuma = criarEsfera(0.5 + (indice % 3) * 0.12, 0xffffff, CENTRO_X_DA_CACHOEIRA + (indice - 3) * 0.55, 0.3, Z_DA_FRENTE_DA_CACHOEIRA + 0.9 + (indice % 2) * 0.4, cena, 0.7);
-        espuma.castShadow = false; espuma.userData.animado = true;
+        const normais = espuma.geometry.attributes.normal, cores = [];
+        for (let vertice = 0; vertice < normais.count; vertice++) { const luz = 0.5 + 0.5 * normais.getY(vertice); cores.push(0.84 + 0.16 * luz, 0.89 + 0.11 * luz, 0.93 + 0.07 * luz); }
+        espuma.geometry.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
+        espuma.material = materialDaEspuma; espuma.castShadow = false; espuma.userData.animado = true;
         animacoesDoCenario.push(tempoDecorrido => espuma.scale.set(1 + 0.12 * Math.sin(tempoDecorrido * 4 + indice), 0.7 + 0.1 * Math.sin(tempoDecorrido * 5 + indice), 1 + 0.12 * Math.sin(tempoDecorrido * 4 + indice)));
       }
+      // Fazenda 8.4: a névoa eram esferas brancas a 38% sobre o paredão (sempre na sombra), lidas como bolas cinzentas de borda
+      // dura. Agora cada nuvem é um plano virado para a câmera com miolo cheio e borda que some aos poucos.
+      const canvasDaNevoa = document.createElement('canvas'); canvasDaNevoa.width = canvasDaNevoa.height = 64;
+      const contextoDaNevoa = canvasDaNevoa.getContext('2d'), gradienteDaNevoa = contextoDaNevoa.createRadialGradient(32, 32, 0, 32, 32, 32);
+      [[0, 1], [0.4, 0.8], [0.7, 0.35], [1, 0]].forEach(([parada, alfa]) => gradienteDaNevoa.addColorStop(parada, `rgba(255,255,255,${alfa})`));
+      contextoDaNevoa.fillStyle = gradienteDaNevoa; contextoDaNevoa.fillRect(0, 0, 64, 64);
+      const geometriaDaNevoa = new THREE.PlaneGeometry(2, 2), texturaDaNevoa = new THREE.CanvasTexture(canvasDaNevoa);
       for (let indice = 0; indice < 8; indice++) {                                                  // névoa subindo
-        const nevoa = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true }));
+        const nevoa = new THREE.Mesh(geometriaDaNevoa, new THREE.MeshBasicMaterial({ color: 0xffffff, map: texturaDaNevoa, transparent: true, depthWrite: false }));
         nevoa.userData.animado = true; cena.add(nevoa);
         const deslocamentoX = (numeroAleatorioDoCenario() - 0.5) * 3.2;
         animacoesDoCenario.push(tempoDecorrido => {
           const progresso = (tempoDecorrido * 0.25 + indice / 8) % 1;
           nevoa.position.set(CENTRO_X_DA_CACHOEIRA + deslocamentoX, 0.6 + progresso * 4.5, Z_DA_FRENTE_DA_CACHOEIRA + 0.5 + progresso * 1.5);
+          nevoa.quaternion.copy(camera.quaternion);
           nevoa.scale.setScalar(0.8 + progresso * 1.6);
-          nevoa.material.opacity = 0.38 * (1 - progresso);
+          nevoa.material.opacity = 0.7 * (1 - progresso);
         });
       }
 

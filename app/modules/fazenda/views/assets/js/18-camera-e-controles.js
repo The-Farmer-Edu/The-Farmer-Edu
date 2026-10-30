@@ -121,6 +121,9 @@
         dedosNaTela.set(evento.pointerId, [evento.clientX, evento.clientY]);
       });
       ['pointerup', 'pointercancel'].forEach(nome => canvas.addEventListener(nome, evento => dedosNaTela.delete(evento.pointerId)));
+      // Fazenda 8.4 (C2): arrastar com qualquer botão gira a câmera; o menu nativo do botão direito aparecia ao soltar. Ele fica
+      // bloqueado nesta página (o fazenda.html é servido sozinho), exceto em campos de texto, onde colar/copiar continua útil.
+      document.addEventListener('contextmenu', evento => { if (!(evento.target.closest && evento.target.closest('input, textarea, [contenteditable="true"]'))) evento.preventDefault(); });
       canvas.addEventListener('wheel', evento => { if (evento.ctrlKey || evento.metaKey) return;   // Ctrl/Cmd + roda (ou pinça) é o zoom do navegador: o jogo não reage nem bloqueia
         jogadorMexeu = true; distanciaDaCamera = Math.min(DISTANCIA_MAXIMA, Math.max(DISTANCIA_MINIMA, distanciaDaCamera + evento.deltaY * 0.03)); });
 

@@ -13,14 +13,49 @@
       const botaoDoTempo = selecionar('#botao-painel-tempo'), botaoDoAudio = selecionar('#botao-painel-audio');
       // Painéis da barra de ferramentas: abrir um fecha os outros, para não sobrepor. A seção 30 acrescenta Fazenda e Equipe.
       const PAINEIS_DA_BARRA = [[painelDoTempo, botaoDoTempo], [painelDoAudio, botaoDoAudio]];
+      // Fazenda 8.4 (C2): os botões dos painéis ficam num menu compacto aberto pelo "☰ Menu" da barra superior. Abrir um painel
+      // esconde o menu e mostra a navegação "‹ Menu" / "✕" acima do painel.
+      const menuPrincipal = selecionar('#menu-principal'), botaoDoMenu = selecionar('#botao-menu'), navegacaoDoPainel = selecionar('#navegacao-do-painel');
+      const algumPainelAberto = () => PAINEIS_DA_BARRA.some(([painel]) => !painel.hidden);
+      const atualizarBotaoDoMenu = function atualizarBotaoDoMenu() {
+        const interfaceAberta = !menuPrincipal.hidden || algumPainelAberto();
+        botaoDoMenu.setAttribute('aria-expanded', String(!menuPrincipal.hidden));
+        botaoDoMenu.setAttribute('aria-label', interfaceAberta ? 'Fechar menu' : 'Abrir menu');
+        botaoDoMenu.classList.toggle('aberto', interfaceAberta);
+        navegacaoDoPainel.hidden = !algumPainelAberto();
+      };
+      // Fazenda 8.4 (C3): gaveta de construções no rodapé. Ela e o menu/painéis não ficam abertos juntos (em telas pequenas um
+      // cobriria o outro): abrir um fecha o outro. O estado aberto/fechado vive só na interface (não vai para o salvamento).
+      const conteudoDaGaveta = selecionar('#conteudo-da-gaveta'), botaoDaGaveta = selecionar('#botao-gaveta-construcoes');
+      const definirGavetaAberta = function definirGavetaAberta(aberta) {
+        conteudoDaGaveta.hidden = !aberta; botaoDaGaveta.setAttribute('aria-expanded', String(aberta));
+        selecionar('#lista-cards').classList.toggle('aberta', aberta);
+      };
+      const fecharPaineisDaBarra = function fecharPaineisDaBarra() { for (const [painel, botao] of PAINEIS_DA_BARRA) { painel.hidden = true; botao.setAttribute('aria-expanded', 'false'); } };
+      const abrirMenu = function abrirMenu() { fecharPaineisDaBarra(); definirGavetaAberta(false); menuPrincipal.hidden = false; atualizarBotaoDoMenu(); };
+      const fecharMenuEPaineis = function fecharMenuEPaineis() { fecharPaineisDaBarra(); menuPrincipal.hidden = true; atualizarBotaoDoMenu(); };
       const alternarPainel = function alternarPainel(painel, botao) {
         const abrir = painel.hidden;
-        for (const [outroPainel, outroBotao] of PAINEIS_DA_BARRA) { outroPainel.hidden = true; outroBotao.setAttribute('aria-expanded', 'false'); }
-        if (abrir) { painel.hidden = false; botao.setAttribute('aria-expanded', 'true'); }
+        fecharPaineisDaBarra();
+        if (abrir) { painel.hidden = false; botao.setAttribute('aria-expanded', 'true'); menuPrincipal.hidden = true; definirGavetaAberta(false); }
+        atualizarBotaoDoMenu();
       };
+      botaoDaGaveta.onclick = () => { const abrir = conteudoDaGaveta.hidden; if (abrir) fecharMenuEPaineis(); definirGavetaAberta(abrir); };
       botaoDoTempo.onclick = () => alternarPainel(painelDoTempo, botaoDoTempo);
       botaoDoAudio.onclick = () => alternarPainel(painelDoAudio, botaoDoAudio);
-      addEventListener('keydown', evento => { if (evento.key === 'Escape') for (const [painel, botao] of PAINEIS_DA_BARRA) { painel.hidden = true; botao.setAttribute('aria-expanded', 'false'); } });
+      botaoDoMenu.onclick = () => { if (!menuPrincipal.hidden || algumPainelAberto()) fecharMenuEPaineis(); else abrirMenu(); };
+      selecionar('#fechar-menu').onclick = fecharMenuEPaineis;
+      selecionar('#fechar-painel').onclick = fecharMenuEPaineis;
+      selecionar('#voltar-ao-menu').onclick = abrirMenu;
+      // A janela do nome da fazenda é aberta pelo menu (seção 32): o menu fecha para a janela ficar sozinha na tela.
+      selecionar('#botao-nome-da-fazenda').addEventListener('click', fecharMenuEPaineis);
+      canvas.addEventListener('pointerdown', () => { if (!menuPrincipal.hidden) { menuPrincipal.hidden = true; atualizarBotaoDoMenu(); } });   // tocar no jogo fecha o menu (os painéis continuam abertos, como antes)
+      // Esc volta um nível: painel aberto → menu; menu aberto → fecha; gaveta aberta → fecha. Com a janela do nome aberta, o Esc é só dela.
+      addEventListener('keydown', evento => {
+        if (evento.key !== 'Escape' || !selecionar('#janela-nome-da-fazenda').hidden || !selecionar('#janela-modo-desenvolvedor').hidden
+          || evento.target.closest && evento.target.closest('#janela-nome-da-fazenda, #janela-modo-desenvolvedor')) return;   // D2: janela da senha também
+        if (algumPainelAberto()) abrirMenu(); else if (!menuPrincipal.hidden) fecharMenuEPaineis(); else if (!conteudoDaGaveta.hidden) { definirGavetaAberta(false); botaoDaGaveta.focus({ preventScroll: true }); }
+      });
 
       // ---- painel do ciclo de dia e noite ----
       const botoesDeModo = [...painelDoTempo.querySelectorAll('[data-modo]')];
@@ -43,6 +78,7 @@
       // ---- painel de áudio ----
       const LINHAS_DE_AUDIO = [['musica', '🎵 Música de fundo'], ['animais', '🐄 Animais'], ['cachoeira', '💧 Cachoeira'], ['fonte', '⛲ Fonte']];
       painelDoAudio.innerHTML = `<h3>🔊 Áudio</h3>
+        <p class="aviso-silencio-global" id="aviso-silencio-global" hidden>🔇 Todos os sons estão silenciados pelo botão da barra superior. Os ajustes abaixo continuam guardados e voltam a valer ao religar o som.</p>
         <button class="botao-principal" id="audio-ativar">🔊 Ativar áudio</button>
         ${LINHAS_DE_AUDIO.map(([categoria, nome]) => `<div class="linha-audio" data-cat="${categoria}">
           <label class="titulo-linha"><input type="checkbox" data-acao="ligar" aria-label="Ativar ${nome}"> ${nome}</label>
@@ -54,8 +90,19 @@
         <p class="dica-audio">Os arquivos de som não acompanham o projeto: veja <b>AUDIO_CONFIG</b> no código para os caminhos.</p>`;
       // Reflete no painel de áudio o estado real: botão tocar/pausar, volumes, caixas marcadas e textos como
       // "arquivo não encontrado".
+      const botaoDoSomGlobal = selecionar('#botao-som-global');
+      // Fazenda 8.4 (C4): botão global da barra superior (aria-pressed = silenciado) e aviso no painel Áudio.
+      const atualizarBotaoDoSomGlobal = function atualizarBotaoDoSomGlobal() {
+        const silenciado = ESTADO_DO_AUDIO.silenciado;
+        botaoDoSomGlobal.setAttribute('aria-pressed', String(silenciado));
+        botaoDoSomGlobal.querySelector('.icone-do-som').textContent = silenciado ? '🔇' : '🔊';
+        botaoDoSomGlobal.querySelector('.rotulo-do-som').textContent = silenciado ? 'Som desligado' : 'Som ligado';
+        selecionar('#aviso-silencio-global').hidden = !silenciado;
+      };
+      botaoDoSomGlobal.onclick = () => definirSilencioGlobal(!ESTADO_DO_AUDIO.silenciado);
       const atualizarPainelDeAudio = function atualizarPainelDeAudio() {
-        botaoDoAudio.textContent = (ESTADO_DO_AUDIO.liberado ? '🔊' : '🔇') + ' Áudio';
+        atualizarBotaoDoSomGlobal();
+        botaoDoAudio.textContent = '🎚️ Áudio' + (ESTADO_DO_AUDIO.liberado ? '' : ' (ativar)');   // C4: 🔊/🔇 ficam só para o botão global
         const ativar = selecionar('#audio-ativar'); ativar.hidden = ESTADO_DO_AUDIO.liberado;
         for (const [categoria] of LINHAS_DE_AUDIO) {
           const linha = painelDoAudio.querySelector(`[data-cat="${categoria}"]`), configuracaoDaCategoria = ESTADO_DO_AUDIO[categoria], fontesDeSom = categoria === 'animais' ? Object.values(FONTES_DE_SOM.animais) : [FONTES_DE_SOM[categoria]];

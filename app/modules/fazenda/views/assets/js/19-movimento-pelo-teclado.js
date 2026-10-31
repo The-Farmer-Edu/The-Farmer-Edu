@@ -55,6 +55,11 @@
         }
       });
       addEventListener('blur', () => { for (const tecla in teclas) teclas[tecla] = false; }); // evita tecla "presa" ao trocar de aba
+      // Fazenda 8.4.1: se o keyup do Ctrl se perder sem blur, o Ctrl do jogo ficava preso (a câmera descia até o chão) até outra
+      // tecla ser apertada. Mouse, toque e roda informam o estado real do Ctrl: vindo sem ctrlKey, o Ctrl do jogo é solto (mesma
+      // regra do keydown acima). Com o Ctrl realmente pressionado, ctrlKey vem verdadeiro e nada muda.
+      const soltarCtrlPerdido = evento => { if (!evento.ctrlKey && descendoComCtrl()) teclas.ControlLeft = teclas.ControlRight = false; };
+      for (const tipo of ['pointerdown', 'pointermove', 'wheel']) addEventListener(tipo, soltarCtrlPerdido, { capture: true, passive: true });
       // Se o Ctrl+W escapar enquanto o jogador desce com Ctrl, o navegador pergunta antes de fechar a aba (não é garantido: o
       // Chrome só mostra a pergunta se já houve interação com a página, e o texto é o padrão dele).
       addEventListener('beforeunload', evento => { if (descendoComCtrl()) { evento.preventDefault(); evento.returnValue = ''; } });

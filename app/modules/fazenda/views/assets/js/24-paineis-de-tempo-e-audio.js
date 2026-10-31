@@ -52,14 +52,15 @@
       canvas.addEventListener('pointerdown', () => { if (!menuPrincipal.hidden) { menuPrincipal.hidden = true; atualizarBotaoDoMenu(); } });   // tocar no jogo fecha o menu (os painéis continuam abertos, como antes)
       // Esc volta um nível: painel aberto → menu; menu aberto → fecha; gaveta aberta → fecha. Com a janela do nome aberta, o Esc é só dela.
       addEventListener('keydown', evento => {
-        if (evento.key !== 'Escape' || !selecionar('#janela-nome-da-fazenda').hidden || !selecionar('#janela-modo-desenvolvedor').hidden
-          || evento.target.closest && evento.target.closest('#janela-nome-da-fazenda, #janela-modo-desenvolvedor')) return;   // D2: janela da senha também
+        if (evento.key !== 'Escape' || !selecionar('#janela-nome-da-fazenda').hidden
+          || evento.target.closest && evento.target.closest('#janela-nome-da-fazenda')) return;
         if (algumPainelAberto()) abrirMenu(); else if (!menuPrincipal.hidden) fecharMenuEPaineis(); else if (!conteudoDaGaveta.hidden) { definirGavetaAberta(false); botaoDaGaveta.focus({ preventScroll: true }); }
       });
 
       // ---- painel do ciclo de dia e noite ----
+      // Fazenda 8.4.1: os botões do modo do ciclo (pausar, dia fixo, noite fixa) são do Modo desenvolvedor (seção 32). O relógio fica visível.
       const botoesDeModo = [...painelDoTempo.querySelectorAll('[data-modo]')];
-      botoesDeModo.forEach(botao => { botao.onclick = () => { definirModoDoCiclo(botao.dataset.modo); atualizarPainelDeTempo(true); }; });
+      botoesDeModo.forEach(botao => { botao.onclick = () => { if (!modoDesenvolvedorAtivo) return; definirModoDoCiclo(botao.dataset.modo); atualizarPainelDeTempo(true); }; });
       // Nome do período (Madrugada, Amanhecer, Manhã, Tarde, Entardecer, Noite) para a hora informada.
       const periodoDoDia = hora => hora < 5 ? 'Madrugada' : hora < 7 ? 'Amanhecer' : hora < 12 ? 'Manhã' : hora < 17 ? 'Tarde' : hora < 19 ? 'Entardecer' : 'Noite';
       let ultimoMinutoMostrado = -1;
@@ -76,7 +77,7 @@
       };
 
       // ---- painel de áudio ----
-      const LINHAS_DE_AUDIO = [['musica', '🎵 Música de fundo'], ['animais', '🐄 Animais'], ['cachoeira', '💧 Cachoeira'], ['fonte', '⛲ Fonte']];
+      const LINHAS_DE_AUDIO = [['musica', '🎵 Música de fundo'], ['animais', '🐄 Animais'], ['cachoeira', '💧 Cachoeira'], ['fonte', '⛲ Fonte'], ['trator', '🚜 Trator'], ['efeitos', '✨ Efeitos']];
       painelDoAudio.innerHTML = `<h3>🔊 Áudio</h3>
         <p class="aviso-silencio-global" id="aviso-silencio-global" hidden>🔇 Todos os sons estão silenciados pelo botão da barra superior. Os ajustes abaixo continuam guardados e voltam a valer ao religar o som.</p>
         <button class="botao-principal" id="audio-ativar">🔊 Ativar áudio</button>
@@ -87,31 +88,38 @@
             <input type="range" min="0" max="100" data-acao="volume" aria-label="Volume: ${nome}"></div></div>`).join('')}
         <details class="detalhes-audio"><summary>Sons de cada animal</summary>
           ${TIPOS_DE_ANIMAL_COM_SOM.map(tipo => `<label class="animal-audio"><input type="checkbox" data-animal="${tipo}"> ${tipo[0].toUpperCase() + tipo.slice(1)} <span data-status-animal="${tipo}"></span></label>`).join('')}</details>
-        <p class="dica-audio">Os arquivos de som não acompanham o projeto: veja <b>AUDIO_CONFIG</b> no código para os caminhos.</p>`;
+        <p class="dica-audio">O som começa no primeiro toque ou tecla no jogo; o botão 🔊 da barra liga e desliga tudo. Os arquivos ficam na pasta <b>assets/audio</b> da Fazenda (MP3 ou OGG); os nomes estão em <b>AUDIO_CONFIG</b> no código.</p>`;
       // Reflete no painel de áudio o estado real: botão tocar/pausar, volumes, caixas marcadas e textos como
       // "arquivo não encontrado".
       const botaoDoSomGlobal = selecionar('#botao-som-global');
       // Fazenda 8.4 (C4): botão global da barra superior (aria-pressed = silenciado) e aviso no painel Áudio.
+      // Fazenda 8.4.1: o botão também ATIVA o som. Três situações: áudio ainda não liberado pelo navegador (🔈 "Ativar som": o clique
+      // libera e tira o silêncio) · som ligado (🔊: o clique silencia) · silenciado (🔇: o clique religa e, se preciso, libera).
       const atualizarBotaoDoSomGlobal = function atualizarBotaoDoSomGlobal() {
-        const silenciado = ESTADO_DO_AUDIO.silenciado;
+        const silenciado = ESTADO_DO_AUDIO.silenciado, aguardando = !silenciado && !ESTADO_DO_AUDIO.liberado;
         botaoDoSomGlobal.setAttribute('aria-pressed', String(silenciado));
-        botaoDoSomGlobal.querySelector('.icone-do-som').textContent = silenciado ? '🔇' : '🔊';
-        botaoDoSomGlobal.querySelector('.rotulo-do-som').textContent = silenciado ? 'Som desligado' : 'Som ligado';
+        botaoDoSomGlobal.querySelector('.icone-do-som').textContent = silenciado ? '🔇' : aguardando ? '🔈' : '🔊';
+        botaoDoSomGlobal.querySelector('.rotulo-do-som').textContent = silenciado ? 'Som desligado' : aguardando ? 'Ativar som' : 'Som ligado';
+        botaoDoSomGlobal.title = silenciado ? 'Ligar o som' : aguardando ? 'Ativar o som (o navegador só toca depois de um toque)' : 'Silenciar todos os sons';
         selecionar('#aviso-silencio-global').hidden = !silenciado;
       };
-      botaoDoSomGlobal.onclick = () => definirSilencioGlobal(!ESTADO_DO_AUDIO.silenciado);
+      botaoDoSomGlobal.onclick = () => {
+        if (!ESTADO_DO_AUDIO.liberado) { if (ESTADO_DO_AUDIO.silenciado) definirSilencioGlobal(false); liberarAudio(); }   // dentro do clique: o navegador permite tocar
+        else definirSilencioGlobal(!ESTADO_DO_AUDIO.silenciado);
+        atualizarPainelDeAudio();
+      };
       const atualizarPainelDeAudio = function atualizarPainelDeAudio() {
         atualizarBotaoDoSomGlobal();
         botaoDoAudio.textContent = '🎚️ Áudio' + (ESTADO_DO_AUDIO.liberado ? '' : ' (ativar)');   // C4: 🔊/🔇 ficam só para o botão global
         const ativar = selecionar('#audio-ativar'); ativar.hidden = ESTADO_DO_AUDIO.liberado;
         for (const [categoria] of LINHAS_DE_AUDIO) {
-          const linha = painelDoAudio.querySelector(`[data-cat="${categoria}"]`), configuracaoDaCategoria = ESTADO_DO_AUDIO[categoria], fontesDeSom = categoria === 'animais' ? Object.values(FONTES_DE_SOM.animais) : [FONTES_DE_SOM[categoria]];
+          const linha = painelDoAudio.querySelector(`[data-cat="${categoria}"]`), configuracaoDaCategoria = ESTADO_DO_AUDIO[categoria], fontesDeSom = CATEGORIAS_EM_GRUPO.includes(categoria) ? Object.values(FONTES_DE_SOM[categoria]) : [FONTES_DE_SOM[categoria]];
           linha.querySelector('[data-acao="ligar"]').checked = configuracaoDaCategoria.ligado;
           const faixa = linha.querySelector('[data-acao="volume"]'); if (document.activeElement !== faixa) faixa.value = Math.round(configuracaoDaCategoria.volume * 100);
           const ausentes = fontesDeSom.filter(fonteDeSom => fonteDeSom.estado === 'erro').length;
-          let texto = !configuracaoDaCategoria.ligado ? 'desativado' : !ESTADO_DO_AUDIO.liberado ? 'aguardando ativação' : ausentes === fontesDeSom.length ? 'arquivo não encontrado' : ausentes ? 'alguns arquivos ausentes' : categoria === 'animais' ? 'ocasional' : tocando(fontesDeSom[0]) ? 'tocando' : categoria === 'musica' ? 'pausada' : 'aguardando';
+          let texto = !configuracaoDaCategoria.ligado ? 'desativado' : !ESTADO_DO_AUDIO.liberado ? 'aguardando ativação' : ausentes === fontesDeSom.length ? 'arquivo não encontrado' : ausentes ? 'alguns arquivos ausentes' : categoria === 'animais' ? 'ocasional' : categoria === 'efeitos' ? 'nas ações do jogo' : categoria === 'trator' && !tratorNaFazenda() ? 'sem trator (Maquinário nível 2 ou 3)' : tocando(fontesDeSom[0]) ? 'tocando' : categoria === 'musica' ? 'pausada' : 'aguardando';
           const textoDoStatus = linha.querySelector('[data-status]'); textoDoStatus.textContent = texto; textoDoStatus.classList.toggle('erro', ausentes > 0 && configuracaoDaCategoria.ligado);
-          textoDoStatus.title = fontesDeSom.map(fonteDeSom => fonteDeSom.arquivo).join('\n');
+          textoDoStatus.title = fontesDeSom.map(fonteDeSom => fonteDeSom.caminho).join('\n');
           if (categoria === 'musica') linha.querySelector('[data-acao="tocar"]').textContent = tocando(FONTES_DE_SOM.musica) ? '⏸' : '▶';
         }
         for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {

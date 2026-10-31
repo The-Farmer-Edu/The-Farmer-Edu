@@ -16,7 +16,7 @@
       const monstrosNoturnos = [];
       let monstrosNestaNoite = 0, temporizadorDeSurgimento = 4, eraNoite = false;
       const ehNoiteParaMonstros = function ehNoiteParaMonstros() { const hora = CICLO_DE_DIA_E_NOITE.hora; return hora >= MONSTROS_NOTURNOS_CONFIG.horaDeInicio || hora < MONSTROS_NOTURNOS_CONFIG.horaDeFim; };
-      const trabalhadoresAtacaveis = () => [...trabalhadoresNaCena.values()].filter(entidade => entidade.estado !== 'caido' && entidade.estado !== 'saindo' && !entidade.removido);
+      const trabalhadoresAtacaveis = () => [...trabalhadoresNaCena.values()].filter(trabalhadorDisponivel);   // em campo (não caído, não saindo da casa, não indo para casa)
       // Mark 8.3 — quantidade de monstros proporcional à equipe disponível (regras em MONSTROS_NOTURNOS_CONFIG.quantidade).
       // Decisão: contam os trabalhadores VIVOS e EM CAMPO (fazendeiros e guardas). Mortos, caídos e quem ainda está saindo da
       // casa não contam; sem ninguém em campo não surge monstro (não há quem defender nem quem atacar).
@@ -79,11 +79,15 @@
       // Golpe de um trabalhador num monstro. Monstro derrotado deixa de agir imediatamente e dá um pouco de XP.
       const ferirMonstro = function ferirMonstro(monstro, dano, atacante) {
         if (monstro.morto) return;
-        monstro.vida -= dano;
+        monstro.vida -= dano; tocarEfeito('golpe', [monstro.x, monstro.z]);   // 8.4.1: efeito sonoro
+        // defesa (8.4.1): a criatura da invasão atingida revida contra quem a atacou (os monstros noturnos já perseguem a equipe)
+        if (monstro.daInvasao && !monstro.alvo && atacante && trabalhadorDisponivel(atacante) && invasaoComCombate()) monstro.alvo = atacante;
         if (monstro.vida > 0) return;
         monstro.vida = 0; monstro.morto = true; monstro.alvo = null; monstro.vel = monstro.velAlvo = 0; monstro.barra.grupo.visible = false;
         if (atacante) atacante.alvo = null;
-        creditarXP(TRABALHADORES_CONFIG.xpPorMonstroDerrotado);
+        creditarXP(TRABALHADORES_CONFIG.xpPorMonstroDerrotado, monstro.chamadoPeloTeste ? 'teste' : 'fazenda');   // mesmo XP; só muda a origem registrada
+        tocarEfeito('monstroDerrotado', [monstro.x, monstro.z]);                  // 8.4.1: efeito sonoro
+        if (monstro.daInvasao) registrarMobDaInvasaoDerrotado(monstro);           // não volta se a invasão for retomada (seção 26)
       };
       const decidirMonstro = function decidirMonstro(monstro, noite, grade) {
         if (!noite) {                                                              // amanheceu: volta para a floresta
@@ -138,7 +142,7 @@
           if (monstro.decisao <= 0) { monstro.decisao = configuracao.segundosEntreDecisoes; decidirMonstro(monstro, noite, grade); }
           let atacando = false;
           const alvo = monstro.alvo;
-          if (alvo && !alvo.removido && alvo.estado !== 'caido') {
+          if (alvo && trabalhadorDisponivel(alvo)) {                                  // quem foi para casa deixa de ser alvo
             const distancia = Math.hypot(alvo.x - monstro.x, alvo.z - monstro.z);
             if (distancia <= configuracao.alcanceDoAtaque) {                         // só ataca quem está ao alcance
               atacando = true; monstro.velAlvo = 0; monstro.rot += normalizarAngulo(Math.atan2(alvo.x - monstro.x, alvo.z - monstro.z) - monstro.rot) * Math.min(1, segundosDesdeUltimoFrame * 8);

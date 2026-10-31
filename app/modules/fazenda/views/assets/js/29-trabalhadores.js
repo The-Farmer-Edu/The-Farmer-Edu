@@ -35,19 +35,38 @@
       const capacidadeDaCasa = () => CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[Math.min(estado.niveis.casa, CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA.length - 1)];
       const vagasOcupadas = () => estado.trabalhadores.length;   // mortos também ocupam vaga até serem recuperados ou dispensados
       const custoDaProximaMelhoria = (dados, atributo) => dados.melhorias[atributo] >= MELHORIAS_DOS_TRABALHADORES.nivelMaximo ? null : MELHORIAS_DOS_TRABALHADORES.custoPorNivel[dados.melhorias[atributo]];
-      const recompensaPorDispensar = dados => Math.max(MELHORIAS_DOS_TRABALHADORES.recompensaMinimaAoDispensar, Math.round(dados.xpInvestido * MELHORIAS_DOS_TRABALHADORES.fracaoDevolvidaAoDispensar));
+      // Rebalanceamento (etapa 2): sem XP investido (o Juca, ou um valor ausente/inválido) a dispensa devolve 0 — antes o mínimo de
+      // 10 XP valia até para quem não custou nada. Com investimento: 40% arredondado, mínimo 10, nunca acima do que foi investido.
+      const recompensaPorDispensar = function recompensaPorDispensar(dados) {
+        const investido = Number.isFinite(dados.xpInvestido) && dados.xpInvestido > 0 ? dados.xpInvestido : 0;
+        if (!investido) return 0;
+        const regra = MELHORIAS_DOS_TRABALHADORES;
+        return Math.min(investido, Math.max(regra.recompensaMinimaAoDispensar, Math.round(investido * regra.fracaoDevolvidaAoDispensar)));
+      };
+      // Texto da devolução nos botões de dispensa (seção 30): o mesmo valor que será creditado ao confirmar.
+      const textoDaDevolucaoAoDispensar = dados => { const recompensa = recompensaPorDispensar(dados); return recompensa > 0 ? '+' + recompensa + ' XP' : 'sem devolução de XP'; };
       const tempoDeColheita = dados => LAVOURA_CONFIG.segundosBaseDaColheita / (atributosDoTrabalhador(dados).velocidadeDeTarefa * CLASSES_DE_TRABALHADORES[dados.classe].eficienciaDeColheita);
       // Evita que um clique duplo contrate, melhore, recupere ou dispense duas vezes.
       let operacaoDaEquipeEmAndamento = false;
       const executarUmaVez = function executarUmaVez(operacao) { if (operacaoDaEquipeEmAndamento) return; operacaoDaEquipeEmAndamento = true; try { operacao(); } finally { setTimeout(() => { operacaoDaEquipeEmAndamento = false; }, 300); } atualizarPaineisDaMark82(true); };
 
       // ---- candidatos, contratação, recuperação, melhorias e dispensa ----
-      const gerarCandidato = function gerarCandidato() {
-        const classe = Math.random() < 0.55 ? 'fazendeiro' : 'guarda', faixas = CLASSES_DE_TRABALHADORES[classe].atributos, dados = { id: estado.proximoIdDeTrabalhador++, nome: sortearDaListaDeTrabalho(TRABALHADORES_CONFIG.nomes), classe };
+      const gerarCandidato = function gerarCandidato(classeEscolhida) {
+        const classe = classeEscolhida || (Math.random() < 0.55 ? 'fazendeiro' : 'guarda'), faixas = CLASSES_DE_TRABALHADORES[classe].atributos, dados = { id: estado.proximoIdDeTrabalhador++, nome: sortearDaListaDeTrabalho(TRABALHADORES_CONFIG.nomes), classe };
         for (const atributo in faixas) dados[atributo] = sortearReal(...faixas[atributo]);
         return normalizarTrabalhador(dados, false);
       };
-      const garantirCandidatos = function garantirCandidatos() { while (estado.candidatos.length < TRABALHADORES_CONFIG.candidatosNoMenu) estado.candidatos.push(gerarCandidato()); };
+      // Defesa (8.4.1): sempre há pelo menos um candidato de CADA classe, para o jogador escolher contratar um guarda (ou um
+      // fazendeiro) sem depender do sorteio. Se faltar uma classe numa lista cheia (saves antigos), sai o candidato mais antigo da
+      // classe repetida. As vagas restantes continuam sorteadas.
+      const garantirCandidatos = function garantirCandidatos() {
+        for (const classe of Object.keys(CLASSES_DE_TRABALHADORES)) {
+          if (estado.candidatos.some(candidato => candidato.classe === classe)) continue;
+          if (estado.candidatos.length >= TRABALHADORES_CONFIG.candidatosNoMenu) estado.candidatos.splice(estado.candidatos.findIndex(candidato => estado.candidatos.filter(outro => outro.classe === candidato.classe).length > 1), 1);
+          estado.candidatos.push(gerarCandidato(classe));
+        }
+        while (estado.candidatos.length < TRABALHADORES_CONFIG.candidatosNoMenu) estado.candidatos.push(gerarCandidato());
+      };
       const contratarTrabalhador = function contratarTrabalhador(idDoCandidato) {
         const indice = estado.candidatos.findIndex(candidato => candidato.id === idDoCandidato);
         if (indice < 0) return;
@@ -55,9 +74,9 @@
         if (vagasOcupadas() >= capacidadeDaCasa()) { mostrarAviso('A casa está cheia (' + vagasOcupadas() + '/' + capacidadeDaCasa() + ' vagas). Evolua a casa ou dispense alguém.'); return; }
         if (estado.xp < custo) { mostrarAviso('XP insuficiente para contratar ' + candidato.nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
         estado.candidatos.splice(indice, 1); estado.xp -= custo;                  // retira o candidato ANTES: um segundo clique não acha mais ninguém
-        const dados = { ...candidato, vida: atributosDoTrabalhador(candidato).vidaMaxima, estado: 'ativo', xpInvestido: custo };
+        const dados = { ...candidato, vida: atributosDoTrabalhador(candidato).vidaMaxima, estado: 'ativo', xpInvestido: custo, emCasa: false };
         estado.trabalhadores.push(dados); garantirCandidatos();
-        registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards();
+        registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards(); tocarEfeito('contratar');   // 8.4.1: efeito sonoro
         mostrarAviso(CLASSES_DE_TRABALHADORES[dados.classe].icone + ' ' + dados.nome + ' foi contratado(a) e está saindo da casa!');
       };
       const recuperarTrabalhador = function recuperarTrabalhador(idDoTrabalhador) {
@@ -65,8 +84,8 @@
         if (!dados || dados.estado !== 'morto') return;
         const custo = CLASSES_DE_TRABALHADORES[dados.classe].custoDeRecuperacao;
         if (estado.xp < custo) { mostrarAviso('XP insuficiente para recuperar ' + dados.nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
-        estado.xp -= custo; dados.xpInvestido += custo; dados.estado = 'ativo'; dados.vida = atributosDoTrabalhador(dados).vidaMaxima;
-        registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards();
+        estado.xp -= custo; dados.xpInvestido += custo; dados.estado = 'ativo'; dados.emCasa = false; dados.vida = atributosDoTrabalhador(dados).vidaMaxima;
+        registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards(); tocarEfeito('contratar');   // 8.4.1: efeito sonoro
         mostrarAviso('❤️ ' + dados.nome + ' foi recuperado(a) e voltou ao trabalho!');
       };
       const melhorarAtributo = function melhorarAtributo(idDoTrabalhador, atributo) {
@@ -89,8 +108,8 @@
         estado.trabalhadores.splice(indice, 1);                                     // sai dos dados ANTES de creditar: não há XP duplicado
         const entidade = trabalhadoresNaCena.get(dados.id); if (entidade) cancelarTarefa(entidade);
         removerEntidadeDoTrabalhador(dados.id);
-        estado.xp += recompensa; registrarAtividade(); desenharCards();
-        mostrarAviso('👋 ' + dados.nome + ' foi dispensado(a): +' + recompensa + ' XP. Vagas: ' + vagasOcupadas() + '/' + capacidadeDaCasa() + '.');
+        estado.xp += recompensa; registrarOrigemDoXP('devolucoes', recompensa); registrarAtividade(); desenharCards();   // conta só o creditado (0 sem investimento)
+        mostrarAviso('👋 ' + dados.nome + ' foi dispensado(a)' + (recompensa > 0 ? ': +' + recompensa + ' XP' : ' (sem devolução de XP)') + '. Vagas: ' + vagasOcupadas() + '/' + capacidadeDaCasa() + '.');
       };
 
       // ---- modelo 3D: o mesmo fazendeiro da seção 22, com roupa e equipamento da classe ----
@@ -143,7 +162,43 @@
         const entidade = trabalhadoresNaCena.get(idDoTrabalhador); if (!entidade) return;
         cancelarTarefa(entidade); cena.remove(entidade.raiz); removerBarraDeVida(entidade.barra); entidade.removido = true; trabalhadoresNaCena.delete(idDoTrabalhador);
       };
-      const trabalhadorDisponivel = entidade => !entidade.removido && entidade.estado !== 'caido' && entidade.estado !== 'saindo';
+      // Em campo: pode receber ordens, lutar e ser atacado (quem está caído, saindo da casa ou indo para casa não está).
+      const trabalhadorDisponivel = entidade => !entidade.removido && entidade.estado !== 'caido' && entidade.estado !== 'saindo' && entidade.estado !== 'indo para casa';
+
+      // ---- MANDAR PARA CASA / VOLTAR AO TRABALHO (8.4.1, etapa da defesa) ----
+      // dados.emCasa (salvo) = o jogador mandou para casa. Regras: vai andando até a porta e entra (sai da cena); em casa não colhe,
+      // não luta, não é atacado por monstros noturnos nem pela invasão, não conta para a quantidade de monstros da noite e recupera
+      // vida a qualquer hora (TRABALHADORES_CONFIG.vidaRecuperadaPorMinutoEmCasa). Continua ocupando a vaga. Ao reabrir o jogo,
+      // quem estava em casa (ou a caminho) continua em casa. Mortos não podem ir para casa; recuperar alguém o devolve ao campo.
+      const mandarParaCasa = function mandarParaCasa(idDoTrabalhador, silencioso) {
+        const dados = estado.trabalhadores.find(trabalhador => trabalhador.id === idDoTrabalhador);
+        if (!dados || dados.estado !== 'ativo' || dados.emCasa) return false;
+        dados.emCasa = true;
+        const entidade = trabalhadoresNaCena.get(dados.id);
+        if (entidade) {
+          cancelarTarefa(entidade); entidade.ordem = null; entidade.alvo = null;
+          const porta = pontoDaPortaDaCasa(), [destinoX, destinoZ] = pontoLivre(porta.x, porta.saidaZ);
+          const caminho = entidade.estado === 'saindo' ? null : GRADE_DAS_PESSOAS.acharCaminho(entidade.x, entidade.z, destinoX, destinoZ);
+          if (caminho) { entidade.estado = 'indo para casa'; entidade.caminho = caminho; entidade.indice = 0; entidade.parado = 0; entidade.ux = entidade.x; entidade.uz = entidade.z; entidade.tempoIndoParaCasa = 0; entidade.tempoEntrando = 0; }
+          else removerEntidadeDoTrabalhador(dados.id);                            // ainda na porta (ou sem caminho): entra na hora
+        }
+        registrarAtividade();
+        if (!silencioso) mostrarAviso('🏠 ' + dados.nome + ' foi para casa: fica protegido(a), mas não trabalha nem defende.');
+        return true;
+      };
+      const voltarAoTrabalho = function voltarAoTrabalho(idDoTrabalhador, silencioso) {
+        const dados = estado.trabalhadores.find(trabalhador => trabalhador.id === idDoTrabalhador);
+        if (!dados || dados.estado !== 'ativo' || !dados.emCasa) return false;
+        dados.emCasa = false;
+        const entidade = trabalhadoresNaCena.get(dados.id);
+        if (entidade && entidade.estado === 'indo para casa') { entidade.estado = 'andando'; entidade.caminho = null; entidade.espera = 0; entidade.raiz.scale.setScalar(0.8); }   // ainda não tinha entrado
+        else criarEntidadeDoTrabalhador(dados, true);
+        registrarAtividade();
+        if (!silencioso) mostrarAviso(CLASSES_DE_TRABALHADORES[dados.classe].icone + ' ' + dados.nome + ' voltou ao trabalho e está saindo da casa.');
+        return true;
+      };
+      const mandarTodosParaCasa = function mandarTodosParaCasa() { const quantos = estado.trabalhadores.filter(dados => mandarParaCasa(dados.id, true)).length; mostrarAviso(quantos ? '🏠 ' + quantos + ' trabalhador(es) foram para casa.' : 'Ninguém em campo para mandar para casa.'); };
+      const chamarTodosAoTrabalho = function chamarTodosAoTrabalho() { const quantos = estado.trabalhadores.filter(dados => voltarAoTrabalho(dados.id, true)).length; mostrarAviso(quantos ? '🚜 ' + quantos + ' trabalhador(es) voltaram ao trabalho.' : 'Ninguém em casa para chamar.'); };
 
       // ---- ORDENS DE COLHEITA (Mark 8.3) ----
       // Na 8.2 todo trabalhador ocioso procurava sozinho o próximo canteiro maduro, então uma ordem individual "virava" uma
@@ -231,11 +286,14 @@
       const colherCanteiroPeloJogador = function colherCanteiroPeloJogador(idDaArea, indice) { registrarAtividade(); colherCanteiro(idDaArea, indice); };
       const colherTudoPeloJogador = function colherTudoPeloJogador(idDaArea) {
         registrarAtividade();
-        const recursosAntes = { ...estado.recursos }, xpAntes = estado.xp; let colhidos = 0;
-        for (let indice = 0; indice < quantidadeDeCanteiros(idDaArea); indice++) if (estagioDoCanteiro(canteirosDaArea(idDaArea)[indice]) === 3 && colherCanteiro(idDaArea, indice, true)) colhidos++;
+        const recursosAntes = { ...estado.recursos }, xpAntes = estado.xp; let colhidos = 0, xpPrevisto = 0;
+        for (let indice = 0; indice < quantidadeDeCanteiros(idDaArea); indice++) {
+          const canteiro = canteirosDaArea(idDaArea)[indice], cultura = canteiro.cultura;
+          if (estagioDoCanteiro(canteiro) === 3 && colherCanteiro(idDaArea, indice, true)) { colhidos++; xpPrevisto += CULTURAS[cultura].xp; }
+        }
         if (!colhidos) { mostrarAviso('Nada maduro para colher em ' + nomeDaArea(idDaArea) + '.'); return; }
         const ganhos = Object.keys(CULTURAS).filter(recurso => estado.recursos[recurso] > recursosAntes[recurso]).map(recurso => '+' + (estado.recursos[recurso] - recursosAntes[recurso]) + ' ' + CULTURAS[recurso].icone).join(' ');
-        mostrarAviso('🧺 Você colheu ' + colhidos + ' canteiro(s) em ' + nomeDaArea(idDaArea) + ': ' + ganhos + ' · +' + (estado.xp - xpAntes) + ' XP');
+        mostrarAviso('🧺 Você colheu ' + colhidos + ' canteiro(s) em ' + nomeDaArea(idDaArea) + ': ' + ganhos + ' · ' + textoDoXPDaFazenda(estado.xp - xpAntes, xpPrevisto));
       };
       // Colheita espontânea (desligada por padrão: TRABALHADORES_CONFIG.colheitaEspontanea). Se ligada, vira uma ordem
       // individual silenciosa, com o mesmo ciclo de início e fim.
@@ -249,7 +307,7 @@
       // ---- dano recebido ----
       const ferirTrabalhador = function ferirTrabalhador(entidade, dano, atacante) {
         if (entidade.estado === 'caido' || entidade.removido) return;
-        entidade.dados.vida = Math.max(0, entidade.dados.vida - dano); marcarParaSalvar();
+        entidade.dados.vida = Math.max(0, entidade.dados.vida - dano); marcarParaSalvar(); tocarEfeito('golpe', [entidade.x, entidade.z]);   // 8.4.1: efeito sonoro
         if (!entidade.alvo && atacante && !atacante.morto) { entidade.alvo = atacante; entidade.estado = 'combatendo'; }   // reage a quem o atacou
         if (entidade.dados.vida > 0) return;
         cancelarTarefa(entidade); entidade.ordem = null;                            // morto não continua nenhuma ordem
@@ -263,7 +321,11 @@
       // 3) colheita automática · 4) ronda (guardas) ou espera perto das plantações/da casa (fazendeiros).
       const decidirTrabalhador = function decidirTrabalhador(entidade, noite) {
         const classe = CLASSES_DE_TRABALHADORES[entidade.dados.classe];
-        const monstro = monstroMaisProximo(entidade.x, entidade.z, entidade.alvo && !entidade.alvo.morto ? classe.raioDeDefesa + 4 : classe.raioDeDefesa);
+        // Defesa (8.4.1): as criaturas da invasão também contam como ameaça; durante o combate de uma invasão, os GUARDAS vão até
+        // elas de qualquer distância (os fazendeiros continuam limitados ao raio de defesa da classe).
+        const raio = entidade.alvo && !entidade.alvo.morto ? classe.raioDeDefesa + 4 : classe.raioDeDefesa;
+        let monstro = monstroMaisProximo(entidade.x, entidade.z, raio);
+        monstro = mobDaInvasaoMaisProximo(entidade.x, entidade.z, monstro ? Math.hypot(monstro.x - entidade.x, monstro.z - entidade.z) : entidade.dados.classe === 'guarda' ? Infinity : raio) || monstro;
         if (monstro) {
           entidade.alvo = monstro; entidade.estado = 'combatendo';
           const distancia = Math.hypot(monstro.x - entidade.x, monstro.z - entidade.z), planejado = entidade.ultimoAlvoPlanejado;
@@ -310,6 +372,11 @@
       const virarPara = (entidade, alvoX, alvoZ, segundosDesdeUltimoFrame) => { entidade.rot += normalizarAngulo(Math.atan2(alvoX - entidade.x, alvoZ - entidade.z) - entidade.rot) * Math.min(1, segundosDesdeUltimoFrame * 8); };
       const atualizarTrabalhadores = function atualizarTrabalhadores(segundosDesdeUltimoFrame, tempo) {
         const noite = ehNoiteParaMonstros(), grade = GRADE_DAS_PESSOAS;
+        for (const dados of estado.trabalhadores) {                                   // em casa: recupera vida a qualquer hora
+          if (!dados.emCasa || dados.estado !== 'ativo' || trabalhadoresNaCena.has(dados.id)) continue;
+          const maximo = atributosDoTrabalhador(dados).vidaMaxima;
+          if (dados.vida < maximo) { dados.vida = Math.min(maximo, dados.vida + TRABALHADORES_CONFIG.vidaRecuperadaPorMinutoEmCasa * segundosDesdeUltimoFrame / 60); marcarParaSalvar(); }
+        }
         for (const entidade of [...trabalhadoresNaCena.values()]) {
           const dados = entidade.dados, classe = CLASSES_DE_TRABALHADORES[dados.classe], atributos = atributosDoTrabalhador(dados);
           entidade.velMax = atributos.velocidade;                                     // melhorias de velocidade valem na hora
@@ -325,6 +392,18 @@
             entidade.tempoSaindo += segundosDesdeUltimoFrame; entidade.raiz.scale.setScalar(0.8 * Math.min(1, 0.25 + entidade.tempoSaindo / 0.6));
             entidade.vel = Math.min(1.6, atributos.velocidade); entidade.z = Math.min(porta.saidaZ, entidade.z + segundosDesdeUltimoFrame * entidade.vel); entidade.rot = 0;
             if (entidade.z >= porta.saidaZ) { [entidade.x, entidade.z] = pontoLivre(entidade.x, entidade.z); entidade.estado = 'andando'; entidade.espera = 0; entidade.raiz.scale.setScalar(0.8); }
+            animarTrabalhador(entidade, segundosDesdeUltimoFrame, tempo, false, false);
+            posicionarBarraDeVida(entidade.barra, entidade.x, 1.95, entidade.z, dados.vida / atributos.vidaMaxima);
+            continue;
+          }
+          if (entidade.estado === 'indo para casa') {                                  // anda até a frente da casa e entra pela porta
+            entidade.tempoIndoParaCasa += segundosDesdeUltimoFrame;
+            if (entidade.caminho && entidade.tempoIndoParaCasa < 40) { if (andarMob(entidade, segundosDesdeUltimoFrame, grade)) entidade.caminho = null; passoDoMob(entidade, segundosDesdeUltimoFrame, grade); }
+            else {
+              entidade.caminho = null; entidade.tempoEntrando += segundosDesdeUltimoFrame; entidade.vel = Math.min(1.6, atributos.velocidade); entidade.rot = Math.PI;
+              entidade.z -= segundosDesdeUltimoFrame * entidade.vel; entidade.raiz.scale.setScalar(0.8 * Math.max(0.25, 1 - entidade.tempoEntrando / 0.7));
+              if (entidade.tempoEntrando > 0.7) { removerEntidadeDoTrabalhador(dados.id); atualizarPaineisDaMark82(false); continue; }
+            }
             animarTrabalhador(entidade, segundosDesdeUltimoFrame, tempo, false, false);
             posicionarBarraDeVida(entidade.barra, entidade.x, 1.95, entidade.z, dados.vida / atributos.vidaMaxima);
             continue;
@@ -367,6 +446,6 @@
         }
       };
       // Ao abrir o jogo: trabalhadores vivos já estão na fazenda (perto da casa). Nenhum é duplicado: cada id tem uma entidade.
-      const criarTrabalhadoresSalvos = function criarTrabalhadoresSalvos() { garantirCandidatos(); for (const dados of estado.trabalhadores) if (dados.estado === 'ativo') criarEntidadeDoTrabalhador(dados, false); };
+      const criarTrabalhadoresSalvos = function criarTrabalhadoresSalvos() { garantirCandidatos(); for (const dados of estado.trabalhadores) if (dados.estado === 'ativo' && !dados.emCasa) criarEntidadeDoTrabalhador(dados, false); };   // quem está em casa fica em casa
 
       arquivoDaMontagemConcluido('29-trabalhadores.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

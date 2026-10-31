@@ -77,13 +77,18 @@
         else if (acao === 'melhorar') executarUmaVez(() => melhorarAtributo(+id, atributo));
         else if (acao === 'dispensar') confirmacaoDeDispensa = { id: +id, ate: Date.now() + 6000 };
         else if (acao === 'cancelar-dispensa') confirmacaoDeDispensa = null;
+        else if (acao === 'para-casa') executarUmaVez(() => mandarParaCasa(+id));          // defesa (8.4.1): seção 29
+        else if (acao === 'ao-trabalho') executarUmaVez(() => voltarAoTrabalho(+id));
+        else if (acao === 'todos-para-casa') executarUmaVez(mandarTodosParaCasa);
+        else if (acao === 'todos-ao-trabalho') executarUmaVez(chamarTodosAoTrabalho);
         else if (acao === 'confirmar-dispensa') { if (confirmacaoDeDispensa && confirmacaoDeDispensa.id === +id && Date.now() < confirmacaoDeDispensa.ate) executarUmaVez(() => dispensarTrabalhador(+id)); confirmacaoDeDispensa = null; }
         atualizarResumoDeRecursos();
       };
       const barrinha = (valor, cor) => `<span class="barrinha"><i style="width:${Math.max(0, Math.min(100, valor))}%;background:${cor}"></i></span>`;
       const desenharPainelDaFazenda = function desenharPainelDaFazenda() {
         const NOMES_DOS_RECURSOS = { trigo: 'Trigo', milho: 'Milho', cenoura: 'Cenoura', abobora: 'Abóbora', minerios: 'Minérios' };
-        const partes = ['<h3>🌾 Fazenda</h3>', `<div class="linha-recursos">${Object.entries(ICONES_DOS_RECURSOS).map(([recurso, icone]) => `<span class="recurso" title="${NOMES_DOS_RECURSOS[recurso]}"><i>${icone}</i><b>${estado.recursos[recurso]}</b><small>${NOMES_DOS_RECURSOS[recurso]}</small></span>`).join('')}</div>`];
+        const partes = ['<h3>🌾 Fazenda</h3>', `<div class="linha-recursos">${Object.entries(ICONES_DOS_RECURSOS).map(([recurso, icone]) => `<span class="recurso" title="${NOMES_DOS_RECURSOS[recurso]}"><i>${icone}</i><b>${estado.recursos[recurso]}</b><small>${NOMES_DOS_RECURSOS[recurso]}</small></span>`).join('')}</div>`,
+          `<p class="dica limite-xp-fazenda">⭐ XP da Fazenda hoje: <b>${ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda - xpDaFazendaRestanteHoje()} de ${ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda}</b> (colheitas, mina e monstros). Depois do limite, as colheitas rendem só recursos. O XP principal virá das atividades do instrutor (a ligação com a plataforma ainda está em desenvolvimento).</p>`];
         // abas das plantações: cada uma é administrada separadamente
         partes.push(`<div class="segmentos abas">${PLANTACOES_COM_CANTEIROS.map(idDaArea => `<button data-acao="aba" data-area="${idDaArea}" class="${idDaArea === plantacaoSelecionada ? 'ativo' : ''}">${AREAS.find(area => area.id === idDaArea).icone} ${nomeDaArea(idDaArea)}</button>`).join('')}</div>`);
         const idDaArea = plantacaoSelecionada, nivel = estado.niveis[idDaArea];
@@ -137,29 +142,50 @@
         partes.push('<h4>⛏ Mina</h4>', estado.niveis.mina ? `<p class="dica">${textoDoEstadoDaMina()}<br>Nível ${estado.niveis.mina}: +${MINERACAO_CONFIG.mineriosPorCicloPorNivel[estado.niveis.mina - 1]} 🪨 e +${MINERACAO_CONFIG.xpPorCicloPorNivel[estado.niveis.mina - 1]} XP a cada ${MINERACAO_CONFIG.minutosMinerando} min · ciclos concluídos: ${estado.mina.ciclos}</p>` : '<p class="dica">Construa a <b>Mina</b> (cartão ⛏️) para o carrinho começar a trazer minérios da caverna.</p>');
         trocarConteudoDoPainel(painelDaFazenda, partes.join(''));
       };
+      // Fazenda 8.4.1: só a apresentação mudou (resumo em selos, fichas com medalhão, atributos em linhas maiores, candidatos com os
+      // atributos nomeados). As ações (data-acao, data-id, data-atributo), os valores, os custos e as condições são os mesmos.
       const desenharPainelDaEquipe = function desenharPainelDaEquipe() {
         const ocupadas = vagasOcupadas(), capacidade = capacidadeDaCasa(), cheia = ocupadas >= capacidade;
-        const partes = ['<h3>👷 Equipe</h3>', `<p class="dica">Vagas da casa: <b>${ocupadas}/${capacidade}</b> (casa ${estado.niveis.casa ? 'nível ' + estado.niveis.casa : 'base'}${capacidade < CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA.length - 1] ? ' · evolua a casa para mais vagas' : ''}) · ⭐ ${estado.xp} XP</p>`];
-        partes.push('<h4>Sua equipe</h4>', estado.trabalhadores.length ? '' : '<p class="dica">Ninguém na equipe. Contrate abaixo.</p>');
+        const NIVEL_MAXIMO = MELHORIAS_DOS_TRABALHADORES.nivelMaximo, ATRIBUTOS = MELHORIAS_DOS_TRABALHADORES.atributos;
+        const identidade = (classe, nome, extra) => `<span class="medalhao-do-trabalhador" aria-hidden="true">${classe.icone}</span><span class="identidade-do-trabalhador"><span class="linha-do-nome"><b class="nome-do-trabalhador">${nome}</b>${extra}</span><span class="classe-do-trabalhador">${classe.icone} ${classe.nome}</span>`;
+        const partes = ['<h3>👷 Equipe</h3>', `<div class="resumo-da-equipe${cheia ? ' cheia' : ''}"><div class="selo-da-equipe"><small>Vagas da casa</small><b>${ocupadas}/${capacidade}</b>${barrinha(ocupadas / capacidade * 100, cheia ? '#c0392b' : '#4e9a35')}</div><div class="selo-da-equipe"><small>Seu XP</small><b>⭐ ${estado.xp}</b></div></div>`,
+          `<p class="dica">Casa ${estado.niveis.casa ? 'nível ' + estado.niveis.casa : 'base'}${capacidade < CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA.length - 1] ? ' · evolua a casa para mais vagas' : ''}. Toque num trabalhador para ver atributos e ações.</p>`];
+        // defesa (8.4.1): quem está em campo, quem está em casa e a invasão em curso; botões para todos irem ou voltarem
+        const vivos = estado.trabalhadores.filter(dados => dados.estado === 'ativo'), emCasa = vivos.filter(dados => dados.emCasa).length;
+        const emCampo = classe => [...trabalhadoresNaCena.values()].filter(entidade => trabalhadorDisponivel(entidade) && entidade.dados.classe === classe).length;
+        const invasaoEmCurso = textoDaInvasaoEmCurso();
+        partes.push(`<div class="defesa-da-equipe${invasaoEmCurso ? ' em-combate' : ''}"><p><b>🛡️ Defesa</b> · em campo: ${emCampo('guarda')} guarda(s), ${emCampo('fazendeiro')} fazendeiro(s) · 🏠 em casa: ${emCasa}</p>`
+          + (invasaoEmCurso ? `<p class="invasao-em-curso">${invasaoEmCurso}</p>` : '')
+          + `<p class="dica">Nas invasões, os guardas em campo correm até a instalação atacada; os fazendeiros lutam só com criaturas por perto. Quem está em casa fica protegido, mas não defende.</p>`
+          + `<div class="acoes">${vivos.length - emCasa ? '<button class="botao-pequeno secundario" data-acao="todos-para-casa">🏠 Todos para casa</button>' : ''}${emCasa ? '<button class="botao-pequeno" data-acao="todos-ao-trabalho">🚜 Todos ao trabalho</button>' : ''}</div></div>`);
+        partes.push(`<h4>Sua equipe <small>${estado.trabalhadores.length}</small></h4>`, estado.trabalhadores.length ? '' : '<p class="dica">Ninguém na equipe. Contrate abaixo.</p>');
         for (const dados of estado.trabalhadores) {
           const classe = CLASSES_DE_TRABALHADORES[dados.classe], entidade = trabalhadoresNaCena.get(dados.id), atributos = atributosDoTrabalhador(dados);
-          const situacao = dados.estado === 'morto' ? '💀 Morto' : !entidade ? '…' : ({ saindo: '🚪 Saindo da casa', andando: '🚶 Explorando', 'indo colher': '🧺 Indo colher', colhendo: '🧺 Colhendo', procurando: '🔎 Procurando o próximo canteiro', combatendo: '⚔️ Combatendo', caido: '💀 Caído' }[entidade.estado] || '🚶 Explorando') + (entidade.ordem ? ' · ordem: ' + (entidade.ordem.tipo === 'canteiro' ? '1 canteiro' : 'colher tudo em ' + nomeDaArea(entidade.ordem.area)) : '');
-          const linhas = Object.entries(MELHORIAS_DOS_TRABALHADORES.atributos).map(([atributo, regra]) => {
-            const custo = custoDaProximaMelhoria(dados, atributo), valor = atributos[atributo].toFixed(regra.casas), proximo = (atributos[atributo] + regra.incremento);
-            return `<div class="linha-atributo"><span>${regra.icone} ${regra.nome}: <b>${valor}</b>${atributo === 'precisao' ? '%' : ''} <small>(nível ${dados.melhorias[atributo]}/${MELHORIAS_DOS_TRABALHADORES.nivelMaximo})</small></span>${custo === null ? '<small>máximo</small>' : `<button class="botao-pequeno${estado.xp < custo ? ' sem-xp' : ''}" data-acao="melhorar" data-id="${dados.id}" data-atributo="${atributo}" title="Vai para ${(regra.maximo ? Math.min(regra.maximo, proximo) : proximo).toFixed(regra.casas)}">+${regra.incremento} · ${custo} XP</button>`}</div>`;
+          const situacao = dados.estado === 'morto' ? '💀 Morto' : !entidade ? (dados.emCasa ? '🏠 Em casa (protegido)' : '…') : ({ 'indo para casa': '🏠 Indo para casa', saindo: '🚪 Saindo da casa', andando: '🚶 Explorando', 'indo colher': '🧺 Indo colher', colhendo: '🧺 Colhendo', procurando: '🔎 Procurando o próximo canteiro', combatendo: '⚔️ Combatendo', caido: '💀 Caído' }[entidade.estado] || '🚶 Explorando') + (entidade.ordem ? ' · ordem: ' + (entidade.ordem.tipo === 'canteiro' ? '1 canteiro' : 'colher tudo em ' + nomeDaArea(entidade.ordem.area)) : '');
+          const linhas = Object.entries(ATRIBUTOS).map(([atributo, regra]) => {
+            const custo = custoDaProximaMelhoria(dados, atributo), valor = atributos[atributo].toFixed(regra.casas), proximo = (atributos[atributo] + regra.incremento), nivel = dados.melhorias[atributo];
+            const pontos = Array.from({ length: NIVEL_MAXIMO }, (_, indice) => `<i class="${indice < nivel ? 'cheio' : ''}"></i>`).join('');
+            return `<div class="linha-atributo"><span class="nome-do-atributo"><span class="icone-do-atributo" aria-hidden="true">${regra.icone}</span>${regra.nome}</span><span class="valor-do-atributo"><b>${valor}${atributo === 'precisao' ? '%' : ''}</b><span class="nivel-do-atributo" title="nível ${nivel}/${NIVEL_MAXIMO}"><span class="pontos" aria-hidden="true">${pontos}</span><small>nível ${nivel}/${NIVEL_MAXIMO}</small></span></span>`
+              + (custo === null ? '<span class="atributo-no-maximo">máximo</span>' : `<button class="botao-pequeno${estado.xp < custo ? ' sem-xp' : ''}" data-acao="melhorar" data-id="${dados.id}" data-atributo="${atributo}" title="Vai para ${(regra.maximo ? Math.min(regra.maximo, proximo) : proximo).toFixed(regra.casas)}">+${regra.incremento} · ${custo} XP</button>`) + '</div>';
           }).join('');
           const confirmando = confirmacaoDeDispensa && confirmacaoDeDispensa.id === dados.id && Date.now() < confirmacaoDeDispensa.ate;
-          partes.push(`<details class="ficha" data-ficha="${dados.id}" ${trabalhadoresExpandidos.has(dados.id) ? 'open' : ''}><summary><span>${classe.icone} <b>${dados.nome}</b>${dados.inicial ? ' <small>(inicial)</small>' : ''} · ${classe.nome}<br><small>${situacao}</small></span><span>❤ ${Math.ceil(dados.vida)}/${Math.round(atributos.vidaMaxima)}<br>${barrinha(dados.vida / atributos.vidaMaxima * 100, '#2ecc71')}</span></summary>
-            <small>Colheita: ${classe.eficienciaDeColheita}× (classe) · ${tempoDeColheita(dados).toFixed(1)} s por canteiro</small>${linhas}
-            <div class="acoes">${dados.estado === 'morto' ? `<button class="botao-pequeno" data-acao="recuperar" data-id="${dados.id}">Recuperar · ${classe.custoDeRecuperacao} XP</button>` : ''}
-            ${confirmando ? `<button class="botao-pequeno perigo" data-acao="confirmar-dispensa" data-id="${dados.id}">Confirmar dispensa (+${recompensaPorDispensar(dados)} XP)</button><button class="botao-pequeno secundario" data-acao="cancelar-dispensa">Cancelar</button>`
-              : `<button class="botao-pequeno secundario" data-acao="dispensar" data-id="${dados.id}">Dispensar (+${recompensaPorDispensar(dados)} XP)</button>`}</div></details>`);
+          const fracaoDaVida = dados.vida / atributos.vidaMaxima * 100;
+          partes.push(`<details class="ficha classe-${dados.classe}${dados.estado === 'morto' ? ' morta' : ''}" data-ficha="${dados.id}" ${trabalhadoresExpandidos.has(dados.id) ? 'open' : ''}><summary>${identidade(classe, dados.nome, dados.inicial ? ' <small class="inicial">(inicial)</small>' : '')}<span class="situacao-do-trabalhador">${situacao}</span></span>
+            <span class="vida-do-trabalhador"><b>❤ ${Math.ceil(dados.vida)}/${Math.round(atributos.vidaMaxima)}</b>${barrinha(fracaoDaVida, fracaoDaVida > 50 ? '#2ecc71' : fracaoDaVida > 25 ? '#e6a23c' : '#e74c3c')}</span><span class="seta-da-ficha" aria-hidden="true">▾</span></summary>
+            <div class="corpo-da-ficha"><p class="info-da-colheita">🧺 Colheita: ${classe.eficienciaDeColheita}× (classe) · ${tempoDeColheita(dados).toFixed(1)} s por canteiro</p><div class="atributos-da-ficha">${linhas}</div>
+            <div class="acoes">${dados.estado === 'morto' ? `<button class="botao-pequeno" data-acao="recuperar" data-id="${dados.id}">Recuperar · ${classe.custoDeRecuperacao} XP</button>` : dados.emCasa ? `<button class="botao-pequeno" data-acao="ao-trabalho" data-id="${dados.id}">🚜 Voltar ao trabalho</button>` : `<button class="botao-pequeno secundario" data-acao="para-casa" data-id="${dados.id}">🏠 Mandar para casa</button>`}
+            ${confirmando ? `<button class="botao-pequeno perigo" data-acao="confirmar-dispensa" data-id="${dados.id}">Confirmar dispensa (${textoDaDevolucaoAoDispensar(dados)})</button><button class="botao-pequeno secundario" data-acao="cancelar-dispensa">Cancelar</button>`
+              : `<button class="botao-pequeno secundario" data-acao="dispensar" data-id="${dados.id}">Dispensar (${textoDaDevolucaoAoDispensar(dados)})</button>`}</div></div></details>`);
         }
-        partes.push('<h4>Contratar</h4>');
-        for (const candidato of estado.candidatos) {
+        partes.push('<h4>Contratar</h4>', '<p class="dica">Sempre há pelo menos um fazendeiro e um guarda para escolher.</p>');
+        const ordemDasClasses = Object.keys(CLASSES_DE_TRABALHADORES);
+        for (const candidato of estado.candidatos.slice().sort((primeiro, segundo) => ordemDasClasses.indexOf(primeiro.classe) - ordemDasClasses.indexOf(segundo.classe))) {
           const classe = CLASSES_DE_TRABALHADORES[candidato.classe], falta = classe.custo - estado.xp, atributos = atributosDoTrabalhador(candidato);
-          partes.push(`<div class="candidato"><b>${classe.icone} ${candidato.nome}</b> · ${classe.nome}<br>⚡ ${atributos.velocidade.toFixed(2)} · ❤ ${Math.round(atributos.vidaMaxima)} · 🎯 ${Math.round(atributos.precisao)}% · ⚔ ${Math.round(atributos.dano)} · 🧺 ${atributos.velocidadeDeTarefa.toFixed(2)}<br><small>${classe.descricao}</small><br>
-            <button class="botao-pequeno${falta > 0 || cheia ? ' sem-xp' : ''}" data-acao="contratar" data-id="${candidato.id}">Contratar · ${classe.custo} XP</button>${cheia ? ' <small>casa cheia</small>' : falta > 0 ? ` <small>faltam ${falta} XP</small>` : ''}</div>`);
+          const valores = { velocidade: atributos.velocidade.toFixed(2), vidaMaxima: Math.round(atributos.vidaMaxima), precisao: Math.round(atributos.precisao) + '%', dano: Math.round(atributos.dano), velocidadeDeTarefa: atributos.velocidadeDeTarefa.toFixed(2) };
+          partes.push(`<div class="candidato classe-${candidato.classe}"><div class="cabecalho-do-candidato">${identidade(classe, candidato.nome, '')}</span><span class="preco-do-candidato">${classe.custo} XP</span></div>
+            <div class="atributos-do-candidato">${Object.entries(valores).map(([atributo, valor]) => `<span><span aria-hidden="true">${ATRIBUTOS[atributo].icone}</span><b>${valor}</b><small>${ATRIBUTOS[atributo].nome}</small></span>`).join('')}</div>
+            <p class="descricao-do-candidato">${classe.descricao}</p>
+            <button class="botao-pequeno${falta > 0 || cheia ? ' sem-xp' : ''}" data-acao="contratar" data-id="${candidato.id}">Contratar · ${classe.custo} XP</button>${cheia ? ' <small class="motivo-do-bloqueio">casa cheia</small>' : falta > 0 ? ` <small class="motivo-do-bloqueio">faltam ${falta} XP</small>` : ''}</div>`);
         }
         trocarConteudoDoPainel(painelDaEquipe, partes.join(''));
       };
@@ -178,16 +204,22 @@
       };
 
       // ---- ferramentas de teste (painel Tempo). Os botões originais da regra dos 5 dias continuam com o comportamento original. ----
+      // Só funcionam com o Modo desenvolvedor ligado (seção 32), mesmo chamados direto pelo console.
       selecionar('#teste-monstros').onclick = () => {                         // vira noite e chama três monstros perto da equipe
+        if (!modoDesenvolvedorAtivo) return;
         definirModoDoCiclo('noite'); atualizarPainelDeTempo(true);
         if (!ehNoiteParaMonstros()) CICLO_DE_DIA_E_NOITE.hora = 0;
         eraNoite = true; let criados = 0;
-        while (monstrosVivos() < limiteDeMonstrosSimultaneos() && criados < 8 && surgirMonstro()) criados++;   // respeita a mesma fórmula da noite
+        while (monstrosVivos() < limiteDeMonstrosSimultaneos() && criados < 8) {   // respeita a mesma fórmula da noite
+          const monstro = surgirMonstro(); if (!monstro) break;
+          monstro.chamadoPeloTeste = true; criados++;                              // o XP dele vai para o contador 'teste' (seção 30a)
+        }
         mostrarAviso(criados ? '👾 ' + criados + ' monstro(s) apareceram perto da equipe (limite atual: ' + limiteDeMonstrosSimultaneos() + ').' : limiteDeMonstrosSimultaneos() ? 'Limite de monstros simultâneos atingido.' : 'Nenhum trabalhador em campo: os monstros não aparecem.');
       };
       selecionar('#teste-avancar').onclick = () => {                         // avança 10 minutos no relógio das plantações, dos animais e da mina
+        if (!modoDesenvolvedorAtivo) return;
         estado.tempoDeTesteMs += 10 * 60000; salvarProgresso(); atualizarAlimentacao(); atualizarVisualDaLavoura(); atualizarPaineisDaMark82(true); desenharCards();
-        mostrarAviso('⏩ +10 minutos no relógio das plantações, dos animais e da mina (teste; não afeta a regra dos 5 dias).');
+        mostrarAviso('⏩ +10 minutos no relógio das plantações, dos animais e da mina (teste; não afeta o ciclo de dia e noite nem o calendário das invasões).');
       };
       window.FarmEduMark82 = { estado: () => estado, trabalhadores: () => [...trabalhadoresNaCena.values()].map(entidade => ({ id: entidade.dados.id, x: entidade.x, z: entidade.z, estado: entidade.estado, vida: entidade.dados.vida, velMax: entidade.velMax, tarefa: entidade.tarefa && { ...entidade.tarefa } })),
         monstros: () => monstrosNoturnos.map(monstro => ({ tipo: monstro.tipo, x: monstro.x, z: monstro.z, vida: monstro.vida, morto: monstro.morto, estado: monstro.estado, alvo: monstro.alvo ? monstro.alvo.dados.id : null })),

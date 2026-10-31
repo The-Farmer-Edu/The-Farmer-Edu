@@ -29,7 +29,7 @@
         { id: 'mina', nome: 'Mina', icone: '⛏️', posicao: { x: -32.3, z: -3.3 } },                   // Mark 8.2: depósito da mina (caverna na marcação roxa)
       ];
       const NIVEL_MAXIMO = 3;
-      const CUSTO_PARA_PROXIMO_NIVEL = [100, 250]; // posição 0 = custo do nível 1 → 2
+      const CUSTO_PARA_PROXIMO_NIVEL = [400, 1000]; // posição 0 = custo do nível 1 → 2 · progressão de 1 ano (8.4.1): antes [100, 250]
       const PALETA_DE_CORES = { madeira: 0x8a5a2a, ripa: 0xb07a45, janela: 0xffe08a, vidro: 0xbfe3f2, feno: 0xe8c04a, pneu: 0x222222, telhaCasa: 0xd9532f, branco: 0xf2f2ea };
 
       // ---- MARK 8.2: progressão das construções ----
@@ -40,19 +40,39 @@
       // Mark 8.3: a ponte também existe desde o início — QUEBRADA (sem demarcação de obra); "reparar" a leva ao nível 1.
       const AREAS_COM_BASE_FISICA_NO_NIVEL_0 = ['casa', 'ponte'];
       const ROTULOS_DO_NIVEL_0 = { casa: { estado: '🏠 Base', acao: 'Evoluir' }, ponte: { estado: '🌉 Quebrada', acao: 'Reparar' } };
-      const CUSTO_DE_CONSTRUCAO = { padrao: 60, casa: 100, ponte: 80, plantacaoGrande: 120, novaPlantacao: 120, moinho: 150, mina: 200 };
+      // Progressão de 1 ano (8.4.1): antes { padrao: 60, casa: 100, ponte: 80, plantações: 120, moinho: 150, mina: 200 }.
+      const CUSTO_DE_CONSTRUCAO = { padrao: 150, casa: 250, ponte: 200, plantacaoGrande: 300, novaPlantacao: 300, moinho: 400, mina: 500 };
       // Custo (XP) para sair do nível atual: a partir do 0 (tabela acima; na casa é a 1ª evolução) ou evoluir 1 → 2 e 2 → 3.
       const custoParaProximoNivel = (idDaArea, nivelAtual) => nivelAtual === 0 ? (CUSTO_DE_CONSTRUCAO[idDaArea] ?? CUSTO_DE_CONSTRUCAO.padrao) : CUSTO_PARA_PROXIMO_NIVEL[nivelAtual - 1];
+      // ---- Fazenda 8.4.1: balanceamento da economia ----
+      // As atividades publicadas pelo instrutor são a fonte PRINCIPAL de XP: cada uma vale o XP que o instrutor definir e entra por
+      // window.adicionarXP (seção 32, origem 'atividades'), SEM limite. A integração escolar ainda não existe no projeto.
+      // A Fazenda complementa: colheitas, ciclos da mina e monstros (origem 'fazenda') rendem no máximo limiteDiarioDeXPDaFazenda
+      // por dia do calendário local; passado o limite, continuam rendendo recursos, sem XP (seção 27, creditarXP). Devoluções da
+      // dispensa e as ferramentas de teste não entram no limite.
+      // PROGRESSÃO DE UM ANO (premissa interna, sem depender dos valores escolares): a Fazenda SOZINHA, mesmo rendendo o limite diário
+      // todos os dias, NÃO deve completar a fazenda num ano letivo (~200 dias). Construir as 13 áreas e levá-las ao nível 3 custa
+      // 20.900 XP (2.700 de construções com a 1ª plantação grátis + 13 × 1.400 de evoluções) → ~209 dias no limite, ~420 dias com uma
+      // visita curta por dia (~50 XP). Melhorar os trabalhadores é um gasto extra opcional (até 6.000 XP por trabalhador).
+      // DEPENDE DA INTEGRAÇÃO ESCOLAR (revisar quando a plataforma definir o XP das atividades e a frequência de publicação):
+      //  • limiteDiarioDeXPDaFazenda — a Fazenda deve ficar bem abaixo do XP escolar esperado por dia (sugestão: até ~1/3);
+      //  • a escala dos custos — o total (Fazenda + atividades) num ano deve ficar perto de 20.900 + o que se queira de equipe.
+      const ECONOMIA_CONFIG = {
+        xpInicial: 0,                      // só em fazendas NOVAS; começa do zero, com a 1ª plantação grátis (seção 32). Antes da 8.4.1 final: 200
+        limiteDiarioDeXPDaFazenda: 100,    // XP/dia de colheitas + mina + monstros
+      };
       // Capacidade de trabalhadores da casa por nível (índice 0 = base). O fazendeiro inicial ocupa uma vaga; trabalhadores
       // mortos continuam na equipe (ocupam vaga) até serem recuperados ou dispensados.
       const CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA = [1, 2, 3, 4];
 
       // ---- Plantações (Grande e Nova): culturas, tempo de crescimento (minutos reais), colheita e canteiros ----
       const CULTURAS = {
-        trigo: { nome: 'Trigo', icone: '🌾', minutosParaCrescer: 6, colheita: 4, xp: 2 },
-        milho: { nome: 'Milho', icone: '🌽', minutosParaCrescer: 8, colheita: 3, xp: 3 },
-        cenoura: { nome: 'Cenoura', icone: '🥕', minutosParaCrescer: 10, colheita: 3, xp: 3 },
-        abobora: { nome: 'Abóbora', icone: '🎃', minutosParaCrescer: 15, colheita: 2, xp: 5 },
+        // Fazenda 8.4.1 (balanceamento): XP antes 2/3/3/5. Com uma visita por dia, 12 canteiros de abóbora rendem 48 XP, perto do
+        // que a mina nível 1 rende no mesmo período; jogando sem parar, o limite diário da Fazenda (ECONOMIA_CONFIG) segura o total.
+        trigo: { nome: 'Trigo', icone: '🌾', minutosParaCrescer: 6, colheita: 4, xp: 1 },
+        milho: { nome: 'Milho', icone: '🌽', minutosParaCrescer: 8, colheita: 3, xp: 2 },
+        cenoura: { nome: 'Cenoura', icone: '🥕', minutosParaCrescer: 10, colheita: 3, xp: 2 },
+        abobora: { nome: 'Abóbora', icone: '🎃', minutosParaCrescer: 15, colheita: 2, xp: 4 },
       };
       // As DUAS plantações usam exatamente as mesmas dimensões físicas por nível (as da Grande plantação original) e cada uma
       // tem os próprios canteiros. A grade de canteiros é calculada para caber no campo (seção 12).
@@ -74,14 +94,14 @@
         recuperacaoDeSaudePorHora: 15,    // com comida no cocho, a saúde volta aos poucos
         saudeDepoisDeUmaMorte: 60,        // quando um animal morre de fome, os outros continuam (com aviso)
         comidaPorUnidade: { trigo: 12, milho: 15, cenoura: 15, abobora: 30 },
-        custoParaReporAnimal: 40,         // XP para repor cada animal morto
+        custoParaReporAnimal: 100,        // XP para repor cada animal morto (progressão de 1 ano; antes 40)
         limiteDeTempoAusenteHoras: 8,     // tempo com a página fechada conta até este limite (evita perdas enormes de uma vez)
         avisoDeFomeAbaixoDe: 25,          // % do cocho a partir do qual o jogador é avisado
       };
       // ---- Mineração (carrinho nos trilhos da caverna) ----
       const MINERACAO_CONFIG = {
         minutosMinerando: 40,                         // intervalo das recompensas informado no pedido da Mark 8.2
-        xpPorCicloPorNivel: [10, 30, 10],             // VALORES DE REFERÊNCIA DO PEDIDO, mantidos como estão: o nível 3 dá MENOS XP que o 2 (confirmar com o design)
+        xpPorCicloPorNivel: [20, 35, 50],             // balanceamento 8.4.1: antes [10, 30, 40] (e [10, 30, 10] na 8.4); a mina custa 200 e precisa valer a escolha inicial
         mineriosPorCicloPorNivel: [3, 5, 8],
         velocidadeDoCarrinhoPorNivel: [1.6, 2.0, 2.4], // unidades por segundo nos trilhos
         segundosDescarregando: 4,
@@ -92,11 +112,12 @@
       // dano = pontos por golpe · velocidadeDeTarefa = rapidez para executar tarefas (colheita).
       // eficienciaDeColheita é o modificador da CLASSE (especialização): multiplica a rapidez da colheita.
       const CLASSES_DE_TRABALHADORES = {
-        fazendeiro: { nome: 'Fazendeiro', icone: '🧑‍🌾', custo: 120, custoDeRecuperacao: 60,
+        // Progressão de 1 ano (8.4.1): fazendeiro antes 120/60, guarda antes 200/100 (contratação/recuperação).
+        fazendeiro: { nome: 'Fazendeiro', icone: '🧑‍🌾', custo: 300, custoDeRecuperacao: 150,
           atributos: { velocidade: [2.0, 2.4], vidaMaxima: [95, 115], precisao: [45, 60], dano: [7, 10], velocidadeDeTarefa: [1.1, 1.3] },
           eficienciaDeColheita: 1.5, alcance: 1.3, segundosEntreAtaques: 1.2, raioDeDefesa: 8, colheDeNoite: true, aceleracaoDaLavoura: 0.06,
           descricao: 'Colhe 1,5× mais rápido; luta para se defender e defender a equipe por perto.' },
-        guarda: { nome: 'Guarda', icone: '🛡️', custo: 200, custoDeRecuperacao: 100,
+        guarda: { nome: 'Guarda', icone: '🛡️', custo: 500, custoDeRecuperacao: 250,
           atributos: { velocidade: [1.75, 2.0], vidaMaxima: [170, 210], precisao: [75, 90], dano: [14, 18], velocidadeDeTarefa: [0.8, 1.0] },
           eficienciaDeColheita: 0.8, alcance: 1.6, segundosEntreAtaques: 1.0, raioDeDefesa: 18, colheDeNoite: false, aceleracaoDaLavoura: 0,
           descricao: 'Mais vida, precisão e dano; persegue monstros. Também colhe (mais devagar), durante o dia.' },
@@ -105,7 +126,7 @@
       const FAZENDEIRO_INICIAL = { nome: 'Juca', classe: 'fazendeiro', velocidade: 1.9, vidaMaxima: 85, precisao: 40, dano: 6, velocidadeDeTarefa: 1.0 };
       // Melhorias com XP: cada atributo sobe até nivelMaximo (custo do próximo nível em custoPorNivel) e vale na hora no jogo.
       const MELHORIAS_DOS_TRABALHADORES = {
-        nivelMaximo: 5, custoPorNivel: [40, 70, 110, 160, 220],
+        nivelMaximo: 5, custoPorNivel: [80, 140, 220, 320, 440],   // progressão de 1 ano (8.4.1): antes [40, 70, 110, 160, 220]
         atributos: {
           velocidade: { nome: 'Velocidade', icone: '⚡', incremento: 0.15, casas: 2 },
           vidaMaxima: { nome: 'Vida', icone: '❤', incremento: 20, casas: 0 },
@@ -113,10 +134,13 @@
           dano: { nome: 'Dano', icone: '⚔', incremento: 2, casas: 0 },
           velocidadeDeTarefa: { nome: 'Tarefa', icone: '🧺', incremento: 0.12, casas: 2 },
         },
-        fracaoDevolvidaAoDispensar: 0.4, recompensaMinimaAoDispensar: 10,   // dispensar devolve 40% do XP investido (mínimo 10 XP)
+        // dispensar devolve 40% do XP investido (mínimo 10 XP, nunca acima do investido); sem XP investido (ex.: o Juca) devolve 0
+        fracaoDevolvidaAoDispensar: 0.4, recompensaMinimaAoDispensar: 10,
       };
       const TRABALHADORES_CONFIG = {
-        candidatosNoMenu: 3, vidaRecuperadaPorMinutoDeDia: 10, segundosCaidoAntesDeSumir: 4, xpPorMonstroDerrotado: 5, segundosEntreDecisoes: 0.25,
+        // candidatosNoMenu: sempre há pelo menos um de cada classe entre eles (seção 29, garantirCandidatos).
+        // vidaRecuperadaPorMinutoEmCasa: quem foi mandado para casa recupera vida a qualquer hora (em campo, só de dia).
+        candidatosNoMenu: 3, vidaRecuperadaPorMinutoDeDia: 10, vidaRecuperadaPorMinutoEmCasa: 20, segundosCaidoAntesDeSumir: 4, xpPorMonstroDerrotado: 5, segundosEntreDecisoes: 0.25,
         // Mark 8.3: trabalhadores só colhem quando o JOGADOR manda (um canteiro ou a plantação inteira). Com true, voltariam a
         // procurar canteiros maduros sozinhos quando ociosos (comportamento da 8.2, que parecia "colher sem parar").
         colheitaEspontanea: false,

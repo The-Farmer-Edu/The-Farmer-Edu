@@ -10,10 +10,159 @@
       // Chão, rede de caminhos (incluindo as estradas da praça central), pequenas praças, bancos, modelos dos postes e dos lampiões
       // das construções e nuvens em movimento.
       // ====================================================================================================
-      const chao = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), material(0x78b24a));
-      chao.rotation.x = -Math.PI / 2;
-      chao.receiveShadow = true;
+      // == ILHA FLUTUANTE (Fazenda 8.4.1) ==
+      // A fazenda fica no topo de uma ilha suspensa no céu. O contorno foi medido em volta de tudo o que já existia (montanhas,
+      // floresta, rio, caverna, postes e construções), com pelo menos 8 de grama até a beira, e está guardado abaixo como raios
+      // a partir do centro: nada é medido ao abrir o jogo. O topo continua plano em y = 0, então posições, colisões e grades de
+      // navegação não mudam; só as laterais e o fundo têm relevo. As irregularidades usam sorteios próprios (sementes 8418 e
+      // 8420): a sequência do cenário (semente 11) e as nuvens altas (semente 23) continuam iguais.
+      const CENTRO_DA_ILHA = { x: 5, z: -6 };
+      // 120 raios, um a cada 3°, começando em −178,5° (oeste) e girando de +x para +z (o ângulo de Math.atan2(z, x)).
+      const RAIOS_DA_ILHA = [
+        101.8, 101.3, 101.3, 101.5, 104.2, 104.7, 104.7, 99.4, 94.7, 94.3, 94.6, 92.1, 87.8, 85.1, 83.9, 82.4, 81.2, 82.5, 84.5, 84.6,
+        84.4, 86.3, 91.7, 97.9, 99.9, 99.5, 99.8, 101.7, 102.9, 101.9, 98.7, 96.1, 96.4, 97.7, 96.6, 92.5, 89.1, 87.1, 85.5, 83.8,
+        81.8, 80.4, 80.6, 81.8, 83.3, 84.4, 86.1, 85.9, 84.9, 84.4, 86.2, 90.7, 97.8, 103.2, 104.6, 104.8, 104.2, 104.1, 105.0, 106.1,
+        106.8, 106.8, 107.5, 108.9, 110.6, 112.3, 114.1, 115.1, 115.6, 116.3, 119.4, 123.9, 128.8, 134.4, 138.9, 139.2, 134.8, 128.9, 123.6, 119.7,
+        117.2, 114.4, 111.3, 109.0, 106.6, 104.1, 103.0, 103.2, 103.8, 104.5, 104.6, 104.4, 104.1, 104.1, 104.0, 105.5, 108.1, 110.5, 113.1, 116.0,
+        120.3, 125.8, 130.8, 136.3, 142.1, 143.0, 138.7, 133.0, 127.4, 121.9, 117.1, 114.7, 113.3, 112.0, 110.3, 108.8, 107.1, 105.6, 104.0, 102.8,
+      ];
+      // Lagoa rasa no fim do rio (desenhada na seção 11a): o contorno abre um cabo em volta dela para sobrar grama até a beira.
+      const LAGOA_DO_RIO = { x: -32.9, z: 89.4, raioAoLongo: 4.8, raioDeLado: 5.2, margem: 1.4 };
+      const CABO_DA_LAGOA = { angulo: Math.atan2(LAGOA_DO_RIO.z - CENTRO_DA_ILHA.z, LAGOA_DO_RIO.x - CENTRO_DA_ILHA.x), altura: 9, abertura: 7 * Math.PI / 180 };
+      // Raio da beira num ângulo qualquer: Catmull-Rom fechado entre os raios guardados, mais o cabo da lagoa.
+      const raioDaIlha = function raioDaIlha(angulo) {
+        const quantidade = RAIOS_DA_ILHA.length, posicao = (angulo + Math.PI) / (2 * Math.PI) * quantidade - 0.5;
+        const inicio = Math.floor(posicao), t = posicao - inicio, raio = indice => RAIOS_DA_ILHA[((inicio + indice) % quantidade + quantidade) % quantidade];
+        const p0 = raio(-1), p1 = raio(0), p2 = raio(1), p3 = raio(2);
+        const suave = 0.5 * (2 * p1 + (p2 - p0) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (3 * p1 - p0 - 3 * p2 + p3) * t * t * t);
+        let diferenca = angulo - CABO_DA_LAGOA.angulo; diferenca -= Math.round(diferenca / (2 * Math.PI)) * 2 * Math.PI;
+        return suave + CABO_DA_LAGOA.altura * Math.exp(-diferenca * diferenca / (2 * CABO_DA_LAGOA.abertura * CABO_DA_LAGOA.abertura));
+      };
+      const SEGMENTOS_DA_BEIRA = 180;   // um ponto da beira a cada 2°: o topo e a primeira camada da lateral usam os mesmos pontos
+      const CONTORNO_DA_ILHA = [];
+      for (let indice = 0; indice < SEGMENTOS_DA_BEIRA; indice++) {
+        const angulo = -Math.PI + indice * 2 * Math.PI / SEGMENTOS_DA_BEIRA, raio = raioDaIlha(angulo);
+        CONTORNO_DA_ILHA.push([CENTRO_DA_ILHA.x + Math.cos(angulo) * raio, CENTRO_DA_ILHA.z + Math.sin(angulo) * raio]);
+      }
+      // Topo: leque de triângulos a partir do centro (o contorno é visível inteiro do centro), plano em y = 0, com o mesmo
+      // material e as mesmas sombras do chão antigo.
+      const chao = (() => {
+        const posicoes = [CENTRO_DA_ILHA.x, 0, CENTRO_DA_ILHA.z], indices = [];
+        for (const [posicaoX, posicaoZ] of CONTORNO_DA_ILHA) posicoes.push(posicaoX, 0, posicaoZ);
+        for (let indice = 0; indice < SEGMENTOS_DA_BEIRA; indice++) indices.push(0, 1 + (indice + 1) % SEGMENTOS_DA_BEIRA, 1 + indice);
+        const geometria = new THREE.BufferGeometry();
+        geometria.setAttribute('position', new THREE.Float32BufferAttribute(posicoes, 3));
+        geometria.setAttribute('normal', new THREE.Float32BufferAttribute(posicoes.map((_, indice) => indice % 3 === 1 ? 1 : 0), 3));
+        geometria.setAttribute('uv', new THREE.Float32BufferAttribute(posicoes.flatMap((valor, indice) => indice % 3 === 0 ? [valor / 1000 + 0.5, 0.5 - posicoes[indice + 2] / 1000] : []), 2));
+        geometria.setIndex(indices);
+        const malha = new THREE.Mesh(geometria, material(0x78b24a));
+        malha.receiveShadow = true;
+        return malha;
+      })();
       cena.add(chao);
+      // Laterais e fundo: anéis que descem a partir da beira (grama dobrando, terra com a linha irregular, estratos de rocha em
+      // degraus) e depois se fecham por baixo num bulbo torto, com pontas de rocha penduradas. Uma malha só, facetada, com
+      // cores por vértice; não projeta nem recebe sombra (o mapa de sombra nem alcança a beira).
+      const ladosDaIlha = (() => {
+        const sortear = criarGeradorDeNumerosAleatorios(8418), N = SEGMENTOS_DA_BEIRA;
+        // ruído fechado em volta da ilha: 3 ondas com frequência e fase sorteadas + um pouco de variação ponto a ponto
+        const criarRuido = (frequenciaMaxima, tremor) => {
+          const ondas = [0, 1, 2].map(() => [2 + Math.floor(sortear() * (frequenciaMaxima - 1)), sortear() * Math.PI * 2, 0.4 + sortear() * 0.6]);
+          const soma = ondas.reduce((total, onda) => total + onda[2], 0);
+          return Array.from({ length: N }, (_, indice) => ondas.reduce((total, [frequencia, fase, peso]) => total + peso * Math.sin(frequencia * indice * 2 * Math.PI / N + fase), 0) / soma + (sortear() * 2 - 1) * tremor);
+        };
+        // Beira: [recuo, altura, variação do recuo, variação da altura, cor]. O recuo negativo é a grama que passa da beira.
+        const CAMADAS_DA_BEIRA = [
+          [0, 0, 0, 0, 0x78b24a],          // beira do gramado (os mesmos pontos do topo)
+          [-0.35, -0.5, 0.15, 0.15, 0x669f3e],   // grama dobrando sobre a beira
+          [0.05, -1.4, 0.3, 0.6, 0x55803a],      // raízes: a linha onde a grama vira terra é irregular
+          [0.45, -2.3, 0.35, 0.6, 0x8b5e3c],     // terra
+          [0.9, -3.6, 0.5, 0.7, 0x744a2d],       // terra escura
+          [1.3, -4.6, 0.6, 0.6, 0x8c8a84],       // primeira rocha
+          [2.8, -5.1, 0.9, 0.4, 0x857f76],       // degrau (topo de um estrato)
+          [3.2, -8.4, 1.0, 1.0, 0x7b8691],
+          [4.9, -9.0, 1.2, 0.5, 0x8a7d6c],       // estrato mais quente
+          [5.4, -13.0, 1.5, 1.4, 0x6f7883],
+          [7.8, -13.8, 1.6, 0.7, 0x7a6f62],
+        ];
+        // Fundo: [fração do raio, altura, cor]. Desce íngreme logo abaixo da rocha da beira e vai se afinando em lóbulos: três
+        // saliências largas (as mesmas em todos os anéis) crescem com a profundidade e descem mais que o resto, como blocos de
+        // rocha pendurados. O centro de cada anel escorrega para o lado das montanhas, então o bulbo também fica torto.
+        const CAMADAS_DO_FUNDO = [
+          [0.9, -18, 0x7e8185], [0.8, -24, 0x787a7e], [0.68, -30, 0x737478], [0.56, -36, 0x6e6f73],
+          [0.44, -42, 0x68696d], [0.32, -47, 0x636468], [0.2, -52, 0x5e5f63], [0.1, -56, 0x595a5e],
+        ];
+        const DESVIO_DO_FUNDO = { x: -6, z: -14 };
+        const aneis = [];
+        for (const [recuo, altura, variacaoDoRecuo, variacaoDaAltura, cor] of CAMADAS_DA_BEIRA) {
+          const ruidoDoRecuo = criarRuido(9, 0.3), ruidoDaAltura = criarRuido(14, 0.45);
+          aneis.push(CONTORNO_DA_ILHA.map(([posicaoX, posicaoZ], indice) => {
+            const angulo = -Math.PI + indice * 2 * Math.PI / N, recuoAqui = recuo + variacaoDoRecuo * ruidoDoRecuo[indice];
+            return { x: posicaoX - Math.cos(angulo) * recuoAqui, y: altura + (recuo ? variacaoDaAltura * ruidoDaAltura[indice] : 0), z: posicaoZ - Math.sin(angulo) * recuoAqui, cor };
+          }));
+        }
+        const ondasDosLobulos = [2, 3, 5].map(frequencia => [frequencia, sortear() * Math.PI * 2, 0.5 + sortear() * 0.5]);
+        const lobulo = angulo => ondasDosLobulos.reduce((total, [frequencia, fase, peso]) => total + peso * Math.sin(frequencia * angulo + fase), 0) / 1.6;
+        CAMADAS_DO_FUNDO.forEach(([fracao, altura, cor], camada) => {
+          const ruidoDoRaio = criarRuido(13, 0.3), ruidoDaAltura = criarRuido(12, 0.3), descida = (camada + 1) / CAMADAS_DO_FUNDO.length;
+          const centroX = CENTRO_DA_ILHA.x + DESVIO_DO_FUNDO.x * descida, centroZ = CENTRO_DA_ILHA.z + DESVIO_DO_FUNDO.z * descida;
+          aneis.push(CONTORNO_DA_ILHA.map((_, indice) => {
+            const angulo = -Math.PI + indice * 2 * Math.PI / N, saliencia = lobulo(angulo);
+            const raio = raioDaIlha(angulo) * Math.max(0.03, fracao * (1 + 0.5 * descida * saliencia + (0.04 + 0.1 * descida) * ruidoDoRaio[indice]));
+            let posicaoX = centroX + Math.cos(angulo) * raio, posicaoZ = centroZ + Math.sin(angulo) * raio;
+            // nunca passa da rocha da beira (senão o fundo vira uma prateleira visível de cima)
+            const anguloReal = Math.atan2(posicaoZ - CENTRO_DA_ILHA.z, posicaoX - CENTRO_DA_ILHA.x), distancia = Math.hypot(posicaoX - CENTRO_DA_ILHA.x, posicaoZ - CENTRO_DA_ILHA.z), limite = raioDaIlha(anguloReal) - 10 - 3 * camada;
+            if (distancia > limite) { posicaoX = CENTRO_DA_ILHA.x + (posicaoX - CENTRO_DA_ILHA.x) * limite / distancia; posicaoZ = CENTRO_DA_ILHA.z + (posicaoZ - CENTRO_DA_ILHA.z) * limite / distancia; }
+            return { x: posicaoX, y: altura + 2.5 * ruidoDaAltura[indice] - 11 * descida * Math.max(0, saliencia), z: posicaoZ, cor };
+          }));
+        });
+        const ponta = { x: CENTRO_DA_ILHA.x + DESVIO_DO_FUNDO.x * 1.1, y: -59, z: CENTRO_DA_ILHA.z + DESVIO_DO_FUNDO.z * 1.1, cor: 0x4a4b4f };
+        const posicoes = [], cores = [], corDoVertice = new THREE.Color();
+        const vertice = (ponto, tom) => {
+          posicoes.push(ponto.x, ponto.y, ponto.z);
+          corDoVertice.setHex(ponto.cor).multiplyScalar(tom);
+          cores.push(corDoVertice.r, corDoVertice.g, corDoVertice.b);
+        };
+        // abaixo da grama cada triângulo ganha um tom próprio: as facetas da terra e da rocha aparecem mesmo na sombra
+        const triangulo = (a, b, c) => { const tom = Math.min(a.y, b.y, c.y) < -1 ? 0.84 + sortear() * 0.3 : 1; vertice(a, tom); vertice(b, tom); vertice(c, tom); };
+        for (let camada = 0; camada < aneis.length - 1; camada++) {
+          for (let indice = 0; indice < N; indice++) {
+            const seguinte = (indice + 1) % N, a = aneis[camada][indice], b = aneis[camada][seguinte], c = aneis[camada + 1][indice], d = aneis[camada + 1][seguinte];
+            triangulo(a, b, c); triangulo(b, d, c);
+          }
+        }
+        const ultimo = aneis[aneis.length - 1];
+        for (let indice = 0; indice < N; indice++) triangulo(ultimo[indice], ultimo[(indice + 1) % N], ponta);
+        // Rochas penduradas: cones tortos de 7 lados presos por dentro do fundo (o topo fica acima da superfície inclinada).
+        // Três grandes nos anéis de cima do fundo e seis menores espalhadas.
+        const pendurarRocha = (camada, raioDaRocha, comprimento) => {
+          const base = aneis[CAMADAS_DA_BEIRA.length + camada][Math.floor(sortear() * N)];
+          const centroX = CENTRO_DA_ILHA.x + (base.x - CENTRO_DA_ILHA.x) * 0.9, centroZ = CENTRO_DA_ILHA.z + (base.z - CENTRO_DA_ILHA.z) * 0.9, topoY = base.y + 2 + raioDaRocha * 1.6;
+          const inclinacaoX = (sortear() - 0.5) * raioDaRocha, inclinacaoZ = (sortear() - 0.5) * raioDaRocha;
+          const bico = { x: centroX + inclinacaoX, y: base.y - comprimento, z: centroZ + inclinacaoZ, cor: 0x47484c };
+          const meio = [], topo = [];
+          for (let lado = 0; lado < 7; lado++) {
+            const angulo = lado * 2 * Math.PI / 7 + sortear() * 0.4, tremor = 0.8 + sortear() * 0.4;
+            topo.push({ x: centroX + Math.cos(angulo) * raioDaRocha * tremor, y: topoY, z: centroZ + Math.sin(angulo) * raioDaRocha * tremor, cor: 0x66676b });
+            meio.push({ x: centroX + inclinacaoX * 0.45 + Math.cos(angulo) * raioDaRocha * 0.6 * tremor, y: base.y - comprimento * (0.35 + sortear() * 0.2), z: centroZ + inclinacaoZ * 0.45 + Math.sin(angulo) * raioDaRocha * 0.6 * tremor, cor: 0x5a5b5f });
+          }
+          for (let lado = 0; lado < 7; lado++) {
+            const proximo = (lado + 1) % 7;
+            triangulo(topo[lado], topo[proximo], meio[lado]); triangulo(topo[proximo], meio[proximo], meio[lado]); triangulo(meio[lado], meio[proximo], bico);
+          }
+        };
+        for (let indice = 0; indice < 3; indice++) pendurarRocha(1 + indice, 6 + sortear() * 3, 14 + sortear() * 8);
+        for (let indice = 0; indice < 6; indice++) pendurarRocha(Math.floor(sortear() * 5), 2.5 + sortear() * 3, 7 + sortear() * 9);
+        const geometria = new THREE.BufferGeometry();
+        geometria.setAttribute('position', new THREE.Float32BufferAttribute(posicoes, 3));
+        geometria.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
+        geometria.computeVertexNormals();   // sem índices: cada triângulo tem a própria normal (visual facetado, como as montanhas)
+        const malha = new THREE.Mesh(geometria, new THREE.MeshLambertMaterial({ vertexColors: true }));
+        malha.userData.parteDaIlha = true;
+        return malha;
+      })();
+      cena.add(ladosDaIlha);
+      chao.userData.parteDaIlha = true;
       // == REDE DE CAMINHOS ==
       // Cada trecho é [x1, z1, x2, z2, largura], alinhado a um eixo. As pontas avançam meia largura, então cantos e
       // entroncamentos se encontram sem frestas; ramais terminam dentro da base da construção ou em praças.
@@ -245,5 +394,34 @@
           nuvem.userData.animado = true; nuvens.push(nuvem);
         }
       }
+      // Fazenda 8.4.1: nuvens baixas, abaixo da beira da ilha. Uma malha só (1 chamada de desenho), parada, com sorteio
+      // próprio (semente 8420); escurece à noite com os demais materiais básicos e fica escondida no Modo Leve (seção 21).
+      const nuvensDeBaixoDaIlha = (() => {
+        const sortear = criarGeradorDeNumerosAleatorios(8420), posicoes = [], cores = [], corDoTopo = new THREE.Color(0xf4f8ff), corDeBaixo = new THREE.Color(0xc4d2e4), cor = new THREE.Color();
+        const sopro = new THREE.SphereGeometry(1, 8, 5).toNonIndexed(), matriz = new THREE.Matrix4(), ponto = new THREE.Vector3();
+        for (let indice = 0; indice < 7; indice++) {
+          const angulo = -Math.PI + (indice + 0.3 + sortear() * 0.4) * 2 * Math.PI / 7, distancia = raioDaIlha(angulo) * (0.95 + sortear() * 0.25);
+          const centroX = CENTRO_DA_ILHA.x + Math.cos(angulo) * distancia, centroZ = CENTRO_DA_ILHA.z + Math.sin(angulo) * distancia, centroY = -16 - sortear() * 18;
+          const escala = 1 + sortear() * 0.8, sopros = 6 + Math.floor(sortear() * 3);
+          for (let indiceDoSopro = 0; indiceDoSopro < sopros; indiceDoSopro++) {
+            const deslocamento = (indiceDoSopro / (sopros - 1) - 0.5) * 14 * escala, largura = (3 + sortear() * 2.5) * escala * (1 - Math.abs(deslocamento) / (14 * escala));
+            matriz.makeRotationY(-angulo - Math.PI / 2).multiply(new THREE.Matrix4().makeTranslation(deslocamento, sortear() * 1.2, (sortear() - 0.5) * 3 * escala)).multiply(new THREE.Matrix4().makeScale(largura + 1.5, (largura + 1.5) * 0.42, largura + 1.5));
+            for (let vertice = 0; vertice < sopro.attributes.position.count; vertice++) {
+              ponto.fromBufferAttribute(sopro.attributes.position, vertice);
+              cor.copy(corDeBaixo).lerp(corDoTopo, Math.min(1, Math.max(0, ponto.y * 0.6 + 0.6)));   // claras em cima, azuladas embaixo
+              ponto.applyMatrix4(matriz);
+              posicoes.push(centroX + ponto.x, centroY + ponto.y, centroZ + ponto.z); cores.push(cor.r, cor.g, cor.b);
+            }
+          }
+        }
+        sopro.dispose();
+        const geometria = new THREE.BufferGeometry();
+        geometria.setAttribute('position', new THREE.Float32BufferAttribute(posicoes, 3));
+        geometria.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
+        const malha = new THREE.Mesh(geometria, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.85, depthWrite: false }));
+        malha.userData.parteDaIlha = true;
+        return malha;
+      })();
+      cena.add(nuvensDeBaixoDaIlha);
 
       arquivoDaMontagemConcluido('09-cenario-fixo.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

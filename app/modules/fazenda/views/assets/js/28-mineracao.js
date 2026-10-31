@@ -18,8 +18,9 @@
       const concluirCicloDaMina = function concluirCicloDaMina() {
         const nivel = estado.niveis.mina, minerios = MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1], xp = MINERACAO_CONFIG.xpPorCicloPorNivel[nivel - 1];
         estado.recursos.minerios += minerios; estado.mina.ciclos++;
-        creditarXP(xp);                                                           // salva
-        mostrarAviso('⛏ O carrinho voltou da mina com ' + minerios + ' minérios! +' + xp + ' XP');
+        const xpCreditado = creditarXP(xp);                                       // salva (respeita o limite diário da Fazenda)
+        tocarEfeito('mina', [AREAS.find(area => area.id === 'mina').posicao.x, AREAS.find(area => area.id === 'mina').posicao.z]);   // 8.4.1: efeito sonoro (seção 23)
+        mostrarAviso('⛏ O carrinho voltou da mina com ' + minerios + ' minérios! ' + textoDoXPDaFazenda(xpCreditado, xp));
       };
       // Texto curto do estado da mina (cartão, painel e clique no cartão).
       const textoDoEstadoDaMina = function textoDoEstadoDaMina() {

@@ -8,25 +8,16 @@
       // ============================================================================================
       // CONFIGURAÇÃO DOS ÁUDIOS — ADICIONE SEUS ARQUIVOS AQUI
       // ============================================================================================
-      // Todos os caminhos de áudio do jogo ficam NESTE objeto. Os arquivos NÃO acompanham o projeto:
-      // crie as pastas ao lado deste HTML e coloque seus sons com os nomes abaixo (ou troque o caminho aqui).
+      // Todos os caminhos de áudio do jogo ficam NESTE objeto. Os arquivos ficam em views/assets/audio/<subpasta>/ (musica,
+      // ambiente, animais, segredos, efeitos), só MP3 ou OGG, com nomes em minúsculas, números e hífens; a origem e a licença de
+      // cada arquivo são registradas em views/assets/audio/LEIA-ME.md. Fazenda 8.4.1: o endereço real é montado na seção 23
+      // (enderecoDoAudio): aberto pelo arquivo (file://) é a própria pasta; pela aplicação PHP é a rota fazenda/audio.
       // Se um arquivo não existir, a fazenda continua funcionando e o painel de áudio mostra "arquivo não encontrado".
 
 
       const AUDIO_CONFIG = {
         // Música de fundo (toca em loop, só depois que o jogador clica em "Ativar áudio")
-        musica: {
-          global: { intervaloMinimoEntreSons: 5, maximoSimultaneos: 2, distanciaMaxima: 70 },
-          arquivos: [
-            'fazenda/arquivo?type=audio/Theme_songs&file=amanhecer_.mp3',
-            'fazenda/arquivo?type=audio/Theme_songs&file=anoitecer.mp3',
-            'fazenda/arquivo?type=audio/Theme_songs&file=diaa.mp3',
-            'fazenda/arquivo?type=audio/Theme_songs&file=noite_.mp3',
-          ],
-          // arquivo: 'fazenda/arquivo?type=audio/Theme_songs&file=amanhecer_.mp3',
-          volume: 1, intervaloMin: 30, intervaloMax: 80
-        },
-
+        musica: { arquivo: 'assets/audio/musica/musica-fundo.mp3', volume: 1 },
 
         // Sons dos animais: tocam de vez em quando, em intervalos aleatórios (segundos) e nunca todos ao mesmo tempo.
         animais: {
@@ -115,18 +106,38 @@
 
         // Sons ambientes contínuos (loop). O volume diminui com a distância entre a câmera e a fonte do som.
         ambiente: {
-          cachoeira: { arquivo: 'fazenda/arquivo?type=audio/SFX/areas-do-jogo&file=cachoeira.mp3', volume: 1, distanciaMaxima: 90, volumeMinimoDeLonge: 0.15 }, // paredão da cachoeira
-          fonte:     { arquivo: 'fazenda/arquivo?type=audio/SFX/areas-do-jogo&file=fonte.wav',     volume: 1, distanciaMaxima: 60, volumeMinimoDeLonge: 0.05 }, // chafariz do lago
-          trator:     { arquivo: 'fazenda/arquivo?type=audio/SFX/areas-do-jogo&file=trator.mp3',     volume: 10, distanciaMaxima: 60, volumeMinimoDeLonge: 0.15 }, // trator
+          cachoeira: { arquivo: 'assets/audio/ambiente/cachoeira.mp3', volume: 1, distanciaMaxima: 90, volumeMinimoDeLonge: 0.15 }, // paredão da cachoeira
+          fonte:     { arquivo: 'assets/audio/ambiente/fonte.mp3',     volume: 1, distanciaMaxima: 60, volumeMinimoDeLonge: 0.05 }, // chafariz do lago
+          // Fazenda 8.4.1: o trator do Maquinário (níveis 2 e 3) fica estacionado com o motor ligado (vibra sem parar, seção 12b).
+          // O som é o motor em MARCHA LENTA, em loop, só enquanto o trator existe na cena e o Maquinário não está destruído.
+          trator:    { arquivo: 'assets/audio/ambiente/trator-motor.mp3', volume: 0.8, distanciaMaxima: 45, volumeMinimoDeLonge: 0 },
         },
 
-        // Segredos (Easter eggs)
+        // Fazenda 8.4.1: efeitos curtos das mecânicas que existem no jogo (seção 23, tocarEfeito). Cada um tem um único <audio>;
+        // repetições muito próximas do mesmo efeito são ignoradas (intervaloMinimo, em segundos). Os efeitos com posição ficam mais
+        // baixos quando a câmera está longe (global.distanciaMaxima).
+        efeitos: {
+          global: { distanciaMaxima: 80, intervaloMinimo: 0.15 },
+          plantar:            { arquivo: 'assets/audio/efeitos/plantar.mp3',            volume: 0.6 },  // canteiro plantado
+          colher:             { arquivo: 'assets/audio/efeitos/colher.mp3',             volume: 0.7 },  // canteiro colhido (jogador ou trabalhador)
+          construir:          { arquivo: 'assets/audio/efeitos/construir.mp3',          volume: 0.8 },  // construção, evolução e reparo
+          mina:               { arquivo: 'assets/audio/efeitos/mina-carrinho.mp3',      volume: 0.7 },  // carrinho descarrega minérios
+          contratar:          { arquivo: 'assets/audio/efeitos/contratar.mp3',          volume: 0.7 },  // trabalhador contratado ou recuperado
+          golpe:              { arquivo: 'assets/audio/efeitos/golpe.mp3',              volume: 0.5, intervaloMinimo: 0.25 }, // golpe que acerta em combate
+          monstroDerrotado:   { arquivo: 'assets/audio/efeitos/monstro-derrotado.mp3',  volume: 0.7 },  // monstro noturno ou criatura da invasão
+          alarmeDeInvasao:    { arquivo: 'assets/audio/efeitos/alarme-invasao.mp3',     volume: 0.9 },  // invasão começando
+          invasaoRepelida:    { arquivo: 'assets/audio/efeitos/invasao-repelida.mp3',   volume: 0.9 },  // todas as criaturas derrotadas
+          desabamento:        { arquivo: 'assets/audio/efeitos/desabamento.mp3',        volume: 0.9 },  // instalação destruída
+        },
+
+        // Segredos (Easter eggs). Cada item vira um som próprio (seção 23); para um segredo novo basta uma linha aqui e uma
+        // chamada tocarSegredo('nome') onde ele for descoberto.
         segredos: {
           pedraSecreta: { arquivo: 'fazenda/arquivo?type=audio/&file=', volume: 0.9 }, // clique na pedra especial da floresta
         },
 
         // Volumes iniciais dos controles do painel (0 a 1)
-        volumesIniciais: { musica: 0.5, animais: 0.7, cachoeira: 0.6, fonte: 0.6, efeitos: 0.8, trator: 0.6 },  
+        volumesIniciais: { musica: 0.5, animais: 0.7, cachoeira: 0.6, fonte: 0.6, trator: 0.5, efeitos: 0.7 },
       };
 
       arquivoDaMontagemConcluido('02b-configuracao-dos-audios.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

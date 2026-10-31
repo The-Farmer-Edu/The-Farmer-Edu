@@ -88,24 +88,78 @@
         cena.add(malha);
         return malha;
       };
-      // Textura procedural de água (listras claras sobre azul), que se repete e é animada deslocando o offset.
-      const criarTexturaDeAgua = function criarTexturaDeAgua(largura, altura, corBase, quantidadesPorTipo, comprimento, alfa, espessura) { // listras claras que "emendam" na vertical
+      // Fazenda 8.4.1: textura procedural do rio (antes: listras retas brancas sobre um azul único). Na largura (eixo u da fita,
+      // que não se repete) vai da água rasa junto à areia ao azul fundo do meio; no comprimento (eixo v, que se repete e corre
+      // com o offset) leva manchas de fundo, riscos curtos e suaves de correnteza, espuma quebrada nas margens e alguns brilhos.
+      // Tudo o que é sorteado "emenda" na vertical (desenhado também uma altura acima e abaixo). Gerador próprio (semente 7):
+      // não mexe na sequência de sorteios do cenário.
+      const criarTexturaDoRio = function criarTexturaDoRio(largura = 128, altura = 512) {
         const canvasDaTextura = document.createElement('canvas'); canvasDaTextura.width = largura; canvasDaTextura.height = altura;
         const contexto2d = canvasDaTextura.getContext('2d'), sortearNumero = criarGeradorDeNumerosAleatorios(7);
-        contexto2d.fillStyle = corBase; contexto2d.fillRect(0, 0, largura, altura);
-        for (let indice = 0; indice < quantidadesPorTipo; indice++) {
-          const posicaoX = sortearNumero() * largura, posicaoY = sortearNumero() * altura, alturaDaListra = comprimento * (0.5 + sortearNumero()), larguraDaListra = espessura * (0.6 + sortearNumero());
-          contexto2d.fillStyle = `rgba(255,255,255,${alfa * (0.5 + sortearNumero() * 0.5)})`;
-          for (const deslocamentoY of [-altura, 0, altura]) contexto2d.fillRect(posicaoX, posicaoY + deslocamentoY, larguraDaListra, alturaDaListra);
+        const emendado = desenhar => { for (const deslocamentoY of [-altura, 0, altura]) desenhar(deslocamentoY); };
+        const fundo = contexto2d.createLinearGradient(0, 0, largura, 0);
+        [[0, '#74c9dd'], [0.16, '#3d9fcd'], [0.5, '#2a7db5'], [0.84, '#3d9fcd'], [1, '#74c9dd']].forEach(([parada, cor]) => fundo.addColorStop(parada, cor));
+        contexto2d.fillStyle = fundo; contexto2d.fillRect(0, 0, largura, altura);
+        contexto2d.lineCap = 'round';
+        for (let indice = 0; indice < 14; indice++) {                                                   // manchas mais fundas
+          const posicaoX = largura * (0.3 + sortearNumero() * 0.4), posicaoY = sortearNumero() * altura, raio = 10 + sortearNumero() * 14, alongamento = 3 + sortearNumero() * 3;
+          emendado(deslocamentoY => {
+            const mancha = contexto2d.createRadialGradient(0, 0, 0, 0, 0, raio);
+            mancha.addColorStop(0, 'rgba(18,70,125,0.22)'); mancha.addColorStop(1, 'rgba(18,70,125,0)');
+            contexto2d.save(); contexto2d.translate(posicaoX, posicaoY + deslocamentoY); contexto2d.scale(1, alongamento);
+            contexto2d.fillStyle = mancha; contexto2d.fillRect(-raio, -raio, raio * 2, raio * 2); contexto2d.restore();
+          });
+        }
+        for (let indice = 0; indice < 90; indice++) {                                                   // riscos de correnteza (mais no meio)
+          const fracao = 0.5 + (sortearNumero() + sortearNumero() - 1) * 0.42, posicaoX = largura * fracao, posicaoY = sortearNumero() * altura;
+          const comprimento = 14 + sortearNumero() * 40, desvio = (sortearNumero() - 0.5) * 5, alfa = 0.12 + sortearNumero() * 0.33;
+          contexto2d.lineWidth = 1.2 + sortearNumero() * 2.2; contexto2d.strokeStyle = `rgba(255,255,255,${alfa.toFixed(2)})`;
+          emendado(deslocamentoY => { contexto2d.beginPath(); contexto2d.moveTo(posicaoX, posicaoY + deslocamentoY); contexto2d.quadraticCurveTo(posicaoX + desvio, posicaoY + deslocamentoY + comprimento / 2, posicaoX + desvio * 0.3, posicaoY + deslocamentoY + comprimento); contexto2d.stroke(); });
+        }
+        for (let indice = 0; indice < 70; indice++) {                                                   // espuma quebrada junto às margens
+          const lado = indice % 2, posicaoX = largura * (lado ? 0.93 - sortearNumero() * 0.07 : 0.07 + sortearNumero() * 0.07), posicaoY = sortearNumero() * altura, comprimento = 4 + sortearNumero() * 12;
+          contexto2d.lineWidth = 1.5 + sortearNumero() * 2; contexto2d.strokeStyle = `rgba(240,252,255,${(0.3 + sortearNumero() * 0.35).toFixed(2)})`;
+          emendado(deslocamentoY => { contexto2d.beginPath(); contexto2d.moveTo(posicaoX, posicaoY + deslocamentoY); contexto2d.lineTo(posicaoX, posicaoY + deslocamentoY + comprimento); contexto2d.stroke(); });
+        }
+        for (let indice = 0; indice < 22; indice++) {                                                   // brilhos
+          const posicaoX = largura * (0.15 + sortearNumero() * 0.7), posicaoY = sortearNumero() * altura, raio = 0.8 + sortearNumero() * 1.2;
+          contexto2d.fillStyle = `rgba(255,255,255,${(0.5 + sortearNumero() * 0.4).toFixed(2)})`;
+          emendado(deslocamentoY => { contexto2d.beginPath(); contexto2d.ellipse(posicaoX, posicaoY + deslocamentoY, raio, raio * 2.2, 0, 0, Math.PI * 2); contexto2d.fill(); });
         }
         const textura = new THREE.CanvasTexture(canvasDaTextura);
         textura.wrapS = textura.wrapT = THREE.RepeatWrapping;
+        textura.anisotropy = Math.min(4, renderizador.capabilities.getMaxAnisotropy());   // o rio é visto quase sempre de lado: sem isso os riscos borram
         return textura;
       };
-      const texturaDoRio = criarTexturaDeAgua(128, 256, '#3f9fd0', 34, 70, 0.4, 3);
+      const texturaDoRio = criarTexturaDoRio();
       criarFita(curvaDoRio, fracao => larguraDoRio(fracao) + 2, 0.06, material(0xc2a56b), 8);  // margem de areia
       criarFita(curvaDoRio, larguraDoRio, 0.09, new THREE.MeshLambertMaterial({ map: texturaDoRio, side: THREE.DoubleSide }), 8);
       animacoesDoCenario.push((tempoDecorrido, segundosDesdeUltimoFrame) => { texturaDoRio.offset.y -= segundosDesdeUltimoFrame * 0.25; }); // a água corre rio abaixo
+      // Fazenda 8.4.1: lagoa rasa no fim do rio, antes da beira da ilha (posição e tamanho em LAGOA_DO_RIO, seção 09). Fica
+      // além da última árvore, alinhada à correnteza e por cima da ponta do rio; a curva e as colisões do rio não mudam.
+      {
+        const canvasDaLagoa = document.createElement('canvas'); canvasDaLagoa.width = canvasDaLagoa.height = 128;
+        const contexto2d = canvasDaLagoa.getContext('2d'), sorteioDaLagoa = criarGeradorDeNumerosAleatorios(17);
+        // o fundo mais escuro fica puxado para o lado de onde o rio chega (topo do canvas), e a beira é rasa
+        const gradiente = contexto2d.createRadialGradient(64, 40, 4, 64, 60, 66);
+        gradiente.addColorStop(0, '#2a7db5'); gradiente.addColorStop(0.45, '#3d9fcd'); gradiente.addColorStop(0.8, '#55b2d4'); gradiente.addColorStop(1, '#72c4dc');
+        contexto2d.fillStyle = gradiente; contexto2d.fillRect(0, 0, 128, 128);
+        for (let indice = 0; indice < 14; indice++) {   // brilhos discretos na água parada
+          const angulo = sorteioDaLagoa() * Math.PI * 2, distancia = 10 + sorteioDaLagoa() * 40;
+          contexto2d.fillStyle = 'rgba(255,255,255,' + (0.25 + sorteioDaLagoa() * 0.3).toFixed(2) + ')';
+          contexto2d.fillRect(64 + Math.cos(angulo) * distancia, 64 + Math.sin(angulo) * distancia, 3 + sorteioDaLagoa() * 5, 1);
+        }
+        const direcaoDoRio = curvaDoRio.getTangentAt(1), giro = Math.atan2(direcaoDoRio.x, direcaoDoRio.z);
+        const disco = (raioExtra, altura, materialDoDisco) => {
+          const malha = new THREE.Mesh(new THREE.CircleGeometry(1, 40).rotateX(-Math.PI / 2), materialDoDisco);
+          malha.scale.set(LAGOA_DO_RIO.raioDeLado + raioExtra, 1, LAGOA_DO_RIO.raioAoLongo + raioExtra); malha.rotation.y = giro;
+          malha.position.set(LAGOA_DO_RIO.x, altura, LAGOA_DO_RIO.z); malha.receiveShadow = true;
+          malha.userData.parteDaIlha = true; malha.userData.naoMesclar = true;
+          cena.add(malha);
+        };
+        disco(LAGOA_DO_RIO.margem, 0.08, new THREE.MeshLambertMaterial({ color: 0xc2a56b }));                 // areia em volta
+        disco(0, 0.12, new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(canvasDaLagoa) }));     // água
+      }
 
       // Posição da cachoeira (frente do paredão) — usada por vegetação, câmera e construção.
       const CENTRO_X_DA_CACHOEIRA = -20.5, Z_DA_FRENTE_DA_CACHOEIRA = -22, ALTURA_DO_PAREDAO = 15.3;

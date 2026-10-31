@@ -30,12 +30,16 @@
       //  • construções no nível 1 vinham PRONTAS de graça → passam a "não construídas" (nível 0); níveis 2 e 3 (pagos) ficam;
       //  • a plantação pequena virou o moinho: o XP gasto nas evoluções dela é devolvido;
       //  • danos antigos de invasões são desfeitos (a regra dos 5 dias volta a valer daqui em diante).
+      // Fazenda 8.4.1: valores HISTÓRICOS congelados. Os custos atuais subiram (progressão de 1 ano, seção 01); devolver ou presumir
+      // com a tabela nova daria a saves antigos mais XP do que eles realmente gastaram.
+      const CUSTO_DE_EVOLUCAO_DOS_SAVES_ANTIGOS = [100, 250];                 // tabela vigente quando a plantação pequena existia
+      const CUSTO_DE_CONTRATACAO_DOS_SAVES_ANTIGOS = { fazendeiro: 120, guarda: 200 };   // presumido para quem não tem xpInvestido
       if (versaoCarregada < 4) {
         let reorganizou = false;
         for (const idDaArea of Object.keys(estado.niveis)) {
           const nivelAntigo = Math.min(NIVEL_MAXIMO, Math.max(1, estado.niveis[idDaArea] | 0));
           if (idDaArea === 'plantacao') {
-            const reembolso = CUSTO_PARA_PROXIMO_NIVEL.slice(0, nivelAntigo - 1).reduce((soma, custo) => soma + custo, 0);
+            const reembolso = CUSTO_DE_EVOLUCAO_DOS_SAVES_ANTIGOS.slice(0, nivelAntigo - 1).reduce((soma, custo) => soma + custo, 0);
             estado.xp += reembolso; delete estado.niveis.plantacao;
             avisosDaMigracao.push('A plantação pequena deu lugar ao moinho de pedra' + (reembolso ? ': ' + reembolso + ' XP devolvidos.' : '.'));
             continue;
@@ -59,6 +63,10 @@
         estado.niveis[area.id] = Number.isFinite(nivelSalvo) ? Math.min(NIVEL_MAXIMO, Math.max(0, nivelSalvo | 0)) : nivelInicialDaArea(area.id);
       }
       for (const idDaArea of Object.keys(estado.niveis)) if (!AREAS.some(area => area.id === idDaArea)) delete estado.niveis[idDaArea];
+      // Fazenda 8.4.1: a PRIMEIRA plantação construída (qualquer uma das duas) sai de graça (seção 32). O campo só vira true quando
+      // uma plantação é construída de fato. Saves antigos não têm o campo: os níveis reais decidem — se alguma plantação já existe,
+      // o benefício conta como usado (sem reembolso); sem nenhuma, ele fica disponível. Sem mudança na versão do salvamento.
+      estado.primeiraPlantacaoGratuitaUsada = estado.primeiraPlantacaoGratuitaUsada === true || PLANTACOES_COM_CANTEIROS.some(idDaArea => estado.niveis[idDaArea] > 0);
       // Campos do sistema de inatividade e invasões. Saves antigos não têm esses campos: são criados aqui, sem tocar em xp/niveis.
       const AGORA_AO_CARREGAR = Date.now();
       if (!estado.atividade || !Number.isFinite(estado.atividade.ultima)) estado.atividade = { ultima: AGORA_AO_CARREGAR };   // save antigo: a contagem começa agora
@@ -67,12 +75,58 @@
       for (const idDaArea of Object.keys(estado.danos)) if (!AREAS.some(area => area.id === idDaArea) || !estado.danos[idDaArea] || !estado.danos[idDaArea].destruida) delete estado.danos[idDaArea];
       if (!estado.invasao || typeof estado.invasao !== 'object') estado.invasao = {};
       if (estado.invasao.emAndamento && !AREAS.some(area => area.id === estado.invasao.emAndamento.alvo)) estado.invasao.emAndamento = null;
+      // Defesa (8.4.1): a invasão em andamento guarda as criaturas já derrotadas (índices de "tipos") e o dano acumulado da
+      // instalação (0 a 1). Ao reabrir, ela continua de onde parou (seção 26). Saves anteriores começam sem derrotas e sem dano.
+      if (estado.invasao.emAndamento) {
+        const andamento = estado.invasao.emAndamento;
+        andamento.derrotados = Array.isArray(andamento.derrotados) ? [...new Set(andamento.derrotados.filter(indice => Number.isInteger(indice) && indice >= 0))] : [];
+        andamento.progresso = Number.isFinite(andamento.progresso) ? Math.max(0, Math.min(1, andamento.progresso)) : 0;
+      }
+      // Fazenda 8.4.1: calendário das invasões (seção 26). Os dias são números inteiros (dias desde 01/01/1970 no calendário
+      // local). Saves antigos ganham o campo zerado: a liberação é decidida na seção 26, sem invasões retroativas.
+      //   liberadoEm             → dia em que as invasões foram liberadas (null = ainda não)
+      //   ultimoDiaAtendido      → último dia de invasão do calendário já cumprido (os anteriores não voltam)
+      //   avisoMostradoPara      → dia de invasão cujo aviso prévio já apareceu · esperaAvisadaEm: dia do aviso de invasão pendente
+      //   deslocamentoDeTesteDias → dias somados ao calendário SÓ pelo botão de teste "Avançar um dia elegível" (Modo desenvolvedor)
+      //   pausadoEm              → primeiro dia em que um save JÁ LIBERADO foi aberto com o calendário pausado (null = sem pausa
+      //                            pendente); ao retomar, a seção 26 dá os dias da pausa como cumpridos e volta a null
+      //   avisoDeDefesaVistoEm   → dia em que o jogador viu o aviso do perigo e da defesa (null = ainda não): sem ele, o
+      //                            calendário não libera nem ataca (seção 26)
+      const calendarioSalvo = estado.calendarioDasInvasoes && typeof estado.calendarioDasInvasoes === 'object' ? estado.calendarioDasInvasoes : {};
+      const diaSalvo = valor => Number.isInteger(valor) ? valor : null;
+      estado.calendarioDasInvasoes = { liberadoEm: diaSalvo(calendarioSalvo.liberadoEm), ultimoDiaAtendido: diaSalvo(calendarioSalvo.ultimoDiaAtendido), avisoMostradoPara: diaSalvo(calendarioSalvo.avisoMostradoPara),
+        esperaAvisadaEm: diaSalvo(calendarioSalvo.esperaAvisadaEm), pausadoEm: diaSalvo(calendarioSalvo.pausadoEm), avisoDeDefesaVistoEm: diaSalvo(calendarioSalvo.avisoDeDefesaVistoEm),deslocamentoDeTesteDias: Number.isInteger(calendarioSalvo.deslocamentoDeTesteDias) && calendarioSalvo.deslocamentoDeTesteDias > 0 ? calendarioSalvo.deslocamentoDeTesteDias : 0 };
       // ---- Campos da Mark 8.2 (criados aqui para saves antigos e para jogos novos; valores inválidos são corrigidos) ----
       // Relógio do jogo: Date.now() mais um deslocamento usado SÓ pelo botão de teste "Avançar 10 min" (painel Tempo).
-      // Plantações, alimentação e mina usam este relógio. A regra dos 5 dias usa SEMPRE o relógio real (Date.now()).
+      // Plantações, alimentação e mina usam este relógio. O calendário das invasões NÃO usa (tem o próprio deslocamento de teste).
       estado.tempoDeTesteMs = Number.isFinite(estado.tempoDeTesteMs) && estado.tempoDeTesteMs >= 0 ? estado.tempoDeTesteMs : 0;
       const agoraNoJogo = () => Date.now() + estado.tempoDeTesteMs;
       const numeroValido = (valor, padrao = 0) => Number.isFinite(valor) && valor >= 0 ? valor : padrao;
+      // Fazenda 8.4.1: contadores internos da ORIGEM dos ganhos de XP (só para analisar a economia; não aparecem na interface).
+      // estado.xp continua sendo o único saldo que se gasta: os contadores só somam o XP efetivamente creditado em cada categoria
+      // e nunca diminuem com gastos. Registram o histórico a partir desta versão (estado.xpPorOrigemDesde, em ms): saves antigos
+      // começam zerados, sem reconstruir ganhos que não foram registrados. Sem mudança na versão do salvamento (campo novo opcional).
+      //   atividades → window.adicionarXP (ponto de entrada das atividades escolares; valor líquido, aceita negativos e decimais)
+      //   fazenda    → colheitas, ciclos da mina e monstros noturnos (creditarXP, seção 27)
+      //   devolucoes → XP devolvido ao dispensar trabalhadores (seção 29)
+      //   teste      → controles do Modo desenvolvedor (+5000 XP e monstros chamados pelo botão de teste)
+      //   inicial    → XP inicial de uma fazenda NOVA (ECONOMIA_CONFIG.xpInicial, seção 01); saves antigos ficam com 0
+      // O reembolso da migração antiga (versão < 4, plantação pequena → moinho) acontece antes dos contadores existirem e NÃO é
+      // contado: devolve XP gasto antes, de origem desconhecida.
+      const ORIGENS_DO_XP = ['atividades', 'fazenda', 'devolucoes', 'teste', 'inicial'];
+      const xpPorOrigemSalvo = estado.xpPorOrigem && typeof estado.xpPorOrigem === 'object' ? estado.xpPorOrigem : {};
+      estado.xpPorOrigem = Object.fromEntries(ORIGENS_DO_XP.map(origem => [origem, Number.isFinite(xpPorOrigemSalvo[origem]) ? xpPorOrigemSalvo[origem] : 0]));
+      estado.xpPorOrigemDesde = Number.isFinite(estado.xpPorOrigemDesde) ? Math.min(estado.xpPorOrigemDesde, AGORA_AO_CARREGAR) : AGORA_AO_CARREGAR;
+      // Chamar SEMPRE junto do "estado.xp += quantidade" que de fato creditou (nunca antes de validar o valor). Não salva sozinho:
+      // quem credita já salva logo em seguida.
+      const registrarOrigemDoXP = function registrarOrigemDoXP(origem, quantidade) {
+        if (ORIGENS_DO_XP.includes(origem) && Number.isFinite(quantidade)) estado.xpPorOrigem[origem] += quantidade;
+      };
+      // Fazenda 8.4.1 (balanceamento): XP inicial só numa fazenda NOVA (sem save). Fazendas já iniciadas não ganham nada retroativo.
+      if (!existiaSalvamento) { estado.xp = ECONOMIA_CONFIG.xpInicial; registrarOrigemDoXP('inicial', ECONOMIA_CONFIG.xpInicial); }
+      // XP da Fazenda já creditado HOJE (limite diário, seção 27). dia = dia do calendário local (inteiro); saves antigos começam zerados.
+      const xpDaFazendaSalvo = estado.xpDaFazendaHoje && typeof estado.xpDaFazendaHoje === 'object' ? estado.xpDaFazendaHoje : {};
+      estado.xpDaFazendaHoje = Number.isInteger(xpDaFazendaSalvo.dia) && Number.isFinite(xpDaFazendaSalvo.total) && xpDaFazendaSalvo.total >= 0 ? { dia: xpDaFazendaSalvo.dia, total: xpDaFazendaSalvo.total } : { dia: null, total: 0 };
       estado.recursos = estado.recursos && typeof estado.recursos === 'object' ? estado.recursos : {};
       for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
       // Plantações: cada uma tem a PRÓPRIA lista de canteiros (estado.lavouras[id].canteiros). A lista antiga (estado.lavoura, só da
@@ -108,7 +162,7 @@
         }
         const melhorias = dados.melhorias && typeof dados.melhorias === 'object' ? dados.melhorias : {};
         dados.melhorias = Object.fromEntries(Object.keys(MELHORIAS_DOS_TRABALHADORES.atributos).map(atributo => [atributo, Math.min(MELHORIAS_DOS_TRABALHADORES.nivelMaximo, Math.floor(numeroValido(melhorias[atributo])))]));
-        dados.xpInvestido = Math.floor(numeroValido(dados.xpInvestido, dados.inicial ? 0 : classe.custo));
+        dados.xpInvestido = Math.floor(numeroValido(dados.xpInvestido, dados.inicial ? 0 : CUSTO_DE_CONTRATACAO_DOS_SAVES_ANTIGOS[dados.classe] ?? classe.custo));
         return dados;
       };
       estado.trabalhadores = Array.isArray(estado.trabalhadores) ? estado.trabalhadores.filter(dados => dados && CLASSES_DE_TRABALHADORES[dados.classe]) : [];
@@ -117,6 +171,7 @@
         normalizarTrabalhador(dados, versaoCarregada < 5);
         if (versaoCarregada < 5) dados.vida = Math.round(fracaoDeVida * dados.vidaMaxima);   // vida na mesma proporção de antes
         dados.estado = dados.estado === 'morto' || !(dados.vida > 0) ? 'morto' : 'ativo';
+        dados.emCasa = dados.emCasa === true && dados.estado === 'ativo';                  // defesa (8.4.1): mandado para casa pelo jogador
       }
       estado.candidatos = versaoCarregada < 5 || !Array.isArray(estado.candidatos) ? [] : estado.candidatos.filter(dados => dados && CLASSES_DE_TRABALHADORES[dados.classe]).map(dados => normalizarTrabalhador(dados, false));
       estado.proximoIdDeTrabalhador = Math.max(numeroValido(estado.proximoIdDeTrabalhador, 1), 1 + Math.max(0, ...estado.trabalhadores.map(dados => dados.id | 0), ...estado.candidatos.map(dados => dados.id | 0)));

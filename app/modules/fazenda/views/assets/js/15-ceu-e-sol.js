@@ -24,6 +24,10 @@
           void main() {
             float h = clamp(vDir.y, 0.0, 1.0);
             vec3 cor = mix(uHorizonte, uTopo, pow(h, 0.7));
+            // Fazenda 8.4.1: abaixo do horizonte (visto da beira da ilha) o céu desce para um tom mais fundo, sempre a partir
+            // das cores do ciclo de dia e noite
+            float abaixo = clamp(-vDir.y, 0.0, 1.0);
+            cor = mix(cor, mix(uHorizonte, uTopo, 0.8) * 0.82, pow(abaixo, 0.8));
             float perto = max(dot(normalize(vDir), uDirecaoDoSol), 0.0);
             float halo = pow(perto, 5.0) * (1.0 - h * 0.7) + pow(perto, 40.0) * 0.4;
             cor += uBrilho * halo * uForcaDoBrilho;

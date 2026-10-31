@@ -39,6 +39,8 @@
         // C) Luzes dinâmicas: luzes invisíveis saem do cálculo de iluminação. Ao voltar, as seções 20 recalculam as
         //    intensidades no quadro seguinte, conforme a hora do dia.
         for (const luz of luzesDinamicasDaNoite()) { luz.visible = !leve; if (leve) luz.intensity = 0; }
+        // D) Fazenda 8.4.1: as nuvens baixas, abaixo da ilha, são enfeite transparente e ficam de fora no Modo Leve.
+        nuvensDeBaixoDaIlha.visible = !leve;
         atualizarBotaoDoModoLeve();
       };
       const ativarModoLeve = function ativarModoLeve() { MODO_LEVE.ativo = true; salvarPreferenciaDoModoLeve(); atualizarQualidadeDeRenderizacao(); };

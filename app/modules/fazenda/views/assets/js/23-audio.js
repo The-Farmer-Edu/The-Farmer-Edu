@@ -7,43 +7,65 @@
       // ====================================================================================================
 
       // ====================================================================================================
-      // SEÇÃO 23 — ÁUDIO: MÚSICA, ANIMAIS, AMBIENTES E SEGREDO
-      // Nada toca antes do primeiro clique em "Ativar áudio" (regra de autoplay). Cada som usa um único elemento <audio>; arquivos ausentes não quebram o jogo.
+      // SEÇÃO 23 — ÁUDIO: MÚSICA, ANIMAIS, AMBIENTES, TRATOR, EFEITOS E SEGREDOS
+      // Os navegadores só deixam tocar som depois de um gesto do jogador (regra de autoplay). Fazenda 8.4.1: música e sons vêm
+      // ligados por padrão e são liberados no PRIMEIRO gesto natural (toque, clique ou tecla em qualquer lugar da página), sem
+      // precisar abrir o painel de áudio; o botão 🔊 da barra e "Ativar áudio" no painel também liberam. Cada som usa um único
+      // elemento <audio>; arquivos ausentes não quebram o jogo.
       // Os caminhos dos arquivos ficam em AUDIO_CONFIG (bloco "CONFIGURAÇÃO DOS ÁUDIOS", logo depois da seção 02).
       // ====================================================================================================
-      // Os caminhos ficam em AUDIO_CONFIG (início do arquivo). Nada toca antes do primeiro clique em "Ativar áudio" (regra de autoplay).
       // Cada som usa um único elemento <audio> reutilizado. Arquivo ausente = o som é marcado como indisponível e o jogo segue normalmente.
       const CHAVE_DO_AUDIO = 'fazenda3d-audio-v1';
       const TIPOS_DE_ANIMAL_COM_SOM = Object.keys(AUDIO_CONFIG.animais).filter(chave => chave !== 'global');
+      const TIPOS_DE_EFEITO = Object.keys(AUDIO_CONFIG.efeitos).filter(chave => chave !== 'global');
+      const CATEGORIAS_DE_AUDIO = ['musica', 'animais', 'cachoeira', 'fonte', 'trator', 'efeitos'];   // as que têm botão e volume no painel
+      const CATEGORIAS_EM_GRUPO = ['animais', 'efeitos'];                                            // vários arquivos, tocados de vez em quando
       const ESTADO_DO_AUDIO = {
         liberado: false,
         musica: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.musica, querTocar: true },
         animais: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.animais, individuais: Object.fromEntries(TIPOS_DE_ANIMAL_COM_SOM.map(tipo => [tipo, true])) },
         cachoeira: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.cachoeira },
         fonte: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.fonte },
-        trator: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.trator },
+        trator: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.trator },     // 8.4.1: configurações antigas não têm o campo: ligado
+        efeitos: { ligado: true, volume: AUDIO_CONFIG.volumesIniciais.efeitos },
         silenciado: false,   // Fazenda 8.4 (C4): botão global "🔇"; independente do ligado/volume de cada categoria
       };
       try { // preferências salvas (apenas valores válidos)
         const salvo = JSON.parse(localStorage.getItem(CHAVE_DO_AUDIO));
         if (salvo && typeof salvo.silenciado === 'boolean') ESTADO_DO_AUDIO.silenciado = salvo.silenciado;   // configurações antigas não têm o campo: som ligado
-        if (salvo) for (const categoria of ['musica', 'animais', 'cachoeira', 'fonte', 'trator']) if (salvo[categoria]) {
+        if (salvo) for (const categoria of CATEGORIAS_DE_AUDIO) if (salvo[categoria]) {
           if (typeof salvo[categoria].ligado === 'boolean') ESTADO_DO_AUDIO[categoria].ligado = salvo[categoria].ligado;
           if (Number.isFinite(salvo[categoria].volume)) ESTADO_DO_AUDIO[categoria].volume = Math.min(1, Math.max(0, salvo[categoria].volume));
           if (categoria === 'animais' && salvo[categoria].individuais) for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) if (typeof salvo[categoria].individuais[tipo] === 'boolean') ESTADO_DO_AUDIO.animais.individuais[tipo] = salvo[categoria].individuais[tipo];
         }
       } catch (erro) { }
       // Grava no localStorage (chave fazenda3d-audio-v1) o que está ligado e os volumes de cada categoria.
-      const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { localStorage.setItem(CHAVE_DO_AUDIO, JSON.stringify({ musica: ESTADO_DO_AUDIO.musica, animais: ESTADO_DO_AUDIO.animais, cachoeira: ESTADO_DO_AUDIO.cachoeira, fonte: ESTADO_DO_AUDIO.fonte, trator: ESTADO_DO_AUDIO.trator, silenciado: ESTADO_DO_AUDIO.silenciado })); } catch (erro) { } };
+      const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { localStorage.setItem(CHAVE_DO_AUDIO, JSON.stringify({ ...Object.fromEntries(CATEGORIAS_DE_AUDIO.map(categoria => [categoria, ESTADO_DO_AUDIO[categoria]])), silenciado: ESTADO_DO_AUDIO.silenciado })); } catch (erro) { } };
 
       // Mantém o volume entre 0 e 1 (limite do elemento <audio>).
       const limitarVolume = volume => Math.min(1, Math.max(0, volume));
       // Ganchos chamados quando o estado de algum som muda; é trocada por atualizarPainelDeAudio mais adiante.
       let aoMudarOAudio = () => { };
+      // Fazenda 8.4.1: endereço real de um áudio de AUDIO_CONFIG ("assets/audio/<subpasta>/<nome>"), montado a partir do endereço do
+      // fazenda.js, como o carregador já faz com os scripts. Pela aplicação PHP (script vindo de index.php?rota=fazenda/script) vira
+      // a rota fazenda/audio, porque a pasta views/ não é pública; aberto pelo arquivo (file://) é a pasta views/assets/audio.
+      // Caminhos fora de "assets/audio/" (ou sem o endereço do script) ficam como estão, relativos à página (comportamento antigo).
+      const PREFIXO_DOS_AUDIOS = 'assets/audio/';
+      const enderecoDoAudio = function enderecoDoAudio(caminho) {
+        if (!ENDERECO_DO_SCRIPT_PRINCIPAL || !caminho.startsWith(PREFIXO_DOS_AUDIOS)) return caminho;
+        try {
+          const relativo = caminho.slice(PREFIXO_DOS_AUDIOS.length), endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL);
+          if (endereco.searchParams.get('rota') === 'fazenda/script') {
+            endereco.searchParams.set('rota', 'fazenda/audio'); endereco.searchParams.set('arquivo', relativo);
+            return endereco.href;
+          }
+          return new URL('../audio/' + relativo, endereco).href;   // assets/js/fazenda.js → assets/audio/...
+        } catch (erro) { return caminho; }
+      };
       // Cria o elemento <audio> de um som (uma única vez). O arquivo só é carregado quando necessário; erros de
-      // carga marcam o som como indisponível.
-      const criarFonteDeSom = function criarFonteDeSom(arquivo, repetirEmLoop) {
-        const fonteDeSom = { arquivo, estado: 'ocioso', el: new Audio() }; // estado: ocioso | carregando | erro
+      // carga marcam o som como indisponível. "caminho" é o de AUDIO_CONFIG (mostrado no painel); "arquivo" é o endereço real.
+      const criarFonteDeSom = function criarFonteDeSom(caminho, repetirEmLoop) {
+        const fonteDeSom = { caminho, arquivo: enderecoDoAudio(caminho), estado: 'ocioso', el: new Audio() }; // estado: ocioso | carregando | erro
         fonteDeSom.el.preload = 'none'; fonteDeSom.el.loop = repetirEmLoop; fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
         fonteDeSom.el.addEventListener('error', () => { fonteDeSom.estado = 'erro'; aoMudarOAudio(); });
         fonteDeSom.el.addEventListener('playing', () => { fonteDeSom.estado = 'ok'; aoMudarOAudio(); });
@@ -51,13 +73,16 @@
         return fonteDeSom;
       };
       const FONTES_DE_SOM = { musica: criarFonteDeSom(AUDIO_CONFIG.musica.arquivo, true), cachoeira: criarFonteDeSom(AUDIO_CONFIG.ambiente.cachoeira.arquivo, true),
-                   fonte: criarFonteDeSom(AUDIO_CONFIG.ambiente.fonte.arquivo, true), pedraSecreta: criarFonteDeSom(AUDIO_CONFIG.segredos.pedraSecreta.arquivo, false), animais: {} };
-      for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) FONTES_DE_SOM.animais[tipo] = AUDIO_CONFIG.animais[tipo].arquivos.map(arq => criarFonteDeSom(arq, false));
+                   fonte: criarFonteDeSom(AUDIO_CONFIG.ambiente.fonte.arquivo, true), trator: criarFonteDeSom(AUDIO_CONFIG.ambiente.trator.arquivo, true), animais: {}, efeitos: {}, segredos: {} };
+      for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) FONTES_DE_SOM.animais[tipo] = criarFonteDeSom(AUDIO_CONFIG.animais[tipo].arquivo, false);
+      for (const nome of TIPOS_DE_EFEITO) FONTES_DE_SOM.efeitos[nome] = criarFonteDeSom(AUDIO_CONFIG.efeitos[nome].arquivo, false);
+      for (const nome of Object.keys(AUDIO_CONFIG.segredos)) FONTES_DE_SOM.segredos[nome] = criarFonteDeSom(AUDIO_CONFIG.segredos[nome].arquivo, false);
+      FONTES_DE_SOM.pedraSecreta = FONTES_DE_SOM.segredos.pedraSecreta;   // nome antigo, mesmo objeto (todasAsFontesDeSom não o repete)
 
       // ---- Fazenda 8.4 (C4): silenciamento global ----
       // Percorre FONTES_DE_SOM inteiro (inclusive grupos como "animais"), para que fontes registradas no futuro também entrem.
       const todasAsFontesDeSom = function todasAsFontesDeSom(colecao = FONTES_DE_SOM) {
-        return Object.values(colecao).flatMap(item => item && item.el instanceof HTMLMediaElement ? [item] : item && typeof item === 'object' ? todasAsFontesDeSom(item) : []);
+        return [...new Set(Object.values(colecao).flatMap(item => item && item.el instanceof HTMLMediaElement ? [item] : item && typeof item === 'object' ? todasAsFontesDeSom(item) : []))];
       };
       // Usa a propriedade "muted" de cada <audio>: os sons seguem a lógica de sempre (tocar, pausar, volume pela distância) e só
       // não saem no alto-falante. Assim nada das preferências individuais é tocado, e religar continua exatamente de onde estava.
@@ -79,7 +104,7 @@
           const promessa = fonteDeSom.el.play();
           if (!promessa || !promessa.then) return Promise.resolve(true);
           return promessa.then(() => true, erro => {
-            if (erro && erro.name === 'NotAllowedError') mostrarAviso('O navegador bloqueou o som. Toque em "Ativar áudio" no painel de áudio.');
+            if (erro && erro.name === 'NotAllowedError') mostrarAviso('O navegador bloqueou o som. Toque no botão 🔊 da barra superior para ativar.');
             else if (erro && erro.name !== 'AbortError') fonteDeSom.estado = 'erro';
             aoMudarOAudio(); return false;
           });
@@ -87,13 +112,20 @@
       };
       // Pausa o som (sem perder a posição).
       const pararSom = function pararSom(fonteDeSom) { try { fonteDeSom.el.pause(); } catch (erro) { } };
-      // Verdadeiro se o som está em reprodução.
-      const tocando = fonteDeSom => !fonteDeSom.el.paused && !fonteDeSom.el.ended;
+      // Verdadeiro se o som está em reprodução. Fazenda 8.4.1: um som cujo arquivo falhou nunca conta como tocando (o <audio> com
+      // erro de carga fica com paused = false e, antes, ocupava as vagas de "maximoSimultaneos" dos animais para sempre).
+      const tocando = fonteDeSom => fonteDeSom.estado !== 'erro' && !fonteDeSom.el.paused && !fonteDeSom.el.ended;
 
       // Volume final da música = volume do painel × volume da configuração.
       const volumeDaMusica = () => limitarVolume(ESTADO_DO_AUDIO.musica.volume * AUDIO_CONFIG.musica.volume);
-      const TRATOR = AREAS.find(areaDaLista => areaDaLista.id === 'maquinario');
-      const FONTES_DOS_AMBIENTES = { cachoeira: () => [CENTRO_X_DA_CACHOEIRA, Z_DA_FRENTE_DA_CACHOEIRA], fonte: () => [PRACA_CENTRAL.x, PRACA_CENTRAL.z] };   // chafariz no centro da praça central
+      // Trator do Maquinário (seção 08 registra o modelo em farolDoTrator): conta como presente só se estiver na cena (o grupo antigo
+      // sai da cena quando a área é reconstruída) e se o Maquinário não estiver destruído.
+      const posicaoDoTrator = new THREE.Vector3();
+      const naCena = objeto => { while (objeto) { if (objeto === cena) return true; objeto = objeto.parent; } return false; };
+      const tratorNaFazenda = () => !!(farolDoTrator && estado.niveis.maquinario >= 2 && !(estado.danos.maquinario && estado.danos.maquinario.destruida) && naCena(farolDoTrator.trator));
+      const FONTES_DOS_AMBIENTES = { cachoeira: () => [CENTRO_X_DA_CACHOEIRA, Z_DA_FRENTE_DA_CACHOEIRA], fonte: () => [PRACA_CENTRAL.x, PRACA_CENTRAL.z],   // chafariz no centro da praça central
+        trator: () => { farolDoTrator.trator.getWorldPosition(posicaoDoTrator); return [posicaoDoTrator.x, posicaoDoTrator.z]; } };
+      const AMBIENTE_PRESENTE = { cachoeira: () => true, fonte: () => true, trator: tratorNaFazenda };   // o trator só toca se existir
       // Volume de cachoeira/fonte: volume do painel × configuração × fator de distância entre a câmera e a fonte
       // do som (nunca abaixo do mínimo configurado).
       const volumeDoAmbiente = function volumeDoAmbiente(nome) {
@@ -112,7 +144,7 @@
       // Igual a sincronizarMusica, mas para os sons contínuos (cachoeira e fonte), com volume dependente da
       // distância.
       const sincronizarAmbiente = function sincronizarAmbiente(nome) {
-        const fonteDeSom = FONTES_DE_SOM[nome], deveEstarTocando = ESTADO_DO_AUDIO.liberado && ESTADO_DO_AUDIO[nome].ligado && ESTADO_DO_AUDIO[nome].volume > 0.001 && fonteDeSom.estado !== 'erro';
+        const fonteDeSom = FONTES_DE_SOM[nome], deveEstarTocando = ESTADO_DO_AUDIO.liberado && ESTADO_DO_AUDIO[nome].ligado && ESTADO_DO_AUDIO[nome].volume > 0.001 && fonteDeSom.estado !== 'erro' && AMBIENTE_PRESENTE[nome]();
         if (deveEstarTocando && fonteDeSom.el.paused) tocarSom(fonteDeSom, volumeDoAmbiente(nome));
         else if (!deveEstarTocando && !fonteDeSom.el.paused) pararSom(fonteDeSom);
         else if (deveEstarTocando) fonteDeSom.el.volume = volumeDoAmbiente(nome);
@@ -120,9 +152,10 @@
       // Chamada dentro de um clique do jogador (exigência de autoplay dos navegadores): libera o áudio, inicia
       // música e ambientes e "destrava" os demais sons, tocando-os mudos por um instante (necessário no iOS).
       const liberarAudio = function liberarAudio() { // chamado dentro de um clique do jogador: é o que permite o navegador tocar
+        if (ESTADO_DO_AUDIO.liberado) return;                                    // 8.4.1: vários caminhos chamam (gesto, botão 🔊, painel); só a primeira vale
         ESTADO_DO_AUDIO.liberado = true;
-        sincronizarMusica(); sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte');
-        for (const fonteDeSom of [...Object.values(FONTES_DE_SOM.animais).flat(), FONTES_DE_SOM.pedraSecreta]) { // "destrava" os demais elementos (necessário no iOS); mudo e só por um instante
+        sincronizarMusica(); sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte'); sincronizarAmbiente('trator');
+        for (const fonteDeSom of [...Object.values(FONTES_DE_SOM.animais), ...Object.values(FONTES_DE_SOM.efeitos), ...Object.values(FONTES_DE_SOM.segredos)]) { // "destrava" os demais elementos (necessário no iOS); mudo e só por um instante
           try {
             fonteDeSom.el.src = fonteDeSom.arquivo; fonteDeSom.estado = 'carregando'; fonteDeSom.el.muted = true;
             const promessa = fonteDeSom.el.play();
@@ -145,15 +178,15 @@
       const definirCategoriaDeAudio = function definirCategoriaDeAudio(categoria, ligado) {
         ESTADO_DO_AUDIO[categoria].ligado = ligado;
         if (ligado) { // religar tenta de novo arquivos que falharam
-          if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (categoria === 'animais') Object.values(FONTES_DE_SOM.animais).flat().forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
+          if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (CATEGORIAS_EM_GRUPO.includes(categoria)) Object.values(FONTES_DE_SOM[categoria]).forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
         }
-        if (categoria === 'musica') sincronizarMusica(); else if (categoria !== 'animais') sincronizarAmbiente(categoria);
+        if (categoria === 'musica') sincronizarMusica(); else if (!CATEGORIAS_EM_GRUPO.includes(categoria)) sincronizarAmbiente(categoria);
         aoMudarOAudio(); salvarPreferenciasDeAudio();
       };
       // Define o volume de uma categoria e aplica na hora aos sons que já tocam.
       const definirVolumeDaCategoria = function definirVolumeDaCategoria(categoria, volume) {
         ESTADO_DO_AUDIO[categoria].volume = limitarVolume(volume);
-        if (categoria === 'musica') sincronizarMusica(); else if (categoria !== 'animais') sincronizarAmbiente(categoria);
+        if (categoria === 'musica') sincronizarMusica(); else if (!CATEGORIAS_EM_GRUPO.includes(categoria)) sincronizarAmbiente(categoria);
         salvarPreferenciasDeAudio();
       };
 
@@ -198,8 +231,44 @@
         if (!ESTADO_DO_AUDIO.liberado) return;
         atualizarSonsDosAnimais(segundosDesdeUltimoFrame, tempo);
         relogioDosAmbientes -= segundosDesdeUltimoFrame;
-        if (relogioDosAmbientes <= 0) { relogioDosAmbientes = 0.25; sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte'); }
+        if (relogioDosAmbientes <= 0) { relogioDosAmbientes = 0.25; sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte'); sincronizarAmbiente('trator'); }
       };
+
+      // ---- Fazenda 8.4.1: efeitos das mecânicas (AUDIO_CONFIG.efeitos) ----
+      // Chamada pelos pontos do jogo onde a ação acontece (plantar, colher, construir, mina, contratar, combate, invasões).
+      // Não toca antes da liberação, com a categoria desligada ou sem arquivo; "posicao" ([x, z]) baixa o volume com a distância.
+      const ultimoMomentoDoEfeito = {};
+      const tocarEfeito = function tocarEfeito(nome, posicao) {
+        const configuracao = AUDIO_CONFIG.efeitos[nome], fonteDeSom = FONTES_DE_SOM.efeitos[nome], global = AUDIO_CONFIG.efeitos.global;
+        if (!configuracao || !fonteDeSom || !ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.efeitos.ligado || ESTADO_DO_AUDIO.efeitos.volume <= 0.001 || fonteDeSom.estado === 'erro') return false;
+        const agora = performance.now();
+        if (agora - (ultimoMomentoDoEfeito[nome] ?? -Infinity) < (configuracao.intervaloMinimo ?? global.intervaloMinimo) * 1000) return false;
+        ultimoMomentoDoEfeito[nome] = agora;
+        const fator = posicao ? Math.max(0.15, 1 - Math.hypot(alvoAtualDaCamera.x - posicao[0], alvoAtualDaCamera.z - posicao[1]) / global.distanciaMaxima) : 1;
+        try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
+        tocarSom(fonteDeSom, ESTADO_DO_AUDIO.efeitos.volume * configuracao.volume * fator);
+        return true;
+      };
+      // Segredos (AUDIO_CONFIG.segredos): toca o som do segredo descoberto, sem repetir enquanto ele ainda está tocando.
+      const tocarSegredo = function tocarSegredo(nome) {
+        const fonteDeSom = FONTES_DE_SOM.segredos[nome], configuracao = AUDIO_CONFIG.segredos[nome];
+        if (!fonteDeSom || tocando(fonteDeSom)) return false;
+        if (fonteDeSom.estado === 'erro') { console.info('[áudio] segredo "' + nome + '": arquivo ausente (' + fonteDeSom.arquivo + ')'); return false; }
+        try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
+        tocarSom(fonteDeSom, configuracao.volume);
+        return true;
+      };
+
+      // ---- Fazenda 8.4.1: liberação no primeiro gesto natural ----
+      // Toque/clique (pointerup) ou tecla (keydown) em qualquer lugar da página contam como gesto para o navegador; o primeiro
+      // libera música e sons, a menos que o jogador tenha deixado o som desligado (🔇) — então só o botão 🔊 libera.
+      const liberarNoPrimeiroGesto = evento => {
+        if (ESTADO_DO_AUDIO.liberado) { removeEventListener('pointerup', liberarNoPrimeiroGesto, true); removeEventListener('keydown', liberarNoPrimeiroGesto, true); return; }
+        if (ESTADO_DO_AUDIO.silenciado || (evento.type === 'keydown' && evento.key === 'Escape')) return;   // Esc não conta como gesto para o navegador
+        if (evento.target && evento.target.closest && evento.target.closest('#botao-som-global')) return;   // o próprio botão cuida da ativação
+        liberarAudio();
+      };
+      addEventListener('pointerup', liberarNoPrimeiroGesto, true); addEventListener('keydown', liberarNoPrimeiroGesto, true);
 
       // ---- pedra secreta: clique/toque (sem arrastar) na pedra aciona o som secreto ----
       const raioDeClique = new THREE.Raycaster(), pontoDoClique = new THREE.Vector2();
@@ -223,11 +292,7 @@
       // senão só registra no console).
       const ativarPedraSecreta = function ativarPedraSecreta() {
         pedraSecreta.pulso = 1;
-        const fonteDeSom = FONTES_DE_SOM.pedraSecreta, configuracao = AUDIO_CONFIG.segredos.pedraSecreta;
-        if (tocando(fonteDeSom)) return;
-        if (fonteDeSom.estado === 'erro') { console.info('[áudio] pedra secreta: arquivo ausente (' + fonteDeSom.arquivo + ')'); return; }
-        try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
-        tocarSom(fonteDeSom, configuracao.volume);
+        tocarSegredo('pedraSecreta');
       };
 
       arquivoDaMontagemConcluido('23-audio.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

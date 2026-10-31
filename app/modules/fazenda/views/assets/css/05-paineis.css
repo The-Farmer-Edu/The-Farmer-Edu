@@ -74,6 +74,8 @@ input[type=range], input[type=checkbox] { accent-color: var(--destaque) }
   scrollbar-color: var(--gaveta-madeira) transparent
 }
 #barra-ferramentas #painel-fazenda { --respiro-do-painel: 16px }
+/* 8.4.1: rolagem até um item (foco pelo teclado, scrollIntoView) para abaixo do cabeçalho fixo, em vez de deixá-lo coberto */
+#barra-ferramentas .painel { scroll-padding-top: 52px }
 
 /* cabeçalho em tábua (o h3 de cada painel e o topo do menu), fixo ao rolar */
 #barra-ferramentas .painel > h3, #barra-ferramentas .cabecalho-do-menu {
@@ -150,4 +152,86 @@ input[type=range], input[type=checkbox] { accent-color: var(--destaque) }
 
 @media (max-width: 520px) {
   #barra-ferramentas #painel-fazenda { --respiro-do-painel: 12px }
+}
+
+/* ===== Fazenda 8.4.1: painel Equipe maior e mais legível (mesmo padrão do painel Fazenda: largo, texto de 14px, botões altos).
+   Só afeta #painel-equipe; usa os tokens --gaveta-* (temas claro e escuro). ===== */
+#barra-ferramentas #painel-equipe { --respiro-do-painel: 16px; width: min(480px, calc(100vw - 24px)); max-height: max(320px, calc(100vh - 270px)); max-height: max(320px, calc(100dvh - 270px)); overflow-y: auto; box-sizing: border-box; overscroll-behavior: contain; font-size: 14px }
+#barra-ferramentas #painel-equipe > h3 { font-size: 19px }
+#barra-ferramentas #painel-equipe h4 { font-size: 15px }
+#barra-ferramentas #painel-equipe h4 small { font-size: 12px; font-weight: 800; padding: 1px 8px; border-radius: 10px; background: var(--gaveta-cartao-vazio) }
+#barra-ferramentas #painel-equipe .dica { font-size: 13px; line-height: 1.45 }
+#painel-equipe .barrinha { width: 100%; height: 8px; border-radius: 4px }
+
+/* resumo: dois selos (vagas da casa e XP) */
+#painel-equipe .resumo-da-equipe { display: grid; grid-template-columns: 1fr 1fr; gap: 8px }
+#painel-equipe .selo-da-equipe { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border-radius: 12px; background: var(--gaveta-cartao); border: 1px solid var(--gaveta-borda); box-shadow: 0 2px 0 var(--gaveta-borda) }
+#painel-equipe .selo-da-equipe small { font-size: 12px; font-weight: 700; color: var(--gaveta-texto-suave) }
+#painel-equipe .selo-da-equipe b { font-size: 20px; line-height: 1.1 }
+#painel-equipe .resumo-da-equipe.cheia .selo-da-equipe:first-child b { color: #c0392b }
+/* defesa (8.4.1): quem está em campo e em casa, invasão em curso */
+#painel-equipe .defesa-da-equipe { margin-top: 8px; padding: 8px 12px; border-radius: 12px; background: var(--gaveta-cartao); border: 1px solid var(--gaveta-borda) }
+#painel-equipe .defesa-da-equipe p { margin: 4px 0 }
+#painel-equipe .defesa-da-equipe.em-combate { border: 2px solid #c0392b }
+#painel-equipe .invasao-em-curso { font-weight: 800; color: #c0392b }
+
+/* medalhão, nome e classe (fichas e candidatos) */
+#painel-equipe .medalhao-do-trabalhador { flex: 0 0 auto; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; font-size: 26px; background: #8cc56a38; border: 2px solid #8cc56a; box-shadow: 0 2px 0 #0002 }
+#painel-equipe .classe-guarda .medalhao-do-trabalhador { background: #7f9fc038; border-color: #7f9fc0 }
+#painel-equipe .identidade-do-trabalhador { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px }
+#painel-equipe .nome-do-trabalhador { font-size: 16px; line-height: 1.2 }
+#painel-equipe .linha-do-nome { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px }
+#painel-equipe .inicial { font-size: 12px; color: var(--gaveta-texto-suave) }
+#painel-equipe .classe-do-trabalhador { font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 10px; background: #4e9a3526; color: inherit }
+#painel-equipe .classe-guarda .classe-do-trabalhador { background: #4a76a326 }
+#painel-equipe .situacao-do-trabalhador { font-size: 13px; color: var(--gaveta-texto-suave) }
+
+/* fichas da equipe: o resumo (summary) abre os atributos e as ações */
+#barra-ferramentas #painel-equipe .ficha { padding: 0; margin: 8px 0; font-size: 14px; overflow: hidden }
+#painel-equipe .ficha summary { display: flex; align-items: center; gap: 10px; padding: 10px 12px; list-style: none; cursor: pointer }
+#painel-equipe .ficha summary::-webkit-details-marker { display: none }
+#painel-equipe .ficha summary:hover { background: #ffffff14 }
+#painel-equipe .ficha summary:focus-visible { outline: 3px solid #f2c94c; outline-offset: -3px }
+#painel-equipe .vida-do-trabalhador { flex: 0 0 96px; display: flex; flex-direction: column; align-items: stretch; gap: 4px; text-align: right; font-size: 13px }
+#painel-equipe .seta-da-ficha { flex: 0 0 auto; font-size: 14px; color: var(--gaveta-texto-suave); transition: transform .15s }
+#painel-equipe .ficha[open] .seta-da-ficha { transform: rotate(180deg) }
+#painel-equipe .ficha.morta .medalhao-do-trabalhador { filter: grayscale(1); opacity: .7 }
+#painel-equipe .ficha.morta .situacao-do-trabalhador { color: #c0392b; font-weight: 700 }
+#painel-equipe .corpo-da-ficha { padding: 10px 12px 12px; border-top: 1px dashed var(--gaveta-borda) }
+#painel-equipe .info-da-colheita { margin: 0 0 8px; font-size: 13px; color: var(--gaveta-texto-suave) }
+#painel-equipe .atributos-da-ficha { display: grid; gap: 6px }
+#painel-equipe .linha-atributo { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 10px; background: var(--gaveta-cartao-vazio) }
+#painel-equipe .nome-do-atributo { display: flex; align-items: center; gap: 6px; font-weight: 700; min-width: 0 }
+#painel-equipe .icone-do-atributo { width: 22px; text-align: center; font-size: 17px }
+#painel-equipe .valor-do-atributo { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right }
+#painel-equipe .valor-do-atributo b { font-size: 16px; line-height: 1.1 }
+#painel-equipe .nivel-do-atributo { display: flex; align-items: center; gap: 6px }
+#painel-equipe .nivel-do-atributo small { font-size: 12px; color: var(--gaveta-texto-suave) }
+#painel-equipe .pontos { display: flex; gap: 3px }
+#painel-equipe .pontos i { width: 7px; height: 7px; border-radius: 50%; background: #8883; border: 1px solid var(--gaveta-borda) }
+#painel-equipe .pontos i.cheio { background: #e0b04a; border-color: #b7892a }
+#barra-ferramentas #painel-equipe .linha-atributo .botao-pequeno { min-width: 104px; min-height: 38px; margin: 0; padding: 6px 10px; border-radius: 10px; font-size: 13px; white-space: nowrap }
+#painel-equipe .atributo-no-maximo { min-width: 104px; text-align: center; font-size: 12px; font-weight: 800; color: var(--gaveta-titulo) }
+#painel-equipe .acoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 12px }
+#barra-ferramentas #painel-equipe .acoes .botao-pequeno { min-height: 42px; margin: 0; padding: 8px 12px; border-radius: 10px; font-size: 14px }
+
+/* candidatos: cabeçalho com preço, atributos com nome, descrição e botão de largura total */
+#barra-ferramentas #painel-equipe .candidato { margin: 8px 0; padding: 12px; font-size: 14px }
+#painel-equipe .cabecalho-do-candidato { display: flex; align-items: center; gap: 10px }
+#painel-equipe .preco-do-candidato { flex: 0 0 auto; padding: 4px 10px; border-radius: 12px; font-size: 14px; font-weight: 800; background: linear-gradient(#f6dc7a, #e0b04a); color: #3b2a1a; border: 1px solid #b7892a }
+#painel-equipe .atributos-do-candidato { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 10px 0 8px }
+#painel-equipe .atributos-do-candidato > span { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 2px; border-radius: 10px; background: var(--gaveta-cartao-vazio); line-height: 1.15; text-align: center }
+#painel-equipe .atributos-do-candidato b { font-size: 15px }
+#painel-equipe .atributos-do-candidato small { font-size: 12px; color: var(--gaveta-texto-suave) }
+#painel-equipe .descricao-do-candidato { margin: 0 0 10px; font-size: 13px; line-height: 1.45; color: var(--gaveta-texto-suave) }
+#barra-ferramentas #painel-equipe .candidato .botao-pequeno { width: 100%; min-height: 44px; margin: 0; border-radius: 10px; font-size: 15px }
+#painel-equipe .motivo-do-bloqueio { display: block; margin-top: 6px; text-align: center; font-size: 13px; font-weight: 700; color: #a0522d }
+
+@media (max-width: 520px) {
+  #barra-ferramentas #painel-equipe { --respiro-do-painel: 12px; width: calc(100vw - 16px); font-size: 13px }
+  #painel-equipe .medalhao-do-trabalhador { width: 40px; height: 40px; font-size: 22px }
+  #painel-equipe .vida-do-trabalhador { flex-basis: 78px }
+  #painel-equipe .linha-atributo { grid-template-columns: minmax(0, 1fr) auto; }
+  #barra-ferramentas #painel-equipe .linha-atributo .botao-pequeno, #painel-equipe .atributo-no-maximo { grid-column: 1 / -1; width: 100% }
+  #painel-equipe .atributos-do-candidato { grid-template-columns: repeat(3, 1fr) }
 }

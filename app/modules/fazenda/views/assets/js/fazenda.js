@@ -177,7 +177,8 @@
       '30b-integracao-e-paineis.js',
       '31-loop-principal.js',                 [93, 'Montando a interface...'],
       '32-interface.js',
-      '33-finalizacao.js',                    // define concluirMontagemDaFazenda (seção 33), chamada no fim de iniciarFarmEdu()
+      '32b-tutorial.js',                      // Fazenda 8.4.1: tutorial interativo e janela de ajuda (seção 32b)
+      '33-finalizacao.js',                   // define concluirMontagemDaFazenda (seção 33), chamada no fim de iniciarFarmEdu()
     ];
     // Arquivo que cria o renderizador (seção 06): usado para reconhecer a falha do WebGL quando o navegador esconde o erro.
     const ARQUIVO_DO_RENDERIZADOR = '06-cena-3d.js';

@@ -7,6 +7,10 @@
         // continuar abrindo direto pelo arquivo.
         private const PASTA_DOS_ESTILOS = __DIR__ . '/views/assets/css';
         private const PASTA_DOS_SCRIPTS = __DIR__ . '/views/assets/js';
+        // Áudios (Fazenda 8.4.1): views/assets/audio, com uma subpasta por categoria. Só MP3 e OGG; ver views/assets/audio/LEIA-ME.md.
+        private const PASTA_DOS_AUDIOS = __DIR__ . '/views/assets/audio';
+        private const SUBPASTAS_DE_AUDIO = 'musica|ambiente|animais|segredos|efeitos';
+        private const TIPOS_DE_AUDIO = ['mp3' => 'audio/mpeg', 'ogg' => 'audio/ogg'];
 
         public function showFazenda(): void {
             $html = file_get_contents(__DIR__ . '/views/fazenda.html');
@@ -32,6 +36,64 @@
 
         public function enviarScript(): void {
             $this->enviarArquivo(self::PASTA_DOS_SCRIPTS, 'js', 'text/javascript; charset=utf-8');
+        }
+
+        // Entrega um áudio da pasta views/assets/audio (rota fazenda/audio&arquivo=animais/vaca.mp3). Só aceita "subpasta/nome.ext"
+        // com subpasta da lista, nome simples em minúsculas e extensão mp3/ogg; o caminho real ainda precisa ficar DENTRO da
+        // pasta de áudio (protege contra atalhos). Qualquer recusa ou arquivo ausente responde 404 sem corpo: no jogo o som fica
+        // "indisponível" e nada quebra. Aceita um intervalo "Range: bytes=..." (resposta 206), que os navegadores usam para
+        // reposicionar e repetir áudio.
+        public function enviarAudio(): void {
+            $arquivo = $_GET['arquivo'] ?? '';
+            if (!is_string($arquivo) || !preg_match('#^(?:' . self::SUBPASTAS_DE_AUDIO . ')/[0-9a-z-]+\.(mp3|ogg)$#', $arquivo, $partes)) {
+                http_response_code(404);
+                return;
+            }
+            $pasta = realpath(self::PASTA_DOS_AUDIOS);
+            $caminho = $pasta === false ? false : realpath($pasta . '/' . $arquivo);
+            if ($caminho === false || !is_file($caminho) || strpos($caminho, $pasta . DIRECTORY_SEPARATOR) !== 0) {
+                http_response_code(404);
+                return;
+            }
+            $tamanho = filesize($caminho);
+            $inicio = 0;
+            $fim = $tamanho - 1;
+            $faixa = $_SERVER['HTTP_RANGE'] ?? '';
+            if ($faixa !== '') {
+                if (!preg_match('/^bytes=(\d*)-(\d*)$/', $faixa, $limites) || ($limites[1] === '' && $limites[2] === '')) {
+                    http_response_code(416);
+                    header('Content-Range: bytes */' . $tamanho);
+                    return;
+                }
+                if ($limites[1] === '') {
+                    $inicio = max(0, $tamanho - (int) $limites[2]);   // "bytes=-500": os últimos 500 bytes
+                } else {
+                    $inicio = (int) $limites[1];
+                    if ($limites[2] !== '') $fim = min($fim, (int) $limites[2]);
+                }
+                if ($inicio > $fim) {
+                    http_response_code(416);
+                    header('Content-Range: bytes */' . $tamanho);
+                    return;
+                }
+                http_response_code(206);
+                header('Content-Range: bytes ' . $inicio . '-' . $fim . '/' . $tamanho);
+            }
+            header('Content-Type: ' . self::TIPOS_DE_AUDIO[$partes[1]]);
+            header('X-Content-Type-Options: nosniff');
+            header('Accept-Ranges: bytes');
+            header('Cache-Control: no-cache');
+            header('Content-Length: ' . ($fim - $inicio + 1));
+            $leitor = fopen($caminho, 'rb');
+            fseek($leitor, $inicio);
+            $restante = $fim - $inicio + 1;
+            while ($restante > 0) {
+                $bloco = fread($leitor, min(65536, $restante));
+                if ($bloco === false || $bloco === '') break;   // erro de leitura: para em vez de girar sem fim
+                echo $bloco;
+                $restante -= strlen($bloco);
+            }
+            fclose($leitor);
         }
 
         // Entrega um arquivo da pasta informada. Só aceita nomes simples com a extensão esperada que existam nessa pasta.

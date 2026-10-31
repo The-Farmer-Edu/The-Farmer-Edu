@@ -17,7 +17,27 @@
       const marcarParaSalvar = () => { houveMudancaParaSalvar = true; };
       // Credita XP de ganhos AUTOMÁTICOS (colheita por trabalhador, mina, monstro derrotado). NÃO conta como atividade do jogador:
       // só ações feitas pelo jogador renovam o contador da regra dos 5 dias reais de inatividade (seção 26).
-      const creditarXP = function creditarXP(quantidade) { if (quantidade > 0) { estado.xp += quantidade; salvarProgresso(); desenharCards(); } };
+      // A origem vai para os contadores da seção 05 (padrão 'fazenda'; monstro chamado pelo botão de teste → 'teste'). Este é o
+      // ÚNICO ponto que conta colheita, mina e monstro: quem chama não conta de novo.
+      // Fazenda 8.4.1 (balanceamento): a origem 'fazenda' respeita o limite diário (ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda, por dia
+      // do calendário local, em estado.xpDaFazendaHoje); o que passar do limite não vira XP. Devolve o XP EFETIVAMENTE creditado,
+      // para as mensagens mostrarem o valor real.
+      const xpDaFazendaRestanteHoje = function xpDaFazendaRestanteHoje() {
+        const hoje = diaDoCalendario(Date.now()), registro = estado.xpDaFazendaHoje;
+        if (registro.dia !== hoje) { registro.dia = hoje; registro.total = 0; }   // dia novo: o limite renova
+        return Math.max(0, ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda - registro.total);
+      };
+      const creditarXP = function creditarXP(quantidade, origem = 'fazenda') {
+        if (!(quantidade > 0)) return 0;
+        const creditado = origem === 'fazenda' ? Math.min(quantidade, xpDaFazendaRestanteHoje()) : quantidade;
+        if (origem === 'fazenda') estado.xpDaFazendaHoje.total += creditado;
+        if (creditado > 0) { estado.xp += creditado; registrarOrigemDoXP(origem, creditado); }
+        salvarProgresso(); desenharCards();
+        return creditado;
+      };
+      // Texto do XP de uma recompensa da Fazenda para os avisos: "+4 XP", "+1 XP (limite diário da Fazenda)" ou "sem XP: ...".
+      const textoDoXPDaFazenda = (creditado, previsto) => creditado >= previsto ? '+' + creditado + ' XP'
+        : creditado > 0 ? '+' + creditado + ' XP (limite diário da Fazenda)' : 'sem XP: limite diário da Fazenda atingido';
       let ultimoResumoDeRecursos = '';
       const atualizarResumoDeRecursos = function atualizarResumoDeRecursos() {
         const texto = Object.entries(ICONES_DOS_RECURSOS).map(([recurso, icone]) => icone + ' ' + estado.recursos[recurso]).join('  ');
@@ -57,6 +77,7 @@
         if (canteiro.cultura) { if (!silencioso) mostrarAviso('Este canteiro já está plantado.'); return false; }
         canteiro.cultura = cultura; canteiro.plantadoEm = agoraNoJogo();
         marcarParaSalvar(); atualizarVisualDaLavoura();
+        tocarEfeito('plantar', posicaoDoCanteiroNoMundo(idDaArea, indice));   // 8.4.1: efeito sonoro (seção 23)
         return true;
       };
       // Colhe só o que está maduro. O canteiro é esvaziado ANTES de creditar e a reserva é liberada: não há colheita dupla.
@@ -67,9 +88,10 @@
         const cultura = CULTURAS[canteiro.cultura], recurso = canteiro.cultura;
         canteiro.cultura = null; canteiro.plantadoEm = 0; reservasDeColheita.delete(chaveDoCanteiro(idDaArea, indice));
         estado.recursos[recurso] += cultura.colheita;
-        creditarXP(cultura.xp);                     // também salva
+        const xpCreditado = creditarXP(cultura.xp);   // também salva
+        tocarEfeito('colher', posicaoDoCanteiroNoMundo(idDaArea, indice));     // 8.4.1: efeito sonoro (seção 23)
         atualizarVisualDaLavoura();
-        if (!silencioso) mostrarAviso('Colheita em ' + nomeDaPlantacao(idDaArea) + ': +' + cultura.colheita + ' ' + cultura.icone + ' · +' + cultura.xp + ' XP');
+        if (!silencioso) mostrarAviso('Colheita em ' + nomeDaPlantacao(idDaArea) + ': +' + cultura.colheita + ' ' + cultura.icone + ' · ' + textoDoXPDaFazenda(xpCreditado, cultura.xp));
         return true;
       };
       const plantarEmTodosOsVazios = function plantarEmTodosOsVazios(idDaArea) {

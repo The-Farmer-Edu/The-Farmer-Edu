@@ -217,7 +217,8 @@
           criarPosteDeLampiao(grupo, 0.3 + 1.3, profundidade / 2 + 0.32, Math.PI);                    // lampião ao lado do portão
           criarPlacaDeMadeira(grupo, -largura / 2 - 0.2, profundidade / 2 - 0.5);
           criarArvore(grupo, largura / 2 + 0.7, -profundidade / 2 - 0.4, 0.9);
-          for (const posicaoX of (nivel === 3 ? [-1.8, 1.8] : [0])) casinhaDeGalinha(grupo, posicaoX, -profundidade / 2 + 1);
+          const posicoesDasCasinhas = nivel === 3 ? [-1.8, 1.8] : [0], zDasCasinhas = -profundidade / 2 + 1;
+          for (const posicaoX of posicoesDasCasinhas) casinhaDeGalinha(grupo, posicaoX, zDasCasinhas);
           criarCocho(grupo, -largura / 2 + 1.2, profundidade / 2 - 0.8);
           criarBarril(grupo, largura / 2 - 0.6, profundidade / 2 - 0.6);
           if (nivel >= 2) {
@@ -227,15 +228,18 @@
           }
 
           // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
+          // Fazenda 8.4.1: alinhadas aos objetos que existem em cada nível (antes eram cópias das do chiqueiro, e as galinhas
+          // atravessavam o cocho, a casinha, o barril e o feno; havia ainda uma "base do cata-vento" sem objeto no N3).
           const retangulos = [
-            [largura / 2 - 1.6, -profundidade / 2 + 1.4, 2.3, 1.9], // abrigo
-            [0.5, profundidade / 2 - 0.9, 1.6, 0.6],          // cocho
+            [-largura / 2 + 1.2, profundidade / 2 - 0.8, 1.6, 0.6],     // cocho
+            [largura / 2 - 0.6, profundidade / 2 - 0.6, 0.7, 0.7],      // barril
           ];
-          if (nivel === 3) retangulos.push(
-            [-largura / 2 + 1.6, -profundidade / 2 + 1.4, 2.3, 1.9], // segundo abrigo
-            [-2.4, profundidade / 2 - 0.9, 1.6, 0.6],          // segundo cocho
-            [-largura / 2 + 1, profundidade / 2 - 1.3, 1.1, 1.1]     // base do cata-vento
-          );
+          for (const posicaoX of posicoesDasCasinhas) retangulos.push(
+            [posicaoX, zDasCasinhas, 1.6, 1.2],                          // casinha (corpo sobre as pernas)
+            [posicaoX + 0.3, zDasCasinhas + 0.95, 0.5, 0.7]);            // rampa da casinha
+          if (nivel >= 2) retangulos.push(
+            [largura / 2 - 0.9, 0.9, 0.8, 0.6],                          // fardo de feno
+            [-largura / 2 + 0.8, 0, 0.3, 1.8]);                          // poleiro (dois mourões e a vara)
           const cercado = criarCercado(grupo, largura, profundidade, retangulos);
 
           const quantidadesPorTipo = { galinha: [1, 3, 5][nivel - 1] };
@@ -257,15 +261,13 @@
           if (nivel >= 2) criarAbrigo(grupo, largura / 2 - 1.6, -profundidade / 2 + 1.4);
           if (nivel === 3) { criarBarril(grupo, largura / 2 - 0.6, profundidade / 2 - 0.6); criarFardoDeFeno(grupo, -largura / 2 + 1, 0.25, -profundidade / 2 + 0.8); }
           // ---- hitboxes: [centroX, centroZ, largura, profundidade] ----
-          const retangulos = [
-            [largura / 2 - 1.6, -profundidade / 2 + 1.4, 2.3, 1.9], // abrigo
-            [0.5, profundidade / 2 - 0.9, 1.6, 0.6],          // cocho
-          ];
+          // Fazenda 8.4.1: alinhadas aos objetos de cada nível. O cocho estava fora do lugar, o abrigo valia também no N1 (que não
+          // tem abrigo) e o N3 tinha um "segundo abrigo" e uma "base do cata-vento" que não existem. As poças continuam livres.
+          const retangulos = [[-largura / 2 + 1.2, profundidade / 2 - 0.8, 1.6, 0.6]];   // cocho
+          if (nivel >= 2) retangulos.push([largura / 2 - 1.6, -profundidade / 2 + 1.4, 2.3, 1.9]);   // abrigo (mesma área do abrigo do curral)
           if (nivel === 3) retangulos.push(
-            [-largura / 2 + 1.6, -profundidade / 2 + 1.4, 2.3, 1.9], // segundo abrigo
-            [-2.4, profundidade / 2 - 0.9, 1.6, 0.6],          // segundo cocho
-            [-largura / 2 + 1, profundidade / 2 - 1.3, 1.1, 1.1]     // base do cata-vento
-          );
+            [largura / 2 - 0.6, profundidade / 2 - 0.6, 0.7, 0.7],      // barril
+            [-largura / 2 + 1, -profundidade / 2 + 0.8, 0.8, 0.6]);     // fardo de feno
           const cercado = criarCercado(grupo, largura, profundidade, retangulos);
 
           const quantidadesPorTipo = { porco: [1, 1, 3][nivel - 1] };

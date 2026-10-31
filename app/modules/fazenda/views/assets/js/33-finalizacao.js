@@ -8,7 +8,7 @@
       // ====================================================================================================
       // SEÇÃO 33 — FINALIZAÇÃO DO CARREGAMENTO
       // Compila os gráficos, liga o loop principal (uma única vez), espera o primeiro quadro desenhado, retira a tela de
-      // carregamento e só então confere as invasões por inatividade.
+      // carregamento e só então inicia o calendário das invasões (seção 26: liberação, aviso de véspera e invasão do dia).
       // ====================================================================================================
       const concluirMontagemDaFazenda = async function concluirMontagemDaFazenda() {   // Fase 3B: chamada pelo carregador (fazenda.js) depois do último arquivo
       await carregamento.etapa(95, 'Preparando os gráficos...');
@@ -18,6 +18,7 @@
       carregamento.concluir();
       iniciarSistemaDeInvasoes();
       if (!existiaSalvamento) setTimeout(abrirJanelaDoNome, 1200);   // Mark 8.3: fazenda nova → pergunta o nome (pode deixar para depois)
+      oferecerTutorial();   // Fazenda 8.4.1: convite do tutorial, uma vez por navegador, depois da janela do nome (seção 32b)
       if (avisosDaMigracao.length) setTimeout(() => mostrarFaixaDeInvasao('🏗️ Fazenda atualizada (Mark 8.2)', avisosDaMigracao.join(' '), 14000), 900);
       // A grade de navegação dos monstros (~0,2 s de cálculo) é preparada logo após a abertura, num momento ocioso, para a
       // primeira noite não travar quando o primeiro monstro surgir.

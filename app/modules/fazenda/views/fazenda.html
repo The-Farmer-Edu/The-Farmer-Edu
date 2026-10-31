@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="assets/css/05-paineis.css">
   <link rel="stylesheet" href="assets/css/06-invasoes.css">
   <link rel="stylesheet" href="assets/css/07-carregamento.css">
+  <link rel="stylesheet" href="assets/css/08-tutorial.css">
 </head>
 
 <body>
@@ -73,24 +74,30 @@
       <button class="botao-ferramenta" id="botao-painel-equipe" aria-expanded="false" aria-controls="painel-equipe">👷 Equipe</button>
       <!-- Modo Leve (SEÇÃO 21): menos custo gráfico para computadores fracos; a escolha fica salva no navegador -->
       <button class="botao-ferramenta" id="botao-modo-leve" aria-pressed="false" title="Modo Leve: desliga sombras e luzes dinâmicas e reduz a resolução de renderização">⚡ Modo Leve <span class="estado-modo-leve">desligado</span></button>
+      <!-- Fazenda 8.4.1: tutorial e ajuda (SEÇÃO 32b) -->
+      <button class="botao-ferramenta" id="botao-ajuda" aria-haspopup="dialog" aria-controls="janela-ajuda">❓ Ajuda e tutorial</button>
       <p class="dica-dos-controles">🎮 WASD andam · Espaço sobe · <b>C</b> ou Ctrl desce · Shift acelera. Para descer e avançar ao mesmo tempo, use <b>C + W</b>: o navegador reserva Ctrl+W para fechar a aba.</p>
-      <!-- Fazenda 8.4 (D2): ferramentas de teste só aparecem com o Modo desenvolvedor (pede senha; começa desligado a cada carregamento) -->
-      <button class="botao-ferramenta" id="botao-modo-desenvolvedor" aria-pressed="false" aria-controls="ferramentas-de-desenvolvedor" title="Ferramentas de teste (pede senha)">🛠️ Modo desenvolvedor <span class="estado-modo-desenvolvedor">desligado</span></button>
+      <!-- Fazenda 8.4 (D2): ferramentas de teste só aparecem com o Modo desenvolvedor (começa desligado a cada carregamento).
+           Fazenda 8.4.1: o botão só aparece com o modo ligado e serve para desligá-lo (o desbloqueio fica na seção 32). -->
+      <button class="botao-ferramenta" id="botao-modo-desenvolvedor" hidden aria-pressed="false" aria-controls="ferramentas-de-desenvolvedor" title="Desligar as ferramentas de teste">🛠️ Modo desenvolvedor <span class="estado-modo-desenvolvedor">desligado</span></button>
       <div class="testes-do-menu" id="ferramentas-de-desenvolvedor" hidden><h4>🧪 Testes</h4><button id="botao-teste-xp">+5000 XP (teste)</button></div>
     </nav>
     <div class="navegacao-do-painel" id="navegacao-do-painel" hidden><button class="botao-ferramenta" id="voltar-ao-menu" aria-label="Voltar ao menu">‹ Menu</button><button class="botao-fechar" id="fechar-painel" aria-label="Fechar painel">✕</button></div>
     <section class="painel" id="painel-tempo" hidden>
       <h3>🌗 Dia e noite</h3>
       <div class="estado-tempo"><span id="tempo-relogio">08:30</span> <small>· <span id="tempo-periodo">Manhã</span></small></div>
+      <!-- Fazenda 8.4.1: os modos do ciclo só apasrecem com o Modo desenvolvedor; sem ele o ciclo fica no automático -->
+      <div class="testes-invasao" id="controles-do-ciclo" hidden><h4>🧪 Ciclo de dia e noite</h4>
       <div class="segmentos" role="group" aria-label="Modo do ciclo">
         <button data-modo="auto" class="ativo" aria-pressed="true">⏱ Automático</button>
         <button data-modo="pausa" aria-pressed="false">⏸ Pausar</button>
         <button data-modo="dia" aria-pressed="false">☀️ Dia fixo</button>
         <button data-modo="noite" aria-pressed="false">🌙 Noite fixa</button>
       </div>
-      <div class="modo-ativo">Modo ativo: <b id="tempo-modo">Automático</b></div>
-      <div class="testes-invasao" id="testes-do-tempo" hidden><h4>🧪 Testes de invasão (regra dos 5 dias reais)</h4>
-        <button id="teste-invasao">🧟 Simular 5 dias sem jogar</button>
+      <div class="modo-ativo">Modo ativo: <b id="tempo-modo">Automático</b></div></div>
+      <div class="testes-invasao" id="testes-do-tempo" hidden><h4>🧪 Testes de invasão (calendário)</h4>
+        <button id="teste-invasao">🧟 Invasão agora</button>
+        <button id="teste-dia-elegivel">📅 Avançar um dia elegível</button>
         <button id="teste-reparar">🔧 Reparar tudo</button>
         <h4>🧪 Testes da Mark 8.2</h4>
         <button id="teste-monstros">👾 Monstros noturnos agora (vira noite)</button>
@@ -112,14 +119,33 @@
       <div class="acoes"><button class="botao-pequeno secundario" id="cancelar-nome-da-fazenda" type="button">Agora não</button><button class="botao-pequeno" id="salvar-nome-da-fazenda" type="button">Salvar nome</button></div>
     </div>
   </div>
-  <!-- Fazenda 8.4 (D2): senha do Modo desenvolvedor (proteção de conveniência na interface, não de segurança) -->
-  <div id="janela-modo-desenvolvedor" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-modo-desenvolvedor">
-    <div class="cartao-nome">
-      <h3 id="titulo-modo-desenvolvedor">🛠️ Modo desenvolvedor</h3>
-      <small>Libera as ferramentas de teste (XP extra, avançar o tempo, simular dias sem jogar, monstros e reparos). Digite a senha:</small>
-      <input id="campo-senha-desenvolvedor" type="password" autocomplete="off" aria-describedby="erro-senha-desenvolvedor">
-      <div class="erro" id="erro-senha-desenvolvedor" role="alert"></div>
-      <div class="acoes"><button class="botao-pequeno secundario" id="cancelar-modo-desenvolvedor" type="button">Cancelar</button><button class="botao-pequeno" id="confirmar-modo-desenvolvedor" type="button">Ativar</button></div>
+  <!-- Fazenda 8.4.1: tutorial (SEÇÃO 32b). O cartão não bloqueia o jogo; a moldura aponta o elemento explicado sem pegar cliques. -->
+  <aside id="tutorial" hidden aria-labelledby="tutorial-titulo">
+    <div class="tutorial-cabecalho"><span id="tutorial-topico"></span><span class="tutorial-botoes"><button type="button" id="tutorial-minimizar" aria-expanded="true" aria-label="Minimizar o tutorial">▾</button><button type="button" id="tutorial-pausar" aria-label="Pausar o tutorial (continua depois)">⏸</button></span></div>
+    <div id="tutorial-corpo">
+      <h3 id="tutorial-titulo"></h3>
+      <div id="tutorial-texto" aria-live="polite"></div>
+      <div id="tutorial-tarefa" hidden></div>
+      <div class="tutorial-progresso" role="progressbar" aria-valuemin="1"><span id="tutorial-barra"></span></div>
+      <div class="tutorial-acoes" id="tutorial-acoes"></div>
+    </div>
+  </aside>
+  <div id="tutorial-destaque" hidden aria-hidden="true"></div>
+  <div id="janela-ajuda" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-ajuda">
+    <div class="cartao-ajuda">
+      <div class="cabecalho-ajuda"><h3 id="titulo-ajuda">❓ Ajuda e tutorial</h3><button type="button" class="botao-fechar" id="fechar-ajuda" aria-label="Fechar a ajuda">✕</button></div>
+      <p id="ajuda-situacao"></p>
+      <div class="acoes-ajuda" id="ajuda-acoes"></div>
+      <h4>Consultar um tópico</h4>
+      <div class="topicos-da-ajuda" id="ajuda-topicos"></div>
+    </div>
+  </div>
+  <!-- Fazenda 8.4.1 (defesa): aviso do perigo e da defesa, mostrado antes de o calendário liberar as invasões (SEÇÃO 26). -->
+  <div id="janela-defesa" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-defesa">
+    <div class="cartao-ajuda">
+      <div class="cabecalho-ajuda"><h3 id="titulo-defesa">🧟 As criaturas da floresta vão atacar</h3><button type="button" class="botao-fechar" id="fechar-defesa" aria-label="Fechar o aviso">✕</button></div>
+      <div id="texto-defesa"></div>
+      <div class="acoes-ajuda"><button type="button" class="botao-pequeno" id="defesa-equipe">👷 Preparar a equipe</button><button type="button" class="botao-pequeno secundario" id="defesa-entendi">Entendi</button></div>
     </div>
   </div>
   <!-- Vigia da tela de carregamento: se o script principal do jogo nem chegar a rodar (por exemplo, um erro de sintaxe),

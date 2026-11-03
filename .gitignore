@@ -2,3 +2,4 @@ SQUADS*
 *.bat
 create_squads_gh.js
 .env
+.vscode

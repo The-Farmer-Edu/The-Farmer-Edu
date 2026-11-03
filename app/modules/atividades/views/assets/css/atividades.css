@@ -1,0 +1,205 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+}
+
+header img {
+    width: 55px;
+    height: 55px;
+}
+
+.header-titulo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.layout {
+    flex: 1;
+    display: flex;
+}
+
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 16px;
+}
+
+.sidebar .back {
+    margin-top: auto;
+}
+
+.menu-item {
+    padding: 14px 18px;
+    text-align: left;
+}
+
+main {
+    flex: 1;
+    max-width: 900px;
+    padding: 24px;
+}
+
+.page-header {
+    margin-bottom: 16px;
+}
+
+.form-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.field input,
+.field textarea,
+.field select {
+    width: 100%;
+    padding: 8px;
+}
+
+.field textarea {
+    min-height: 120px;
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.option-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 14px;
+    text-align: left;
+}
+
+.feed {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 14px 0 24px;
+}
+
+.feed-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.feed-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.feed-acoes {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.gabarito-existentes {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.criterios-resumo {
+    display: block;
+}
+
+dialog.janela {
+    width: min(480px, 92vw);
+    margin: auto;
+    padding: 20px;
+}
+
+dialog.janela[open] {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#criteria-input {
+    width: 100%;
+    padding: 8px;
+}
+
+#criteria-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 40px;
+}
+
+.criterio {
+    padding: 8px;
+    cursor: pointer;
+}
+
+.criterio.selected {
+    font-weight: bold;
+}
+
+@media (max-width: 800px) {
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .sidebar .back {
+        margin-top: 0;
+    }
+
+    .feed-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

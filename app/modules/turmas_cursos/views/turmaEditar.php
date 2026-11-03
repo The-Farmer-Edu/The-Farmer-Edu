@@ -4,6 +4,7 @@
 <body>
     <header>
         <b>The Farmer Edu</b> | Bem-vindo, <?= e($u['nome']) ?> |
+        <a href="<?= $base ?>/turmas_cursos/minhaConta">Minha conta</a> |
         <a href="<?= $base ?>/auth/logout">Sair</a>
     </header>
 

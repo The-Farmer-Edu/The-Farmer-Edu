@@ -117,10 +117,51 @@
                 $mimeType = $this->
                 get_content_mime_type($caminhoArquivo);
 
-                header("Content-Type: " . $mimeType);
-                header("X-Content-Type-Options: nosniff");
-                header("Content-Length: " . filesize($caminhoArquivo));
+                // header("Content-Type: " . $mimeType);
+                // header("X-Content-Type-Options: nosniff");
+                // header("Content-Length: " . filesize($caminhoArquivo));
 
+                // require_once $caminhoArquivo;
+
+                $tamanho = filesize($caminhoArquivo);
+                $inicio = 0;
+                $fim = $tamanho - 1;
+                $faixa = $_SERVER['HTTP_RANGE'] ?? '';
+                if ($faixa !== '') {
+                    if (!preg_match('/^bytes=(\d*)-(\d*)$/', $faixa, $limites) || ($limites[1] === '' && $limites[2] === '')) {
+                        http_response_code(416);
+                        header('Content-Range: bytes */' . $tamanho);
+                        return;
+                    }
+                    if ($limites[1] === '') {
+                        $inicio = max(0, $tamanho - (int) $limites[2]);   // "bytes=-500": os últimos 500 bytes
+                    } else {
+                        $inicio = (int) $limites[1];
+                        if ($limites[2] !== '') $fim = min($fim, (int) $limites[2]);
+                    }
+                    if ($inicio > $fim) {
+                        http_response_code(416);
+                        header('Content-Range: bytes */' . $tamanho);
+                        return;
+                    }
+                    http_response_code(206);
+                    header('Content-Range: bytes ' . $inicio . '-' . $fim . '/' . $tamanho);
+                }
+                header('Content-Type: ' . $mimeType);
+                header('X-Content-Type-Options: nosniff');
+                header('Accept-Ranges: bytes');
+                header('Cache-Control: no-cache');
+                header('Content-Length: ' . ($fim - $inicio + 1));
+                $leitor = fopen($caminhoArquivo, 'rb');
+                fseek($leitor, $inicio);
+                $restante = $fim - $inicio + 1;
+                while ($restante > 0) {
+                    $bloco = fread($leitor, min(65536, $restante));
+                    if ($bloco === false || $bloco === '') break;   // erro de leitura: para em vez de girar sem fim
+                    echo $bloco;
+                    $restante -= strlen($bloco);
+                }
+                fclose($leitor);
                 require_once $caminhoArquivo;
             } else {
                 http_response_code(404);

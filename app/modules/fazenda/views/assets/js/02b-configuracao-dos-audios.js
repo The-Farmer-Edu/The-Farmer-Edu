@@ -17,7 +17,7 @@
 
       const AUDIO_CONFIG = {
         // Música de fundo (toca em loop, só depois que o jogador clica em "Ativar áudio")
-        musica: { arquivo: 'assets/audio/musica/musica-fundo.mp3', volume: 1 },
+        musica: { arquivo: 'fazenda/arquivo?type=audio/Theme_songs&file=noite_.mp3', volume: 1 },
 
         // Sons dos animais: tocam de vez em quando, em intervalos aleatórios (segundos) e nunca todos ao mesmo tempo.
         animais: {
@@ -106,11 +106,11 @@
 
         // Sons ambientes contínuos (loop). O volume diminui com a distância entre a câmera e a fonte do som.
         ambiente: {
-          cachoeira: { arquivo: 'assets/audio/ambiente/cachoeira.mp3', volume: 1, distanciaMaxima: 90, volumeMinimoDeLonge: 0.15 }, // paredão da cachoeira
-          fonte:     { arquivo: 'assets/audio/ambiente/fonte.mp3',     volume: 1, distanciaMaxima: 60, volumeMinimoDeLonge: 0.05 }, // chafariz do lago
+          cachoeira: { arquivo: 'fazenda/arquivo?type=audio/SFX/areas-do-jogo&file=cachoeira.mp3', volume: 1, distanciaMaxima: 90, volumeMinimoDeLonge: 0.15 }, // paredão da cachoeira
+          fonte:     { arquivo: 'fazenda/arquivo?type=audio/SFX/areas-do-jogo&file=fonte.wav',     volume: 1, distanciaMaxima: 60, volumeMinimoDeLonge: 0.05 }, // chafariz do lago
           // Fazenda 8.4.1: o trator do Maquinário (níveis 2 e 3) fica estacionado com o motor ligado (vibra sem parar, seção 12b).
           // O som é o motor em MARCHA LENTA, em loop, só enquanto o trator existe na cena e o Maquinário não está destruído.
-          trator:    { arquivo: 'assets/audio/ambiente/trator-motor.mp3', volume: 0.8, distanciaMaxima: 45, volumeMinimoDeLonge: 0 },
+          trator:    { arquivo: 'fazenda/arquivo?type=audio/SFX/areas-do-jogo&file=trator.mp3', volume: 1, distanciaMaxima: 45, volumeMinimoDeLonge: 0 },
         },
 
         // Fazenda 8.4.1: efeitos curtos das mecânicas que existem no jogo (seção 23, tocarEfeito). Cada um tem um único <audio>;
@@ -118,16 +118,16 @@
         // baixos quando a câmera está longe (global.distanciaMaxima).
         efeitos: {
           global: { distanciaMaxima: 80, intervaloMinimo: 0.15 },
-          plantar:            { arquivo: 'assets/audio/efeitos/plantar.mp3',            volume: 0.6 },  // canteiro plantado
-          colher:             { arquivo: 'assets/audio/efeitos/colher.mp3',             volume: 0.7 },  // canteiro colhido (jogador ou trabalhador)
-          construir:          { arquivo: 'assets/audio/efeitos/construir.mp3',          volume: 0.8 },  // construção, evolução e reparo
-          mina:               { arquivo: 'assets/audio/efeitos/mina-carrinho.mp3',      volume: 0.7 },  // carrinho descarrega minérios
-          contratar:          { arquivo: 'assets/audio/efeitos/contratar.mp3',          volume: 0.7 },  // trabalhador contratado ou recuperado
-          golpe:              { arquivo: 'assets/audio/efeitos/golpe.mp3',              volume: 0.5, intervaloMinimo: 0.25 }, // golpe que acerta em combate
-          monstroDerrotado:   { arquivo: 'assets/audio/efeitos/monstro-derrotado.mp3',  volume: 0.7 },  // monstro noturno ou criatura da invasão
-          alarmeDeInvasao:    { arquivo: 'assets/audio/efeitos/alarme-invasao.mp3',     volume: 0.9 },  // invasão começando
-          invasaoRepelida:    { arquivo: 'assets/audio/efeitos/invasao-repelida.mp3',   volume: 0.9 },  // todas as criaturas derrotadas
-          desabamento:        { arquivo: 'assets/audio/efeitos/desabamento.mp3',        volume: 0.9 },  // instalação destruída
+          plantar:            { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=plantar.mp3',            volume: 0.6 },  // canteiro plantado
+          colher:             { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=colher.mp3',             volume: 0.7 },  // canteiro colhido (jogador ou trabalhador)
+          construir:          { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=construir.mp3',          volume: 0.8 },  // construção, evolução e reparo
+          mina:               { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=mina-carrinho.mp3**',      volume: 0.7 },  // carrinho descarrega minérios
+          contratar:          { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=contratar.mp3**',          volume: 0.7 },  // trabalhador contratado ou recuperado
+          golpe:              { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=golpe.mp3**',              volume: 0.5, intervaloMinimo: 0.25 }, // golpe que acerta em combate
+          monstroDerrotado:   { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=monstro-derrotado.mp3**',  volume: 0.7 },  // monstro noturno ou criatura da invasão
+          alarmeDeInvasao:    { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=alarme-invasao.mp3**',     volume: 0.9 },  // invasão começando
+          invasaoRepelida:    { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=invasao-repelida.mp3**',   volume: 0.9 },  // todas as criaturas derrotadas
+          desabamento:        { arquivo: 'fazenda/arquivo?type=audio/SFX/sons-do-jogo/acoes&file=quebrando1.mp3',        volume: 0.9 },  // instalação destruída
         },
 
         // Segredos (Easter eggs). Cada item vira um som próprio (seção 23); para um segredo novo basta uma linha aqui e uma

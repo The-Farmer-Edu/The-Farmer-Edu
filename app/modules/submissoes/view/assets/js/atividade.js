@@ -38,7 +38,8 @@
 
     const base = {
         id: 1, titulo: 'Atividade', descricao: '', requisitos: [], objetivo: '',
-        idLinguagem: 'web', notaMax: 10, notaMin: 6, entrada: '', codigoInicial: {}
+        idLinguagem: 'web', notaMax: 10, notaMin: 6, entrada: '', codigoInicial: {},
+        limiteEntrega: null
     };
 
     let lido = {};
@@ -51,6 +52,14 @@
     const A = Object.assign({}, base, lido);
     const L = LINGUAGENS[A.idLinguagem] || LINGUAGENS.web;
     A.linguagem = Object.assign({}, L, { inicial: Object.assign({}, L.inicial, A.codigoInicial) });
+
+    //  Limite de entrega 
+    const _lim = A.limiteEntrega ? new Date(A.limiteEntrega) : null;
+    A.limite = _lim && !isNaN(_lim) ? _lim : null;
+    A.prazoExcedido = () => !!A.limite && Date.now() > A.limite.getTime();
+    A.limiteTexto = () => A.limite
+        ? A.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        : '';
 
     window.FarmAtividade = A;
     window.FarmLinguagens = LINGUAGENS;

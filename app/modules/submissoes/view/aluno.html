@@ -19,11 +19,10 @@
 
         <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
 
-        <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário">
+        <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário" aria-expanded="false" aria-controls="menuUsuario">
             <img class="usuario-avatar" src="submissoes/file?type=img&file=icone_user.png" alt="iconiEDU">
         </button>
     </header>
-
     <div id="menuIconi" class="menu-iconi" role="menu" aria-hidden="true">
         <div class="menu-coluna">
             <button class="menu-item" type="button">
@@ -37,7 +36,6 @@
             </button>
         </div>
     </div>
-
     <div id="menuUsuario" class="menu-usuario" role="menu" aria-hidden="true">
         <div class="menu-coluna">
             <button class="menu-item" type="button">
@@ -56,7 +54,6 @@
             </button>
         </div>
     </div>
-
     <main>
         <section class="card-principal conteudo">
             <article>
@@ -75,7 +72,6 @@
             </article>
 
         </section>
-        <!--  -->
         <aside>
             <section class="card_trabalhos">
                 <article>
@@ -84,13 +80,14 @@
                     </div>
 
                     <div class="status"><span class="ponto"></span> Não entregue</div>
+                    <div class="prazo" id="atvPrazo" hidden></div>
 
                     <p id="texto">Anexe seus arquivos aqui clicando em "Começar".</p>
 
                     <form action="iniciarAtv" method="get">
                         <input type="hidden" name="atividade" id="atvInputId" value="1">
                         <button id="comecar" type="submit" class="btn-comecar-principal">Começar</button>
-                        
+
                     </form>
                 </article>
 
@@ -99,7 +96,6 @@
         </aside>
 
     </main>
-
     <footer>
         <div class="mascote-container">
             <div class="balao" id="balao"></div>
@@ -108,7 +104,6 @@
             </button>
         </div>
     </footer>
-
 </body>
 <!-- DADOS DA ATIVIDADE (depois o PHP preenche a partir do banco) -->
 <script type="application/json" id="dadosAtividade">
@@ -126,11 +121,11 @@
   "idLinguagem": "web",
   "notaMax": 10,
   "notaMin": 6,
-  "entrada": ""
+  "entrada": "",
+  "limiteEntrega": "2026-11-03T09:24:00-03:00"
 }
 </script>
 <script src="submissoes/file?type=js&file=atividade.js"></script>
-<script src="submissoes/file?type=js&file=script.js"></script>
 <script src="submissoes/file?type=js&file=aluno.js"></script>
 
 </html>

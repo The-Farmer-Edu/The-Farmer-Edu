@@ -1,6 +1,6 @@
 const A = window.FarmAtividade;
-const L = A.linguagem;               
-const modo = L.modo;                  
+const L = A.linguagem;
+const modo = L.modo;
 const ARQUIVOS = L.arquivos;
 const LIMITE_CLICKS = 10;
 const LIMITE_CANCELAMENTOS = 3;
@@ -27,7 +27,7 @@ const ed = $('ed'), hl = $('hl'), gutter = $('gutter'), pv = $('pv'), pvPy = $('
 const ide = $('ide');
 
 const CHAVE = `farmedu:codigo:${A.id}:${L.id}`;
-const CHAVE_ENTREGA = 'farmedu:entrega';          
+const CHAVE_ENTREGA = 'farmedu:entrega';
 const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${A.id}`;
 
 let dados;
@@ -38,8 +38,8 @@ let cancelamentos = 0;
 try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (e) {}
 
 let atual = ARQUIVOS[0].lang;
-let resultadoAberto = false;   
-let executadoAtual = false;   
+let resultadoAberto = false;
+let executadoAtual = false;
 let executando = false;
 let enviando = false;
 const usos = { executar: 0, sophia: 0 };
@@ -268,14 +268,29 @@ const formatarData = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digi
 
 function atualizarEntrega() {
     const entregue = !!entrega;
+    const encerrado = A.prazoExcedido();
     const bloqueado = entregue && cancelamentos >= LIMITE_CANCELAMENTOS;
-    ed.readOnly = entregue;
+
+    // Entregue ou com prazo excedido: o editor vira somente leitura (modo "Visualizar")
+    ed.readOnly = entregue || encerrado;
+
     $('chipEntrega').hidden = !entregue;
     if (entregue) $('chipEntrega').textContent = '✔ Entregue em ' + formatarData(entrega.data);
+
+    // Limite de entrega
+    $('chipPrazo').hidden = !A.limite;
+    $('chipPrazo').classList.toggle('encerrado', encerrado);
+    $('chipPrazo').textContent = encerrado
+        ? 'Prazo encerrado em ' + A.limiteTexto()
+        : 'Entrega até ' + A.limiteTexto();
+
     const btn = $('btnEntregar');
-    btn.disabled = executando || enviando || bloqueado;
-    btn.textContent = enviando ? 'Avaliando...' : bloqueado ? 'Entrega final' : entregue ? 'Cancelar entrega' : 'Entregar atividade';
-    btn.className = entregue ? 'btn btn-cinza' : 'btn btn-verde';
+    btn.disabled = executando || enviando || bloqueado || encerrado;
+    btn.textContent = enviando ? 'Avaliando...'
+        : encerrado ? 'Prazo encerrado'
+        : bloqueado ? 'Entrega final'
+        : entregue ? 'Cancelar entrega' : 'Entregar atividade';
+    btn.className = entregue || encerrado ? 'btn btn-cinza' : 'btn btn-verde';
     atualizarContadores();
 }
 
@@ -301,6 +316,7 @@ const fecharModalEntrega = () => modalEntrega.classList.remove('active');
 
 /*Antes de confirmar, o aluno sempre vê como ficou (executa à força se ainda não viu)*/
 async function iniciarEntrega() {
+    if (A.prazoExcedido()) return aviso('O prazo de entrega acabou');
     if (ARQUIVOS.every(a => !dados[a.lang].trim())) return aviso('Escreva algum código antes de entregar');
     salvar();
     if (!resultadoAberto || !executadoAtual) {
@@ -314,6 +330,7 @@ async function iniciarEntrega() {
 }
 
 function confirmarEntrega() {
+    if (A.prazoExcedido()) { fecharModalEntrega(); return aviso('O prazo de entrega acabou'); }
     salvar();
     entrega = { data: new Date().toISOString(), atividadeId: A.id, linguagem: L.id, arquivos: { ...dados } };
     try { localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega)); } catch (e) {}
@@ -324,6 +341,7 @@ function confirmarEntrega() {
 }
 
 function cancelarEntrega() {
+    if (A.prazoExcedido()) return aviso('O prazo acabou: a entrega não pode mais ser cancelada');
     if (cancelamentos >= LIMITE_CANCELAMENTOS) return aviso('Você já usou os 3 cancelamentos. A entrega é final.');
     cancelamentos++;
     try { localStorage.setItem(CHAVE_CANCELAMENTOS, String(cancelamentos)); } catch (e) {}
@@ -434,7 +452,8 @@ async function enviarParaAvaliacao() {
     atualizarEntrega();
     if (resultado) mostrarFeedback(resultado);
 }
-/* ---------- 7. Eventos ---------- */
+
+/*  Eventos  */
 function salvar() {
     try { localStorage.setItem(CHAVE, JSON.stringify(dados)); } catch (e) {}
 }
@@ -459,6 +478,7 @@ ed.addEventListener('keydown', e => {
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
+        if (ed.readOnly) return;
         salvar();
         aviso('Código salvo');
     }
@@ -497,5 +517,6 @@ document.querySelectorAll('.logo img, .sophia-avatar img').forEach(img => {
 });
 
 atualizarBotoes();
+setInterval(atualizarEntrega, 30000);
 trocar(atual);
 setTimeout(() => sophiaFala(`Oi, eu sou a Sophia! Objetivo: ${A.objetivo}`, 4500), 600);

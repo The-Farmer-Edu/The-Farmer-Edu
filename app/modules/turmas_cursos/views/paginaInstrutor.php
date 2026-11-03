@@ -4,13 +4,14 @@
 <body>
     <header>
         <b>The Farmer Edu</b> | Bem-vindo, <?= e($u['nome']) ?> |
+        <a href="<?= $base ?>/turmas_cursos/minhaConta">Minha conta</a> |
         <a href="<?= $base ?>/auth/logout">Sair</a>
     </header>
 
     <h1>Cursos</h1>
     <?php if ($msg): ?><p><b><?= e($msg) ?></b></p><?php endif; ?>
     <p><a href="<?= $base ?>/turmas_cursos/alunos"><button type="button">Visualizar alunos</button></a></p>
-    <p>Clique em um curso para criar, editar, excluir turmas e matricular alunos.</p>
+    <p>Clique em um curso para criar, editar e arquivar turmas e matricular alunos.</p>
 
     <?php foreach ($cursos as $c): ?>
         <div>

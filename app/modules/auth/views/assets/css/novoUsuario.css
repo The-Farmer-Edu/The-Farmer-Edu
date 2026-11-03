@@ -10,6 +10,7 @@
     --amarelo: #f2dc50;
     --link: #0a64d8;
     --erro: #d93025;
+    --borda-btn: #ff966e80;
 }
 
 html,
@@ -154,7 +155,7 @@ body {
     background: var(--amarelo);
     border: none;
     border-radius: 6px;
-    box-shadow: 0 3px 5px rgba(255, 150, 110, 0.5);
+    box-shadow: 0 3px 5px var(--borda-btn);
     cursor: pointer;
     transition: filter 0.2s, transform 0.1s;
 }
@@ -184,13 +185,14 @@ body {
 }
 
 #painel-imagem {
-        display: flex;
+    display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     image-rendering: pixelated;
     flex: 1 1 0%;
-    background: url(file?type=images&file=tarde.png) center center / cover no-repeat;
+    background: url(file?type=images&file=tarde.png) center / cover no-repeat;
+    height: 100vh;
 }
 
 #logo {

@@ -52,7 +52,7 @@
       // Caminhos fora de "assets/audio/" (ou sem o endereço do script) ficam como estão, relativos à página (comportamento antigo).
       const PREFIXO_DOS_AUDIOS = 'assets/audio/';
       const enderecoDoAudio = function enderecoDoAudio(caminho) {
-        if (!ENDERECO_DO_SCRIPT_PRINCIPAL || !caminho.startsWith(PREFIXO_DOS_AUDIOS)) return caminho;
+        if (!caminho || !ENDERECO_DO_SCRIPT_PRINCIPAL || !caminho.startsWith(PREFIXO_DOS_AUDIOS)) return caminho;
         try {
           const relativo = caminho.slice(PREFIXO_DOS_AUDIOS.length), endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL);
           if (endereco.searchParams.get('rota') === 'fazenda/script') {
@@ -201,8 +201,8 @@
         if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.animais.ligado || ESTADO_DO_AUDIO.animais.volume <= 0.001) return;
         const limitesGlobais = AUDIO_CONFIG.animais.global;
         for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {
-          const configuracao = AUDIO_CONFIG.animais[tipo], variacoes = FONTES_DE_SOM.animais[tipo];   // AQUI: variacoes (lista) no lugar de fonteDeSom
-          const disponiveis = variacoes.filter(f => f.estado !== 'erro'); 
+          const configuracao = AUDIO_CONFIG.animais[tipo], variacoes = FONTES_DE_SOM.animais[tipo] || [];   // AQUI: variacoes (lista) no lugar de fonteDeSom
+          //git const disponiveis = variacoes.filter(f => f.estado !== 'erro'); 
           if (agendaDosAnimais.proximo[tipo] === undefined) agendaDosAnimais.proximo[tipo] = 4 + Math.random() * configuracao.intervaloMax * 0.6;
           if ((agendaDosAnimais.proximo[tipo] -= segundosDesdeUltimoFrame) > 0) continue;
           agendaDosAnimais.proximo[tipo] = sortearIntervalo(configuracao);

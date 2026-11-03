@@ -41,7 +41,7 @@ class UsuarioController
                 default:
                     throw new InvalidArgumentException('Tipo de usuário inválido.');
             }
-            
+ 
             $usuario->salvar(iniciarPDO());
  
             $mensagem = 'Cadastro realizado com sucesso!';

@@ -10,6 +10,10 @@
         require_once __DIR__ . '/view/sendAvaliacao.php';
     }
 
+    public function showAvaliacao(): void {
+        require_once __DIR__ . '/view/criteriosAvaliacao.php';
+    }
+
     public function sendFile(): void {
         $type = $_GET['type'] ?? null;
         $file = $_GET['file'] ?? null;

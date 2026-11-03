@@ -20,12 +20,12 @@
             $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
             $html = preg_replace_callback(
                 '#href="assets/css/([0-9a-z-]+\.css)"#',
-                fn(array $encontrado): string => 'href="' . htmlspecialchars($base . '/index.php?rota=fazenda/estilo&arquivo=' . $encontrado[1]) . '"',
+                fn(array $encontrado): string => 'href="' . htmlspecialchars($base . '/fazenda/estilo?arquivo=' . $encontrado[1]) . '"',
                 $html
             );
             echo preg_replace_callback(
                 '#src="assets/js/([0-9a-z-]+\.js)"#',
-                fn(array $encontrado): string => 'src="' . htmlspecialchars($base . '/index.php?rota=fazenda/script&arquivo=' . $encontrado[1]) . '"',
+                fn(array $encontrado): string => 'src="' . htmlspecialchars($base . '/fazenda/script?arquivo=' . $encontrado[1]) . '"',
                 $html
             );
         }

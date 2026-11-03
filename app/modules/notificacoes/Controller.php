@@ -1,29 +1,25 @@
 <?php
 
+require_once __DIR__ . '/Model.php';
+require_once __DIR__ . '/../../core/database.php';
+
 class NotificacoesController
 {
     public function listar(): void
     {
-        $notificacoes = [
-            [
-                "titulo" => "Atividade de PHP",
-                "mensagem" => "Sua atividade foi entregue com sucesso.",
-                "status" => "entregue",
-                "data" => "28/10/2026 às 14:30"
-            ],
-            [
-                "titulo" => "Exercício de lógica",
-                "mensagem" => "Você possui uma atividade aguardando entrega.",
-                "status" => "pendente",
-                "data" => "30/10/2026 às 10:00"
-            ],
-            [
-                "titulo" => "Trabalho de banco de dados",
-                "mensagem" => "O prazo desta atividade foi encerrado.",
-                "status" => "atrasado",
-                "data" => "25/10/2026 às 18:00"
-            ]
-        ];
+        $pdo = iniciarPDO();
+
+        // Usuário de teste cadastrado no banco
+        $stmt = $pdo->prepare(
+            "SELECT id_usuario FROM usuarios WHERE email = ?"
+        );
+        $stmt->execute(['teste.notificacoes@exemplo.com']);
+
+        $idUsuario = $stmt->fetchColumn();
+
+        $notificacoes = $idUsuario
+            ? NotificacoesModel::listar($pdo, (int) $idUsuario)
+            : [];
 
         require __DIR__ . '/views/notificacoes.php';
     }
@@ -33,4 +29,3 @@ class NotificacoesController
         require __DIR__ . '/views/testarApi.php';
     }
 }
-

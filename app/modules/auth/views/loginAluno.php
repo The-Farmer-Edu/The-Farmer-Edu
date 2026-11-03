@@ -1,9 +1,14 @@
 <?php
+if($_SERVER['REQUEST_METHOD'] === 'POST'){
+    header("Location: loginAluno");
+    exit();
+}
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
 
 // usuarioLogado() é do core, devolve os dados da sessão ou null
-$logado = usuarioLogado();
+
 sessaoExpirouPorInatividade();
+$logado = usuarioLogado();
 
 ?>
 <!DOCTYPE html>

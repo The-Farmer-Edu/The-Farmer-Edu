@@ -41,7 +41,7 @@ class UsuarioController
                 default:
                     throw new InvalidArgumentException('Tipo de usuário inválido.');
             }
- 
+
             $usuario->salvar(iniciarPDO());
  
             $mensagem = 'Cadastro realizado com sucesso!';
@@ -95,8 +95,8 @@ class UsuarioController
 
         logout();
 
-        header('Location: login' . ucfirst($perfil));
-        exit;
+        $rotaLogin = ($perfil === 'instrutor') ? '/auth/loginInstrutor' : '/auth/loginAluno';
+        redirecionarParaRota($rotaLogin);
     }
 
     

@@ -15,6 +15,7 @@ use Psr\Http\Message\StreamFactoryInterface;
  */
 class Config implements ConfigInterface
 {
+    private string $apiToken;
     private ?ClientInterface $httpClient = null;
     private ?HttpClientBuilderInterface $httpClientBuilder = null;
     private ?RequestFactoryInterface $requestFactory = null;
@@ -22,8 +23,9 @@ class Config implements ConfigInterface
     private ?string $host = null;
     private bool $responseThrowOnError = true;
 
-    public function __construct(private string $apiToken)
+    public function __construct(string $apiToken)
     {
+        $this->apiToken = $apiToken;
     }
 
     public function getApiToken(): string

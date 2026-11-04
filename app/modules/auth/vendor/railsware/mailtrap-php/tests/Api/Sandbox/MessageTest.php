@@ -5,7 +5,6 @@ namespace Mailtrap\Tests\Api\Sandbox;
 use Mailtrap\Api\AbstractApi;
 use Mailtrap\Api\Sandbox\Message;
 use Mailtrap\Exception\HttpClientException;
-use Mailtrap\Exception\InvalidArgumentException;
 use Mailtrap\Helper\ResponseHelper;
 use Mailtrap\Tests\MailtrapTestCase;
 use Nyholm\Psr7\Response;
@@ -27,8 +26,8 @@ class MessageTest extends MailtrapTestCase
         parent::setUp();
 
         $this->message = $this->getMockBuilder(Message::class)
-            ->onlyMethods(['httpGet', 'httpPost', 'httpPatch', 'httpDelete'])
-            ->setConstructorArgs([$this->getConfigMock(), self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID])
+            ->onlyMethods(['httpGet',  'httpPatch', 'httpDelete'])
+            ->setConstructorArgs([$this->getConfigMock()])
             ->getMock()
         ;
     }
@@ -49,7 +48,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($this->getMessagesData())));
 
-        $response = $this->message->getList();
+        $response = $this->message->getList(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID);
         $responseData = ResponseHelper::toArray($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -75,6 +74,8 @@ class MessageTest extends MailtrapTestCase
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($expectedData)));
 
         $response = $this->message->getList(
+            self::FAKE_ACCOUNT_ID,
+            self::FAKE_INBOX_ID,
             $page,
             $search,
         );
@@ -98,7 +99,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($this->getMessagesData()[0])));
 
-        $response = $this->message->getById(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getById(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toArray($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -119,7 +120,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($expectedData)));
 
-        $response = $this->message->getSpamScore(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getSpamScore(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toArray($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -138,85 +139,11 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($expectedData)));
 
-        $response = $this->message->getHtmlAnalysis(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getHtmlAnalysis(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toArray($response);
 
         $this->assertInstanceOf(Response::class, $response);
         $this->assertArrayHasKey('errors', $responseData);
-    }
-
-    public function testGetMailHeaders(): void
-    {
-        $expectedHeaders = [
-            'headers' => [
-                'from' => 'sender@example.com',
-                'to' => 'recipient@example.com',
-                'subject' => 'Test message',
-            ],
-        ];
-
-        $this->message->expects($this->once())
-            ->method('httpGet')
-            ->with(
-                AbstractApi::DEFAULT_HOST . '/api/accounts/' . self::FAKE_ACCOUNT_ID . '/inboxes/' . self::FAKE_INBOX_ID . '/messages/' . self::FAKE_MESSAGE_ID . '/mail_headers',
-            )
-            ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($expectedHeaders)));
-
-        $response = $this->message->getMailHeaders(self::FAKE_MESSAGE_ID);
-        $responseData = ResponseHelper::toArray($response);
-
-        $this->assertArrayHasKey('headers', $responseData);
-        $this->assertEquals('sender@example.com', $responseData['headers']['from']);
-    }
-
-    public function testForward(): void
-    {
-        $email = 'recipient@example.com';
-
-        $this->message->expects($this->once())
-            ->method('httpPost')
-            ->with(
-                AbstractApi::DEFAULT_HOST . '/api/accounts/' . self::FAKE_ACCOUNT_ID . '/inboxes/' . self::FAKE_INBOX_ID . '/messages/' . self::FAKE_MESSAGE_ID . '/forward',
-                [],
-                ['email' => $email]
-            )
-            ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode(['message' => 'Your email message has been successfully forwarded'])));
-
-        $response = $this->message->forward(self::FAKE_MESSAGE_ID, $email);
-        $responseData = ResponseHelper::toArray($response);
-
-        $this->assertArrayHasKey('message', $responseData);
-    }
-
-    public function testForwardFailsWithUnverifiedRecipient(): void
-    {
-        $email = 'unverified@example.com';
-
-        $this->message->expects($this->once())
-            ->method('httpPost')
-            ->with(
-                AbstractApi::DEFAULT_HOST . '/api/accounts/' . self::FAKE_ACCOUNT_ID . '/inboxes/' . self::FAKE_INBOX_ID . '/messages/' . self::FAKE_MESSAGE_ID . '/forward',
-                [],
-                ['email' => $email]
-            )
-            ->willReturn(new Response(422, ['Content-Type' => 'application/json'], json_encode(['errors' => ['base' => ['Recipient email must be verified']]])));
-
-        $this->expectException(HttpClientException::class);
-        $this->expectExceptionMessage('Recipient email must be verified');
-
-        $this->message->forward(self::FAKE_MESSAGE_ID, $email);
-    }
-
-    public function testForwardFailsWithInvalidEmail(): void
-    {
-        $email = 'not-an-email';
-
-        $this->message->expects($this->never())->method('httpPost');
-
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage(sprintf('Invalid recipient email: "%s"', $email));
-
-        $this->message->forward(self::FAKE_MESSAGE_ID, $email);
     }
 
     public function testGetText(): void
@@ -229,7 +156,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'text/plain'], $expectedData));
 
-        $response = $this->message->getText(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getText(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toString($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -246,7 +173,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'text/plain'], $expectedData));
 
-        $response = $this->message->getRaw(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getRaw(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toString($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -263,7 +190,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'text/html'], $expectedData));
 
-        $response = $this->message->getHtml(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getHtml(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toString($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -280,7 +207,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'message/rfc822'], $expectedData));
 
-        $response = $this->message->getEml(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getEml(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toString($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -297,7 +224,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'text/html'], $expectedData));
 
-        $response = $this->message->getSource(self::FAKE_MESSAGE_ID);
+        $response = $this->message->getSource(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toString($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -322,7 +249,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($expectedData)));
 
-        $response = $this->message->markAsRead(self::FAKE_MESSAGE_ID, $expectedData['is_read']);
+        $response = $this->message->markAsRead(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID, $expectedData['is_read']);
         $responseData = ResponseHelper::toArray($response);
 
         $this->assertInstanceOf(Response::class, $response);
@@ -339,7 +266,7 @@ class MessageTest extends MailtrapTestCase
             )
             ->willReturn(new Response(200, ['Content-Type' => 'application/json'], json_encode($this->getMessagesData()[0])));
 
-        $response = $this->message->delete(self::FAKE_MESSAGE_ID);
+        $response = $this->message->delete(self::FAKE_ACCOUNT_ID, self::FAKE_INBOX_ID, self::FAKE_MESSAGE_ID);
         $responseData = ResponseHelper::toArray($response);
 
         $this->assertInstanceOf(Response::class, $response);

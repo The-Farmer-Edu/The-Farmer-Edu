@@ -18,13 +18,31 @@ use Symfony\Component\Mime\Header\Headers;
  */
 class SMimePart extends AbstractPart
 {
-    public function __construct(
-        private iterable|string $body,
-        private string $type,
-        private string $subtype,
-        private array $parameters,
-    ) {
+    /** @internal */
+    protected $_headers;
+
+    private $body;
+    private $type;
+    private $subtype;
+    private $parameters;
+
+    /**
+     * @param iterable|string $body
+     */
+    public function __construct($body, string $type, string $subtype, array $parameters)
+    {
+        unset($this->_headers);
+
         parent::__construct();
+
+        if (!\is_string($body) && !is_iterable($body)) {
+            throw new \TypeError(sprintf('The body of "%s" must be a string or a iterable (got "%s").', self::class, get_debug_type($body)));
+        }
+
+        $this->body = $body;
+        $this->type = $type;
+        $this->subtype = $subtype;
+        $this->parameters = $parameters;
     }
 
     public function getMediaType(): string
@@ -81,35 +99,23 @@ class SMimePart extends AbstractPart
         return $headers;
     }
 
-    public function __serialize(): array
+    public function __sleep(): array
     {
         // convert iterables to strings for serialization
         if (is_iterable($this->body)) {
             $this->body = $this->bodyToString();
         }
 
-        return [
-            '_headers' => $this->getHeaders(),
-            'body' => $this->body,
-            'type' => $this->type,
-            'subtype' => $this->subtype,
-            'parameters' => $this->parameters,
-        ];
+        $this->_headers = $this->getHeaders();
+
+        return ['_headers', 'body', 'type', 'subtype', 'parameters'];
     }
 
-    public function __unserialize(array $data): void
+    public function __wakeup(): void
     {
-        if (($data['body'] ?? $data["\0".self::class."\0body"] ?? $data["\0*\0body"] ?? null) instanceof \Stringable
-            || !\is_string($data['type'] ?? $data["\0".self::class."\0type"] ?? $data["\0*\0type"] ?? null)
-            || !\is_string($data['subtype'] ?? $data["\0".self::class."\0subtype"] ?? $data["\0*\0subtype"] ?? null)
-        ) {
-            throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
-        }
-
-        parent::__unserialize(['headers' => $data['_headers'] ?? $data["\0*\0_headers"]]);
-        $this->body = $data['body'] ?? $data["\0".self::class."\0body"];
-        $this->type = $data['type'] ?? $data["\0".self::class."\0type"];
-        $this->subtype = $data['subtype'] ?? $data["\0".self::class."\0subtype"];
-        $this->parameters = $data['parameters'] ?? $data["\0".self::class."\0parameters"];
+        $r = new \ReflectionProperty(AbstractPart::class, 'headers');
+        $r->setAccessible(true);
+        $r->setValue($this, $this->_headers);
+        unset($this->_headers);
     }
 }

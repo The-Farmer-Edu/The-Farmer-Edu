@@ -13,6 +13,7 @@ namespace Symfony\Contracts\HttpClient;
 
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
@@ -36,7 +37,7 @@ interface ResponseInterface
      *
      * @param bool $throw Whether an exception should be thrown on 3/4/5xx status codes
      *
-     * @return array<string, list<string>> The headers of the response keyed by header names in lowercase
+     * @return string[][] The headers of the response keyed by header names in lowercase
      *
      * @throws TransportExceptionInterface   When a network error occurs
      * @throws RedirectionExceptionInterface On a 3xx when $throw is true and the "max_redirects" option has been reached
@@ -99,13 +100,10 @@ interface ResponseInterface
      * When the "capture_peer_cert_chain" option is true, the "peer_certificate_chain"
      * attribute SHOULD list the peer certificates as an array of OpenSSL X.509 resources.
      *
-     * The "trailers" info SHOULD be null until the transfer completes successfully.
-     * Then, it SHOULD list the trailer fields sent after the body, in the same shape as getHeaders(false), or be an empty array when there are none.
-     *
      * Other info SHOULD be named after curl_getinfo()'s associative return value.
      *
      * @return mixed An array of all available info, or one of them when $type is
      *               provided, or null when an unsupported type is requested
      */
-    public function getInfo(?string $type = null): mixed;
+    public function getInfo(?string $type = null);
 }

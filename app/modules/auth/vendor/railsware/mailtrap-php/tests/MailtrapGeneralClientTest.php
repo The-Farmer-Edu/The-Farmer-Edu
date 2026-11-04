@@ -26,12 +26,8 @@ class MailtrapGeneralClientTest extends MailtrapClientTestCase
 
     public function mapInstancesProvider(): iterable
     {
-        foreach (MailtrapGeneralClient::API_MAPPING as $key => $item) {
-            yield match ($key) {
-                'permissions', 'users', 'contacts', 'emailTemplates', 'templates', 'billing', 'apiTokens', 'emailCampaigns' => [new $item($this->getConfigMock(), self::FAKE_ACCOUNT_ID)],
-                'organization' => [new $item($this->getConfigMock(), self::FAKE_ORGANIZATION_ID)],
-                default => [new $item($this->getConfigMock())],
-            };
+        foreach (MailtrapGeneralClient::API_MAPPING as $item) {
+            yield [new $item($this->getConfigMock())];
         }
     }
 }

@@ -6,7 +6,10 @@ The HttpClient component provides powerful methods to fetch HTTP resources synch
 Sponsor
 -------
 
-This package is looking for a [backer][1].
+The Httpclient component for Symfony 5.4/6.0 is [backed][1] by [Klaxoon][2].
+
+Klaxoon is a platform that empowers organizations to run effective and
+productive workshops easily in a hybrid environment. Anytime, Anywhere.
 
 Help Symfony by [sponsoring][3] its development!
 
@@ -20,4 +23,5 @@ Resources
    in the [main Symfony repository](https://github.com/symfony/symfony)
 
 [1]: https://symfony.com/backers
+[2]: https://klaxoon.com
 [3]: https://symfony.com/sponsor

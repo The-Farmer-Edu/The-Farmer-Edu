@@ -2,12 +2,13 @@
 
 use Mailtrap\Config;
 use Mailtrap\Helper\ResponseHelper;
-use Mailtrap\MailtrapGeneralClient;
+use Mailtrap\MailtrapClient;
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-$config = new Config($_ENV['MAILTRAP_API_KEY']); #your API token from here https://mailtrap.io/api-tokens
-$generalAccounts = (new MailtrapGeneralClient($config))->accounts();
+// your API token from here https://mailtrap.io/api-tokens
+$apiKey = getenv('MAILTRAP_API_KEY');
+$mailtrap = new MailtrapClient(new Config($apiKey));
 
 /**
  * Get a list of your Mailtrap accounts.
@@ -15,7 +16,7 @@ $generalAccounts = (new MailtrapGeneralClient($config))->accounts();
  * GET https://mailtrap.io/api/accounts
  */
 try {
-    $response = $generalAccounts->getList();
+    $response = $mailtrap->general()->accounts()->getList();
 
     var_dump(ResponseHelper::toArray($response)); // body (array)
 } catch (Exception $e) {

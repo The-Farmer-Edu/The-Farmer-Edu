@@ -4,7 +4,6 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
-require_once __DIR__ . '/Sessao.php';
  
 class UsuarioController
 {

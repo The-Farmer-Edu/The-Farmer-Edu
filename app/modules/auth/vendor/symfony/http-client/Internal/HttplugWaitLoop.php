@@ -30,15 +30,20 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  */
 final class HttplugWaitLoop
 {
+    private $client;
+    private $promisePool;
+    private $responseFactory;
+    private $streamFactory;
+
     /**
      * @param \SplObjectStorage<ResponseInterface, array{Psr7RequestInterface, Promise}>|null $promisePool
      */
-    public function __construct(
-        private HttpClientInterface $client,
-        private ?\SplObjectStorage $promisePool,
-        private ResponseFactoryInterface $responseFactory,
-        private StreamFactoryInterface $streamFactory,
-    ) {
+    public function __construct(HttpClientInterface $client, ?\SplObjectStorage $promisePool, ResponseFactoryInterface $responseFactory, StreamFactoryInterface $streamFactory)
+    {
+        $this->client = $client;
+        $this->promisePool = $promisePool;
+        $this->responseFactory = $responseFactory;
+        $this->streamFactory = $streamFactory;
     }
 
     public function wait(?ResponseInterface $pendingResponse, ?float $maxDuration = null, ?float $idleTimeout = null): int
@@ -52,7 +57,7 @@ final class HttplugWaitLoop
         if (0.0 === $remainingDuration = $maxDuration) {
             $idleTimeout = 0.0;
         } elseif (null !== $maxDuration) {
-            $startTime = hrtime(true) / 1E9;
+            $startTime = microtime(true);
             $idleTimeout = max(0.0, min($maxDuration / 5, $idleTimeout ?? $maxDuration));
         }
 
@@ -95,7 +100,7 @@ final class HttplugWaitLoop
                 }
 
                 check_duration:
-                if (null !== $maxDuration && $idleTimeout && $idleTimeout > $remainingDuration = max(0.0, $maxDuration - hrtime(true) / 1E9 + $startTime)) {
+                if (null !== $maxDuration && $idleTimeout && $idleTimeout > $remainingDuration = max(0.0, $maxDuration - microtime(true) + $startTime)) {
                     $idleTimeout = $remainingDuration / 5;
                     break;
                 }
@@ -140,11 +145,7 @@ final class HttplugWaitLoop
         }
 
         if ($body->isSeekable()) {
-            try {
-                $body->seek(0);
-            } catch (\RuntimeException) {
-                // ignore
-            }
+            $body->seek(0);
         }
 
         return $psrResponse->withBody($body);

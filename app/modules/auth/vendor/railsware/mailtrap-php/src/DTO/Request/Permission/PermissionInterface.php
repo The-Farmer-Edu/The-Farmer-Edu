@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Mailtrap\DTO\Request\Permission;
 
 use Mailtrap\DTO\Request\RequestInterface;

@@ -4,31 +4,30 @@ declare(strict_types=1);
 
 namespace Mailtrap\EmailHeader\Template;
 
-use Mailtrap\EmailHeader\CustomHeaderInterface;
-use Mailtrap\Exception\RuntimeException;
 use Symfony\Component\Mime\Header\AbstractHeader;
 
 /**
  * MIME Header for Template UUID
  *
- * Class TemplateVariableHeader
+ * Class CustomVariableHeader
  */
-class TemplateVariableHeader extends AbstractHeader implements CustomHeaderInterface
+class TemplateVariableHeader extends AbstractHeader
 {
     public const VAR_NAME = 'template_variables';
-    public const NAME_PREFIX = 'template_variables_prefix_';
 
-    private mixed $value;
+    private string $value;
 
-    public function __construct(string $name, mixed $value)
+    public function __construct(string $name, string $value)
     {
-        // add prefix to avoid conflicts with reserved header names Symfony\Component\Mime\Header\Headers::HEADER_CLASS_MAP
-        parent::__construct(self::NAME_PREFIX . $name);
+        parent::__construct($name);
 
         $this->setValue($value);
     }
 
-    public function setBody(mixed $body): void
+    /**
+     * @param string $body
+     */
+    public function setBody($body): void
     {
         $this->setValue($body);
     }
@@ -36,7 +35,7 @@ class TemplateVariableHeader extends AbstractHeader implements CustomHeaderInter
     /**
      * @psalm-suppress MethodSignatureMismatch
      */
-    public function getBody(): mixed
+    public function getBody(): string
     {
         return $this->getValue();
     }
@@ -44,7 +43,7 @@ class TemplateVariableHeader extends AbstractHeader implements CustomHeaderInter
     /**
      * Get the (unencoded) value of this header.
      */
-    public function getValue(): mixed
+    public function getValue(): string
     {
         return $this->value;
     }
@@ -52,18 +51,16 @@ class TemplateVariableHeader extends AbstractHeader implements CustomHeaderInter
     /**
      * Set the (unencoded) value of this header.
      */
-    public function setValue(mixed $value): void
+    public function setValue(string $value): void
     {
         $this->value = $value;
     }
 
-    public function getNameWithoutPrefix(): string
-    {
-        return substr($this->getName(), strlen(self::NAME_PREFIX));
-    }
-
+    /**
+     * Get the value of this header prepared for rendering.
+     */
     public function getBodyAsString(): string
     {
-        throw new RuntimeException(__METHOD__ . ' method is not supported for this type of header');
+        return $this->encodeWords($this, $this->value);
     }
 }

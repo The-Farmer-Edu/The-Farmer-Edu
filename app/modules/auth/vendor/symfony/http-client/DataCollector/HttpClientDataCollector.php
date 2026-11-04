@@ -11,8 +11,6 @@
 
 namespace Symfony\Component\HttpClient\DataCollector;
 
-use Symfony\Component\HttpClient\Exception\TransportException;
-use Symfony\Component\HttpClient\HttpClientTrait;
 use Symfony\Component\HttpClient\TraceableHttpClient;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,27 +23,28 @@ use Symfony\Component\VarDumper\Caster\ImgStub;
  */
 final class HttpClientDataCollector extends DataCollector implements LateDataCollectorInterface
 {
-    use HttpClientTrait;
-
     /**
      * @var TraceableHttpClient[]
      */
-    private array $clients = [];
+    private $clients = [];
 
-    public function registerClient(string $name, TraceableHttpClient $client): void
+    public function registerClient(string $name, TraceableHttpClient $client)
     {
         $this->clients[$name] = $client;
     }
 
-    public function collect(Request $request, Response $response, ?\Throwable $exception = null): void
+    /**
+     * {@inheritdoc}
+     */
+    public function collect(Request $request, Response $response, ?\Throwable $exception = null)
     {
         $this->lateCollect();
     }
 
-    public function lateCollect(): void
+    public function lateCollect()
     {
-        $this->data['request_count'] ??= 0;
-        $this->data['error_count'] ??= 0;
+        $this->data['request_count'] = $this->data['request_count'] ?? 0;
+        $this->data['error_count'] = $this->data['error_count'] ?? 0;
         $this->data += ['clients' => []];
 
         foreach ($this->clients as $name => $client) {
@@ -63,9 +62,7 @@ final class HttpClientDataCollector extends DataCollector implements LateDataCol
             $this->data['error_count'] += $errorCount;
             $this->data['clients'][$name]['error_count'] += $errorCount;
 
-            if ($traces) {
-                $client->reset();
-            }
+            $client->reset();
         }
     }
 
@@ -84,12 +81,15 @@ final class HttpClientDataCollector extends DataCollector implements LateDataCol
         return $this->data['error_count'] ?? 0;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getName(): string
     {
         return 'http_client';
     }
 
-    public function reset(): void
+    public function reset()
     {
         $this->data = [
             'clients' => [],
@@ -146,7 +146,7 @@ final class HttpClientDataCollector extends DataCollector implements LateDataCol
                     }
                 }
 
-                if (str_starts_with($contentType, 'image/') && class_exists(ImgStub::class)) {
+                if (0 === strpos($contentType, 'image/') && class_exists(ImgStub::class)) {
                     $content = new ImgStub($content, $contentType, '');
                 } else {
                     $content = [$content];
@@ -169,96 +169,8 @@ final class HttpClientDataCollector extends DataCollector implements LateDataCol
             unset($traces[$i]['info']); // break PHP reference used by TraceableHttpClient
             $traces[$i]['info'] = $this->cloneVar($info);
             $traces[$i]['options'] = $this->cloneVar($trace['options']);
-            $traces[$i]['curlCommand'] = $this->getCurlCommand($trace);
         }
 
         return [$errorCount, $traces];
-    }
-
-    private function getCurlCommand(array $trace): ?string
-    {
-        if (!isset($trace['info']['debug'])) {
-            return null;
-        }
-
-        $url = $trace['info']['original_url'] ?? $trace['info']['url'] ?? $trace['url'];
-        $command = ['curl', '--compressed'];
-
-        if (isset($trace['options']['resolve'])) {
-            $port = parse_url($url, \PHP_URL_PORT) ?: (str_starts_with('http:', $url) ? 80 : 443);
-            foreach ($trace['options']['resolve'] as $host => $ip) {
-                if (null !== $ip) {
-                    $command[] = '--resolve '.$this->escapeArgument("$host:$port:$ip");
-                }
-            }
-        }
-
-        $dataArg = [];
-
-        if ($json = $trace['options']['json'] ?? null) {
-            $dataArg[] = '--data-raw '.$this->escapeArgument(self::jsonEncode($json));
-        } elseif ($body = $trace['options']['body'] ?? null) {
-            if (\is_string($body)) {
-                $dataArg[] = '--data-raw '.$this->escapeArgument($body);
-            } elseif (\is_array($body)) {
-                try {
-                    $body = self::normalizeBody($body);
-                } catch (TransportException) {
-                    return null;
-                }
-                if (!\is_string($body)) {
-                    return null;
-                }
-                foreach (explode('&', $body) as $value) {
-                    $dataArg[] = '--data-raw '.$this->escapeArgument(urldecode($value));
-                }
-            } else {
-                return null;
-            }
-        }
-
-        $dataArg = $dataArg ? implode(' ', $dataArg) : null;
-
-        foreach (explode("\n", $trace['info']['debug']) as $line) {
-            $line = substr($line, 0, -1);
-
-            if (str_starts_with('< ', $line)) {
-                // End of the request, beginning of the response. Stop parsing.
-                break;
-            }
-
-            if (str_starts_with('Due to a bug in curl ', $line)) {
-                // When the curl client disables debug info due to a curl bug, we cannot build the command.
-                return null;
-            }
-
-            if ('' === $line || preg_match('/^[*<]|(Host: )/', $line)) {
-                continue;
-            }
-
-            if (preg_match('/^> ([A-Z]+)/', $line, $match)) {
-                $command[] = \sprintf('--request %s', $match[1]);
-                $command[] = \sprintf('--url %s', $this->escapeArgument($url));
-                continue;
-            }
-
-            $command[] = '--header '.$this->escapeArgument($line);
-        }
-
-        if (null !== $dataArg) {
-            $command[] = $dataArg;
-        }
-
-        return implode(" \\\n  ", $command);
-    }
-
-    /**
-     * The command joins its arguments with "\" line continuations, so it targets a POSIX
-     * shell on every platform. escapeshellarg() cannot be used: it drops bytes that are
-     * not valid in the current locale, and turns "%" into a space on Windows.
-     */
-    private function escapeArgument(string $value): string
-    {
-        return "'".str_replace("'", "'\\''", $value)."'";
     }
 }

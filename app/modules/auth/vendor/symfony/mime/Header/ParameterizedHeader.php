@@ -26,8 +26,8 @@ final class ParameterizedHeader extends UnstructuredHeader
      */
     public const TOKEN_REGEX = '(?:[\x21\x23-\x27\x2A\x2B\x2D\x2E\x30-\x39\x41-\x5A\x5E-\x7E]+)';
 
-    private ?Rfc2231Encoder $encoder = null;
-    private array $parameters = [];
+    private $encoder;
+    private $parameters = [];
 
     public function __construct(string $name, string $value, array $parameters = [])
     {
@@ -42,7 +42,7 @@ final class ParameterizedHeader extends UnstructuredHeader
         }
     }
 
-    public function setParameter(string $parameter, ?string $value): void
+    public function setParameter(string $parameter, ?string $value)
     {
         $this->setParameters(array_merge($this->getParameters(), [$parameter => $value]));
     }
@@ -55,11 +55,11 @@ final class ParameterizedHeader extends UnstructuredHeader
     /**
      * @param string[] $parameters
      */
-    public function setParameters(array $parameters): void
+    public function setParameters(array $parameters)
     {
         foreach ($parameters as $k => $v) {
             if (!preg_match('/^'.self::TOKEN_REGEX.'$/D', $k)) {
-                throw new RfcComplianceException(\sprintf('The parameter name "%s" contains non-token characters.', $k));
+                throw new RfcComplianceException(sprintf('The parameter name "%s" contains non-token characters.', $k));
             }
         }
 
@@ -169,9 +169,9 @@ final class ParameterizedHeader extends UnstructuredHeader
             }
 
             return implode(";\r\n ", $paramLines);
+        } else {
+            return $name.$this->getEndOfParameterValue($valueLines[0], $encoded, true);
         }
-
-        return $name.$this->getEndOfParameterValue($valueLines[0], $encoded, true);
     }
 
     /**

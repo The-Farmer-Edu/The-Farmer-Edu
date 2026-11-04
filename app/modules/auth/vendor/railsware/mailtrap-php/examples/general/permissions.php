@@ -6,13 +6,13 @@ use Mailtrap\DTO\Request\Permission\DestroyPermission;
 use Mailtrap\DTO\Request\Permission\PermissionInterface;
 use Mailtrap\DTO\Request\Permission\Permissions;
 use Mailtrap\Helper\ResponseHelper;
-use Mailtrap\MailtrapGeneralClient;
+use Mailtrap\MailtrapClient;
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-$accountId = $_ENV['MAILTRAP_ACCOUNT_ID'];
-$config = new Config($_ENV['MAILTRAP_API_KEY']); #your API token from here https://mailtrap.io/api-tokens
-$generalPermissions = (new MailtrapGeneralClient($config))->permissions($accountId);
+// your API token from here https://mailtrap.io/api-tokens
+$apiKey = getenv('MAILTRAP_API_KEY');
+$mailtrap = new MailtrapClient(new Config($apiKey));
 
 /**
  * Get resources
@@ -20,7 +20,8 @@ $generalPermissions = (new MailtrapGeneralClient($config))->permissions($account
  * GET https://mailtrap.io/api/accounts/{account_id}/permissions/resources
  */
 try {
-    $response = $generalPermissions->getResources();
+    $accountId = getenv('MAILTRAP_ACCOUNT_ID');
+    $response = $mailtrap->general()->permissions()->getResources($accountId);
 
     // print the response body (array)
     var_dump(ResponseHelper::toArray($response));
@@ -38,12 +39,13 @@ try {
  * PUT https://mailtrap.io/api/accounts/{account_id}/account_accesses/{account_access_id}/permissions/bulk
  */
 try {
-    $accountAccessId = $_ENV['MAILTRAP_ACCOUNT_ACCESS_ID'];
+    $accountId = getenv('MAILTRAP_ACCOUNT_ID');
+    $accountAccessId = getenv('MAILTRAP_ACCOUNT_ACCESS_ID');
 
     // resource IDs
-    $projectResourceId = $_ENV['MAILTRAP_NEW_PROJECT_RESOURCE_ID'];
-    $inboxResourceId = $_ENV['MAILTRAP_INBOX_RESOURCE_ID'];
-    $destroyProjectResourceId = $_ENV['MAILTRAP_OLD_PROJECT_RESOURCE_ID'];
+    $projectResourceId = getenv('MAILTRAP_NEW_PROJECT_RESOURCE_ID');
+    $inboxResourceId = getenv('MAILTRAP_INBOX_RESOURCE_ID');
+    $destroyProjectResourceId = getenv('MAILTRAP_OLD_PROJECT_RESOURCE_ID');
 
     $permissions = new Permissions(
         new CreateOrUpdatePermission($projectResourceId, PermissionInterface::TYPE_PROJECT, 10), // viewer = 10
@@ -51,7 +53,7 @@ try {
         new DestroyPermission($destroyProjectResourceId, PermissionInterface::TYPE_PROJECT),
     );
 
-    $response = $generalPermissions->update($accountAccessId, $permissions);
+    $response = $mailtrap->general()->permissions()->update($accountId, $accountAccessId, $permissions);
 
     // print the response body (array)
     var_dump(ResponseHelper::toArray($response));

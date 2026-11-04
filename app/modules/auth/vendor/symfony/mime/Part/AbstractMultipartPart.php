@@ -18,8 +18,8 @@ use Symfony\Component\Mime\Header\Headers;
  */
 abstract class AbstractMultipartPart extends AbstractPart
 {
-    private ?string $boundary = null;
-    private array $parts = [];
+    private $boundary;
+    private $parts = [];
 
     public function __construct(AbstractPart ...$parts)
     {
@@ -88,42 +88,12 @@ abstract class AbstractMultipartPart extends AbstractPart
         return $str;
     }
 
-    public function __serialize(): array
-    {
-        return parent::__serialize() + ['boundary' => $this->boundary, 'parts' => $this->parts];
-    }
-
-    public function __unserialize(array $data): void
-    {
-        foreach (['', "\0".self::class."\0"] as $prefix) {
-            if (!\array_key_exists($prefix.'parts', $data)) {
-                continue;
-            }
-
-            $boundary = $data[$prefix.'boundary'] ?? null;
-            $parts = $data[$prefix.'parts'];
-            unset($data[$prefix.'boundary'], $data[$prefix.'parts']);
-
-            if ((null !== $boundary && !\is_string($boundary)) || !\is_array($parts)) {
-                throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
-            }
-
-            foreach ($parts as $part) {
-                if (!$part instanceof AbstractPart) {
-                    throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
-                }
-            }
-
-            $this->boundary = $boundary;
-            $this->parts = $parts;
-            break;
-        }
-
-        parent::__unserialize($data);
-    }
-
     private function getBoundary(): string
     {
-        return $this->boundary ??= strtr(base64_encode(random_bytes(6)), '+/', '-_');
+        if (null === $this->boundary) {
+            $this->boundary = strtr(base64_encode(random_bytes(6)), '+/', '-_');
+        }
+
+        return $this->boundary;
     }
 }

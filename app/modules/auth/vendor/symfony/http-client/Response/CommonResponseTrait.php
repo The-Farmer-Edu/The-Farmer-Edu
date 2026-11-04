@@ -31,13 +31,14 @@ trait CommonResponseTrait
      * @var callable|null A callback that tells whether we're waiting for response headers
      */
     private $initializer;
-    /** @var bool|\Closure|resource|null */
     private $shouldBuffer;
-    /** @var resource|null */
     private $content;
-    private int $offset = 0;
-    private ?array $jsonData = null;
+    private $offset = 0;
+    private $jsonData;
 
+    /**
+     * {@inheritdoc}
+     */
     public function getContent(bool $throw = true): string
     {
         if ($this->initializer) {
@@ -48,34 +49,26 @@ trait CommonResponseTrait
             $this->checkStatusCode();
         }
 
-        $content = null;
-        $isLast = false;
-        $wasCanceled = $this->info['canceled'];
-
         if (null === $this->content) {
+            $content = null;
+
             foreach (self::stream([$this]) as $chunk) {
-                if (!$isLast = $chunk->isLast()) {
+                if (!$chunk->isLast()) {
                     $content .= $chunk->getContent();
                 }
+            }
+
+            if (null !== $content) {
+                return $content;
+            }
+
+            if (null === $this->content) {
+                throw new TransportException('Cannot get the content of the response twice: buffering is disabled.');
             }
         } else {
             foreach (self::stream([$this]) as $chunk) {
                 // Chunks are buffered in $this->content already
-                $isLast = $chunk->isLast();
             }
-        }
-
-        // The stream drops responses that are canceled while it runs, e.g. from the "on_progress" callback
-        if (!$isLast && !$wasCanceled && $this->info['canceled']) {
-            throw new TransportException($this->info['error']);
-        }
-
-        if (null !== $content) {
-            return $content;
-        }
-
-        if (null === $this->content) {
-            throw new TransportException('Cannot get the content of the response twice: buffering is disabled.');
         }
 
         rewind($this->content);
@@ -83,6 +76,9 @@ trait CommonResponseTrait
         return stream_get_contents($this->content);
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function toArray(bool $throw = true): array
     {
         if ('' === $content = $this->getContent($throw)) {
@@ -94,13 +90,17 @@ trait CommonResponseTrait
         }
 
         try {
-            $content = json_decode($content, true, 512, \JSON_BIGINT_AS_STRING | \JSON_THROW_ON_ERROR);
+            $content = json_decode($content, true, 512, \JSON_BIGINT_AS_STRING | (\PHP_VERSION_ID >= 70300 ? \JSON_THROW_ON_ERROR : 0));
         } catch (\JsonException $e) {
-            throw new JsonException($e->getMessage().\sprintf(' for "%s".', $this->getInfo('url')), $e->getCode());
+            throw new JsonException($e->getMessage().sprintf(' for "%s".', $this->getInfo('url')), $e->getCode());
+        }
+
+        if (\PHP_VERSION_ID < 70300 && \JSON_ERROR_NONE !== json_last_error()) {
+            throw new JsonException(json_last_error_msg().sprintf(' for "%s".', $this->getInfo('url')), json_last_error());
         }
 
         if (!\is_array($content)) {
-            throw new JsonException(\sprintf('JSON content was expected to decode to an array, "%s" returned for "%s".', get_debug_type($content), $this->getInfo('url')));
+            throw new JsonException(sprintf('JSON content was expected to decode to an array, "%s" returned for "%s".', get_debug_type($content), $this->getInfo('url')));
         }
 
         if (null !== $this->content) {
@@ -112,7 +112,7 @@ trait CommonResponseTrait
     }
 
     /**
-     * @return resource
+     * {@inheritdoc}
      */
     public function toStream(bool $throw = true)
     {
@@ -128,12 +128,12 @@ trait CommonResponseTrait
         return $stream;
     }
 
-    public function __serialize(): array
+    public function __sleep(): array
     {
         throw new \BadMethodCallException('Cannot serialize '.__CLASS__);
     }
 
-    public function __unserialize(array $data): void
+    public function __wakeup()
     {
         throw new \BadMethodCallException('Cannot unserialize '.__CLASS__);
     }
@@ -167,7 +167,7 @@ trait CommonResponseTrait
         $response->initializer = null;
     }
 
-    private function checkStatusCode(): void
+    private function checkStatusCode()
     {
         $code = $this->getInfo('http_code');
 
@@ -175,7 +175,7 @@ trait CommonResponseTrait
             return;
         }
 
-        $getErrorBody = $this->getErrorBody(...);
+        $getErrorBody = \Closure::fromCallable([$this, 'getErrorBody']);
 
         if (500 <= $code) {
             throw new ServerException($this, $getErrorBody);
@@ -209,7 +209,7 @@ trait CommonResponseTrait
                 // Free the current chunk before the next one is inflated
                 $chunk = null;
             }
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
         }
 
         return $body;

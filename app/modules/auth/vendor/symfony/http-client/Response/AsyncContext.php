@@ -25,28 +25,21 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
  */
 final class AsyncContext
 {
-    /** @var callable|null */
     private $passthru;
-    private ResponseInterface $response;
-    private array $info = [];
-    private float $maxDurationExpiry;
+    private $client;
+    private $response;
+    private $info = [];
+    private $content;
+    private $offset;
 
-    /**
-     * @param resource|null $content
-     */
-    public function __construct(
-        ?callable &$passthru,
-        private HttpClientInterface $client,
-        ResponseInterface &$response,
-        array &$info,
-        private $content,
-        private int $offset,
-        float &$maxDurationExpiry = 0.0,
-    ) {
+    public function __construct(&$passthru, HttpClientInterface $client, ResponseInterface &$response, array &$info, $content, int $offset)
+    {
         $this->passthru = &$passthru;
+        $this->client = $client;
         $this->response = &$response;
         $this->info = &$info;
-        $this->maxDurationExpiry = &$maxDurationExpiry;
+        $this->content = $content;
+        $this->offset = $offset;
     }
 
     /**
@@ -99,12 +92,6 @@ final class AsyncContext
         if (\is_callable($pause = $this->response->getInfo('pause_handler'))) {
             $pause($duration);
         } elseif (0 < $duration) {
-            if ($this->maxDurationExpiry && $this->maxDurationExpiry <= hrtime(true) / 1E9 + $duration) {
-                usleep((int) max(0, 1E6 * ($this->maxDurationExpiry - hrtime(true) / 1E9)));
-
-                throw new TransportException(\sprintf('Max duration was reached for "%s".', $this->getInfo('url')));
-            }
-
             usleep((int) (1E6 * $duration));
         }
     }
@@ -124,7 +111,7 @@ final class AsyncContext
     /**
      * Returns the current info of the response.
      */
-    public function getInfo(?string $type = null): mixed
+    public function getInfo(?string $type = null)
     {
         if (null !== $type) {
             return $this->info[$type] ?? $this->response->getInfo($type);
@@ -138,7 +125,7 @@ final class AsyncContext
      *
      * @return $this
      */
-    public function setInfo(string $type, mixed $value): static
+    public function setInfo(string $type, $value): self
     {
         if ('canceled' === $type && $value !== $this->info['canceled']) {
             throw new \LogicException('You cannot set the "canceled" info directly.');
@@ -173,11 +160,10 @@ final class AsyncContext
                 $onProgress($dlNow, $dlSize, $thisInfo + $info);
             };
         }
-        if (!$this->maxDurationExpiry && 0 < ($info['max_duration'] ?? 0)) {
-            $this->maxDurationExpiry = hrtime(true) / 1E9 + $info['max_duration'] - ($info['total_time'] ?? 0);
-        }
-        if ($this->maxDurationExpiry && 0 >= $options['max_duration'] = $this->maxDurationExpiry - hrtime(true) / 1E9) {
-            throw new TransportException(\sprintf('Max duration was reached for "%s".', $info['url']));
+        if (0 < ($info['max_duration'] ?? 0) && 0 < ($info['total_time'] ?? 0)) {
+            if (0 >= $options['max_duration'] = $info['max_duration'] - $info['total_time']) {
+                throw new TransportException(sprintf('Max duration was reached for "%s".', $info['url']));
+            }
         }
 
         return $this->response = $this->client->request($method, $url, ['buffer' => false] + $options);

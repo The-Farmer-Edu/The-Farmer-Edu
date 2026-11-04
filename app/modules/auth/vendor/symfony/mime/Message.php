@@ -21,13 +21,13 @@ use Symfony\Component\Mime\Part\TextPart;
  */
 class Message extends RawMessage
 {
-    private Headers $headers;
+    private $headers;
+    private $body;
 
-    public function __construct(
-        ?Headers $headers = null,
-        private ?AbstractPart $body = null,
-    ) {
+    public function __construct(?Headers $headers = null, ?AbstractPart $body = null)
+    {
         $this->headers = $headers ? clone $headers : new Headers();
+        $this->body = $body;
     }
 
     public function __clone()
@@ -42,7 +42,7 @@ class Message extends RawMessage
     /**
      * @return $this
      */
-    public function setBody(?AbstractPart $body): static
+    public function setBody(?AbstractPart $body = null)
     {
         $this->body = $body;
 
@@ -57,7 +57,7 @@ class Message extends RawMessage
     /**
      * @return $this
      */
-    public function setHeaders(Headers $headers): static
+    public function setHeaders(Headers $headers)
     {
         $this->headers = $headers;
 
@@ -122,13 +122,20 @@ class Message extends RawMessage
         yield from $body->toIterable();
     }
 
-    public function ensureValidity(): void
+    public function ensureValidity()
     {
-        if (!$this->headers->get('To')?->getBody() && !$this->headers->get('Cc')?->getBody() && !$this->headers->get('Bcc')?->getBody()) {
+        $to = (null !== $header = $this->headers->get('To')) ? $header->getBody() : null;
+        $cc = (null !== $header = $this->headers->get('Cc')) ? $header->getBody() : null;
+        $bcc = (null !== $header = $this->headers->get('Bcc')) ? $header->getBody() : null;
+
+        if (!$to && !$cc && !$bcc) {
             throw new LogicException('An email must have a "To", "Cc", or "Bcc" header.');
         }
 
-        if (!$this->headers->get('From')?->getBody() && !$this->headers->get('Sender')?->getBody()) {
+        $from = (null !== $header = $this->headers->get('From')) ? $header->getBody() : null;
+        $sender = (null !== $header = $this->headers->get('Sender')) ? $header->getBody() : null;
+
+        if (!$from && !$sender) {
             throw new LogicException('An email must have a "From" or a "Sender" header.');
         }
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Mailtrap\Tests\Bridge\Transport;
 
-use Mailtrap\Api\AbstractApi;
-use Mailtrap\Exception\Transport\UnsupportedHostException;
 use Mailtrap\Tests\MailtrapTestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Exception\IncompleteDsnException;
@@ -42,15 +40,10 @@ abstract class TransportFactoryTestCase extends MailtrapTestCase
         return [];
     }
 
-    public function unsupportedHostsProvider(): iterable
-    {
-        return [];
-    }
-
     /**
      * @dataProvider supportsProvider
      */
-    public function testSupports(Dsn $dsn, bool $supports): void
+    public function testSupports(Dsn $dsn, bool $supports)
     {
         $factory = $this->getFactory();
 
@@ -60,23 +53,20 @@ abstract class TransportFactoryTestCase extends MailtrapTestCase
     /**
      * @dataProvider createProvider
      */
-    public function testCreate(Dsn $dsn, TransportInterface $transport): void
+    public function testCreate(Dsn $dsn, TransportInterface $transport)
     {
         $factory = $this->getFactory();
 
         $this->assertEquals($transport, $factory->create($dsn));
-
-        if ('default' === $dsn->getHost()) {
-            $this->assertStringMatchesFormat('mailtrap+sdk://' . AbstractApi::SENDMAIL_TRANSACTIONAL_HOST, (string) $transport);
-        } else {
-            $this->assertStringStartsWith('mailtrap+sdk://' . $dsn->getHost(), (string) $transport);
+        if (str_contains('smtp', $dsn->getScheme())) {
+            $this->assertStringMatchesFormat($dsn->getScheme().'://%S'.$dsn->getHost().'%S', (string) $transport);
         }
     }
 
     /**
      * @dataProvider unsupportedSchemeProvider
      */
-    public function testUnsupportedSchemeException(Dsn $dsn, string $message = null): void
+    public function testUnsupportedSchemeException(Dsn $dsn, string $message = null)
     {
         $factory = $this->getFactory();
 
@@ -89,21 +79,9 @@ abstract class TransportFactoryTestCase extends MailtrapTestCase
     }
 
     /**
-     * @dataProvider unsupportedHostsProvider
-     */
-    public function testUnsupportedHostsException(Dsn $dsn): void
-    {
-        $factory = $this->getFactory();
-
-        $this->expectException(UnsupportedHostException::class);
-
-        $factory->create($dsn);
-    }
-
-    /**
      * @dataProvider incompleteDsnProvider
      */
-    public function testIncompleteDsnException(Dsn $dsn): void
+    public function testIncompleteDsnException(Dsn $dsn)
     {
         $factory = $this->getFactory();
 

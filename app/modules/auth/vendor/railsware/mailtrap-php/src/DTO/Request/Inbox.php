@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Mailtrap\DTO\Request;
 
 /**
@@ -9,8 +7,13 @@ namespace Mailtrap\DTO\Request;
  */
 class Inbox implements RequestInterface
 {
-    public function __construct(private ?string $name = null, private ?string $emailUsername = null)
+    private ?string $name;
+    private ?string $emailUsername;
+
+    public function __construct(string $name = null, string $emailUsername = null)
     {
+        $this->name = $name;
+        $this->emailUsername = $emailUsername;
     }
 
     /**

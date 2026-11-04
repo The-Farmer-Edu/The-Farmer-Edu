@@ -2,16 +2,13 @@
 
 use Mailtrap\Config;
 use Mailtrap\Helper\ResponseHelper;
-use Mailtrap\MailtrapSandboxClient;
+use Mailtrap\MailtrapClient;
 
-require __DIR__ . '/../../vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
-$accountId = $_ENV['MAILTRAP_ACCOUNT_ID'];
-$inboxId = $_ENV['MAILTRAP_INBOX_ID'];
-$config = new Config($_ENV['MAILTRAP_API_KEY']); #your API token from here https://mailtrap.io/api-tokens
-
-$sandboxAttachments = (new MailtrapSandboxClient($config))->attachments($accountId, $inboxId); #required parameters are accountId amd inboxId
-
+// your API token from here https://mailtrap.io/api-tokens
+$apiKey = getenv('MAILTRAP_API_KEY');
+$mailtrap = new MailtrapClient(new Config($apiKey));
 
 /**
  * Get attachments
@@ -19,10 +16,13 @@ $sandboxAttachments = (new MailtrapSandboxClient($config))->attachments($account
  * GET https://mailtrap.io/api/accounts/{account_id}/inboxes/{inbox_id}/messages/{message_id}/attachments
  */
 try {
-    $messageId = $_ENV['MAILTRAP_MESSAGE_ID'];
-    $attachmentType = 'inline'; # optional (null|string)
+    $accountId = getenv('MAILTRAP_ACCOUNT_ID');
+    $inboxId = getenv('MAILTRAP_INBOX_ID');
+    $messageId = getenv('MAILTRAP_MESSAGE_ID');
+    // optional (null|string)
+    $attachmentType = 'inline';
 
-    $response = $sandboxAttachments->getMessageAttachments($messageId, $attachmentType);
+    $response = $mailtrap->sandbox()->attachments()->getMessageAttachments($accountId, $inboxId, $messageId, $attachmentType);
 
     // print the response body (array)
     var_dump(ResponseHelper::toArray($response));
@@ -36,10 +36,12 @@ try {
  * GET https://mailtrap.io/api/accounts/{account_id}/inboxes/{inbox_id}/messages/{message_id}/attachments/{attachment_id}
  */
 try {
-    $messageId = $_ENV['MAILTRAP_MESSAGE_ID'];
-    $attachmentId = $_ENV['MAILTRAP_MESSAGE_ATTACHMENT_ID'];
+    $accountId = getenv('MAILTRAP_ACCOUNT_ID');
+    $inboxId = getenv('MAILTRAP_INBOX_ID');
+    $messageId = getenv('MAILTRAP_MESSAGE_ID');
+    $attachmentId = getenv('MAILTRAP_MESSAGE_ATTACHMENT_ID');
 
-    $response = $sandboxAttachments->getMessageAttachment($messageId, $attachmentId);
+    $response = $mailtrap->sandbox()->attachments()->getMessageAttachment($accountId, $inboxId, $messageId, $attachmentId);
 
     // print the response body (array)
     var_dump(ResponseHelper::toArray($response));

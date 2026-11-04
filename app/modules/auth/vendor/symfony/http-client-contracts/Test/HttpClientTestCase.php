@@ -11,9 +11,6 @@
 
 namespace Symfony\Contracts\HttpClient\Test;
 
-use PHPUnit\Framework\Attributes\Group;
-use PHPUnit\Framework\Attributes\RequiresPhpExtension;
-use PHPUnit\Framework\Attributes\TestWith;
 use PHPUnit\Framework\TestCase;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -28,7 +25,7 @@ abstract class HttpClientTestCase extends TestCase
 {
     public static function setUpBeforeClass(): void
     {
-        if (!\function_exists('ob_gzhandler')) {
+        if (!function_exists('ob_gzhandler')) {
             static::markTestSkipped('The "ob_gzhandler" function is not available.');
         }
 
@@ -59,10 +56,12 @@ abstract class HttpClientTestCase extends TestCase
         $this->assertNull($info['error']);
         $this->assertSame(0, $info['redirect_count']);
         $this->assertSame('HTTP/1.1 200 OK', $info['response_headers'][0]);
+        $this->assertSame('Host: localhost:8057', $info['response_headers'][1]);
         $this->assertSame('http://localhost:8057/', $info['url']);
 
         $headers = $response->getHeaders();
 
+        $this->assertSame('localhost:8057', $headers['host'][0]);
         $this->assertSame(['application/json'], $headers['content-type']);
 
         $body = json_decode($response->getContent(), true);
@@ -94,9 +93,11 @@ abstract class HttpClientTestCase extends TestCase
 
         $info = $response->getInfo();
         $this->assertSame('HTTP/1.1 200 OK', $info['response_headers'][0]);
+        $this->assertSame('Host: localhost:8057', $info['response_headers'][1]);
 
         $headers = $response->getHeaders();
 
+        $this->assertSame('localhost:8057', $headers['host'][0]);
         $this->assertSame(['application/json'], $headers['content-type']);
         $this->assertTrue(0 < $headers['content-length'][0]);
 
@@ -144,7 +145,7 @@ abstract class HttpClientTestCase extends TestCase
 
         $this->assertSame($firstContent, $secondContent);
 
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => static fn () => false]);
+        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () { return false; }]);
         $response->getContent();
 
         $this->expectException(TransportExceptionInterface::class);
@@ -155,7 +156,7 @@ abstract class HttpClientTestCase extends TestCase
     {
         $client = $this->getHttpClient(__FUNCTION__);
 
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => static function () use (&$response) {
+        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () use (&$response) {
             $response->cancel();
 
             return true;
@@ -171,7 +172,7 @@ abstract class HttpClientTestCase extends TestCase
     {
         $client = $this->getHttpClient(__FUNCTION__);
 
-        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => static function () {
+        $response = $client->request('GET', 'http://localhost:8057', ['buffer' => function () {
             throw new \Exception('Boo.');
         }]);
 
@@ -235,13 +236,13 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getHeaders();
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface) {
+        } catch (ClientExceptionInterface $e) {
         }
 
         try {
             $response->getContent();
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface) {
+        } catch (ClientExceptionInterface $e) {
         }
 
         $this->assertSame(404, $response->getStatusCode());
@@ -255,7 +256,7 @@ abstract class HttpClientTestCase extends TestCase
                 $this->assertTrue($chunk->isFirst());
             }
             $this->fail(ClientExceptionInterface::class.' expected');
-        } catch (ClientExceptionInterface) {
+        } catch (ClientExceptionInterface $e) {
         }
     }
 
@@ -275,14 +276,14 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getStatusCode();
             $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
         try {
             $response->getStatusCode();
             $this->fail(TransportExceptionInterface::class.' still expected');
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
@@ -292,7 +293,7 @@ abstract class HttpClientTestCase extends TestCase
             foreach ($client->stream($response) as $r => $chunk) {
             }
             $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
@@ -322,7 +323,7 @@ abstract class HttpClientTestCase extends TestCase
         $this->expectException(TransportExceptionInterface::class);
 
         $response = $client->request('POST', 'http://localhost:8057/', [
-            'body' => static function () { yield []; },
+            'body' => function () { yield []; },
         ]);
 
         $response->getStatusCode();
@@ -344,15 +345,13 @@ abstract class HttpClientTestCase extends TestCase
      * @testWith [[]]
      *           [["Content-Length: 7"]]
      */
-    #[TestWith([[]])]
-    #[TestWith([['Content-Length: 7']])]
     public function testRedirects(array $headers = [])
     {
         $client = $this->getHttpClient(__FUNCTION__);
         $response = $client->request('POST', 'http://localhost:8057/301', [
             'auth_basic' => 'foo:bar',
             'headers' => $headers,
-            'body' => static function () {
+            'body' => function () {
                 yield 'foo=bar';
             },
         ]);
@@ -376,7 +375,9 @@ abstract class HttpClientTestCase extends TestCase
             'Content-Type: application/json',
         ];
 
-        $filteredHeaders = array_values(array_filter($response->getInfo('response_headers'), static fn ($h) => \in_array(substr($h, 0, 4), ['HTTP', 'Loca', 'Cont'], true) && 'Content-Encoding: gzip' !== $h));
+        $filteredHeaders = array_values(array_filter($response->getInfo('response_headers'), function ($h) {
+            return \in_array(substr($h, 0, 4), ['HTTP', 'Loca', 'Cont'], true) && 'Content-Encoding: gzip' !== $h;
+        }));
 
         $this->assertSame($expected, $filteredHeaders);
     }
@@ -418,7 +419,7 @@ abstract class HttpClientTestCase extends TestCase
         $client = $this->getHttpClient(__FUNCTION__);
 
         $response = $client->request('POST', 'http://localhost:8057/307', [
-            'body' => static function () {
+            'body' => function () {
                 yield 'foo=bar';
             },
             'max_redirects' => 0,
@@ -446,7 +447,7 @@ abstract class HttpClientTestCase extends TestCase
         try {
             $response->getHeaders();
             $this->fail(RedirectionExceptionInterface::class.' expected');
-        } catch (RedirectionExceptionInterface) {
+        } catch (RedirectionExceptionInterface $e) {
         }
 
         $this->assertSame(302, $response->getStatusCode());
@@ -462,7 +463,9 @@ abstract class HttpClientTestCase extends TestCase
             'Content-Type: application/json',
         ];
 
-        $filteredHeaders = array_values(array_filter($response->getInfo('response_headers'), static fn ($h) => \in_array(substr($h, 0, 4), ['HTTP', 'Loca', 'Cont'], true)));
+        $filteredHeaders = array_values(array_filter($response->getInfo('response_headers'), function ($h) {
+            return \in_array(substr($h, 0, 4), ['HTTP', 'Loca', 'Cont'], true);
+        }));
 
         $this->assertSame($expected, $filteredHeaders);
     }
@@ -544,7 +547,7 @@ abstract class HttpClientTestCase extends TestCase
         $response = $client->request('POST', 'http://localhost:8057/post', [
             'headers' => ['Content-Length' => 14],
             'body' => 'foo=0123456789',
-            'on_progress' => static function (...$state) use (&$steps) { $steps[] = $state; },
+            'on_progress' => function (...$state) use (&$steps) { $steps[] = $state; },
         ]);
 
         $body = $response->toArray();
@@ -604,7 +607,7 @@ abstract class HttpClientTestCase extends TestCase
         $client = $this->getHttpClient(__FUNCTION__);
 
         $response = $client->request('POST', 'http://localhost:8057/post', [
-            'body' => static function () {
+            'body' => function () {
                 yield 'foo';
                 yield '';
                 yield '=';
@@ -655,7 +658,7 @@ abstract class HttpClientTestCase extends TestCase
     {
         $client = $this->getHttpClient(__FUNCTION__);
         $response = $client->request('GET', 'http://localhost:8057/timeout-body', [
-            'on_progress' => static function ($dlNow) {
+            'on_progress' => function ($dlNow) {
                 if (0 < $dlNow) {
                     throw new \Exception('Aborting the request.');
                 }
@@ -679,7 +682,7 @@ abstract class HttpClientTestCase extends TestCase
     {
         $client = $this->getHttpClient(__FUNCTION__);
         $response = $client->request('GET', 'http://localhost:8057/timeout-body', [
-            'on_progress' => static function ($dlNow) {
+            'on_progress' => function ($dlNow) {
                 if (0 < $dlNow) {
                     throw new \Error('BUG.');
                 }
@@ -791,10 +794,6 @@ abstract class HttpClientTestCase extends TestCase
         }
     }
 
-    /**
-     * @group transient-on-windows
-     */
-    #[Group('transient-on-windows')]
     public function testTimeoutOnStream()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -827,10 +826,6 @@ abstract class HttpClientTestCase extends TestCase
         $this->fail('The response should have completed');
     }
 
-    /**
-     * @group transient-on-windows
-     */
-    #[Group('transient-on-windows')]
     public function testUncheckedTimeoutThrows()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -843,10 +838,6 @@ abstract class HttpClientTestCase extends TestCase
         }
     }
 
-    /**
-     * @group transient-on-windows
-     */
-    #[Group('transient-on-windows')]
     public function testTimeoutWithActiveConcurrentStream()
     {
         $p1 = TestHttpServer::start(8067);
@@ -890,7 +881,7 @@ abstract class HttpClientTestCase extends TestCase
                 try {
                     $response->getContent();
                     $this->fail(TransportExceptionInterface::class.' expected');
-                } catch (TransportExceptionInterface) {
+                } catch (TransportExceptionInterface $e) {
                 }
             }
             $responses = [];
@@ -923,7 +914,7 @@ abstract class HttpClientTestCase extends TestCase
                 try {
                     unset($response);
                     $this->fail(TransportExceptionInterface::class.' expected');
-                } catch (TransportExceptionInterface) {
+                } catch (TransportExceptionInterface $e) {
                 }
             }
 
@@ -1034,7 +1025,6 @@ abstract class HttpClientTestCase extends TestCase
     /**
      * @requires extension zlib
      */
-    #[RequiresPhpExtension('zlib')]
     public function testAutoEncodingRequest()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -1108,7 +1098,6 @@ abstract class HttpClientTestCase extends TestCase
     /**
      * @requires extension zlib
      */
-    #[RequiresPhpExtension('zlib')]
     public function testUserlandEncodingRequest()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -1131,7 +1120,6 @@ abstract class HttpClientTestCase extends TestCase
     /**
      * @requires extension zlib
      */
-    #[RequiresPhpExtension('zlib')]
     public function testGzipBroken()
     {
         $client = $this->getHttpClient(__FUNCTION__);
@@ -1152,7 +1140,7 @@ abstract class HttpClientTestCase extends TestCase
 
         try {
             $response->getContent();
-        } catch (TransportExceptionInterface) {
+        } catch (TransportExceptionInterface $e) {
             $this->addToAssertionCount(1);
         }
 
@@ -1161,48 +1149,17 @@ abstract class HttpClientTestCase extends TestCase
         $this->assertLessThan(10, $duration);
     }
 
-    public function testMaxConnectDurationInfo()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-        $response = $client->request('GET', 'http://localhost:8057/', [
-            'max_connect_duration' => 10.0,
-        ]);
-
-        $this->assertSame(10.0, $response->getInfo('max_connect_duration'));
-        $this->assertSame(200, $response->getStatusCode());
-    }
-
-    public function testMaxConnectDuration()
-    {
-        $client = $this->getHttpClient(__FUNCTION__);
-
-        $response = $client->request('GET', 'http://10.255.255.1/', [
-            'max_connect_duration' => 0.1,
-            'timeout' => 10,
-        ]);
-
-        $start = microtime(true);
-
-        try {
-            $response->getHeaders();
-            $this->fail(TransportExceptionInterface::class.' expected');
-        } catch (TransportExceptionInterface) {
-            $this->addToAssertionCount(1);
-        }
-
-        $duration = microtime(true) - $start;
-
-        $this->assertLessThan(2, $duration, 'Should timeout much faster than the 10s timeout option');
-        $this->assertGreaterThan(0.05, $duration, 'Should take at least some time before timing out');
-    }
-
     public function testWithOptions()
     {
         $client = $this->getHttpClient(__FUNCTION__);
+        if (!method_exists($client, 'withOptions')) {
+            $this->markTestSkipped(sprintf('Not implementing "%s::withOptions()" is deprecated.', get_debug_type($client)));
+        }
+
         $client2 = $client->withOptions(['base_uri' => 'http://localhost:8057/']);
 
         $this->assertNotSame($client, $client2);
-        $this->assertSame($client::class, $client2::class);
+        $this->assertSame(\get_class($client), \get_class($client2));
 
         $response = $client2->request('GET', '/');
         $this->assertSame(200, $response->getStatusCode());

@@ -19,3 +19,5 @@ Router::post('/auth/editarConta', [UsuarioController::class, 'editarConta']);
 
 Router::get('/auth/desativarConta', [UsuarioController::class, 'showDesativarConta']);
 Router::post('/auth/desativarConta', [UsuarioController::class, 'desativarConta']);
+
+Router::get('/auth/testeEmail', [UsuarioController::class, 'showTesteEmail']);

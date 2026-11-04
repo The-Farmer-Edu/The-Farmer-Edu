@@ -70,6 +70,10 @@ class UsuarioController
         $this->view('loginAluno');
     }
 
+    public function showTesteEmail(): void
+    {
+        $this->view('testeEmail');
+    }
     //só deixa entrar quem é aluno
     public function entrarAluno(): void
     {

@@ -306,7 +306,7 @@ button::after {
 <body>
     <header>
         <div id="esquerda_cabecalho">
-            <img src="/The-Farmer-Edu-Tarde-Setup/public/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
+            <img src="/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
             <p id="nome_cabecalho">The Farmer Edu</p>
         </div>
         
@@ -320,12 +320,6 @@ button::after {
         <h1>Desafio de Lógica</h1>
         <p>Objetivo: Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado</p>
     </div>
-<!-- 
-    <img src="file?type=img&file=agropecuaria-capa-1.png" alt="Logo" id="logo_fundo"> -->
-
-
-
-    <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
     <h1 id="titulo_codigo">Digite seu Código abaixo:</h1>
     <textarea id="codigo_aluno" placeholder="Escreva seu código PHP aqui..."></textarea>
    

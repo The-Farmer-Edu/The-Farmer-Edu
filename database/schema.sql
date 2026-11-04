@@ -249,13 +249,13 @@ CREATE TABLE xp_logs (
   id_aluno       INT UNSIGNED  NOT NULL,
   quantidade     INT           NOT NULL,
   motivo         VARCHAR(255)  NOT NULL,
-  id_submissao   INT UNSIGNED  NULL,
+  id_nota   INT UNSIGNED  NULL,
   data           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_xplogs_aluno
     FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_xplogs_submissao
-    FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)
+    FOREIGN KEY (id_nota) REFERENCES submissoes(id_nota)
     ON DELETE SET NULL ON UPDATE CASCADE,
   INDEX idx_xplogs_aluno (id_aluno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

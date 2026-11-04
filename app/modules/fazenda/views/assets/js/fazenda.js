@@ -222,3 +222,12 @@
       await concluirMontagemDaFazenda();   // seção 33: primeiro quadro, fim da tela de carregamento e invasões
     }
     iniciarFarmEdu().catch(erro => carregamento.falhar(erro));
+    
+    // Botão "Sair da fazenda": salva o progresso e volta ao site
+    const DESTINO_AO_SAIR = 'home';   // TROQUE pela página ou rota de destino
+
+    selecionar('#botao-sair-da-fazenda').addEventListener('click', () => {
+      if (!confirm('Sair da fazenda? Seu progresso será salvo.')) return;
+      try { if (typeof salvarProgresso === 'function') salvarProgresso(); } catch (erro) { console.warn('Não foi possível salvar ao sair:', erro); }
+      location.href = DESTINO_AO_SAIR;
+    });

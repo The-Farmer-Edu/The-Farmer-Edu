@@ -31,7 +31,8 @@
 * { 
     margin: 0; 
     padding: 0; 
-    box-sizing: border-box; }
+    box-sizing: border-box; 
+}
 
 html, body { height: 100%; }
 body {
@@ -310,153 +311,51 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: grayscale(1); }
     text-align: left;
     pointer-events: auto;
 }
-.balao.fixo:not(.on) { 
-    pointer-events: none; 
-}
-.balao-topo { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    gap: 10px; 
-    margin-bottom: 8px; 
-}
-.balao-topo strong { 
-    font-family: var(--fonte-ui); 
-    font-size: 1rem; 
-    color: var(--verde-primario); 
-}
+.balao.fixo:not(.on) { pointer-events: none; }
+.balao-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.balao-topo strong { font-family: var(--fonte-ui); font-size: 1rem; color: var(--verde-primario); }
 .balao-fechar {
-    flex: none; 
-    width: 28px; 
-    height: 28px; 
-    border-radius: 50%; 
-    border: 1px solid var(--borda);
-    background: var(--item-inativo); 
-    color: var(--titulo); 
-    font-size: 0.8rem; 
-    line-height: 1;
+    flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--borda);
+    background: var(--item-inativo); color: var(--titulo); font-size: 0.8rem; line-height: 1;
 }
-.balao-fechar:hover { 
-    background: var(--menu-fundo);
-}
-.balao-status { 
-    font-size: 0.78rem; 
-    color: var(--texto-sec); 
-    margin-bottom: 6px; 
-}
-.balao-texto { 
-    margin-bottom: 8px; 
-}
-.balao-sub { 
-    font-family: var(--fonte-ui); 
-    font-weight: 700; 
-    font-size: 0.85rem; 
-    margin-bottom: 4px; 
-}
-.balao-lista { 
-    margin: 0 0 4px 18px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 4px; 
-}
+.balao-fechar:hover { background: var(--menu-fundo); }
+.balao-status { font-size: 0.78rem; color: var(--texto-sec); margin-bottom: 6px; }
+.balao-texto { margin-bottom: 8px; }
+.balao-sub { font-family: var(--fonte-ui); font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+.balao-lista { margin: 0 0 4px 18px; display: flex; flex-direction: column; gap: 4px; }
 
 /* Ajuda da Sophia (seções do balão) */
-.balao-sec { 
-    margin-bottom: 10px; 
-}
-.balao-sec h4 { 
-    font-family: var(--fonte-ui); 
-    font-size: 0.85rem; 
-    margin-bottom: 4px; 
-}
-.balao-sec.ok h4 { 
-    color: var(--verde-primario);
-}
-.balao-sec.falta h4 { 
-    color: #C25B00; 
-}
-.balao-sec.corrige h4 { 
-    color: var(--titulo); 
-}
+.balao-sec { margin-bottom: 10px; }
+.balao-sec h4 { font-family: var(--fonte-ui); font-size: 0.85rem; margin-bottom: 4px; }
+.balao-sec.ok h4 { color: var(--verde-primario); }
+.balao-sec.falta h4 { color: #C25B00; }
+.balao-sec.corrige h4 { color: var(--titulo); }
 
 /* Campo de resposta no console */
-.con-corpo .voce { 
-    color: var(--branco); 
+.con-corpo .voce { color: var(--branco); }
+.con-input { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-top: 1px solid var(--linha); }
+.con-input.ativo { box-shadow: inset 0 0 0 2px var(--verde-botao); }
+.con-prompt { color: var(--verde-claro); font-family: var(--fonte-codigo); }
+.con-input input {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+    color: var(--texto-claro); font: 13px var(--fonte-codigo);
 }
-.con-input { 
-    flex: none; 
-    display: flex; 
-    align-items: center; 
-    gap: 8px; 
-    padding: 6px 14px; 
-    border-top: 1px solid var(--linha); 
-}
-.con-input.ativo { 
-    box-shadow: inset 0 0 0 2px var(--verde-botao); 
-}
-.con-prompt { 
-    color: var(--verde-claro); 
-    font-family: var(--fonte-codigo); 
-}
-.con-input input { 
-    flex: 1; min-width: 0; 
-    background: transparent; 
-    border: 0; 
-    outline: 0; 
-    color: var(--texto-claro); 
-    font: 13px var(--fonte-codigo); 
-}
-.con-input input:disabled { 
-    opacity: 0.5; 
-    cursor: not-allowed; 
-}
+.con-input input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /*Modal-toast*/
 .modal-overlay {
-    position: fixed; 
-    inset: 0; 
-    background: rgba(0, 0, 0, 0.65); 
-    display: flex; 
-    justify-content: center; 
-    align-items: center;
-    padding: 16px; 
-    opacity: 0; 
-    visibility: hidden; 
-    transition: opacity 0.25s, visibility 0.25s; z-index: 100;
+    position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); display: flex; justify-content: center; align-items: center;
+    padding: 16px; opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0.25s; z-index: 100;
 }
-.modal-overlay.active { 
-    opacity: 1; 
-    visibility: visible; 
-}
+.modal-overlay.active { opacity: 1; visibility: visible; }
 .modal-card {
-    background: var(--painel); 
-    width: 100%; 
-    max-width: 460px; 
-    max-height: 100%; 
-    overflow: auto; 
-    padding: 28px;
-    border-radius: var(--raio-card); 
-    box-shadow: var(--sombra-card); 
-    transform: translateY(-14px); 
-    transition: transform 0.25s;
+    background: var(--painel); width: 100%; max-width: 460px; max-height: 100%; overflow: auto; padding: 28px;
+    border-radius: var(--raio-card); box-shadow: var(--sombra-card); transform: translateY(-14px); transition: transform 0.25s;
 }
-.modal-overlay.active .modal-card { 
-    transform: none; 
-}
-.modal-card h3 { 
-    font-size: 1.1rem; 
-    padding: 8px 20px; 
-    margin-bottom: 18px; 
-}
-.modal-card p { 
-    color: var(--texto-mudo); 
-    margin-bottom: 14px; 
-}
-.modal-card .modal-aviso { 
-    font-size: 0.85rem; 
-    color: var(--laranja); 
-    margin-bottom: 20px; 
-}
+.modal-overlay.active .modal-card { transform: none; }
+.modal-card h3 { font-size: 1.1rem; padding: 8px 20px; margin-bottom: 18px; }
+.modal-card p { color: var(--texto-mudo); margin-bottom: 14px; }
+.modal-card .modal-aviso { font-size: 0.85rem; color: var(--laranja); margin-bottom: 20px; }
 .resumo { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .modal-acoes { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
 .toast {

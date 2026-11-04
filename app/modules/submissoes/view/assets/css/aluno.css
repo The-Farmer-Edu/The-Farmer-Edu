@@ -89,7 +89,7 @@ header .usuario-avatar {
     opacity: 0;
     pointer-events: none;
     transform: translateY(-10px);
-    transition:  0.2s ease,  0.2s ease;
+    transition: opacity 0.2s ease, transform 0.2s ease;
     z-index: 10;
 }
 
@@ -130,7 +130,7 @@ header .usuario-avatar {
     color: var(--Titulo);
     font-weight: 600;
     cursor: pointer;
-    transition:  0.2s ease,  0.1s ease;
+    transition: background 0.2s ease, transform 0.1s ease;
 }
 
 .menu-coluna-direita .menu-item {
@@ -208,7 +208,7 @@ main {
     align-items: center;
     gap: 8px;
     color: var(--Texto);
-    transition:  0.2s,  0.1s;
+    transition: background 0.2s, transform 0.1s;
     width: fit-content;
 }
 
@@ -284,7 +284,7 @@ aside {
     border-radius: 12px;
     cursor: pointer;
     box-shadow: 0 4px 12px var(--Sombra);
-    transition: 0.2s, 0.1s;
+    transition: background 0.2s, transform 0.1s;
     margin-bottom: 25px;
 }
 
@@ -437,7 +437,7 @@ aside {
     font-weight: bold;
     cursor: pointer;
     color: var(--Texto);
-    transition: 0.2s;
+    transition: background 0.2s;
 }
 
 .option-box button:hover {
@@ -473,7 +473,7 @@ header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: 
     .menu-usuario { right: 12px; }
 
     main { grid-template-columns: 1fr; gap: 16px; width: calc(100% - 24px); margin: 14px auto; }
-    aside { order: -1; }                     
+    aside { order: -1; }
     .card_trabalhos { width: 100%; padding: 20px 16px; border-radius: 20px; }
     .card_trabalhos p { margin-bottom: 18px; }
     .btn-comecar-principal { min-height: 52px; padding: 12px; font-size: 1.1rem; margin-bottom: 18px; }

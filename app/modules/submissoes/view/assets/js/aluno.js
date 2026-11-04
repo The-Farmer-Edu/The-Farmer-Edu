@@ -1,32 +1,44 @@
 function renderizarAtividade() {
     const A = window.FarmAtividade;
     if (!A) return;
-    document.getElementById('atvTitulo').textContent = A.titulo;
-    document.getElementById('atvDescricao').textContent = A.descricao;
-    const lista = document.getElementById('atvRequisitos');
-    lista.innerHTML = '';
-    A.requisitos.forEach(r => {
-        const li = document.createElement('li');
-        li.textContent = r;
-        lista.appendChild(li);
-    });
-    document.getElementById('atvLinguagem').textContent = A.linguagem.nome;
-    document.getElementById('atvNota').textContent = `de 0 a ${A.notaMax} (mínima para aprovação: ${A.notaMin})`;
-    document.getElementById('atvInputId').value = A.id;
-    const cores = { HTML5: 'badge-html', CSS3: 'badge-css', JS: 'badge-js' };
-    const box = document.getElementById('atvBadges');
-    box.innerHTML = '';
-    A.linguagem.badges.forEach(b => {
-        const s = document.createElement('span');
-        s.className = 'badge-padrao ' + (cores[b] || 'badge-outra');
-        s.textContent = b;
-        box.appendChild(s);
-    });
+    const el = id => document.getElementById(id);
+    const escrever = (id, valor) => { const e = el(id); if (e) e.textContent = valor; };
+
+    escrever('atvTitulo', A.titulo);
+    escrever('atvDescricao', A.descricao);
+    escrever('atvLinguagem', A.linguagem.nome);
+    escrever('atvNota', `de 0 a ${A.notaMax} (mínima para aprovação: ${A.notaMin})`);
+
+    const lista = el('atvRequisitos');
+    if (lista) {
+        lista.innerHTML = '';
+        A.requisitos.forEach(r => {
+            const li = document.createElement('li');
+            li.textContent = r;
+            lista.appendChild(li);
+        });
+    }
+
+    const inputId = el('atvInputId');
+    if (inputId) inputId.value = A.id;
+
+    const box = el('atvBadges');
+    if (box) {
+        const cores = { HTML5: 'badge-html', CSS3: 'badge-css', JS: 'badge-js' };
+        box.innerHTML = '';
+        A.linguagem.badges.forEach(b => {
+            const sp = document.createElement('span');
+            sp.className = 'badge-padrao ' + (cores[b] || 'badge-outra');
+            sp.textContent = b;
+            box.appendChild(sp);
+        });
+    }
 }
 renderizarAtividade();
 
 /*  Status da entrega, prazo e botão principal  */
-const CHAVE_ENTREGA = 'farmedu:entrega';
+// A entrega é guardada por atividade
+const CHAVE_ENTREGA = 'farmedu:entrega:' + window.FarmAtividade.chave;
 const status = document.querySelector('.status');
 const texto = document.getElementById('texto');
 const botaoComecar = document.getElementById('comecar');
@@ -72,13 +84,13 @@ function atualizarStatus() {
         texto.textContent = 'Escreva seu código direto na plataforma clicando em "Começar".';
     }
 
-    // Linha discreta com o limite de entrega
+    // Limite de entrega
     if (A.limite) {
         prazoEl.hidden = false;
         prazoEl.classList.toggle('encerrado', encerrado);
         prazoEl.textContent = encerrado
-            ? '⏰ Prazo encerrado em ' + A.limiteTexto()
-            : '⏰ Entrega até ' + A.limiteTexto();
+            ? 'Prazo encerrado em ' + A.limiteTexto()
+            : 'Prazo de entrega até ' + A.limiteTexto();
     } else {
         prazoEl.hidden = true;
     }
@@ -90,23 +102,6 @@ window.addEventListener('storage', atualizarStatus);
 setInterval(atualizarStatus, 30000); // vira "Visualizar" sozinho quando o prazo vence
 
 document.getElementById('btnVoltar').addEventListener('click', () => history.back());
-
-/*  Mascote  */
-const balao = document.getElementById('balao');
-let timer;
-
-document.getElementById('btnGalinha').addEventListener('click', () => {
-    const frases = [
-        'Cocoricó!',
-        'Dica: um passo de cada vez 🌱',
-        'Errou? Faz parte, tenta de novo!',
-        'Clique em "' + botaoComecar.textContent + '" 👆'
-    ];
-    balao.textContent = frases[Math.floor(Math.random() * frases.length)];
-    balao.classList.add('on');
-    clearTimeout(timer);
-    timer = setTimeout(() => balao.classList.remove('on'), 2800);
-});
 
 /*  Menus do cabeçalho */
 const botaoIconi = document.getElementById('botaoIconi');

@@ -26,10 +26,10 @@ const $ = id => document.getElementById(id);
 const ed = $('ed'), hl = $('hl'), gutter = $('gutter'), pv = $('pv'), pvPy = $('pvPy'), con = $('console');
 const ide = $('ide');
 
-const CHAVE = `farmedu:codigo:${A.id}:${L.id}`;
-const CHAVE_ENTREGA = 'farmedu:entrega';
-const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${A.id}`;
-const CHAVE_AVALIACAO = `farmedu:avaliacao:${A.id}`;
+const CHAVE = `farmedu:codigo:${A.chave}:${L.id}`;
+const CHAVE_ENTREGA = `farmedu:entrega:${A.chave}`;
+const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${A.chave}`;
+const CHAVE_AVALIACAO = `farmedu:avaliacao:${A.chave}`;
 
 let dados;
 try { dados = { ...L.inicial, ...JSON.parse(localStorage.getItem(CHAVE)) }; } catch (e) { dados = { ...L.inicial }; }
@@ -38,19 +38,16 @@ try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) {}
 let cancelamentos = 0;
 try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (e) {}
 
-// Ajuda da Sophia: analisando = esperando a IA; aguardando = esperando o aluno digitar sim/não no console; dados = resposta da IA
+// Ajuda da Sophia
 const ajuda = { analisando: false, aguardando: false, dados: null };
-// Erros de execução da página (capturados do iframe) enviados junto para a IA
 let errosConsole = [];
-
 let atual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
 let executadoAtual = false;
 let executando = false;
 let enviando = false;
-let avaliacaoSeq = 0;  
+let avaliacaoSeq = 0;
 const usos = { executar: 0, sophia: 0 };
-
 const mobile = () => window.matchMedia('(max-width: 780px)').matches;
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const esperar = ms => new Promise(r => setTimeout(r, ms));
@@ -147,7 +144,7 @@ function sophiaFala(msg, ms = 5000) {
     b.textContent = msg;
     b.classList.add('on');
     clearTimeout(sophiaFala.t);
-    if (ms) sophiaFala.t = setTimeout(() => b.classList.remove('on'), ms);  
+    if (ms) sophiaFala.t = setTimeout(() => b.classList.remove('on'), ms);
 }
 
 function fecharBalao() {
@@ -199,7 +196,7 @@ function sophiaMostrarAjuda(f, temProblema) {
         b.appendChild(p);
     }
 
-    const errosExec = errosConsole.map(m => 'Erro ao executar: ' + m);
+    const errosExec = errosConsole.map(m => 'Ao executar: ' + m);
     secaoAjuda(b, '✔ O que você já fez', f.feitos, 'ok');
     secaoAjuda(b, '✖ O que ainda falta', f.faltando, 'falta');
     secaoAjuda(b, temProblema ? '🔧 Como corrigir' : '💡 Dica para melhorar', errosExec.concat(f.melhorias), 'corrige');
@@ -295,7 +292,18 @@ async function rodarTerminal() {
         pvPy.textContent = `$ ${arq.nome}\n` + (r.saida || r.erro || '(sem saída)');
         escreverConsole(`Judge0: ${r.status}`, r.status === 'Accepted' ? 'info' : 'error');
         if (r.saida) escreverConsole('Saída: ' + r.saida.trim(), 'log');
+        // Se a atividade tiver "saidaEsperada", compara com o que o código imprimiu
+        if (typeof A.saidaEsperada === 'string' && r.status === 'Accepted') {
+            const esperado = A.saidaEsperada.trim();
+            const ok = r.saida.trim() === esperado;
+            escreverConsole(ok ? '✔ Saída confere com o esperado'
+                               : '✖ Saída diferente. Esperado: ' + esperado, ok ? 'info' : 'error');
+            // Saída errada conta como problema: a Sophia oferece ajuda e a IA recebe o motivo
+            if (!ok) errosConsole.push(`A saída foi "${r.saida.trim()}", mas o esperado é "${esperado}".`);
+        }
         if (r.erro) escreverConsole(r.erro, 'error');
+        // Erro de compilação/execução do Judge0 também vai para a Sophia e para a IA
+        if (r.status !== 'Accepted' || r.erro) errosConsole.push((r.erro || r.status).trim().slice(0, 300));
     } catch (e) {
         pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.`;
         escreverConsole('Falha ao falar com o Judge0: ' + e.message, 'error');
@@ -352,7 +360,7 @@ function atualizarEntrega() {
     const encerrado = A.prazoExcedido();
     const bloqueado = entregue && cancelamentos >= LIMITE_CANCELAMENTOS;
 
-    // Entregue ou com prazo excedido: o editor vira somente leitura 
+    // Entregue ou com prazo excedido: o editor vira somente leitura
     ed.readOnly = entregue || encerrado;
 
     $('chipEntrega').hidden = !entregue;
@@ -468,21 +476,38 @@ const FEEDBACK = {
         };
     },
 
-    /*Resposta de exemplo (com problema, para testar o fluxo da ajuda)*/
-    exemplo: {
-        sucesso: true,
-        compilacao: { status: 'Código Aceito!', saida_terminal: '' },
-        avaliacao: {
-            nota_atribuida: 5,
-            status_avaliacao: 'reprovado',
-            feedback_geral: 'Você está no caminho certo, mas faltam alguns itens.',
-            pontos_positivos: ['Criou o título "Minha Fazenda" e o parágrafo.', 'Adicionou o botão com id "btn".'],
-            o_que_falta: ['O texto do botão não muda para "Cocoricó!" ao clicar.', 'Nenhuma mensagem é escrita no console.'],
-            pontos_melhoria: [
-                'No JS, use document.getElementById("btn") e addEventListener("click", ...).',
-                'Dentro do clique, use btn.textContent = "Cocoricó!" e console.log("Cocoricó!").'
-            ]
+    /*Resposta de exemplo (usada só se a IA falhar)*/
+    exemplo() {
+        const req = A.requisitos || [];
+        const saidaOk = modo === 'terminal' && typeof A.saidaEsperada === 'string'
+            && executadoAtual && errosConsole.length === 0;
+        if (saidaOk) {
+            return {
+                sucesso: true,
+                compilacao: { status: 'Accepted', saida_terminal: A.saidaEsperada },
+                avaliacao: {
+                    nota_atribuida: A.notaMax,
+                    status_avaliacao: 'aprovado',
+                    feedback_geral: 'A saída do seu código confere com o esperado.',
+                    pontos_positivos: req.map(r => 'Você cumpriu: ' + r),
+                    o_que_falta: [],
+                    pontos_melhoria: []
+                }
+            };
         }
+        const metade = Math.ceil(req.length / 2);
+        return {
+            sucesso: true,
+            compilacao: { status: 'Código Aceito!', saida_terminal: '' },
+            avaliacao: {
+                nota_atribuida: 5,
+                status_avaliacao: 'reprovado',
+                feedback_geral: 'Você está no caminho certo, mas faltam alguns itens.',
+                pontos_positivos: req.slice(0, metade).map(r => 'Você já trabalhou neste item: ' + r),
+                o_que_falta: req.slice(metade).map(r => 'Ainda falta: ' + r),
+                pontos_melhoria: ['Releia os itens que faltam, execute o código e confira o resultado no console.']
+            }
+        };
     }
 };
 
@@ -520,7 +545,7 @@ async function consultarIAcomFallback(extra) {
         return await consultarIA(extra);
     } catch (erro) {
         console.warn('IA indisponível:', erro);
-        if (FEEDBACK.usarExemploSeFalhar) return { ...FEEDBACK.interpretar(FEEDBACK.exemplo), exemplo: true };
+        if (FEEDBACK.usarExemploSeFalhar) return { ...FEEDBACK.interpretar(FEEDBACK.exemplo()), exemplo: true };
         throw erro;
     }
 }
@@ -574,7 +599,7 @@ async function enviarParaAvaliacao() {
     enviando = true;
     try {
         const r = await consultarIAcomFallback({ erros_execucao: errosConsole });
-        if (seq !== avaliacaoSeq) return;  
+        if (seq !== avaliacaoSeq) return;
         try {
             localStorage.setItem(CHAVE_AVALIACAO, JSON.stringify({
                 nota: r.nota, status: r.status, feedback: r.feedback, melhorias: r.melhorias,
@@ -595,7 +620,7 @@ function salvar() {
 ed.addEventListener('input', () => {
     dados[atual] = ed.value;
     executadoAtual = false;
-    if (resultadoAberto) $('pvStale').hidden = false;  
+    if (resultadoAberto) $('pvStale').hidden = false;
     atualizarEditor();
     posicao();
     salvar();

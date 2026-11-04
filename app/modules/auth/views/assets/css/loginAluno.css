@@ -161,13 +161,29 @@ body {
     image-rendering: auto;
 }
 
-.nome-marca {
+#nome-marca {
     margin-top: 8px;
-    font-size: 30px;
+    font-size: 32px;
     font-weight: 700;
     color: #fff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.55);
     letter-spacing: 0.3px;
+    text-shadow:
+        -1px -1px 0 rgba(0, 0, 0, 0.6),
+         1px -1px 0 rgba(0, 0, 0, 0.6),
+        -1px  1px 0 rgba(0, 0, 0, 0.6),
+         1px  1px 0 rgba(0, 0, 0, 0.6),
+         0 3px 5px rgba(0, 0, 0, 0.5);
+}
+
+#subtitulo {
+    color: #fff;
+    font-size: 25px;
+    text-shadow:
+        -1px -1px 0 rgba(0, 0, 0, 0.6),
+         1px -1px 0 rgba(0, 0, 0, 0.6),
+        -1px  1px 0 rgba(0, 0, 0, 0.6),
+         1px  1px 0 rgba(0, 0, 0, 0.6),
+         0 3px 5px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 760px) {

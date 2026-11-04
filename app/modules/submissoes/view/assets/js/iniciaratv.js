@@ -643,6 +643,37 @@ ed.addEventListener('keydown', e => {
     }
 });
 
+/*Mobile: editor expandido ao digitar (o X fecha e volta ao normal)*/
+const btnInicio = $('btnInicio');
+
+function expandirEditor() {
+    if (mobile() && !ed.readOnly) document.body.classList.add('editor-expandido');
+}
+
+function recolherEditor() {
+    document.body.classList.remove('editor-expandido');
+    ed.blur();
+    atualizarInicio();
+}
+
+/*Mobile: botão para voltar ao início da linha (aparece quando o texto rolou para o lado)*/
+function atualizarInicio() {
+    btnInicio.hidden = !(document.body.classList.contains('editor-expandido') && ed.scrollLeft > 24);
+}
+
+ed.addEventListener('focus', expandirEditor);
+ed.addEventListener('scroll', atualizarInicio, { passive: true });
+ed.addEventListener('input', atualizarInicio);
+$('fecharEditor').addEventListener('click', recolherEditor);
+btnInicio.addEventListener('click', () => {
+    ed.scrollTo({ left: 0, behavior: 'smooth' });
+    ed.focus({ preventScroll: true });
+});
+window.addEventListener('resize', () => {
+    if (!mobile()) document.body.classList.remove('editor-expandido');
+    atualizarInicio();
+});
+
 document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModalEntrega(); });
 document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => setAba(b.dataset.aba)));
 $('btnLimpar').onclick = () => { con.innerHTML = ''; };

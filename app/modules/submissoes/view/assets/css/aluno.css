@@ -473,7 +473,6 @@ header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: 
     .menu-usuario { right: 12px; }
 
     main { grid-template-columns: 1fr; gap: 16px; width: calc(100% - 24px); margin: 14px auto; }
-    aside { order: -1; }
     .card_trabalhos { width: 100%; padding: 20px 16px; border-radius: 20px; }
     .card_trabalhos p { margin-bottom: 18px; }
     .btn-comecar-principal { min-height: 52px; padding: 12px; font-size: 1.1rem; margin-bottom: 18px; }
@@ -489,4 +488,15 @@ header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: 
     .mascote-container { padding: 0 12px 12px; }
     .mascote-container img { width: 96px; height: 96px; }
     .modal-options { grid-template-columns: 1fr; }
+    
+    aside { order: 0; }
+    .card-principal { display: contents; }
+    .card-principal > article:first-child {
+        order: -2;
+        background: var(--Branco);
+        box-shadow: 0 4px 20px var(--Sombra);
+        padding: 22px 18px;
+        border-radius: 20px;
+    }
+    .card-principal > article:last-child { order: 2; }
 }

@@ -62,6 +62,8 @@
         </aside>
 
         <section class="card editor" id="painelCodigo">
+            <!-- Celular: X para sair do editor expandido -->
+            <button type="button" class="btn-fechar-editor" id="fecharEditor" aria-label="Fechar editor expandido">✕</button>
             <div class="editor-wrap">
                 <pre class="gutter" id="gutter" aria-hidden="true"></pre>
                 <div class="code">
@@ -69,6 +71,8 @@
                     <textarea id="ed" spellcheck="false" wrap="off" aria-label="Editor de código"></textarea>
                 </div>
             </div>
+            <!-- Celular: volta ao início da linha quando o texto rolou para o lado -->
+            <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤ Início</button>
             <div class="status">
                 <span id="stLang">HTML</span>
                 <span id="stPos">Ln 1, Col 1</span>

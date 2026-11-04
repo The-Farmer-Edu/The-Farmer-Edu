@@ -224,6 +224,10 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: grayscale(1); }
 #ed:read-only { cursor: not-allowed; }
 #ed::selection { background: rgba(52, 199, 89, 0.35); }
 
+/* Botões do editor expandido: só aparecem no celular (veja o bloco "Mobile: editor expandido") */
+.btn-fechar-editor { display: none; }
+.btn-inicio { display: none; }
+
 .c { color: #8A9A94; font-style: italic; }
 .s { color: var(--laranja); }
 .k, .t { color: var(--verde-botao); }
@@ -435,4 +439,109 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: grayscale(1); }
     .toast { top: 70px; }
     .modal-card { padding: 22px; }
     .modal-acoes .btn { flex: 1; }
+}
+
+/*  Mobile: editor expandido ao digitar  */
+@media (max-width: 780px) {
+    body.editor-expandido { padding-bottom: 0; }
+
+    /* o editor ocupa a tela toda */
+    body.editor-expandido .editor {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* some o que atrapalha enquanto digita */
+    body.editor-expandido .acoes,
+    body.editor-expandido .sophia,
+    body.editor-expandido .abas-mobile { display: none; }
+
+    /* X para voltar ao tamanho normal */
+    body.editor-expandido .btn-fechar-editor {
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        align-self: flex-end;
+        width: 36px;
+        height: 36px;
+        margin: 6px 8px 2px auto;
+        background: var(--item-inativo);
+        color: var(--titulo);
+        border: 1px solid var(--borda);
+        border-radius: 50%;
+        font-size: 1rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+    body.editor-expandido .btn-fechar-editor:active { transform: scale(0.95); }
+
+    /* mais espaço para o código */
+    body.editor-expandido .gutter,
+    body.editor-expandido #hl,
+    body.editor-expandido #ed {
+        font-size: 12px;
+        line-height: 20px;
+    }
+    body.editor-expandido .gutter {
+        width: 28px;
+        padding: 12px 6px 12px 0;
+        font-size: 11px;
+    }
+    /* folga no fim da linha (igual no #hl e no #ed, para não desalinhar) */
+    body.editor-expandido #hl,
+    body.editor-expandido #ed {
+        padding: 12px 56px 40px 8px;
+    }
+    body.editor-expandido .status {
+        padding: 6px 12px;
+        font-size: 0.72rem;
+    }
+
+    /* rolagem pensada para toque */
+    body.editor-expandido #ed {
+        overflow: auto;
+        overscroll-behavior: contain;
+        touch-action: pan-x pan-y;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: var(--verde-botao) transparent;
+    }
+    body.editor-expandido #ed::-webkit-scrollbar { width: 6px; height: 6px; }
+    body.editor-expandido #ed::-webkit-scrollbar-track { background: transparent; }
+    body.editor-expandido #ed::-webkit-scrollbar-thumb {
+        background: var(--verde-botao);
+        border-radius: 6px;
+    }
+
+    /* botão "Início" flutuante */
+    body.editor-expandido .btn-inicio {
+        display: flex;
+        align-items: center;
+        position: fixed;
+        left: 12px;
+        bottom: 46px;
+        z-index: 70;
+        min-height: 40px;
+        padding: 0 16px;
+        background: var(--verde-botao);
+        color: var(--preto);
+        border: none;
+        border-radius: var(--raio-pilula);
+        box-shadow: var(--sombra-card);
+        font-family: var(--fonte-ui);
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+    body.editor-expandido .btn-inicio:active { transform: scale(0.96); }
+}
+
+/*  Desktop: esconde X e botão Início  */
+@media (min-width: 781px) {
+    .btn-fechar-editor { display: none; }
+    .btn-inicio { display: none !important; }
 }

@@ -4,9 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Desativar conta - The Farmer Edu</title>
+    <link rel="stylesheet" href="file?type=css&file=desativarconta.css">
 </head>
-<body>
-    <h1>Desativar conta</h1>
+<body id="desativar-conta">
+    <main class="tela-desativar-conta">
+        <section class="painel-desativar-conta">
+    <h1 class="titulo">Desativar conta</h1>
 
     <?php if (!empty($mensagem)): ?>
         <p><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>

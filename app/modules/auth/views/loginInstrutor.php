@@ -1,4 +1,9 @@
 <?php
+
+if($_SERVER['REQUEST_METHOD'] === 'POST' && empty($mensagem)){
+    header("Location: loginInstrutor");
+    exit();
+}
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
 
 // primeiro confere se a sessão expirou (4h sem atividade), depois lê o login

@@ -330,9 +330,10 @@ input:focus-visible {
                     $status = 'pendente';
                 }
 
-                $titulo = (string) ($n['titulo'] ?? '');
+            
+                $titulo = (string) ($n['tipo'] ?? '');
                 $mensagem = (string) ($n['mensagem'] ?? '');
-                $data = (string) ($n['data'] ?? '');
+                $data = (string) ($n['criado_em'] ?? '');
 
                 $chave = hash(
                     'sha256',
@@ -343,6 +344,8 @@ input:focus-visible {
             <article
                 class="notificacao <?= $status ?>"
                 data-status="<?= $status ?>"
+                data-id="<?= (int) ($n['id_notificacao'] ?? 0) ?>"
+                data-lida="<?= (int) ($n['lida'] ?? 0) ?>"
                 data-chave="<?= htmlspecialchars($chave, ENT_QUOTES, 'UTF-8') ?>"
             >
 
@@ -453,7 +456,29 @@ function alternarLeitura(botao) {
         lidas = lidas.filter(item => item !== chave);
     }
 
-    salvarLidas(lidas);
+    const idNotificacao = Number(card.dataset.id);
+const lida = card.classList.contains('lida') ? 1 : 0;
+
+if (Number.isInteger(idNotificacao) && idNotificacao > 0) {
+    fetch('/notificacoes/marcar-lida', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            id_notificacao: idNotificacao,
+            lida: lida
+        })
+    })
+    .then(resposta => resposta.json())
+    .then(dados => {
+        if (!dados.sucesso) {
+            console.error('Não foi possível salvar a leitura.');
+        }
+    })
+    .catch(erro => console.error(erro));
+}
+
     atualizarBotao(card);
     atualizarResumo();
     aplicarFiltro();
@@ -530,7 +555,7 @@ function iniciar() {
     const lidas = obterLidas();
 
     document.querySelectorAll('.notificacao').forEach(card => {
-        if (lidas.includes(card.dataset.chave)) {
+        if (card.dataset.lida === '1') {
             card.classList.add('lida');
         }
 

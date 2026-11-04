@@ -20,9 +20,9 @@ $usuario = usuarioLogado();
 
     <?php if ($usuario): ?>
         <p>Olá, <?= htmlspecialchars($usuario['nome']) ?>! (<?= htmlspecialchars($usuario['tipo_usuario']) ?>)</p>
-        <p><a href="?rota=auth/logout">Sair</a></p>
+        <p><a href="auth/logout">Sair</a></p>
     <?php else: ?>
-        <p><a href="?rota=auth/login">Entrar</a></p>
+        <p><a href="auth/login">Entrar</a></p>
     <?php endif; ?>
 </body>
 </html>

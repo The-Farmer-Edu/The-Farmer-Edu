@@ -25,12 +25,23 @@ class UsuarioController
         $sucesso  = false;
  
         try {
-            $usuario = match ($tipo) {
-                'aluno'     => new Aluno($nome, $email, $senha),
-                'instrutor' => new Instrutor($nome, $email, $senha, $this->lerMaterias()),
-                default     => throw new InvalidArgumentException('Tipo de usuário inválido.'),
-            };
- 
+            // $usuario = match ($tipo) {
+            //     'aluno'     => new Aluno($nome, $email, $senha),
+            //     'instrutor' => new Instrutor($nome, $email, $senha, $this->lerMaterias()),
+            //     default     => throw new InvalidArgumentException('Tipo de usuário inválido.'),
+            // };
+
+            switch ($tipo){
+                case 'aluno':
+                    $usuario = new Aluno($nome, $email, $senha);
+                    break;
+                case 'instrutor':
+                    $usuario = new Instrutor($nome, $email, $senha, $this->lerMaterias());
+                    break;
+                default:
+                    throw new InvalidArgumentException('Tipo de usuário inválido.');
+            }
+
             $usuario->salvar(iniciarPDO());
  
             $mensagem = 'Cadastro realizado com sucesso!';
@@ -63,6 +74,18 @@ class UsuarioController
         $this->autenticar('instrutor', 'loginInstrutor');
     }
 
+    //login aluno
+    public function showLoginAluno(): void
+    {
+        $this->view('loginAluno');
+    }
+
+    //só deixa entrar quem é aluno
+    public function entrarAluno(): void
+    {
+        $this->autenticar('aluno', 'loginAluno');
+    }
+
     //sair(logout)
 
     public function sair(): void
@@ -72,8 +95,8 @@ class UsuarioController
 
         logout();
 
-        header('Location: login' . ucfirst($perfil));
-        exit;
+        $rotaLogin = ($perfil === 'instrutor') ? '/auth/loginInstrutor' : '/auth/loginAluno';
+        redirecionarParaRota($rotaLogin);
     }
 
     

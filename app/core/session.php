@@ -2,6 +2,7 @@
 
 function iniciarSessao(): void {
     if (session_status() === PHP_SESSION_NONE){
+        ini_set('session.gc_maxlifetime', 60*60*4); // Segundos * Minutos * Horas
         session_start([
             'cookie_httponly' => true,
             'cookie_samesite' => 'Lax'
@@ -42,7 +43,7 @@ function usuarioLogado(): ?array {
 
 function solicitarLogin(): void {
     if(!usuarioLogado()){
-        header('Location: /?rota=auth/login');
+        header('Location: ../auth/loginAluno');
         exit();
     }
 }

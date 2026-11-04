@@ -1,6 +1,11 @@
 function renderizarAtividade() {
     const A = window.FarmAtividade;
     if (!A) return;
+    if (A.vazia) {
+        // sem atividade: deixa os quadros em branco
+        document.querySelectorAll('.atv-sub, .atv-meta').forEach(e => e.style.display = 'none');
+        return;
+    }
     const el = id => document.getElementById(id);
     const escrever = (id, valor) => { const e = el(id); if (e) e.textContent = valor; };
 
@@ -50,6 +55,13 @@ function lerEntrega() {
 
 function atualizarStatus() {
     const A = window.FarmAtividade;
+    if (A.vazia) {
+        status.style.display = 'none';
+        prazoEl.hidden = true;
+        texto.style.display = 'none';
+        botaoComecar.style.display = 'none';
+        return;
+    }
     const entrega = lerEntrega();
     const data = entrega && new Date(entrega.data);
     const entregue = !!data && !isNaN(data);

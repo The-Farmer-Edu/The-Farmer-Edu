@@ -110,7 +110,8 @@
         try {
             const url = new URLSearchParams(location.search);
             let nome = url.get('teste');
-            if (!Object.prototype.hasOwnProperty.call(TESTES, nome)) nome = bloco ? null : 'web';
+            // Só carrega dados de teste quando a URL pede (?teste=web, php ou python)
+            if (!Object.prototype.hasOwnProperty.call(TESTES, nome)) nome = null;
             if (!nome) return;
             const teste = TESTES[nome];
 
@@ -147,7 +148,6 @@
             console.warn('Atividade de teste não aplicada:', e);
         }
     })();
-    // TESTE-FIM 
 
     /*MONTAGEM FINAL*/
     const A = Object.assign({}, base, lido);
@@ -162,6 +162,9 @@
     A.limiteTexto = () => A.limite
         ? A.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : '';
+
+    // Sem dados de atividade (nem do banco, nem de teste): a tela do aluno fica vazia
+    A.vazia = !lido.titulo;
 
     window.FarmAtividade = A;
     window.FarmLinguagens = LINGUAGENS;

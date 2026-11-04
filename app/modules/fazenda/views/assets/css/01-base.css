@@ -1,0 +1,92 @@
+/* Fazenda 3D — CSS 1 de 7: tema claro/escuro, página e canvas. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Estilos gerais: cores do tema (claro/escuro) e canvas em tela cheia ===== */
+:root {
+  --fundo-card: #fffdf5;
+  --texto: #3b2a1a;
+  --destaque: #4a8f3a;
+  --desativado: #a89a82;
+  /* Fazenda 8.4 (B1): blocos de ordens de colheita do painel Fazenda ("Mandar um trabalhador colher" e "Quem colhe
+     este canteiro?") e seus botões. Contraste mínimo de 4,5:1 nos dois temas. */
+  --fundo-bloco-equipe: #e6f0fa;
+  --borda-bloco-equipe: #b7cfe6;
+  --fundo-bloco-colheita: #fcefd6;
+  --borda-bloco-colheita: #e6c99a;
+  --botao-bloco: #3d7a30;
+  --texto-botao-bloco: #fff;
+  --botao-bloco-secundario: #5d6869;
+  /* Fazenda 8.4 (D1): gaveta de construções — moldura de madeira, papel e cartões */
+  --gaveta-madeira: #8a5a2e;
+  --gaveta-madeira-escura: #5e3b1c;
+  --gaveta-papel: #f6ecd4;
+  --gaveta-cartao: #fffaf0;
+  --gaveta-cartao-vazio: #efe4cb;
+  --gaveta-borda: #dcc79c;
+  --gaveta-texto: #3b2a1a;
+  --gaveta-texto-suave: #6e5638;
+  --gaveta-titulo: #7a4e26
+}
+
+@media(prefers-color-scheme:dark) {
+  :root:not([data-theme="light"]) {
+    --fundo-card: #2b3424;
+    --texto: #f1e8d0;
+    --destaque: #7fc15f;
+    --desativado: #6f7a62;
+    --fundo-bloco-equipe: #213345;
+    --borda-bloco-equipe: #3f6688;
+    --fundo-bloco-colheita: #3a3020;
+    --borda-bloco-colheita: #8a6a3a;
+    --botao-bloco: #7fc15f;
+    --texto-botao-bloco: #14210c;
+    --botao-bloco-secundario: #5d6869;
+    --gaveta-madeira: #6b4423;
+    --gaveta-madeira-escura: #3f2711;
+    --gaveta-papel: #2a2a20;
+    --gaveta-cartao: #36362a;
+    --gaveta-cartao-vazio: #2e2d24;
+    --gaveta-borda: #4f4a38;
+    --gaveta-texto: #f1e8d0;
+    --gaveta-texto-suave: #c8b995;
+    --gaveta-titulo: #e3bd84
+  }
+}
+
+:root[data-theme="dark"] {
+  --fundo-card: #2b3424;
+  --texto: #f1e8d0;
+  --destaque: #7fc15f;
+  --desativado: #6f7a62;
+  --fundo-bloco-equipe: #213345;
+  --borda-bloco-equipe: #3f6688;
+  --fundo-bloco-colheita: #3a3020;
+  --borda-bloco-colheita: #8a6a3a;
+  --botao-bloco: #7fc15f;
+  --texto-botao-bloco: #14210c;
+    --botao-bloco-secundario: #5d6869;
+  --gaveta-madeira: #6b4423;
+  --gaveta-madeira-escura: #3f2711;
+  --gaveta-papel: #2a2a20;
+  --gaveta-cartao: #36362a;
+  --gaveta-cartao-vazio: #2e2d24;
+  --gaveta-borda: #4f4a38;
+  --gaveta-texto: #f1e8d0;
+  --gaveta-texto-suave: #c8b995;
+  --gaveta-titulo: #e3bd84
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #9fd8f5;
+  font-family: system-ui, sans-serif
+}
+
+canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+  z-index: 0;
+  touch-action: none
+}

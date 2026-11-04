@@ -9,11 +9,14 @@ class atividadesSub {
     public function showtestarApi() {
         require_once __DIR__ . '/view/testarApi.php';
         }
-    public function enviarSubmissao() {
-        require_once __DIR__ . '/view/enviarSubmissao.php';
+    public function processarSubmisssao() {
+        require_once __DIR__ . '/view/processar_submissao.php';
     }
     public function showiniciarAtv() {
         require_once __DIR__ . '/view/iniciaratv.html';
+    }
+       public function showrespostas() {
+        require_once __DIR__ . '/view/respostas.html';
     }
 
     public function sendFile(): void {
@@ -60,7 +63,6 @@ class atividadesSub {
         {
             $url_live = true;
         }
-        $url_live = $url_live;
         curl_close($handle);
         $mimes = array();
         if ($url_live)
@@ -133,9 +135,9 @@ class atividadesSub {
         $content_mime = 'unknown';
         if (is_file($content))
         {
-            if (isset(pathinfo($content) ['extension']))
+            if (isset(pathinfo($content)['extension']))
             {
-                $content_ext = pathinfo($content) ['extension'];
+                $content_ext = pathinfo($content)['extension'];
                 if (isset($mimes[$content_ext]))
                 {
                     $content_mime = $mimes[$content_ext];
@@ -146,13 +148,9 @@ class atividadesSub {
                     {
                         $finfo = finfo_open(FILEINFO_MIME_TYPE);
                         $content_mime = finfo_file($finfo, $content);
-                        if ($content_mime === null | $content_mime === "")
+                        if ($content_mime === null || $content_mime === "")
                         {
                             $content_mime = "application/octet-stream";
-                        }
-                        else
-                        {
-                            $content_mime = $content_mime;
                         }
                         finfo_close($finfo);
                     }
@@ -166,9 +164,8 @@ class atividadesSub {
         else
         {
             // return whatever you want
-            // $content_mime = 'unknown';            
+            // $content_mime = 'unknown';
         }
-        $content_mime = $content_mime;
         return $content_mime;
     }
 }

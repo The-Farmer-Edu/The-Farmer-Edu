@@ -58,7 +58,7 @@ function solicitarPerfilDeAcesso(string $perfil): void {
     }
 }
 
-const SESSAO_INATIVIDADE_SEGUNDOS = 10;
+const SESSAO_INATIVIDADE_SEGUNDOS = 5;
 function registrarAtividadeSessao(): void {
     iniciarSessao();
     $_SESSION['ultimaAtividade'] = time();

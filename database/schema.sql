@@ -244,20 +244,20 @@ CREATE TABLE elementos_fazenda (
 -- ---------------------------------------------------------------------
 -- 13. HISTÓRICO DE XP  [XPLog]
 -- quantidade aceita valores negativos para representar retrocesso
--- (RF19). id_submissao é opcional pois nem todo XP vem de uma atividade.
+-- (RF19). id_nota é opcional pois nem todo XP vem de uma atividade.
 -- ---------------------------------------------------------------------
 CREATE TABLE xp_logs (
   id_xp          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_aluno       INT UNSIGNED  NOT NULL,
   quantidade     INT           NOT NULL,
   motivo         VARCHAR(255)  NOT NULL,
-  id_submissao   INT UNSIGNED  NULL,
+  id_nota        INT UNSIGNED  NULL,
   data           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_xplogs_aluno
     FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_xplogs_submissao
-    FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)
+  CONSTRAINT fk_xplogs_nota
+    FOREIGN KEY (id_nota) REFERENCES notas(id_nota)
     ON DELETE SET NULL ON UPDATE CASCADE,
   INDEX idx_xplogs_aluno (id_aluno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -286,5 +286,5 @@ CREATE TABLE arquivos (
   descricao_arquivo   VARCHAR(45) NOT NULL,
   caminho             VARCHAR(255) NOT NULL,
   FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
-  INDEX id_arquivo_atividade (id_atividade);
+  INDEX id_arquivo_atividade (id_atividade)
 )

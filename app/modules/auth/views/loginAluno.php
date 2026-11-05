@@ -32,6 +32,7 @@ $logado = usuarioLogado();
 
             <?php if (!empty($mensagem)): ?>
                 <p class="mensagem"><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
+                <a class="editarconta" href="editarConta">editar conta</a>
             <?php endif; ?>
 
             <?php if ($logado): ?>
@@ -60,6 +61,7 @@ $logado = usuarioLogado();
                 </form>
 
                 <a class="criar-conta" href="novoUsuario">Criar Conta</a>
+            
             <?php endif; ?>
         </section>
 

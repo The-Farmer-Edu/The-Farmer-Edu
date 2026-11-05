@@ -29,6 +29,7 @@ CREATE TABLE usuarios (
   senha_hash     VARCHAR(255)    NOT NULL,   -- gerado com password_hash() do PHP
   tipo_usuario   ENUM('instrutor', 'aluno') NOT NULL,
   criado_em      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
   UNIQUE KEY uq_usuarios_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -88,10 +89,11 @@ CREATE TABLE cursos (
 -- ---------------------------------------------------------------------
 CREATE TABLE turmas (
   id_turma       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nome_turma     VARCHAR(100)    NOT NULL,
+  nome_turma     VARCHAR(100)                    NOT NULL,
   turno          ENUM('manha', 'tarde', 'noite') NOT NULL,
-  id_curso       INT UNSIGNED    NOT NULL,
-  id_instrutor   INT UNSIGNED    NOT NULL,
+  id_curso       INT UNSIGNED                    NOT NULL,
+  id_instrutor   INT UNSIGNED                    NOT NULL,
+  ativo          TINYINT(1)                      NOT NULL     DEFAULT 1,
   CONSTRAINT fk_turmas_curso
     FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)
     ON DELETE RESTRICT ON UPDATE CASCADE,

@@ -34,7 +34,11 @@ class CursosController
     public function alunos(): void
     {
         $this->exigir('instrutor');
-        $this->view('alunos', ['alunos' => AlunoModel::listar()]);
+        $this->view('alunos', [
+            'alunos' => AlunoModel::listar(),
+            'msg'    => $_GET['msg'] ?? '',
+            'erro'   => $_GET['erro'] ?? '',
+        ]);
     }
 
     // Formulário de criação de turma para o curso escolhido (?curso=ID)
@@ -47,7 +51,8 @@ class CursosController
         }
         $this->view('form', [
             'curso'  => $curso,
-            'turmas' => TurmaModel::listarDoCurso((int) $curso['id_curso'], (int) $u['idUsuario']),
+            'turmas' => TurmaModel::listarDoCurso((int) $curso['id_curso'], (int) $u['idUsuario'], 1),
+            'arquivadas' => TurmaModel::listarDoCurso((int) $curso['id_curso'], (int) $u['idUsuario'], 0),
             'erro'   => $_GET['erro'] ?? '',
             'msg'    => $_GET['msg'] ?? '',
         ]);
@@ -81,6 +86,7 @@ class CursosController
     {
         $u = $this->exigir('instrutor');
         $turma = $this->turmaDoInstrutor((int) ($_GET['id'] ?? 0), $u);
+        $this->exigirTurmaAtiva($turma);
         $this->view('turmaEditar', ['turma' => $turma, 'erro' => $_GET['erro'] ?? '']);
     }
 
@@ -90,6 +96,7 @@ class CursosController
         $this->validarCsrf();
         $idTurma = (int) ($_POST['id_turma'] ?? 0);
         $turma = $this->turmaDoInstrutor($idTurma, $u);
+        $this->exigirTurmaAtiva($turma);
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $turno = (string) ($_POST['turno'] ?? '');
 
@@ -105,23 +112,26 @@ class CursosController
         $this->ir('turmas_cursos/turmaForm?curso=' . (int) $turma['id_curso'] . '&msg=' . urlencode('Turma atualizada.'));
     }
 
-    // ---------- Excluir turma ----------
+    // ---------- Arquivar / restaurar turma ----------
+    // A turma não é apagada: fica guardada e pode ser restaurada (como no Google Sala de Aula).
 
-    public function excluir(): void
+    public function arquivar(): void
+    {
+        $this->mudarSituacaoDaTurma(0, 'Turma arquivada.');
+    }
+
+    public function restaurar(): void
+    {
+        $this->mudarSituacaoDaTurma(1, 'Turma restaurada.');
+    }
+
+    private function mudarSituacaoDaTurma(int $ativo, string $mensagem): void
     {
         $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
-        $voltar = 'turmas_cursos/turmaForm?curso=' . (int) $turma['id_curso'];
-
-        try {
-            TurmaModel::excluir((int) $turma['id_turma'], (int) $u['idUsuario']);
-        } catch (PDOException $e) {
-            // Turma com atividades vinculadas (RESTRICT no banco): não pode ser apagada
-            error_log($e->getMessage());
-            $this->ir($voltar . '&erro=' . urlencode('Não é possível excluir: a turma possui atividades vinculadas.'));
-        }
-        $this->ir($voltar . '&msg=' . urlencode('Turma excluída.'));
+        TurmaModel::definirAtivo((int) $turma['id_turma'], (int) $u['idUsuario'], $ativo);
+        $this->ir('turmas_cursos/turmaForm?curso=' . (int) $turma['id_curso'] . '&msg=' . urlencode($mensagem));
     }
 
     // ---------- Alunos da turma (matrícula) ----------
@@ -144,6 +154,7 @@ class CursosController
         $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
+        $this->exigirTurmaAtiva($turma);
         $idAluno = (int) ($_POST['id_aluno'] ?? 0);
         $voltar = 'turmas_cursos/turma?id=' . (int) $turma['id_turma'];
 
@@ -161,8 +172,57 @@ class CursosController
         $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
+        $this->exigirTurmaAtiva($turma);
         MatriculaModel::desmatricular((int) $turma['id_turma'], (int) ($_POST['id_aluno'] ?? 0));
         $this->ir('turmas_cursos/turma?id=' . (int) $turma['id_turma'] . '&msg=' . urlencode('Matrícula removida.'));
+    }
+
+    // ---------- Contas (desativar / reativar — nunca excluir) ----------
+
+    // Instrutor desativa ou reativa a conta de um aluno
+    public function desativarAluno(): void
+    {
+        $this->mudarSituacaoDoAluno(0, 'Conta do aluno desativada.');
+    }
+
+    public function reativarAluno(): void
+    {
+        $this->mudarSituacaoDoAluno(1, 'Conta do aluno reativada.');
+    }
+
+    private function mudarSituacaoDoAluno(int $ativo, string $mensagem): void
+    {
+        $this->exigir('instrutor');
+        $this->validarCsrf();
+        $ok = ContaModel::definirAtivoAluno((int) ($_POST['id_aluno'] ?? 0), $ativo);
+        $this->ir('turmas_cursos/alunos?' . ($ok ? 'msg=' : 'erro=') . urlencode($ok ? $mensagem : 'Aluno não encontrado.'));
+    }
+
+    // Tela "Minha conta": o próprio usuário pode desativar a conta (pede a senha)
+    public function conta(): void
+    {
+        $this->exigirQualquerPerfil();
+        $this->view('conta', ['erro' => $_GET['erro'] ?? '']);
+    }
+
+    public function desativarConta(): void
+    {
+        $u = $this->exigirQualquerPerfil();
+        $this->validarCsrf();
+
+        if (!ContaModel::senhaConfere((int) $u['idUsuario'], (string) ($_POST['senha'] ?? ''))) {
+            $this->ir('turmas_cursos/minhaConta?erro=' . urlencode('Senha incorreta.'));
+        }
+        ContaModel::definirAtivo((int) $u['idUsuario'], 0);
+        logout();
+        $this->ir('auth/login' . ucfirst($u['perfilAcesso']));
+    }
+
+    // Qualquer perfil logado (aluno ou instrutor); sem login, vai para o login do aluno
+    private function exigirQualquerPerfil(): array
+    {
+        $u = usuarioLogado();
+        return $this->exigir($u['perfilAcesso'] ?? 'aluno');
     }
 
     // Garante login e perfil. (Não uso solicitarPerfilDeAcesso() do core: ele lê
@@ -171,6 +231,11 @@ class CursosController
     {
         $u = usuarioLogado();
         if (!$u) {
+            $this->ir('auth/login' . ucfirst($perfil));
+        }
+        // Conta desativada: encerra a sessão e volta para o login
+        if (!ContaModel::estaAtiva((int) $u['idUsuario'])) {
+            logout();
             $this->ir('auth/login' . ucfirst($perfil));
         }
         if ($u['perfilAcesso'] !== $perfil) {
@@ -188,6 +253,15 @@ class CursosController
             $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Turma não encontrada.'));
         }
         return $turma;
+    }
+
+    // Turma arquivada é só para consulta: não permite editar nem mexer em matrículas
+    private function exigirTurmaAtiva(array $turma): void
+    {
+        if ((int) $turma['ativo'] !== 1) {
+            $this->ir('turmas_cursos/turma?id=' . (int) $turma['id_turma']
+                . '&erro=' . urlencode('Turma arquivada. Restaure-a para fazer alterações.'));
+        }
     }
 
     // Proteção CSRF simples para as ações POST (token guardado na sessão)

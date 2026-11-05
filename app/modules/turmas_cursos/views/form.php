@@ -4,6 +4,7 @@
 <body>
     <header>
         <b>The Farmer Edu</b> | Bem-vindo, <?= e($u['nome']) ?> |
+        <a href="<?= $base ?>/turmas_cursos/minhaConta">Minha conta</a> |
         <a href="<?= $base ?>/auth/logout">Sair</a>
     </header>
 
@@ -40,11 +41,11 @@
                 <td>
                     <a href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>">Alunos</a> |
                     <a href="<?= $base ?>/turmas_cursos/turmaEditar?id=<?= (int) $t['id_turma'] ?>">Editar</a> |
-                    <form method="POST" action="<?= $base ?>/turmas_cursos/turmaExcluir" style="display:inline"
-                          onsubmit="return confirm('Excluir a turma &quot;<?= e(addslashes($t['nome_turma'])) ?>&quot;? As matrículas dela também serão removidas.');">
+                    <form method="POST" action="<?= $base ?>/turmas_cursos/turmaArquivar" style="display:inline"
+                          onsubmit="return confirm('Arquivar esta turma? Ela some da lista principal, mas nada é apagado e você pode restaurá-la depois.');">
                         <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
                         <input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>">
-                        <button type="submit">Excluir</button>
+                        <button type="submit">Arquivar</button>
                     </form>
                 </td>
             </tr>
@@ -52,6 +53,28 @@
     </table>
     <?php else: ?>
         <p>Você ainda não criou turmas para este curso.</p>
+    <?php endif; ?>
+
+    <?php if ($arquivadas): ?>
+    <h2>Turmas arquivadas</h2>
+    <table border="1" cellpadding="6" cellspacing="0">
+        <tr><th>Turma</th><th>Turno</th><th>Alunos</th><th>Ações</th></tr>
+        <?php foreach ($arquivadas as $t): ?>
+            <tr>
+                <td><?= e($t['nome_turma']) ?></td>
+                <td><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></td>
+                <td><?= (int) $t['total_alunos'] ?></td>
+                <td>
+                    <a href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>">Ver alunos</a> |
+                    <form method="POST" action="<?= $base ?>/turmas_cursos/turmaRestaurar" style="display:inline">
+                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+                        <input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>">
+                        <button type="submit">Restaurar</button>
+                    </form>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
     <?php endif; ?>
 </body>
 </html>

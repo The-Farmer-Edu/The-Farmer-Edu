@@ -8,6 +8,8 @@ class Usuario {
     public string $nome;
     public string $email;
     public string $tipo;
+    public const MAX_TENTATIVAS = 3;
+    public const MINUTOS_BLOQUEIO = 15;
     protected ?string $senha_hash = null; 
  
     public function __construct(string $nome, string $email, string $tipo, ?string $senha = null, bool $isHash = false) {
@@ -44,6 +46,39 @@ class Usuario {
         return $this->senha_hash !== null && password_verify($senha, $this->senha_hash);
     }
  
+    public function segundosDeBloqueio(PDO $pdo): int {
+        $stmt = $pdo->prepare('SELECT TIMESTAMPDIFF(SECOND, NOW(), bloqueado_ate)
+        FROM usuarios WHERE id_usuario = ? AND bloqueado_ate IS NOT NULL');
+        $stmt->execute([$this->id]);
+        $s = $stmt->fetchColumn();
+        return $s === false || $s === null ? 0 : max(0, (int) $s);
+    }
+
+    public function liberarSeBloqueioExpirou(PDO $pdo): void {
+    $stmt = $pdo->prepare('UPDATE usuarios SET tentativas_login = 0,
+    bloqueado_ate = NULL WHERE id_usuario = ? AND bloqueado_ate IS NOT NULL AND
+    bloqueado_ate <= NOW()');
+    $stmt->execute([$this->id]);
+    }
+
+    public function registrarFalhaLogin(PDO $pdo): int {
+        $stmt = $pdo->prepare('UPDATE usuarios SET bloqueado_ate = 
+        IF(tentativas_login + 1 >= ?, DATE_ADD(NOW(), INTERVAL ? MINUTE),
+        bloqueado_ate), tentativas_login = tentativas_login + 1 WHERE id_usuario =?');
+        $stmt->execute([self::MAX_TENTATIVAS, self::MINUTOS_BLOQUEIO, $this->id]);
+        $stmt = $pdo->prepare('SELECT tentativas_login FROM usuarios WHERE id_usuario = ?');
+        $stmt->execute([$this->id]);
+        return max(0, self::MAX_TENTATIVAS - (int) $stmt->fetchColumn());
+    }
+
+    public function zerarTentativasLogin(PDO $pdo): void {
+        $stmt = $pdo->prepare('UPDATE usuarios SET tentativas_login = 0,
+            bloqueado_ate = NULL WHERE id_usuario = ?');
+        $stmt->execute([$this->id]);
+    }
+    
+    
+
     public function saudacao(): string {
         $nome = htmlspecialchars($this->nome, ENT_QUOTES, 'UTF-8');
         return "Olá, {$nome} seja bem-vindo a THE FARMER EDU.";

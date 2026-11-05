@@ -2,7 +2,7 @@
 
 function iniciarSessao(): void {
     if (session_status() === PHP_SESSION_NONE){
-        ini_set('session.gc_maxlifetime', 60*60*4); // Segundos * Minutos * Horas
+        ini_set('session.gc_maxlifetime', 5); // Segundos * Minutos * Horas
         session_start([
             'cookie_httponly' => true,
             'cookie_samesite' => 'Lax'
@@ -56,6 +56,23 @@ function solicitarPerfilDeAcesso(string $perfil): void {
         echo "Você não tem acesso a essa página!";
         exit();
     }
+}
+
+const SESSAO_INATIVIDADE_SEGUNDOS = 5;
+function registrarAtividadeSessao(): void {
+    iniciarSessao();
+    $_SESSION['ultimaAtividade'] = time();
+}
+function sessaoExpirouPorInatividade(): bool {
+    iniciarSessao();
+    if (!isset($_SESSION['usuario'])) return false;
+    $ultima = (int) ($_SESSION['ultimaAtividade'] ?? 0);
+    if ($ultima > 0 && (time() - $ultima) > SESSAO_INATIVIDADE_SEGUNDOS) {
+    logout();
+    return true;
+}
+registrarAtividadeSessao();
+    return false;
 }
 
 ?>

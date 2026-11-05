@@ -160,6 +160,18 @@ class NotasController
     }
 
     // -----------------------------------------------------------------
+    // LOGOUT — GET /notas/logout
+    // -----------------------------------------------------------------
+    public function logout(): void
+    {
+        logout();
+
+        $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+        header('Location: ' . $base . '/auth/loginAluno');
+        exit;
+    }
+
+    // -----------------------------------------------------------------
     // Helpers privados
     // -----------------------------------------------------------------
 

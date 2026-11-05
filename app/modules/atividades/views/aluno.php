@@ -16,7 +16,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 <body class="tema-aluno">
 
 <header>
-    <img src="assets/img/png/logo_icone.png" alt="The Farm Edu">
+    <img src="/assets/img/png/logo_icone.png" alt="The Farm Edu">
     <div>
         <h2>MINHAS ATIVIDADES</h2>
     </div>

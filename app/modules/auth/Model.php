@@ -8,6 +8,9 @@ class Usuario {
     public string $nome;
     public string $email;
     public string $tipo;
+    public bool $ativo = true;
+    public const MAX_TENTATIVAS = 3;
+    public const MINUTOS_BLOQUEIO = 15;
     protected ?string $senha_hash = null; 
  
     public function __construct(string $nome, string $email, string $tipo, ?string $senha = null, bool $isHash = false) {
@@ -44,6 +47,39 @@ class Usuario {
         return $this->senha_hash !== null && password_verify($senha, $this->senha_hash);
     }
  
+    public function segundosDeBloqueio(PDO $pdo): int {
+        $stmt = $pdo->prepare('SELECT TIMESTAMPDIFF(SECOND, NOW(), bloqueado_ate)
+        FROM usuarios WHERE id_usuario = ? AND bloqueado_ate IS NOT NULL');
+        $stmt->execute([$this->id]);
+        $s = $stmt->fetchColumn();
+        return $s === false || $s === null ? 0 : max(0, (int) $s);
+    }
+
+    public function liberarSeBloqueioExpirou(PDO $pdo): void {
+    $stmt = $pdo->prepare('UPDATE usuarios SET tentativas_login = 0,
+    bloqueado_ate = NULL WHERE id_usuario = ? AND bloqueado_ate IS NOT NULL AND
+    bloqueado_ate <= NOW()');
+    $stmt->execute([$this->id]);
+    }
+
+    public function registrarFalhaLogin(PDO $pdo): int {
+        $stmt = $pdo->prepare('UPDATE usuarios SET bloqueado_ate = 
+        IF(tentativas_login + 1 >= ?, DATE_ADD(NOW(), INTERVAL ? MINUTE),
+        bloqueado_ate), tentativas_login = tentativas_login + 1 WHERE id_usuario =?');
+        $stmt->execute([self::MAX_TENTATIVAS, self::MINUTOS_BLOQUEIO, $this->id]);
+        $stmt = $pdo->prepare('SELECT tentativas_login FROM usuarios WHERE id_usuario = ?');
+        $stmt->execute([$this->id]);
+        return max(0, self::MAX_TENTATIVAS - (int) $stmt->fetchColumn());
+    }
+
+    public function zerarTentativasLogin(PDO $pdo): void {
+        $stmt = $pdo->prepare('UPDATE usuarios SET tentativas_login = 0,
+            bloqueado_ate = NULL WHERE id_usuario = ?');
+        $stmt->execute([$this->id]);
+    }
+    
+    
+
     public function saudacao(): string {
         $nome = htmlspecialchars($this->nome, ENT_QUOTES, 'UTF-8');
         return "Olá, {$nome} seja bem-vindo a THE FARMER EDU.";
@@ -53,6 +89,7 @@ class Usuario {
     public static function formatarDados(array $dados): self {
         $usuario = new self($dados['nome'], $dados['email'], $dados['tipo_usuario'], $dados['senha_hash'], true);
         $usuario->id = (int) $dados['id_usuario'];
+        $usuario ->ativo = (bool) ($dados['ativo'] ?? 1);
         return $usuario;
     }
  
@@ -71,7 +108,47 @@ class Usuario {
         $stmt->execute([$this->nome, $this->email, $this->senha_hash, $this->tipo]);
         $this->id = (int) $pdo->lastInsertId();
     }
- 
+    
+    public static function buscarPorId(PDO $pdo, int $id): ?self {
+        $stmt = $pdo->prepare('SELECT * FROM usuarios WHERE id_usuario = ?');
+        $stmt->execute([$id]);
+        $dados = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $dados ? self::formatarDados($dados) : null;
+    }
+     public function atualizarDados(PDO $pdo, string $nome, string $email, ?string $novaSenha = null): void {
+        $nome = trim($nome);
+        $email = strtolower(trim($email));
+        if ($nome === '') {
+        throw new InvalidArgumentException('Nome é obrigatório.');
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new InvalidArgumentException('E-mail inválido.');
+        }
+        $existente = self::buscarPorEmail($pdo, $email);
+        if ($existente !== null && $existente->id !== $this->id) {
+        throw new RuntimeException('E-mail já cadastrado.');
+        }
+
+        $hash = $this->senha_hash;
+        if ($novaSenha !== null && $novaSenha !== '') {
+        if (strlen($novaSenha) < 8) {
+        throw new InvalidArgumentException('A nova senha deve ter ao menos 8 caracteres.');
+        }
+        $hash = password_hash($novaSenha, PASSWORD_BCRYPT);
+        }
+
+        $stmt = $pdo->prepare('UPDATE usuarios SET nome = ?, email = ?,senha_hash = ? WHERE id_usuario = ?');
+        $stmt->execute([$nome, $email, $hash, $this->id]);
+        $this->nome = $nome;
+        $this->email = $email;
+        $this->senha_hash = $hash;
+    }
+     public function desativar(PDO $pdo): void {
+        $stmt = $pdo->prepare('UPDATE usuarios SET ativo = 0 WHERE id_usuario =?');
+        $stmt->execute([$this->id]);
+        $this->ativo = false;
+     }
+
     public static function buscarPorEmail(PDO $pdo, string $email): ?self {
         $stmt = $pdo->prepare('SELECT * FROM usuarios WHERE email = ?');
         $stmt->execute([strtolower(trim($email))]);

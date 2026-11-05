@@ -64,7 +64,7 @@ $tipoEscolhido = $_POST['tipo'] ?? 'aluno';
         </section>
 
         <aside class="painel-imagem" id="painel-imagem">
-            <img class="logo" id="logo" src="/The-Farmer-Edu-tarde/public/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
+            <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
             <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
             <p class="subtitulo" id="subtitulo">Seja bem-vindo</p>
         </aside>

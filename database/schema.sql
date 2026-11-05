@@ -10,6 +10,7 @@
 -- Ordem de criação respeita as dependências de chave estrangeira —
 -- execute o arquivo de cima para baixo, sem pular trechos.
 -- =====================================================================
+DROP DATABASE IF EXISTS the_farmer_edu;
 
 CREATE DATABASE IF NOT EXISTS the_farmer_edu
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -132,7 +133,7 @@ CREATE TABLE atividades (
   descricao            TEXT          NULL,
   tipo_atividade       ENUM('codigo', 'quiz', 'texto') NOT NULL DEFAULT 'codigo',
   linguagem            VARCHAR(30)   NULL,
-  criterios_correcao   JSON          NULL,
+  criterios_correcao   TEXT          NULL, -- Converter JSON->TEXT e TEXT->JSON, dependendo da operação, no JavaScript
   data_entrega         DATETIME      NOT NULL,
   criado_em            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_atividades_turma

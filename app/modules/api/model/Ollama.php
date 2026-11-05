@@ -40,7 +40,10 @@
             2. Boas Práticas Técnicas: Avalie a clareza, indentação e nomenclatura das variáveis segundo os padrões da linguagem ($linguagem).
             3. Feedback Formativo (Regra de Ouro): NUNCA forneça o código corrigido pronto. Guie o aluno a descobrir o erro (seja de sintaxe ou de lógica) através de dicas conceituais. No campo \"feedback_geral\", adote o tom de um instrutor técnico e encerre SEMPRE com uma pergunta que estimule o raciocínio.
             4. Avaliação e Nota: Seja justo. Atribua a nota (0 a $notaMax) baseada na proximidade da solução ideal e no cumprimento da demanda. Se houver erro crítico de compilação ou falha lógica grave, a nota deve refletir isso para que o status seja 'refazer'.
-            5. Identificação do código do aluno: Identifique se o código for feito por Inteligencia Artificial ou segue padrões específicos, se for identificado a nota deve ser 0 e o status deverá ser 'reprovado'. Se houver suspeita de uso de Inteligencia Artificial, forneça uma justificativa explicita no feedback geral.
+
+
+
+            5. Identificação do código do aluno: Analise o código do aluno para identificar se ele for feito por Inteligencia Artificial ou segue padrões específicos, se for identificado a nota deve ser 0 e o status deverá ser 'reprovado'. Se houver suspeita de uso de Inteligencia Artificial, forneça uma justificativa explicita no feedback geral.
            
 
             [FORMATO DE SAÍDA OBRIGATÓRIO]

@@ -74,7 +74,7 @@ class Usuario {
 
     public function zerarTentativasLogin(PDO $pdo): void {
         $stmt = $pdo->prepare('UPDATE usuarios SET tentativas_login = 0,
-        bloqueado_ate = NULL WHERE id_usuario = ?');
+            bloqueado_ate = NULL WHERE id_usuario = ?');
         $stmt->execute([$this->id]);
     }
     

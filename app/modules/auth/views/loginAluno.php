@@ -12,7 +12,9 @@ $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[
 $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
 
 // usuarioLogado() é do core, devolve os dados da sessão ou null
+
 $logado = usuarioLogado();
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

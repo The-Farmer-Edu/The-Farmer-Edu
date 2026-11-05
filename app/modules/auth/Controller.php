@@ -81,14 +81,126 @@ class UsuarioController
         $this->view('loginAluno');
     }
 
+    public function showTesteEmail(): void
+    {
+        $this->view('testeEmail');
+    }
     //só deixa entrar quem é aluno
     public function entrarAluno(): void
     {
         $this->autenticar('aluno', 'loginAluno');
     }
 
-    //sair(logout)
 
+
+    // Só deixa passar quem está logado (e com a sessão dentro das 4h)
+    private function exigirLogin(): array{
+        $logado  = usuarioLogado();
+        $destino = ($logado['perfilAcesso'] ?? 'aluno') === 'instrutor' ? 'loginInstrutor' : 'loginAluno';
+
+        // sessão vencida: volta pro login do mesmo perfil, avisando que expirou
+        if (sessaoExpirouPorInatividade()) {
+            header('Location: ' . $destino . '?expirou=1');
+            exit;
+        }
+        if ($logado === null) {
+            header('Location: loginAluno');
+            exit;
+        }
+        return $logado;
+    }
+
+    public function showEditarConta(): void {
+        $logado  = $this->exigirLogin();
+        $usuario = Usuario::buscarPorId(iniciarPDO(), (int) $logado['idUsuario']);
+
+        if ($usuario === null || !$usuario->ativo) {
+            logout();
+            header('Location: loginAluno');
+            exit;
+        }
+
+        $this->view('editarConta', ['dados' => ['nome' => $usuario->nome, 'email' => $usuario->email]]);
+    }
+
+    public function editarConta(): void{
+        $logado     = $this->exigirLogin();
+        $dados      = ['nome' => (string) ($_POST['nome'] ?? ''), 'email' => (string) ($_POST['email'] ?? '')];
+        $senhaAtual = (string) ($_POST['senha_atual'] ?? '');
+        $novaSenha  = (string) ($_POST['nova_senha'] ?? '');
+
+        $mensagem = '';
+        $sucesso  = false;
+
+        try {
+            $pdo     = iniciarPDO();
+            $usuario = Usuario::buscarPorId($pdo, (int) $logado['idUsuario']);
+
+            if ($usuario === null || !$usuario->ativo) {
+                throw new RuntimeException('Conta não encontrada.');
+            }
+            if (!$usuario->verificarSenha($senhaAtual)) {
+                throw new InvalidArgumentException('Senha atual incorreta.');
+            }
+
+            $usuario->atualizarDados($pdo, $dados['nome'], $dados['email'], $novaSenha);
+
+            // mantém a sessão igual ao banco
+            $_SESSION['usuario']['nome']  = $usuario->nome;
+            $_SESSION['usuario']['email'] = $usuario->email;
+
+            $dados    = ['nome' => $usuario->nome, 'email' => $usuario->email];
+            $mensagem = 'Dados atualizados com sucesso!';
+            $sucesso  = true;
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            $mensagem = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+        }
+
+        $this->view('editarConta', ['dados' => $dados, 'mensagem' => $mensagem, 'sucesso' => $sucesso]);
+    }
+
+    public function showDesativarConta(): void{
+        $this->exigirLogin();
+        $this->view('desativarConta');
+    }
+
+    public function desativarConta(): void{
+        $logado     = $this->exigirLogin();
+        $senhaAtual = (string) ($_POST['senha_atual'] ?? '');
+
+        $mensagem = '';
+        $sucesso  = false;
+
+        try {
+            $pdo     = iniciarPDO();
+            $usuario = Usuario::buscarPorId($pdo, (int) $logado['idUsuario']);
+
+            if ($usuario === null || !$usuario->ativo) {
+                throw new RuntimeException('Conta não encontrada.');
+            }
+            if (!$usuario->verificarSenha($senhaAtual)) {
+                throw new InvalidArgumentException('Senha incorreta.');
+            }
+
+            $usuario->desativar($pdo);
+            logout(); // encerra a sessão: a conta não pode mais ficar logada
+
+            $mensagem = 'Conta desativada com sucesso.';
+            $sucesso  = true;
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            $mensagem = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+        }
+
+        $this->view('desativarConta', ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
+    }
+
+    //sair(logout)
     public function sair(): void
     {
         // "Descobre" o perfil antes de apagar a sessão
@@ -130,6 +242,10 @@ class UsuarioController
             throw new InvalidArgumentException('E-mail ou senha incorretos. Você ainda tem ' . $restantes . ' ' . ($restantes === 1 ? 'tentativa' : 'tentativas') . '.');
             }
 
+            if (!$usuario->ativo) {
+                throw new InvalidArgumentException('Esta conta está desativada.');
+            }
+
             $usuario->zerarTentativasLogin($pdo);
             login([
             'idUsuario' => $usuario->id,
@@ -156,9 +272,6 @@ class UsuarioController
             return 'Muitas tentativas incorretas. Tente novamente em ' . $minutos . ' ' . ($minutos === 1 ? 'minuto' : 'minutos') . '.';
             }
 
-
- 
- 
     private function lerMaterias(): array
     {
         $bruto = $_POST['materias'] ?? [];
@@ -184,6 +297,3 @@ class UsuarioController
         require __DIR__ . '/views/' . $nome . '.php';
     }
 }
- 
-
-

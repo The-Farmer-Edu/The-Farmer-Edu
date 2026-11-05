@@ -3,8 +3,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && empty($mensagem)){
     header("Location: loginAluno");
     exit();
 }
+
+
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
 
+// primeiro confere se a sessão expirou (4h sem atividade), depois lê o login
+// o "?expirou=1" vem do redirecionamento das páginas de editar/desativar conta
 $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
 
 // usuarioLogado() é do core, devolve os dados da sessão ou null
@@ -26,12 +30,21 @@ $logado = usuarioLogado();
         <p><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
     <?php endif; ?>
 
-    <?php if ($logado): ?>
+    <?php if ($expirou && !$logado): ?>
+        <p><strong>Sua sessão expirou por inatividade.</strong></p>
+        <form action="loginAluno" method="GET">
+            <button type="submit">Voltar ao login</button>
+        </form>
+    <?php elseif ($logado): ?>
         <p>
             Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
             (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
         </p>
-        <p><a href="logout">Sair</a></p>
+        <p>
+            <a href="editarConta">Editar conta</a> |
+            <a href="desativarConta">Desativar conta</a> |
+            <a href="logout">Sair</a>
+        </p>
     <?php else: ?>
         <form action="" method="POST">
             <p>

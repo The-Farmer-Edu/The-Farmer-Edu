@@ -13,7 +13,7 @@
 
     public function sendRespostaReferencia(): void {
         require_once __DIR__ . '/view/respostaReferencia.php';
-      
+    }
     public function showAvaliacao(): void {
         require_once __DIR__ . '/view/criteriosAvaliacao.php';
     }

@@ -8,7 +8,6 @@ $valor = static fn(string $campo): string => htmlspecialchars((string) ($dados[$
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Editar conta - The Farmer Edu</title>
-    <link rel="stylesheet" href="file?type=css&file=editarconta.css">
 </head>
 <body>
     <h1>Editar conta</h1>

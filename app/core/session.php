@@ -74,3 +74,5 @@ function sessaoExpirouPorInatividade(): bool {
 registrarAtividadeSessao();
     return false;
 }
+
+?>

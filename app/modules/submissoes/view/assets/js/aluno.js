@@ -7,6 +7,7 @@ function renderizarAtividade() {
         return;
     }
     const el = id => document.getElementById(id);
+    // Se um elemento não existir no HTML, ele é simplesmente ignorado (não quebra a página)
     const escrever = (id, valor) => { const e = el(id); if (e) e.textContent = valor; };
 
     escrever('atvTitulo', A.titulo);
@@ -56,6 +57,7 @@ function lerEntrega() {
 function atualizarStatus() {
     const A = window.FarmAtividade;
     if (A.vazia) {
+        // sem atividade: nada de status, prazo, texto nem botão
         status.style.display = 'none';
         prazoEl.hidden = true;
         texto.style.display = 'none';

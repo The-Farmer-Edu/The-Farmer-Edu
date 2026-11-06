@@ -1,161 +1,819 @@
-function renderizarAtividade() {
-    const A = window.FarmAtividade;
-    if (!A) return;
-    if (A.vazia) {
-        // sem atividade: deixa os quadros em branco
-        document.querySelectorAll('.atv-sub, .atv-meta').forEach(e => e.style.display = 'none');
-        return;
+const A = window.FarmAtividade;
+const L = A.linguagem;
+const modo = L.modo;
+const ARQUIVOS = L.arquivos;
+const LIMITE_CLICKS = 10;
+const LIMITE_CANCELAMENTOS = 3;
+
+const REGRAS = {
+    html: [['c', '<!--[\\s\\S]*?-->'], ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'], ['s', '"[^"]*"|\'[^\']*\''], ['a', '[\\w-]+(?==)']],
+    css: [['c', '\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
+          ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
+    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/'],
+         ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+         ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
+         ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
+    py: [['c', '#.*'], ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
+         ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
+         ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']],
+    php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+          ['a', '\\$[a-zA-Z_]\\w*'],
+          ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']]
+};
+
+const $ = id => document.getElementById(id);
+const ed = $('ed'), hl = $('hl'), gutter = $('gutter'), pv = $('pv'), pvPy = $('pvPy'), con = $('console');
+const ide = $('ide');
+const btnInicio = $('btnInicio'), btnFecharEditor = $('fecharEditor');
+
+const CHAVE = `farmedu:codigo:${A.chave}:${L.id}`;
+// A entrega é guardada por atividade (assim o teste não mistura com a atividade real)
+const CHAVE_ENTREGA = `farmedu:entrega:${A.chave}`;
+const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${A.chave}`;
+const CHAVE_AVALIACAO = `farmedu:avaliacao:${A.chave}`;
+
+let dados;
+try { dados = { ...L.inicial, ...JSON.parse(localStorage.getItem(CHAVE)) }; } catch (e) { dados = { ...L.inicial }; }
+if (A.vazia) ARQUIVOS.forEach(a => { dados[a.lang] = ''; });
+let entrega = null;
+try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) {}
+let cancelamentos = 0;
+try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (e) {}
+
+// Ajuda da Sophia: analisando = esperando a IA; aguardando = esperando o aluno digitar sim/não no console; dados = resposta da IA
+const ajuda = { analisando: false, aguardando: false, dados: null, assinatura: '' };
+// Erros de execução da página (capturados do iframe) enviados junto para a IA
+let errosConsole = [];
+
+let atual = ARQUIVOS[0].lang;
+let resultadoAberto = false;
+let executadoAtual = false;
+let executando = false;
+let enviando = false;
+let avaliacaoSeq = 0;
+const usos = { executar: 0, sophia: 0 };
+// Erros da última execução: só valem enquanto o código não mudou depois dela
+const errosAtuais = () => (executadoAtual ? errosConsole : []);
+// "Foto" do código + erros: a Sophia usa para saber se o aluno mexeu no código depois da pergunta
+const assinaturaDoCodigo = () => contextoEntrega().codigo + '\u0000' + JSON.stringify(errosAtuais());
+
+const mobile = () => window.matchMedia('(max-width: 780px)').matches;
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+
+/*Informações da atividade na tela (vindas do atividade.js)*/
+if (A.vazia) {
+    $('atvTitulo').textContent = 'Nenhuma atividade carregada';
+    $('atvDescricao').textContent = 'Volte à página do aluno e clique em "Começar" na atividade. (Para testar, abra a página do aluno com ?teste=web, ?teste=php ou ?teste=python na URL.)';
+    $('atvId').hidden = true;
+    $('atvLang').hidden = true;
+    const detalhes = document.querySelector('.atv-detalhes');
+    if (detalhes) detalhes.hidden = true;
+} else {
+    $('atvId').textContent = `Atividade #${A.id}`;
+    $('atvTitulo').textContent = A.titulo;
+    $('atvLang').textContent = L.nome;
+    $('atvDescricao').textContent = A.descricao;
+    $('atvResumo').textContent = `O que fazer (${A.requisitos.length} ${A.requisitos.length === 1 ? 'item' : 'itens'})`;
+    A.requisitos.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = r;
+        $('atvRequisitos').appendChild(li);
+    });
+}
+
+/*Nome oficial da linguagem vindo do Judge0*/
+if (modo === 'terminal' && !A.vazia) {
+    chamarJudge0('languages')
+        .then(lista => {
+            const ling = Array.isArray(lista) && lista.find(x => x.id === L.judge0);
+            if (ling) $('atvLang').textContent = ling.name;
+        })
+        .catch(() => {});
+}
+
+/*Editor*/
+function colorir(codigo, regras) {
+    const re = new RegExp(regras.map(r => '(' + r[1] + ')').join('|'), 'g');
+    let saida = '', ultimo = 0, m;
+    while ((m = re.exec(codigo))) {
+        if (!m[0]) { re.lastIndex++; continue; }
+        const i = m.slice(1).findIndex(x => x !== undefined);
+        saida += esc(codigo.slice(ultimo, m.index)) + `<span class="${regras[i][0]}">${esc(m[0])}</span>`;
+        ultimo = re.lastIndex;
     }
-    const el = id => document.getElementById(id);
-    const escrever = (id, valor) => { const e = el(id); if (e) e.textContent = valor; };
+    return saida + esc(codigo.slice(ultimo));
+}
 
-    escrever('atvTitulo', A.titulo);
-    escrever('atvDescricao', A.descricao);
-    escrever('atvLinguagem', A.linguagem.nome);
-    escrever('atvNota', `de 0 a ${A.notaMax} (mínima para aprovação: ${A.notaMin})`);
+function sincronizar() {
+    hl.scrollTop = ed.scrollTop;
+    hl.scrollLeft = ed.scrollLeft;
+    gutter.scrollTop = ed.scrollTop;
+    atualizarBtnInicio();
+}
 
-    const lista = el('atvRequisitos');
-    if (lista) {
-        lista.innerHTML = '';
-        A.requisitos.forEach(r => {
-            const li = document.createElement('li');
-            li.textContent = r;
-            lista.appendChild(li);
-        });
+function atualizarEditor() {
+    hl.innerHTML = colorir(ed.value, REGRAS[atual]) + '\n';
+    gutter.textContent = Array.from({ length: ed.value.split('\n').length }, (_, i) => i + 1).join('\n');
+    sincronizar();
+}
+
+function posicao() {
+    const antes = ed.value.slice(0, ed.selectionStart).split('\n');
+    $('stPos').textContent = `Ln ${antes.length}, Col ${antes[antes.length - 1].length + 1}`;
+}
+
+function montarAbas() {
+    $('arquivos').innerHTML = '';
+    ARQUIVOS.forEach(a => {
+        const li = document.createElement('li');
+        if (a.lang === atual) li.className = 'on';
+        const bolinha = document.createElement('span');
+        bolinha.className = 'dot dot-' + a.lang;
+        li.append(bolinha, a.nome);
+        li.onclick = () => trocar(a.lang);
+        $('arquivos').appendChild(li);
+    });
+    $('stLang').textContent = ARQUIVOS.find(a => a.lang === atual).rotulo;
+}
+
+function trocar(lang) {
+    atual = lang;
+    ed.value = dados[atual];
+    montarAbas();
+    atualizarEditor();
+    posicao();
+    if (!mobile()) ed.focus();
+}
+
+/*Mensagens*/
+function aviso(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(aviso.t);
+    aviso.t = setTimeout(() => t.classList.remove('on'), 3000);
+}
+
+/*Balão da Sophia: fala curta (some sozinha)*/
+function sophiaFala(msg, ms = 5000) {
+    const b = $('balao');
+    b.classList.remove('fixo');
+    b.textContent = msg;
+    b.classList.add('on');
+    clearTimeout(sophiaFala.t);
+    if (ms) sophiaFala.t = setTimeout(() => b.classList.remove('on'), ms);
+}
+
+function fecharBalao() {
+    clearTimeout(sophiaFala.t);
+    $('balao').classList.remove('on');
+}
+
+/*Balão da Sophia: ajuda (o que foi feito, o que falta e como corrigir). Fica aberto até o aluno fechar*/
+function secaoAjuda(b, titulo, itens, classe) {
+    if (!itens || !itens.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'balao-sec ' + classe;
+    const h = document.createElement('h4');
+    h.textContent = titulo;
+    const ul = document.createElement('ul');
+    ul.className = 'balao-lista';
+    itens.forEach(t => {
+        const li = document.createElement('li');
+        li.textContent = t;
+        ul.appendChild(li);
+    });
+    sec.append(h, ul);
+    b.appendChild(sec);
+}
+
+function sophiaMostrarAjuda(f, temProblema) {
+    const b = $('balao');
+    clearTimeout(sophiaFala.t);
+    b.innerHTML = '';
+    b.classList.add('fixo');
+
+    const topo = document.createElement('div');
+    topo.className = 'balao-topo';
+    const titulo = document.createElement('strong');
+    titulo.textContent = temProblema ? 'Vamos corrigir juntos!' : 'Código sem erros!';
+    const fechar = document.createElement('button');
+    fechar.type = 'button';
+    fechar.className = 'balao-fechar';
+    fechar.setAttribute('aria-label', 'Fechar ajuda');
+    fechar.textContent = '✕';
+    fechar.onclick = fecharBalao;
+    topo.append(titulo, fechar);
+    b.appendChild(topo);
+
+    if (temProblema) {
+        if (f.feedback) {
+            const p = document.createElement('p');
+            p.className = 'balao-texto';
+            p.textContent = f.feedback;
+            b.appendChild(p);
+        }
+        const errosExec = errosAtuais().map(m => 'Ao executar: ' + m);
+        secaoAjuda(b, '✔ O que você já fez', f.feitos, 'ok');
+        secaoAjuda(b, '✖ O que ainda falta', f.faltando, 'falta');
+        secaoAjuda(b, '🔧 Como corrigir', errosExec.concat(f.melhorias), 'corrige');
+    } else {
+        const p = document.createElement('p');
+        p.className = 'balao-texto';
+        p.textContent = 'Não encontrei nenhum erro no seu código. ✔';
+        b.appendChild(p);
+        secaoAjuda(b, '✔ O que você já fez', f.feitos, 'ok');
     }
+    if (f.exemplo) {
+        const ex = document.createElement('p');
+        ex.className = 'balao-status';
+        ex.textContent = '(resposta de exemplo)';
+        b.appendChild(ex);
+    }
+    b.classList.add('on');
+}
 
-    const inputId = el('atvInputId');
-    if (inputId) inputId.value = A.id;
+function escreverConsole(msg, tipo = 'log') {
+    const linha = document.createElement('div');
+    linha.className = tipo;
+    linha.textContent = msg;
+    con.appendChild(linha);
+    con.scrollTop = con.scrollHeight;
+}
 
-    const box = el('atvBadges');
-    if (box) {
-        const cores = { HTML5: 'badge-html', CSS3: 'badge-css', JS: 'badge-js' };
-        box.innerHTML = '';
-        A.linguagem.badges.forEach(b => {
-            const sp = document.createElement('span');
-            sp.className = 'badge-padrao ' + (cores[b] || 'badge-outra');
-            sp.textContent = b;
-            box.appendChild(sp);
-        });
+/*Executar (só quando o aluno clica) */
+function setAba(aba) {
+    ide.dataset.aba = aba;
+    document.querySelectorAll('.aba').forEach(b => b.classList.toggle('on', b.dataset.aba === aba));
+}
+
+function mostrarResultado(focar) {
+    if (!resultadoAberto) {
+        resultadoAberto = true;
+        $('painelResultado').hidden = false;
+        ide.classList.add('com-resultado');
+        $('abaResultado').disabled = false;
+    }
+    if (focar && mobile()) setAba('resultado');
+}
+
+const b64e = s => btoa(Array.from(new TextEncoder().encode(s), c => String.fromCharCode(c)).join(''));
+const b64d = s => s ? new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0))) : '';
+
+/*Lê a resposta do servidor como JSON. Se o PHP imprimiu avisos em HTML antes do JSON, aproveita o JSON;
+  se não houver JSON, devolve a mensagem do servidor de forma legível (em vez de "Unexpected token '<'").*/
+function lerJson(texto) {
+    try { return JSON.parse(texto); } catch (e) {}
+    // tira avisos do PHP no formato <br /><b>Warning</b>: ... <br />
+    const limpo = texto.replace(/<br\s*\/?>\s*<b>[^<]*<\/b>:[\s\S]*?<br\s*\/?>/gi, '').trim();
+    try { return JSON.parse(limpo); } catch (e) {}
+    // último recurso: começa no primeiro { ou [ que forme um JSON válido
+    let tentativas = 0;
+    for (const m of texto.matchAll(/[\[{]/g)) {
+        if (++tentativas > 20) break;
+        try { return JSON.parse(texto.slice(m.index)); } catch (e) {}
+    }
+    const legivel = texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+    throw new Error(legivel || 'resposta vazia');
+}
+
+/*Uma chamada ao Judge0 pelo servidor (api/Judge0). O "caminho" vai em base64, como o servidor espera.*/
+async function chamarJudge0(caminho, opcoes) {
+    const r = await fetch(`api/Judge0?isBase64=true&path=${encodeURIComponent(btoa(caminho))}`, opcoes);
+    const texto = await r.text();
+    let d;
+    try {
+        d = lerJson(texto);
+    } catch (e) {
+        console.error('api/Judge0 não devolveu JSON (HTTP ' + r.status + '). Resposta:', texto);
+        throw new Error('o servidor (api/Judge0) devolveu um erro em vez de JSON: ' + e.message);
+    }
+    if (!r.ok) {
+        const msg = d && (d.error || d.message || d.erro);
+        throw new Error('Judge0 respondeu ' + r.status + (msg ? ': ' + (typeof msg === 'string' ? msg : JSON.stringify(msg)) : ''));
+    }
+    return d;
+}
+
+/*Roda o código no Judge0. Tenta esperar o resultado na mesma chamada (wait=true); se falhar, envia sem
+  esperar e consulta o resultado pelo token (plano B).*/
+async function judge0(codigo, idLing, entrada) {
+    const post = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_code: b64e(codigo), language_id: idLing, stdin: b64e(entrada || '') })
+    };
+    let d;
+    try {
+        d = await chamarJudge0('submissions?base64_encoded=true&wait=true', post);
+    } catch (erroPrincipal) {
+        try {
+            const criado = await chamarJudge0('submissions?base64_encoded=true', post);
+            if (!criado || !criado.token) throw erroPrincipal;
+            for (let i = 0; i < 10; i++) {
+                await esperar(1000);
+                d = await chamarJudge0(`submissions/${criado.token}?base64_encoded=true`);
+                if (d.status && d.status.id > 2) break;   // 1 = na fila, 2 = processando
+            }
+        } catch (erroPlanoB) {
+            throw erroPrincipal;   // mostra o erro da primeira tentativa
+        }
+        if (!d) throw erroPrincipal;
+    }
+    return {
+        status: (d.status && d.status.description) || 'Sem status',
+        saida: b64d(d.stdout),
+        erro: b64d(d.stderr) || b64d(d.compile_output) || b64d(d.message)
+    };
+}
+
+const PONTE = '<script>(function(){' +
+    'var s=function(t,a){parent.postMessage({farm:1,t:t,m:[].map.call(a,function(x){' +
+    'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")},"*")};' +
+    '["log","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);o.apply(console,arguments)}});' +
+    'window.addEventListener("error",function(e){s("error",[e.message])});' +
+    '})()<\/script>';
+
+/* Judge0 não renderiza HTML*/
+function rodarWeb() {
+    pv.hidden = false;
+    pvPy.hidden = true;
+    const css = `<style>${dados.css}</style>`;
+    const js = PONTE + `<script>${dados.js}<\/script>`;
+    let doc = dados.html;
+    doc = doc.includes('</head>') ? doc.replace('</head>', () => css + '</head>') : css + doc;
+    doc = doc.includes('</body>') ? doc.replace('</body>', () => js + '</body>') : doc + js;
+    pv.srcdoc = doc;
+    escreverConsole('Página renderizada com o código do momento do clique.', 'info');
+}
+
+/*Terminal: manda o arquivo ao Judge0 e mostra a saída (continua no console)*/
+async function rodarTerminal() {
+    pv.hidden = true;
+    pvPy.hidden = false;
+    const arq = ARQUIVOS[0];
+    pvPy.textContent = `$ ${arq.nome}\nExecutando no Judge0...`;
+    escreverConsole('Enviando ao Judge0...', 'info');
+    try {
+        const r = await judge0(dados[arq.lang], L.judge0, A.entrada);
+        pvPy.textContent = `$ ${arq.nome}\n` + (r.saida || r.erro || '(sem saída)');
+        escreverConsole(`Judge0: ${r.status}`, r.status === 'Accepted' ? 'info' : 'error');
+        if (r.saida) escreverConsole('Saída: ' + r.saida.trim(), 'log');
+        // Se a atividade tiver "saidaEsperada", compara com o que o código imprimiu
+        if (typeof A.saidaEsperada === 'string' && r.status === 'Accepted') {
+            const esperado = A.saidaEsperada.trim();
+            const ok = r.saida.trim() === esperado;
+            escreverConsole(ok ? '✔ Saída confere com o esperado'
+                               : '✖ Saída diferente. Esperado: ' + esperado, ok ? 'info' : 'error');
+            // Saída errada conta como problema: a Sophia oferece ajuda e a IA recebe o motivo
+            if (!ok) errosConsole.push(`A saída foi "${r.saida.trim()}", mas o esperado é "${esperado}".`);
+        }
+        if (r.erro) escreverConsole(r.erro, 'error');
+        // Erro de compilação/execução do Judge0 também vai para a Sophia e para a IA
+        if (r.status !== 'Accepted' || r.erro) errosConsole.push((r.erro || r.status).trim().slice(0, 300));
+    } catch (e) {
+        pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.\n${e.message}`;
+        escreverConsole('Falha ao falar com o Judge0: ' + e.message, 'error');
+        escreverConsole('Confira a resposta do endereço api/Judge0 (F12 > Rede): o servidor precisa devolver JSON.', 'info');
     }
 }
-renderizarAtividade();
 
-/*  Status da entrega, prazo e botão principal  */
-// A entrega é guardada por atividade
-const CHAVE_ENTREGA = 'farmedu:entrega:' + window.FarmAtividade.chave;
-const status = document.querySelector('.status');
-const texto = document.getElementById('texto');
-const botaoComecar = document.getElementById('comecar');
-const prazoEl = document.getElementById('atvPrazo');
-
-function lerEntrega() {
-    try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) { return null; }
+async function executar(opcoes = {}) {
+    if (executando) return;
+    executando = true;
+    atualizarBotoes();
+    con.innerHTML = '';
+    errosConsole = [];
+    mostrarResultado(!!opcoes.focar);
+    try {
+        if (modo === 'web') rodarWeb(); else await rodarTerminal();
+        executadoAtual = true;
+        $('pvStale').hidden = true;
+    } finally {
+        executando = false;
+        atualizarBotoes();
+    }
 }
 
-function atualizarStatus() {
-    const A = window.FarmAtividade;
-    if (A.vazia) {
-        status.style.display = 'none';
-        prazoEl.hidden = true;
-        texto.textContent = '';
-        botaoComecar.disabled = true;
-        botaoComecar.textContent = 'Começar';
-        return;
-    }
-    const entrega = lerEntrega();
-    const data = entrega && new Date(entrega.data);
-    const entregue = !!data && !isNaN(data);
+window.addEventListener('message', e => {
+    if (e.source !== pv.contentWindow || !e.data || !e.data.farm) return;
+    if (e.data.t === 'error') errosConsole.push(e.data.m);
+    escreverConsole((e.data.t === 'error' ? '✖ ' : '› ') + e.data.m, e.data.t);
+});
+
+/*Limites e estado dos botões*/
+function atualizarContadores() {
+    const exec = Math.max(0, LIMITE_CLICKS - usos.executar);
+    const soph = Math.max(0, LIMITE_CLICKS - usos.sophia);
+    const canc = Math.max(0, LIMITE_CANCELAMENTOS - cancelamentos);
+    $('contadorExecutar').textContent = `${exec}/${LIMITE_CLICKS}`;
+    $('contadorSophia').textContent = `${soph}/${LIMITE_CLICKS}`;
+    $('contadorCancelar').textContent = `${canc}/${LIMITE_CANCELAMENTOS}`;
+    $('contadorLimite').classList.toggle('is-limitado', exec === 0 || soph === 0 || canc === 0);
+}
+
+function atualizarBotoes() {
+    $('btnRodar').disabled = A.vazia || executando || usos.executar >= LIMITE_CLICKS;
+    $('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
+    $('btnSophia').disabled = A.vazia || usos.sophia >= LIMITE_CLICKS;
+    atualizarEntrega();
+}
+
+/*Entrega*/
+const modalEntrega = $('modalEntrega');
+const formatarData = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+function atualizarEntrega() {
+    const entregue = !!entrega;
     const encerrado = A.prazoExcedido();
+    const bloqueado = entregue && cancelamentos >= LIMITE_CANCELAMENTOS;
 
-    const ponto = document.createElement('span');
-    ponto.className = 'ponto';
-    status.textContent = '';
+    // Entregue ou com prazo excedido: o editor vira somente leitura
+    ed.readOnly = entregue || encerrado || A.vazia;
 
-    if (entregue) {
-        const quando = data.toLocaleString('pt-BR', {
-            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-        });
-        status.append(ponto, ' Entregue em ' + quando);
-    } else {
-        status.append(ponto, ' Não entregue');
-    }
-    status.classList.toggle('entregue', entregue);
-
-    // Botão e texto: Começar, Revisar, Visualizar
-    botaoComecar.classList.toggle('visualizar', encerrado);
-    if (encerrado) {
-        botaoComecar.textContent = 'Visualizar';
-        texto.textContent = entregue
-            ? 'O prazo acabou. Clique em "Visualizar" para ver o código que você entregou.'
-            : 'O prazo de entrega acabou. Você pode apenas visualizar a atividade.';
-    } else if (entregue) {
-        botaoComecar.textContent = 'Revisar';
-        texto.textContent = 'Atividade entregue! Clique em "Revisar" para ver o seu código.';
-    } else {
-        botaoComecar.textContent = 'Começar';
-        texto.textContent = 'Escreva seu código direto na plataforma clicando em "Começar".';
-    }
+    $('chipEntrega').hidden = !entregue;
+    if (entregue) $('chipEntrega').textContent = '✔ Entregue em ' + formatarData(entrega.data);
 
     // Limite de entrega
-    if (A.limite) {
-        prazoEl.hidden = false;
-        prazoEl.classList.toggle('encerrado', encerrado);
-        prazoEl.textContent = encerrado
-            ? 'Prazo encerrado em ' + A.limiteTexto()
-            : 'Prazo de entrega até ' + A.limiteTexto();
-    } else {
-        prazoEl.hidden = true;
-    }
+    $('chipPrazo').hidden = !A.limite;
+    $('chipPrazo').classList.toggle('encerrado', encerrado);
+    $('chipPrazo').textContent = encerrado
+        ? 'Prazo encerrado em ' + A.limiteTexto()
+        : 'Prazo para entregar até ' + A.limiteTexto();
+
+    const btn = $('btnEntregar');
+    btn.disabled = A.vazia || bloqueado || encerrado || (!entregue && executando);
+    btn.textContent = encerrado ? 'Prazo encerrado'
+        : bloqueado ? 'Entrega final'
+        : entregue ? 'Cancelar entrega' : 'Entregar atividade';
+    btn.className = entregue || encerrado ? 'btn btn-cinza' : 'btn btn-verde';
+    atualizarContadores();
 }
 
-atualizarStatus();
-window.addEventListener('pageshow', atualizarStatus);
-window.addEventListener('storage', atualizarStatus);
-setInterval(atualizarStatus, 30000); // vira "Visualizar" sozinho quando o prazo vence
-
-document.getElementById('btnVoltar').addEventListener('click', () => history.back());
-
-/*  Menus do cabeçalho */
-const botaoIconi = document.getElementById('botaoIconi');
-const botaoUsuario = document.getElementById('botaoUsuario');
-const menuIconi = document.getElementById('menuIconi');
-const menuUsuario = document.getElementById('menuUsuario');
-
-function fecharMenus() {
-    [menuIconi, menuUsuario].forEach(m => {
-        m.classList.remove('active');
-        m.setAttribute('aria-hidden', 'true');
+function abrirModalEntrega() {
+    $('resumoEntrega').innerHTML = '';
+    ARQUIVOS.forEach(a => {
+        const linhas = dados[a.lang].trim() ? dados[a.lang].split('\n').length : 0;
+        const li = document.createElement('li');
+        const bolinha = document.createElement('span');
+        bolinha.className = 'dot dot-' + a.lang;
+        li.append(bolinha, `${a.nome} — ${linhas} ${linhas === 1 ? 'linha' : 'linhas'}`);
+        $('resumoEntrega').appendChild(li);
     });
-    botaoIconi.setAttribute('aria-expanded', 'false');
-    botaoUsuario.setAttribute('aria-expanded', 'false');
+    const rest = LIMITE_CANCELAMENTOS - cancelamentos;
+    $('avisoCancelar').textContent = rest > 0
+        ? `Depois de entregar, você poderá cancelar a entrega mais ${rest} ${rest === 1 ? 'vez' : 'vezes'}.`
+        : 'Seus cancelamentos acabaram: esta entrega será final.';
+    modalEntrega.classList.add('active');
+    $('btnConfirmar').focus();
 }
 
-function alternarMenu(menu, botao) {
-    const vaiAbrir = !menu.classList.contains('active');
-    fecharMenus();
-    if (vaiAbrir) {
-        menu.classList.add('active');
-        menu.setAttribute('aria-hidden', 'false');
-        botao.setAttribute('aria-expanded', 'true');
+const fecharModalEntrega = () => modalEntrega.classList.remove('active');
+
+/*Antes de confirmar, o aluno sempre vê como ficou (executa à força se ainda não viu)*/
+async function iniciarEntrega() {
+    if (A.prazoExcedido()) return aviso('O prazo de entrega acabou');
+    if (ARQUIVOS.every(a => !dados[a.lang].trim())) return aviso('Escreva algum código antes de entregar');
+    salvar();
+    if (!resultadoAberto || !executadoAtual) {
+        aviso('Vamos ver como ficou antes de confirmar a entrega');
+        await executar({ focar: true });
+        await esperar(900);
+    } else if (mobile()) {
+        setAba('resultado');
+    }
+    abrirModalEntrega();
+}
+
+function confirmarEntrega() {
+    if (A.prazoExcedido()) { fecharModalEntrega(); return aviso('O prazo de entrega acabou'); }
+    salvar();
+    entrega = { data: new Date().toISOString(), atividadeId: A.id, linguagem: L.id, arquivos: { ...dados } };
+    try { localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega)); } catch (e) {}
+    fecharModalEntrega();
+    atualizarEntrega();
+    sophiaFala('Atividade entregue! Sua nota será liberada depois do prazo de entrega.', 6000);
+    enviarParaAvaliacao();
+}
+
+function cancelarEntrega() {
+    if (A.prazoExcedido()) return aviso('O prazo acabou: a entrega não pode mais ser cancelada');
+    if (cancelamentos >= LIMITE_CANCELAMENTOS) return aviso('Você já usou os 3 cancelamentos. A entrega é final.');
+    cancelamentos++;
+    try { localStorage.setItem(CHAVE_CANCELAMENTOS, String(cancelamentos)); } catch (e) {}
+    entrega = null;
+    avaliacaoSeq++;
+    enviando = false;
+    try { localStorage.removeItem(CHAVE_ENTREGA); } catch (e) {}
+    try { localStorage.removeItem(CHAVE_AVALIACAO); } catch (e) {}
+    atualizarEntrega();
+    aviso(`Entrega cancelada. Cancelamentos restantes: ${LIMITE_CANCELAMENTOS - cancelamentos}/${LIMITE_CANCELAMENTOS}`);
+}
+
+/*FEEDBACK — PONTO DE INTEGRAÇÃO COM O GRUPO feedback_ia*/
+const FEEDBACK = {
+    endpoint: 'api/sendAvaliacao',
+    usarExemploSeFalhar: true,
+
+    montarPayload(ctx) {
+        return {
+            linguagem: ctx.linguagem,
+            codigo_aluno: ctx.codigo,
+            id_linguagem: ctx.idLinguagem,
+            objetivo_atividade: A.objetivo,
+            nota_max: String(A.notaMax),
+            nota_min: String(A.notaMin),
+            dados_entrada: A.entrada,
+            atividadeId: A.id
+        };
+    },
+
+    interpretar(data) {
+        const av = data.avaliacao || {};
+        const st = data.compilacao && data.compilacao.status;
+        return {
+            nota: av.nota_atribuida,
+            status: av.status_avaliacao,
+            feedback: av.feedback_geral,
+            melhorias: av.pontos_melhoria || [],
+            // Campos novos para a ajuda da Sophia (o backend do feedback_ia precisa devolver):
+            feitos: av.pontos_positivos || av.o_que_foi_feito || [],
+            faltando: av.o_que_falta || av.pontos_faltantes || [],
+            compilador: st && (st.description || st),
+            saida: data.compilacao && data.compilacao.saida_terminal
+        };
+    },
+
+    /*Resposta de exemplo (usada só se a IA falhar)*/
+    exemplo() {
+        const req = A.requisitos || [];
+        const saidaOk = modo === 'terminal' && typeof A.saidaEsperada === 'string'
+            && executadoAtual && errosConsole.length === 0;
+        if (saidaOk) {
+            return {
+                sucesso: true,
+                compilacao: { status: 'Accepted', saida_terminal: A.saidaEsperada },
+                avaliacao: {
+                    nota_atribuida: A.notaMax,
+                    status_avaliacao: 'aprovado',
+                    feedback_geral: 'A saída do seu código confere com o esperado.',
+                    pontos_positivos: req.map(r => 'Você cumpriu: ' + r),
+                    o_que_falta: [],
+                    pontos_melhoria: []
+                }
+            };
+        }
+        const metade = Math.ceil(req.length / 2);
+        return {
+            sucesso: true,
+            compilacao: { status: 'Código Aceito!', saida_terminal: '' },
+            avaliacao: {
+                nota_atribuida: 5,
+                status_avaliacao: 'reprovado',
+                feedback_geral: 'Você está no caminho certo, mas faltam alguns itens.',
+                pontos_positivos: req.slice(0, metade).map(r => 'Você já trabalhou neste item: ' + r),
+                o_que_falta: req.slice(metade).map(r => 'Ainda falta: ' + r),
+                pontos_melhoria: ['Releia os itens que faltam, execute o código e confira o resultado no console.']
+            }
+        };
+    }
+};
+
+function contextoEntrega() {
+    const web = modo === 'web';
+    return {
+        linguagem: web ? 'HTML/CSS/JS' : L.rotulo,
+        idLinguagem: L.judge0,
+        codigo: web ? ARQUIVOS.map(a => `/* ${a.nome} */\n${dados[a.lang]}`).join('\n\n') : dados[ARQUIVOS[0].lang]
+    };
+}
+
+/*Chamada à IA (usada pela ajuda da Sophia e pela avaliação da entrega)*/
+async function consultarIA(extra = {}) {
+    const r = await fetch(FEEDBACK.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra })
+    });
+    const texto = await r.text();
+    let data;
+    try {
+        data = lerJson(texto);
+    } catch (e) {
+        console.error('O servidor não devolveu JSON. Resposta:', texto);
+        throw new Error('Resposta do servidor não é JSON: ' + e.message);
+    }
+    console.log('Resposta da IA:', data);
+    if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
+    return FEEDBACK.interpretar(data);
+}
+
+async function consultarIAcomFallback(extra) {
+    try {
+        return await consultarIA(extra);
+    } catch (erro) {
+        console.warn('IA indisponível:', erro);
+        if (FEEDBACK.usarExemploSeFalhar) return { ...FEEDBACK.interpretar(FEEDBACK.exemplo()), exemplo: true };
+        throw erro;
     }
 }
 
-botaoIconi.addEventListener('click', (e) => {
-    e.stopPropagation();
-    alternarMenu(menuIconi, botaoIconi);
+function temProblema(f) {
+    const aceito = !f.compilador || /accepted|aceito/i.test(f.compilador);
+    const aprovado = !f.status || /^aprovado$/i.test(String(f.status).trim());
+    return !aceito || !aprovado || errosAtuais().length > 0 || f.faltando.length > 0;
+}
+
+function habilitarConsole(ligado) {
+    const inp = $('conInput');
+    inp.disabled = !ligado;
+    $('conForm').classList.toggle('ativo', ligado);
+    if (ligado) inp.focus();
+}
+
+function perguntarAjuda() {
+    ajuda.aguardando = true;
+    mostrarResultado(true);
+    const msg = 'Encontrei algum problema no seu código. Quer a minha ajuda? Digite sim ou não no console.';
+    sophiaFala(msg, 0);
+    escreverConsole('Sophia: ' + msg, 'sophia-msg');
+    habilitarConsole(true);
+}
+
+const normalizar = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?,]/g, '').trim();
+
+function responderSophia(texto) {
+    escreverConsole('› ' + texto, 'voce');
+    if (!ajuda.aguardando) return;
+    if (assinaturaDoCodigo() !== ajuda.assinatura) {
+        ajuda.aguardando = false;
+        habilitarConsole(false);
+        escreverConsole('Sophia: Você mexeu no código. Clique em mim de novo para eu olhar outra vez.', 'sophia-msg');
+        return;
+    }
+    const r = normalizar(texto);
+    if (['sim', 's', 'quero', 'claro', 'pode', 'yes'].includes(r)) {
+        ajuda.aguardando = false;
+        habilitarConsole(false);
+        escreverConsole('Sophia: Pronto! Minha ajuda está no balão.', 'sophia-msg');
+        sophiaMostrarAjuda(ajuda.dados, true);
+    } else if (['nao', 'n', 'agora nao', 'no'].includes(r)) {
+        ajuda.aguardando = false;
+        habilitarConsole(false);
+        escreverConsole('Sophia: Tudo bem! Se precisar, é só clicar em mim.', 'sophia-msg');
+        sophiaFala('Tudo bem! Se precisar, é só clicar em mim de novo.', 5000);
+    } else {
+        escreverConsole('Sophia: Não entendi. Digite sim ou não.', 'sophia-msg');
+    }
+}
+
+/*Na entrega a IA avalia em segundo plano: a nota fica guardada e NÃO é mostrada agora*/
+async function enviarParaAvaliacao() {
+    const seq = ++avaliacaoSeq;
+    enviando = true;
+    try {
+        const r = await consultarIAcomFallback({ erros_execucao: errosAtuais() });
+        if (seq !== avaliacaoSeq) return;
+        try {
+            localStorage.setItem(CHAVE_AVALIACAO, JSON.stringify({
+                nota: r.nota, status: r.status, feedback: r.feedback, melhorias: r.melhorias,
+                feitos: r.feitos, faltando: r.faltando, exemplo: !!r.exemplo, data: new Date().toISOString()
+            }));
+        } catch (e) {}
+    } catch (erro) {
+        console.warn('Não foi possível avaliar a entrega agora:', erro);
+    }
+    if (seq === avaliacaoSeq) enviando = false;
+}
+
+/*  Eventos  */
+function salvar() {
+    try { localStorage.setItem(CHAVE, JSON.stringify(dados)); } catch (e) {}
+}
+
+ed.addEventListener('input', () => {
+    dados[atual] = ed.value;
+    executadoAtual = false;
+    if (resultadoAberto) $('pvStale').hidden = false;
+    atualizarEditor();
+    posicao();
+    salvar();
+});
+ed.addEventListener('scroll', sincronizar);
+ed.addEventListener('click', posicao);
+ed.addEventListener('keyup', posicao);
+
+ed.addEventListener('keydown', e => {
+    if (e.key === 'Tab' && !ed.readOnly) {
+        e.preventDefault();
+        ed.setRangeText(modo === 'terminal' && L.id === 71 ? '    ' : '  ', ed.selectionStart, ed.selectionEnd, 'end');
+        ed.dispatchEvent(new Event('input'));
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (ed.readOnly) return;
+        salvar();
+        aviso('Código salvo');
+    }
 });
 
-botaoUsuario.addEventListener('click', (e) => {
-    e.stopPropagation();
-    alternarMenu(menuUsuario, botaoUsuario);
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    fecharModalEntrega();
+    if (document.body.classList.contains('editor-expandido')) recolherEditor();
+});
+document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => setAba(b.dataset.aba)));
+$('btnLimpar').onclick = () => { con.innerHTML = ''; };
+
+$('btnRodar').onclick = () => {
+    if ($('btnRodar').disabled) return;
+    usos.executar++;
+    atualizarContadores();
+    executar({ focar: true });
+};
+
+$('btnSophia').onclick = async () => {
+    if ($('btnSophia').disabled) return;
+
+    if (ajuda.analisando) return sophiaFala('Calma, ainda estou olhando o seu código...', 3000);
+    if (ajuda.aguardando) {
+        if (assinaturaDoCodigo() === ajuda.assinatura) {
+            // nada mudou desde a pergunta: só lembra
+            mostrarResultado(true);
+            habilitarConsole(true);
+            return sophiaFala('Quer a minha ajuda? Digite sim ou não no console.', 0);
+        }
+        // o aluno mexeu no código: a pergunta antiga não vale mais, olha de novo
+        ajuda.aguardando = false;
+        habilitarConsole(false);
+    }
+    if (ARQUIVOS.every(a => !dados[a.lang].trim())) {
+        return sophiaFala('Escreva um pouco de código e clique em mim de novo!', 4000);
+    }
+
+    usos.sophia++;
+    atualizarBotoes();
+    ajuda.analisando = true;
+    ajuda.assinatura = assinaturaDoCodigo();
+    sophiaFala('Deixa eu olhar o seu código...', 0);
+    try {
+        ajuda.dados = await consultarIAcomFallback({ erros_execucao: errosAtuais() });
+        if (temProblema(ajuda.dados)) {
+            perguntarAjuda();
+        } else {
+            escreverConsole('Sophia: Código sem erros!', 'sophia-msg');
+            sophiaMostrarAjuda(ajuda.dados, false);
+        }
+    } catch (erro) {
+        sophiaFala('Não consegui analisar agora. Tente novamente mais tarde.', 6000);
+    } finally {
+        ajuda.analisando = false;
+    }
+};
+
+$('conForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const texto = $('conInput').value.trim();
+    $('conInput').value = '';
+    if (texto) responderSophia(texto);
 });
 
-// Clicar dentro do menu não fecha por engano
-[menuIconi, menuUsuario].forEach(m => m.addEventListener('click', e => e.stopPropagation()));
+// Voltar sempre leva à página do aluno (não às páginas visitadas antes)
+$('btnVoltar').onclick = () => { location.href = 'aluno' + (A.queryAluno || ''); };
+$('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : iniciarEntrega());
+$('btnConfirmar').onclick = confirmarEntrega;
+$('btnCancelarModal').onclick = fecharModalEntrega;
+modalEntrega.addEventListener('click', e => { if (e.target === modalEntrega) fecharModalEntrega(); });
 
-// Clicar fora ou apertar Esc fecha
-document.addEventListener('click', fecharMenus);
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharMenus();
+document.querySelectorAll('.logo img, .sophia-avatar img').forEach(img => {
+    const semImagem = () => img.parentElement.classList.add('sem-img');
+    img.addEventListener('error', semImagem);
+    if (img.complete && !img.naturalWidth) semImagem();
 });
+
+/*Celular: o editor ocupa a tela toda enquanto o aluno digita (X para voltar ao normal)*/
+function atualizarBtnInicio() {
+    if (!btnInicio) return;
+    btnInicio.hidden = !(document.body.classList.contains('editor-expandido') && ed.scrollLeft > 24);
+}
+function expandirEditor() {
+    if (!mobile() || ed.readOnly) return;
+    document.body.classList.add('editor-expandido');
+    atualizarBtnInicio();
+}
+function recolherEditor() {
+    document.body.classList.remove('editor-expandido');
+    ed.blur();
+    atualizarBtnInicio();
+}
+ed.addEventListener('focus', expandirEditor);
+if (btnFecharEditor) btnFecharEditor.addEventListener('click', recolherEditor);
+if (btnInicio) btnInicio.addEventListener('click', () => ed.scrollTo({ left: 0, behavior: 'smooth' }));
+window.addEventListener('resize', () => { if (!mobile()) recolherEditor(); });
+
+atualizarBotoes();
+setInterval(atualizarEntrega, 30000);
+trocar(atual);
+if (!A.vazia) setTimeout(() => sophiaFala('Oi, sou a Sophia! Estou aqui para ajudar a ver se o seu código está dentro do que a atividade pede. Se precisar, é só clicar em mim.', 6000), 600);

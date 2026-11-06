@@ -41,7 +41,7 @@
     const base = {
         id: 1, titulo: 'Atividade', descricao: '', requisitos: [], objetivo: '',
         idLinguagem: 'web', notaMax: 10, notaMin: 6, entrada: '', codigoInicial: {},
-        limiteEntrega: null, chave: null
+        limiteEntrega: null, chave: null, queryAluno: ''
     };
 
     const bloco = document.getElementById('dadosAtividade');
@@ -54,8 +54,7 @@
         }
     }
 
-    // TESTE
-    // atividades SÓ PARA TESTAR limite, Judge0, Sophia/IA e botões de entrega.
+    // TESTE Atividades
     const TESTES = {
         web: {
             id: 1,
@@ -109,14 +108,26 @@
     (function aplicarTeste() {
         try {
             const url = new URLSearchParams(location.search);
+            const existe = n => Object.prototype.hasOwnProperty.call(TESTES, n);
+            const memoria = 'farmedu:teste:atual';
+            const paginaDeCodigo = !!document.getElementById('ed');  
+
             let nome = url.get('teste');
-            // Só carrega dados de teste quando a URL pede (?teste=web, php ou python)
-            if (!Object.prototype.hasOwnProperty.call(TESTES, nome)) nome = null;
+            let pedido = url.get('limite');
+            if (existe(nome)) {
+                sessionStorage.setItem(memoria, JSON.stringify({ nome, limite: pedido }));
+            } else {
+                nome = null;
+                // Página do aluno sem ?teste= fica vazia. A página de código lembra o último teste.
+                if (paginaDeCodigo) {
+                    const salvo = JSON.parse(sessionStorage.getItem(memoria) || 'null');
+                    if (salvo && existe(salvo.nome)) { nome = salvo.nome; pedido = salvo.limite; }
+                }
+            }
             if (!nome) return;
             const teste = TESTES[nome];
 
-            // Prazo 
-            const pedido = url.get('limite');
+            // Prazo: &limite=AAAA-MM-DDTHH:MM, &limite=off ou, por padrão, hoje 23:59
             let limiteEntrega = null;
             if (pedido !== 'off') {
                 let d = pedido ? new Date(pedido) : null;
@@ -124,15 +135,17 @@
                 limiteEntrega = d.toISOString();
             }
 
-            // limpar=1: recomeça o teste do zero
+            // &limpar=1: recomeça o teste do zero
             if (url.get('limpar')) {
                 const re = new RegExp('^farmedu:(codigo|entrega|cancelamentos|avaliacao):' + teste.chave + '(:|$)');
                 Object.keys(localStorage).filter(k => re.test(k)).forEach(k => localStorage.removeItem(k));
             }
 
-            lido = Object.assign({}, lido, teste, { limiteEntrega });
+            // queryAluno: o botão Voltar da página de código usa para voltar ao aluno com o mesmo teste
+            const queryAluno = '?teste=' + nome + (pedido ? '&limite=' + encodeURIComponent(pedido) : '');
+            lido = Object.assign({}, lido, teste, { limiteEntrega, queryAluno });
 
-            // Leva teste= e limite= junto quando o aluno clica em "Começar" (só existe na página do aluno)
+            // Leva ?teste= e &limite= junto quando o aluno clica em "Começar" (só existe na página do aluno)
             const form = document.querySelector('form[action="iniciarAtv"]');
             if (form) {
                 [['teste', nome], ['limite', pedido]].forEach(([campo, valor]) => {
@@ -149,10 +162,13 @@
         }
     })();
 
-    /*MONTAGEM FINAL*/
+
+    /* MONTAGEM FINAL*/
     const A = Object.assign({}, base, lido);
     const L = LINGUAGENS[A.idLinguagem] || LINGUAGENS.web;
     A.linguagem = Object.assign({}, L, { inicial: Object.assign({}, L.inicial, A.codigoInicial) });
+
+    // Atividade vinda do banco: usa o próprio id.
     A.chave = String(A.chave || A.id);
 
     // Limite de entrega
@@ -163,7 +179,7 @@
         ? A.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : '';
 
-    // Sem dados de atividade (nem do banco, nem de teste): a tela do aluno fica vazia
+    // Sem dados de atividade (nem do banco, nem de teste)
     A.vazia = !lido.titulo;
 
     window.FarmAtividade = A;

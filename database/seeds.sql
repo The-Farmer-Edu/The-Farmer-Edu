@@ -1,4 +1,4 @@
--- =====================================================================
+﻿-- =====================================================================
 -- The Farmer Edu — seed.sql (População de Dados de Teste)
 -- SENAI · Aprendizagem em Assistente de Programação Web
 -- Banco: MySQL / MariaDB
@@ -298,7 +298,7 @@ INSERT INTO xp_logs (
         id_aluno,
         quantidade,
         motivo,
-        id_submissao,
+        id_nota,
         data
     )
 VALUES (

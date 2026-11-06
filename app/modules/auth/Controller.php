@@ -394,8 +394,11 @@ class UsuarioController
 
         logout();
 
-        $rotaLogin = ($perfil === 'instrutor') ? '/auth/loginInstrutor' : '/auth/loginAluno';
-        redirecionarParaRota($rotaLogin);
+         header('Location: login' . ucfirst($perfil));
+        exit;
+
+        // $rotaLogin = ($perfil === 'instrutor') ? '/auth/loginInstrutor' : '/auth/loginAluno';
+        // redirecionarParaRota($rotaLogin);
     }
 
     

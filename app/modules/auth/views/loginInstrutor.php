@@ -37,6 +37,7 @@ $logado = usuarioLogado();
                     Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
                     (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
                 </p>
+                <a class="editarconta" href="editarConta">editar conta</a>
                 <p class="mensagem"><a class="link-azul" id="link-sair" href="logout">Sair</a></p>
             <?php else: ?>
                 <form class="form-login" id="form-login" action="" method="POST">
@@ -63,7 +64,7 @@ $logado = usuarioLogado();
 
         <aside class="painel-imagem" id="painel-imagem">
             <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
-            <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
+            <h2 class="nome-marca" id="nome-marca">The Farmer Edu</h2>
             <p class="subtitulo" id="subtitulo">Instrutor</p>
         </aside>
 

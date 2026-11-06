@@ -34,6 +34,7 @@ class AtividadesController
             $pdo = iniciarPDO();
             $idInstrutor = (int) $usuario['idUsuario'];
 
+
             return [
                 'turmas'     => Atividade::turmasDoInstrutor($pdo, $idInstrutor),
                 'atividades' => Atividade::listarDoInstrutor($pdo, $idInstrutor),

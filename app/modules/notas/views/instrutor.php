@@ -17,13 +17,13 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            /* Perfil Verde - Guia de Design */
-            --verde-primario:   #1B5E20;
-            --verde-escuro:     #089C2F;
-            --verde-header:     #A0FDA3;
-            --verde-suave:      #E8F5E9;
-            --verde:            #1B5E20;
-            --verde-claro:      #A0FDA3;
+            /* Perfil Instrutor (Azul) - Guia de Design */
+            --verde-primario:   #0088ff;
+            --verde-escuro:     #90bdf0;
+            --verde-header:     #D9EEFF;
+            --verde-suave:      #EAF5FF;
+            --verde:            #2276e3;
+            --verde-claro:      #D9EEFF;
 
             /* Destaque Secundário */
             --laranja:          #FF8D28;
@@ -35,7 +35,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             --vermelho:         #DC2626;
             --vermelho-claro:   #FEE2E2;
             --azul:             #002D38;
-            --azul-claro:       #A0FDA3;
+            --azul-claro:       #D9EEFF;
 
             /* Neutros */
             --texto-principal:  #002D38;
@@ -233,7 +233,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             gap: 6px;
             background: var(--verde-suave);
             color: var(--verde-primario);
-            border: 1px solid rgba(27, 94, 32, 0.25);
+            border: 1px solid rgba(11, 87, 168, 0.25);
             padding: 5px 14px;
             border-radius: var(--raio-pill);
             font-family: 'Poppins', sans-serif;
@@ -376,7 +376,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         .card-turma:hover {
             box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
             transform: translateY(-4px);
-            border-color: rgba(8, 156, 47, 0.4);
+            border-color: rgba(28, 122, 230, 0.4);
         }
 
         .card-topo {

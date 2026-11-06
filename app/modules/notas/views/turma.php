@@ -23,12 +23,13 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --verde-primario:   #1B5E20;
-            --verde-escuro:     #089C2F;
-            --verde-header:     #A0FDA3;
-            --verde-suave:      #E8F5E9;
-            --verde:            #1B5E20;
-            --verde-claro:      #A0FDA3;
+            /* Perfil Instrutor (Azul) - Guia de Design */
+            --verde-primario:   #0B57A8;
+            --verde-escuro:     #1C7AE6;
+            --verde-header:     #D9EEFF;
+            --verde-suave:      #EAF5FF;
+            --verde:            #0B57A8;
+            --verde-claro:      #D9EEFF;
 
             --laranja:          #FF8D28;
             --laranja-suave:    #FFF3E0;
@@ -40,7 +41,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             --roxo:             #7E22CE;
             --roxo-claro:       #F3E8FF;
             --azul:             #002D38;
-            --azul-claro:       #A0FDA3;
+            --azul-claro:       #D9EEFF;
 
             --texto-principal:  #002D38;
             --texto-preto:      #000000;
@@ -259,7 +260,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             padding: 9px 18px;
             background: var(--bg-card);
             color: var(--verde-primario);
-            border: 1.5px solid rgba(27, 94, 32, 0.35);
+            border: 1.5px solid rgba(11, 87, 168, 0.35);
             border-radius: var(--raio-pill);
             font-family: 'Poppins', sans-serif;
             font-size: .85rem;
@@ -371,7 +372,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         .alerta-sucesso {
             background: var(--verde-suave);
             color: var(--verde-primario);
-            border: 1px solid #bbf7d0;
+            border: 1px solid #cfe8ff;
         }
 
         .alerta-erro {
@@ -425,7 +426,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         }
 
         .aluno-header:hover {
-            border-color: rgba(8, 156, 47, 0.4);
+            border-color: rgba(28, 122, 230, 0.4);
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
 
@@ -603,7 +604,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
         .input-nota:focus {
             border-color: var(--verde-primario);
-            box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.15);
+            box-shadow: 0 0 0 3px rgba(11, 87, 168, 0.15);
         }
 
         .btn-salvar {

@@ -45,6 +45,8 @@ try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } 
 const ajuda = { analisando: false, aguardando: false, dados: null, assinatura: '' };
 // Erros de execução da página (capturados do iframe) enviados junto para a IA
 let errosConsole = [];
+// Última resposta do servidor para um código (a execução já traz o Judge0 e a avaliação da IA)
+let ultimaResposta = null;
 
 let atual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
@@ -81,16 +83,6 @@ if (A.vazia) {
         li.textContent = r;
         $('atvRequisitos').appendChild(li);
     });
-}
-
-/*Nome oficial da linguagem vindo do Judge0*/
-if (modo === 'terminal' && !A.vazia) {
-    chamarJudge0('languages')
-        .then(lista => {
-            const ling = Array.isArray(lista) && lista.find(x => x.id === L.judge0);
-            if (ling) $('atvLang').textContent = ling.name;
-        })
-        .catch(() => aviso('O servidor de execução (Judge0) não respondeu agora. O botão Executar pode não funcionar.'));
 }
 
 /*Editor*/
@@ -259,11 +251,8 @@ function mostrarResultado(focar) {
     if (focar && mobile()) setAba('resultado');
 }
 
-const b64e = s => btoa(Array.from(new TextEncoder().encode(s), c => String.fromCharCode(c)).join(''));
-const b64d = s => s ? new TextDecoder().decode(Uint8Array.from(atob(s), c => c.charCodeAt(0))) : '';
-
-/*Lê a resposta do servidor como JSON. Se o PHP imprimiu avisos em HTML antes do JSON, aproveita o JSON;
-  se não houver JSON, devolve a mensagem do servidor de forma legível (em vez de "Unexpected token '<'").*/
+/*Lê a resposta do servidor como JSON (igual a response.json()), mas se o PHP imprimiu avisos em HTML
+  antes do JSON, aproveita o JSON. Sem JSON, devolve a mensagem do servidor de forma legível.*/
 function lerJson(texto) {
     try { return JSON.parse(texto); } catch (e) {}
     // tira avisos do PHP no formato <br /><b>Warning</b>: ... <br />
@@ -279,78 +268,8 @@ function lerJson(texto) {
     throw new Error(legivel || 'resposta vazia');
 }
 
-/*Uma chamada ao Judge0 pelo servidor (api/Judge0). O "caminho" vai em base64, como o servidor espera.*/
-async function chamarJudge0(caminho, opcoes, ms = 15000) {
-    // limite de tempo: se o servidor não responder, não deixa o aluno esperando para sempre
-    const ctl = new AbortController();
-    const relogio = setTimeout(() => ctl.abort(), ms);
-    let r, texto;
-    try {
-        r = await fetch(`api/Judge0?isBase64=true&path=${encodeURIComponent(btoa(caminho))}`, { ...opcoes, signal: ctl.signal });
-        texto = await r.text();
-    } catch (e) {
-        if (e.name === 'AbortError') throw new Error('o servidor demorou demais para responder');
-        throw e;
-    } finally {
-        clearTimeout(relogio);
-    }
-    let d;
-    try {
-        d = lerJson(texto);
-    } catch (e) {
-        console.error('api/Judge0 não devolveu JSON (HTTP ' + r.status + '). Resposta:', texto);
-        throw new Error('o servidor (api/Judge0) devolveu um erro em vez de JSON: ' + e.message);
-    }
-    if (!r.ok) {
-        const msg = d && (d.error || d.message || d.erro);
-        throw new Error('Judge0 respondeu ' + r.status + (msg ? ': ' + (typeof msg === 'string' ? msg : JSON.stringify(msg)) : ''));
-    }
-    return d;
-}
-
-/*Roda o código no Judge0. Tenta esperar o resultado na mesma chamada (wait=true); se falhar, envia sem
-  esperar e consulta o resultado pelo token (plano B).*/
-async function judge0(codigo, idLing, entrada) {
-    const post = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source_code: b64e(codigo), language_id: idLing, stdin: b64e(entrada || '') })
-    };
-    let d;
-    try {
-        d = await chamarJudge0('submissions?base64_encoded=true&wait=true', post, 30000);
-    } catch (erroPrincipal) {
-        try {
-            const criado = await chamarJudge0('submissions?base64_encoded=true', post);
-            if (!criado || !criado.token) throw erroPrincipal;
-            for (let i = 0; i < 10; i++) {
-                await esperar(1000);
-                d = await chamarJudge0(`submissions/${criado.token}?base64_encoded=true`);
-                if (d.status && d.status.id > 2) break;   // 1 = na fila, 2 = processando
-            }
-        } catch (erroPlanoB) {
-            console.warn('O plano B do Judge0 também falhou:', erroPlanoB);
-            erroPrincipal.message += ' (a segunda tentativa, sem esperar, também falhou)';
-            throw erroPrincipal;   // mostra o erro da primeira tentativa
-        }
-        if (!d) throw erroPrincipal;
-    }
-    return {
-        status: (d.status && d.status.description) || 'Sem status',
-        saida: b64d(d.stdout),
-        erro: b64d(d.stderr) || b64d(d.compile_output) || b64d(d.message)
-    };
-}
-
-/*Depois de uma falha, descobre se o Judge0 está fora do ar ou se só não executou o código*/
-async function diagnosticarJudge0() {
-    try {
-        await chamarJudge0('languages', undefined, 8000);
-        return 'O Judge0 está acessível, mas não executou o código. Confira se os workers do Judge0 estão rodando (fila parada).';
-    } catch (e) {
-        return 'O Judge0 não está acessível pelo servidor. Confira se ele está ligado, na mesma rede, e se o endereço e a porta estão corretos.';
-    }
-}
+/*Erro impresso pelo próprio PHP do servidor (aviso/erro fatal), e não uma página qualquer*/
+const erroDoPHP = texto => /<b>\s*(Warning|Fatal error|Notice|Parse error|Deprecated)\s*<\/b>|Fatal error:|Warning:|Uncaught/i.test(texto);
 
 const PONTE = '<script>(function(){' +
     'var s=function(t,a){parent.postMessage({farm:1,t:t,m:[].map.call(a,function(x){' +
@@ -372,34 +291,37 @@ function rodarWeb() {
     escreverConsole('Página renderizada com o código do momento do clique.', 'info');
 }
 
-/*Terminal: manda o arquivo ao Judge0 e mostra a saída (continua no console)*/
+/*Terminal (Python/PHP): envia o código ao servidor, que executa no Judge0 e avalia com a IA (como no exemplo
+  sendAvaliacao). A resposta do Judge0 (compilacao) aparece no console; a avaliação fica guardada para a Sophia.*/
 async function rodarTerminal() {
     pv.hidden = true;
     pvPy.hidden = false;
     const arq = ARQUIVOS[0];
-    pvPy.textContent = `$ ${arq.nome}\nExecutando no Judge0...`;
-    escreverConsole('Enviando ao Judge0...', 'info');
+    pvPy.textContent = `$ ${arq.nome}\nExecutando...`;
+    escreverConsole('Enviando o código para executar no Judge0...', 'info');
+    const codigoEnviado = contextoEntrega().codigo;
     try {
-        const r = await judge0(dados[arq.lang], L.judge0, A.entrada);
-        pvPy.textContent = `$ ${arq.nome}\n` + (r.saida || r.erro || '(sem saída)');
-        escreverConsole(`Judge0: ${r.status}`, r.status === 'Accepted' ? 'info' : 'error');
-        if (r.saida) escreverConsole('Saída: ' + r.saida.trim(), 'log');
-        // Se a atividade tiver "saidaEsperada", compara com o que o código imprimiu
-        if (typeof A.saidaEsperada === 'string' && r.status === 'Accepted') {
+        const f = FEEDBACK.interpretar(await avaliarNoServidor());
+        ultimaResposta = { codigo: codigoEnviado, f };
+        const saida = String(f.saida || '').trim();
+        const aceito = !f.compilador || /accepted|aceito/i.test(f.compilador);
+        pvPy.textContent = `$ ${arq.nome}\n` + (saida || '(sem saída)');
+        escreverConsole(`Judge0: ${f.compilador || 'sem status'}`, aceito ? 'info' : 'error');
+        if (saida) escreverConsole('Saída: ' + saida, aceito ? 'log' : 'error');
+        if (!aceito) {
+            // erro de compilação/execução: vai para a Sophia e para a IA
+            errosConsole.push((saida || String(f.compilador)).slice(0, 300));
+        } else if (typeof A.saidaEsperada === 'string') {
+            // se a atividade tiver "saidaEsperada", compara com o que o código imprimiu
             const esperado = A.saidaEsperada.trim();
-            const ok = r.saida.trim() === esperado;
+            const ok = saida === esperado;
             escreverConsole(ok ? '✔ Saída confere com o esperado'
                                : '✖ Saída diferente. Esperado: ' + esperado, ok ? 'info' : 'error');
-            // Saída errada conta como problema: a Sophia oferece ajuda e a IA recebe o motivo
-            if (!ok) errosConsole.push(`A saída foi "${r.saida.trim()}", mas o esperado é "${esperado}".`);
+            if (!ok) errosConsole.push(`A saída foi "${saida}", mas o esperado é "${esperado}".`);
         }
-        if (r.erro) escreverConsole(r.erro, 'error');
-        // Erro de compilação/execução do Judge0 também vai para a Sophia e para a IA
-        if (r.status !== 'Accepted' || r.erro) errosConsole.push((r.erro || r.status).trim().slice(0, 300));
     } catch (e) {
         pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.`;
-        escreverConsole('Falha ao falar com o Judge0: ' + e.message, 'error');
-        escreverConsole(await diagnosticarJudge0(), 'info');
+        escreverConsole('Falha ao falar com o servidor: ' + e.message, 'error');
     }
 }
 
@@ -537,7 +459,8 @@ function cancelarEntrega() {
 
 /*FEEDBACK — PONTO DE INTEGRAÇÃO COM O GRUPO feedback_ia*/
 const FEEDBACK = {
-    endpoints: ['enviarSubmissao', 'api/sendAvaliacao'],
+    // Tenta nesta ordem; só passa para o próximo se o endereço não existir (404/405) ou não responder.
+    endpoints: ['enviarSubmissao', 'sendAvaliacao', 'api/sendAvaliacao'],
     usarExemploSeFalhar: true,
 
     montarPayload(ctx) {
@@ -561,6 +484,7 @@ const FEEDBACK = {
             status: av.status_avaliacao,
             feedback: av.feedback_geral,
             melhorias: av.pontos_melhoria || [],
+            // Campos novos para a ajuda da Sophia (o backend do feedback_ia precisa devolver):
             feitos: av.pontos_positivos || av.o_que_foi_feito || [],
             faltando: av.o_que_falta || av.pontos_faltantes || [],
             compilador: st && (st.description || st),
@@ -568,8 +492,10 @@ const FEEDBACK = {
         };
     },
 
-    /*Resposta de exemplo (usada só se a IA falhar)*/
-     exemplo() {
+    /*Resposta de exemplo (usada só se a IA falhar). Monta o texto com os requisitos da própria
+      atividade, então serve para web, Python, PHP e para as atividades que vierem do banco.
+      Se o código acabou de rodar no Judge0 e a saída confere com "saidaEsperada", responde "aprovado".*/
+    exemplo() {
         const req = A.requisitos || [];
         const saidaOk = modo === 'terminal' && typeof A.saidaEsperada === 'string'
             && executadoAtual && errosConsole.length === 0;
@@ -612,20 +538,32 @@ function contextoEntrega() {
     };
 }
 
-/*Chamada à IA*/
-async function consultarIA(extra = {}) {
+/*Chamada à IA (usada pela ajuda da Sophia e pela avaliação da entrega)*/
+async function avaliarNoServidor(extra = {}) {
+    // payload com as regras da atividade (igual ao exemplo): linguagem, codigo_aluno, id_linguagem, objetivo_atividade, nota_max, nota_min...
     const corpo = JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra });
     let ultimoErro = null;
     for (const endereco of FEEDBACK.endpoints) {
-        let r, texto;
+        let resposta, texto;
+        const ctl = new AbortController();
+        const relogio = setTimeout(() => ctl.abort(), 120000);
         try {
-            r = await fetch(endereco, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corpo });
-            texto = await r.text();
+            // chama o Controller que orquestra o Judge0 e a IA
+            resposta = await fetch(endereco, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: corpo,
+                signal: ctl.signal
+            });
+            texto = await resposta.text();
         } catch (e) {
-            ultimoErro = e;   
+            ultimoErro = e.name === 'AbortError' ? new Error('o servidor demorou demais para responder') : e;
+            continue;   // sem conexão com este endereço: tenta o próximo
+        } finally {
+            clearTimeout(relogio);
         }
-        if (r.status === 404 || r.status === 405) {
-            ultimoErro = new Error(`endereço "${endereco}" não encontrado (HTTP ${r.status})`);
+        if (resposta.status === 404 || resposta.status === 405) {
+            ultimoErro = new Error(`endereço "${endereco}" não encontrado (HTTP ${resposta.status})`);
             continue;
         }
         let data;
@@ -633,13 +571,21 @@ async function consultarIA(extra = {}) {
             data = lerJson(texto);
         } catch (e) {
             console.error(`"${endereco}" não devolveu JSON. Resposta:`, texto);
-            throw new Error('Resposta do servidor não é JSON: ' + e.message);  
+            ultimoErro = new Error('o servidor não devolveu JSON: ' + e.message);
+            if (erroDoPHP(texto)) throw ultimoErro;   // erro do próprio servidor: não repete em outro endereço
+            continue;                                  // página qualquer (rota inexistente): tenta o próximo
         }
-        console.log('Resposta da IA:', data);
+        console.log('Resposta do servidor:', data);
         if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
-        return FEEDBACK.interpretar(data);
+        return data;
     }
-    throw ultimoErro || new Error('Sem resposta do servidor da IA');
+    throw ultimoErro || new Error('Sem resposta do servidor de avaliação');
+}
+
+/*Usada pela Sophia e pela entrega: reaproveita a resposta da última execução se o código não mudou*/
+async function consultarIA(extra = {}) {
+    if (ultimaResposta && ultimaResposta.codigo === contextoEntrega().codigo) return ultimaResposta.f;
+    return FEEDBACK.interpretar(await avaliarNoServidor(extra));
 }
 
 async function consultarIAcomFallback(extra) {
@@ -772,10 +718,13 @@ $('btnSophia').onclick = async () => {
     if (ajuda.analisando) return sophiaFala('Calma, ainda estou olhando o seu código...', 3000);
     if (ajuda.aguardando) {
         if (assinaturaDoCodigo() === ajuda.assinatura) {
+            // nada mudou desde a pergunta: só lembra
             mostrarResultado(true);
             habilitarConsole(true);
             return sophiaFala('Quer a minha ajuda? Digite sim ou não no console.', 0);
         }
+        // o aluno mexeu no código: a pergunta antiga não vale mais, olha de novo
+        ajuda.aguardando = false;
         habilitarConsole(false);
     }
     if (ARQUIVOS.every(a => !dados[a.lang].trim())) {
@@ -809,7 +758,7 @@ $('conForm').addEventListener('submit', e => {
     if (texto) responderSophia(texto);
 });
 
-// Voltar sempre leva à página do aluno 
+// Voltar sempre leva à página do aluno (não às páginas visitadas antes)
 $('btnVoltar').onclick = () => { location.href = 'aluno' + (A.queryAluno || ''); };
 $('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : iniciarEntrega());
 $('btnConfirmar').onclick = confirmarEntrega;

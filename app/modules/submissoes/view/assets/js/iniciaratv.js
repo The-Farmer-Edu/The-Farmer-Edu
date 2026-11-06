@@ -90,7 +90,7 @@ if (modo === 'terminal' && !A.vazia) {
             const ling = Array.isArray(lista) && lista.find(x => x.id === L.judge0);
             if (ling) $('atvLang').textContent = ling.name;
         })
-        .catch(() => {});
+        .catch(() => aviso('O servidor de execução (Judge0) não respondeu agora. O botão Executar pode não funcionar.'));
 }
 
 /*Editor*/
@@ -275,14 +275,25 @@ function lerJson(texto) {
         if (++tentativas > 20) break;
         try { return JSON.parse(texto.slice(m.index)); } catch (e) {}
     }
-    const legivel = texto.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+    const legivel = texto.replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim().slice(0, 700);
     throw new Error(legivel || 'resposta vazia');
 }
 
 /*Uma chamada ao Judge0 pelo servidor (api/Judge0). O "caminho" vai em base64, como o servidor espera.*/
-async function chamarJudge0(caminho, opcoes) {
-    const r = await fetch(`api/Judge0?isBase64=true&path=${encodeURIComponent(btoa(caminho))}`, opcoes);
-    const texto = await r.text();
+async function chamarJudge0(caminho, opcoes, ms = 15000) {
+    // limite de tempo: se o servidor não responder, não deixa o aluno esperando para sempre
+    const ctl = new AbortController();
+    const relogio = setTimeout(() => ctl.abort(), ms);
+    let r, texto;
+    try {
+        r = await fetch(`api/Judge0?isBase64=true&path=${encodeURIComponent(btoa(caminho))}`, { ...opcoes, signal: ctl.signal });
+        texto = await r.text();
+    } catch (e) {
+        if (e.name === 'AbortError') throw new Error('o servidor demorou demais para responder');
+        throw e;
+    } finally {
+        clearTimeout(relogio);
+    }
     let d;
     try {
         d = lerJson(texto);
@@ -307,7 +318,7 @@ async function judge0(codigo, idLing, entrada) {
     };
     let d;
     try {
-        d = await chamarJudge0('submissions?base64_encoded=true&wait=true', post);
+        d = await chamarJudge0('submissions?base64_encoded=true&wait=true', post, 30000);
     } catch (erroPrincipal) {
         try {
             const criado = await chamarJudge0('submissions?base64_encoded=true', post);
@@ -318,6 +329,8 @@ async function judge0(codigo, idLing, entrada) {
                 if (d.status && d.status.id > 2) break;   // 1 = na fila, 2 = processando
             }
         } catch (erroPlanoB) {
+            console.warn('O plano B do Judge0 também falhou:', erroPlanoB);
+            erroPrincipal.message += ' (a segunda tentativa, sem esperar, também falhou)';
             throw erroPrincipal;   // mostra o erro da primeira tentativa
         }
         if (!d) throw erroPrincipal;
@@ -327,6 +340,16 @@ async function judge0(codigo, idLing, entrada) {
         saida: b64d(d.stdout),
         erro: b64d(d.stderr) || b64d(d.compile_output) || b64d(d.message)
     };
+}
+
+/*Depois de uma falha, descobre se o Judge0 está fora do ar ou se só não executou o código*/
+async function diagnosticarJudge0() {
+    try {
+        await chamarJudge0('languages', undefined, 8000);
+        return 'O Judge0 está acessível, mas não executou o código. Confira se os workers do Judge0 estão rodando (fila parada).';
+    } catch (e) {
+        return 'O Judge0 não está acessível pelo servidor. Confira se ele está ligado, na mesma rede, e se o endereço e a porta estão corretos.';
+    }
 }
 
 const PONTE = '<script>(function(){' +
@@ -374,9 +397,9 @@ async function rodarTerminal() {
         // Erro de compilação/execução do Judge0 também vai para a Sophia e para a IA
         if (r.status !== 'Accepted' || r.erro) errosConsole.push((r.erro || r.status).trim().slice(0, 300));
     } catch (e) {
-        pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.\n${e.message}`;
+        pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.`;
         escreverConsole('Falha ao falar com o Judge0: ' + e.message, 'error');
-        escreverConsole('Confira a resposta do endereço api/Judge0 (F12 > Rede): o servidor precisa devolver JSON.', 'info');
+        escreverConsole(await diagnosticarJudge0(), 'info');
     }
 }
 
@@ -514,7 +537,7 @@ function cancelarEntrega() {
 
 /*FEEDBACK — PONTO DE INTEGRAÇÃO COM O GRUPO feedback_ia*/
 const FEEDBACK = {
-    endpoint: 'api/sendAvaliacao',
+    endpoints: ['enviarSubmissao', 'api/sendAvaliacao'],
     usarExemploSeFalhar: true,
 
     montarPayload(ctx) {
@@ -538,7 +561,6 @@ const FEEDBACK = {
             status: av.status_avaliacao,
             feedback: av.feedback_geral,
             melhorias: av.pontos_melhoria || [],
-            // Campos novos para a ajuda da Sophia (o backend do feedback_ia precisa devolver):
             feitos: av.pontos_positivos || av.o_que_foi_feito || [],
             faltando: av.o_que_falta || av.pontos_faltantes || [],
             compilador: st && (st.description || st),
@@ -547,7 +569,7 @@ const FEEDBACK = {
     },
 
     /*Resposta de exemplo (usada só se a IA falhar)*/
-    exemplo() {
+     exemplo() {
         const req = A.requisitos || [];
         const saidaOk = modo === 'terminal' && typeof A.saidaEsperada === 'string'
             && executadoAtual && errosConsole.length === 0;
@@ -590,24 +612,34 @@ function contextoEntrega() {
     };
 }
 
-/*Chamada à IA (usada pela ajuda da Sophia e pela avaliação da entrega)*/
+/*Chamada à IA*/
 async function consultarIA(extra = {}) {
-    const r = await fetch(FEEDBACK.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra })
-    });
-    const texto = await r.text();
-    let data;
-    try {
-        data = lerJson(texto);
-    } catch (e) {
-        console.error('O servidor não devolveu JSON. Resposta:', texto);
-        throw new Error('Resposta do servidor não é JSON: ' + e.message);
+    const corpo = JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra });
+    let ultimoErro = null;
+    for (const endereco of FEEDBACK.endpoints) {
+        let r, texto;
+        try {
+            r = await fetch(endereco, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: corpo });
+            texto = await r.text();
+        } catch (e) {
+            ultimoErro = e;   
+        }
+        if (r.status === 404 || r.status === 405) {
+            ultimoErro = new Error(`endereço "${endereco}" não encontrado (HTTP ${r.status})`);
+            continue;
+        }
+        let data;
+        try {
+            data = lerJson(texto);
+        } catch (e) {
+            console.error(`"${endereco}" não devolveu JSON. Resposta:`, texto);
+            throw new Error('Resposta do servidor não é JSON: ' + e.message);  
+        }
+        console.log('Resposta da IA:', data);
+        if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
+        return FEEDBACK.interpretar(data);
     }
-    console.log('Resposta da IA:', data);
-    if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
-    return FEEDBACK.interpretar(data);
+    throw ultimoErro || new Error('Sem resposta do servidor da IA');
 }
 
 async function consultarIAcomFallback(extra) {
@@ -740,13 +772,10 @@ $('btnSophia').onclick = async () => {
     if (ajuda.analisando) return sophiaFala('Calma, ainda estou olhando o seu código...', 3000);
     if (ajuda.aguardando) {
         if (assinaturaDoCodigo() === ajuda.assinatura) {
-            // nada mudou desde a pergunta: só lembra
             mostrarResultado(true);
             habilitarConsole(true);
             return sophiaFala('Quer a minha ajuda? Digite sim ou não no console.', 0);
         }
-        // o aluno mexeu no código: a pergunta antiga não vale mais, olha de novo
-        ajuda.aguardando = false;
         habilitarConsole(false);
     }
     if (ARQUIVOS.every(a => !dados[a.lang].trim())) {
@@ -780,7 +809,7 @@ $('conForm').addEventListener('submit', e => {
     if (texto) responderSophia(texto);
 });
 
-// Voltar sempre leva à página do aluno (não às páginas visitadas antes)
+// Voltar sempre leva à página do aluno 
 $('btnVoltar').onclick = () => { location.href = 'aluno' + (A.queryAluno || ''); };
 $('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : iniciarEntrega());
 $('btnConfirmar').onclick = confirmarEntrega;

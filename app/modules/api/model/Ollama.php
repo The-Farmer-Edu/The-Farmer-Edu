@@ -17,7 +17,7 @@
         }
 
         public function obterResultadoOllama(string $linguagem, string $objetivoAtividade, string $notaMax, string $notaMin, string $codigoBase, string $codigoAluno, mixed $statusJudge0, mixed $saidaJudge0): mixed {
-            $this->promptSistema = "Você atua como o Professor Virtual do 'The Farmer Edu'. Sua tarefa é analisar a submissão de um aluno do SENAI, avaliar a lógica em conjunto com a saída do compilador (Judge0) e do códibo base enviado. Por fim, deve gerar um boletim de avaliação unicamente em formato JSON.
+            $this->promptSistema = "Sua tarefa é analisar a submissão de um aluno do SENAI, avaliar a lógica em conjunto com a saída do compilador (Judge0) e do códibo base enviado. Por fim, deve gerar um boletim de avaliação unicamente em formato JSON.
 
             [DADOS DA ATIVIDADE]
             - Linguagem/Matéria: $linguagem
@@ -38,16 +38,11 @@
             [DIRETRIZES DE AVALIAÇÃO]
             1. Análise Lógica e de Regras: Verifique se o código atende ao objetivo da atividade gamificada . O código compilar sem erros no Judge0 não significa necessariamente que a lógica resolve o problema proposto. 
             2. Boas Práticas Técnicas: Avalie a clareza, indentação e nomenclatura das variáveis segundo os padrões da linguagem ($linguagem).
-            3. Feedback Formativo (Regra de Ouro): NUNCA forneça o código corrigido pronto. Guie o aluno a descobrir o erro (seja de sintaxe ou de lógica) através de dicas conceituais. No campo \"feedback_geral\", adote o tom de um instrutor técnico e encerre SEMPRE com uma pergunta que estimule o raciocínio.
-            4. Avaliação e Nota: Seja justo. Atribua a nota (0 a $notaMax) baseada na proximidade da solução ideal e no cumprimento da demanda. Se houver erro crítico de compilação ou falha lógica grave, a nota deve refletir isso para que o status seja 'refazer'.
-
-
-
-            5. Identificação do código do aluno: Analise o código do aluno para identificar se ele for feito por Inteligencia Artificial ou segue padrões específicos, se for identificado a nota deve ser 0 e o status deverá ser 'reprovado'. Se houver suspeita de uso de Inteligencia Artificial, forneça uma justificativa explicita no feedback geral.
+            3. Avaliação e Nota: Seja justo. Atribua a nota (0 a $notaMax) baseada na proximidade da solução ideal e no cumprimento da demanda. Se houver erro crítico de compilação ou falha lógica grave, a nota deve refletir isso para que o status seja 'refazer'.
            
 
             [FORMATO DE SAÍDA OBRIGATÓRIO]
-            Não inclua nenhuma saudação, explicação, formatação markdown (como ```json) ou texto fora do JSON. Retorne EXCLUSIVAMENTE um objeto JSON válido, pronto para ser lido por um decodificador (json_decode), utilizando a exata estrutura abaixo:
+            Não inclua nenhuma saudação ou explicação. A resposta não deverá vir com formatação markdown (como ```json) ou com texto fora do JSON. RETORNE EXCLUSIVAMENTE UM OBJETO JSON VÁLIDO, pronto para ser lido por um decodificador (json_decode), utilizando a exata estrutura abaixo:
 
             {
                 \"nota_atribuida\": 0.0,
@@ -60,7 +55,8 @@
             $this->payload = json_encode([
                 "model" => $this->model,
                 "prompt" => $this->promptSistema,
-                "stream" => false // false para receber a resposta toda de uma vez
+                "stream" => false, // false para receber a resposta toda de uma vez
+                "think" => true // true para que a IA pense antes de responder
             ]);
 
             $curlOllama = curl_init();
@@ -70,8 +66,12 @@
             curl_setopt($curlOllama, CURLOPT_POSTFIELDS, $this->payload);
             curl_setopt($curlOllama, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
+            // $respostaOllama = json_decode(curl_exec($curlOllama), true)['response'];
+            // $respostaOllama = trim(explode("</think>", $respostaOllama)[1]);
+            // $respostaOllama = json_decode($respostaOllama, true);
             $respostaOllama = json_decode(curl_exec($curlOllama), true);
             return $respostaOllama['response'] ?? "A IA não conseguiu gerar um feedback.";
+            // return $respostaOllama ?? "A IA não conseguiu gerar um feedback.";
         }
     }
 

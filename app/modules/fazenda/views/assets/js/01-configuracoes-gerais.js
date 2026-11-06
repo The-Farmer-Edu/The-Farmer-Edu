@@ -144,7 +144,7 @@
         // Mark 8.3: trabalhadores só colhem quando o JOGADOR manda (um canteiro ou a plantação inteira). Com true, voltariam a
         // procurar canteiros maduros sozinhos quando ociosos (comportamento da 8.2, que parecia "colher sem parar").
         colheitaEspontanea: false,
-        nomes: ['Aninha', 'Arrascaeta', 'Carlinhos', 'Dora', 'Eita', 'Lule', 'Gina', 'Harry', 'Yasmin', 'Jão', 'Liamey', 'Malu-ka', 'Nico B', 'Otário', 'Pretobrás', 'Ui', 'Salamaleca', 'Téopai', 'Veraverao', 'Zecapgordinho'],
+        nomes: ['Aninha', 'Arrascaeta', 'Carlinhos', 'Dora', 'Eita', 'Lule', 'Gina', 'Harry', 'Yasmin', 'Jão', 'Liamey', 'Kamala', 'Nico B', 'Cardi B', 'Zé Gota', 'Ui', 'Jimmy', 'Téo', 'Lisa', 'Zeca Urubu'],
       };
       // ---- Monstros noturnos: atacam SOMENTE trabalhadores (nunca construções) ----
       const MONSTROS_NOTURNOS_CONFIG = {

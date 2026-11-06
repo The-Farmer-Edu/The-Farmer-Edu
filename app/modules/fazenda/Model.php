@@ -9,9 +9,11 @@ class ConflitoDeSaveException extends RuntimeException
 
 // =====================================================================
 // FazendaModel — save da fazenda e XP vindo das atividades
-// Tabelas do schema.sql: fazendas (save em JSON), xp_logs (histórico de XP, XPLog), notas, submissoes e alunos.
+// Tabelas do schema.sql: fazendas (save em JSON), elementos_fazenda (uma linha por área construída), xp_logs (histórico de XP,
+// XPLog), notas, submissoes e alunos.
 // alunos.xp_total = XP que o aluno TEM na fazenda (saldo): sobe com o que ele ganha e desce com o que ele perde ou gasta.
-// Colunas acrescentadas por sql/fazenda_alteracoes.sql: fazendas.{nome_fazenda, estado, versao_estado, revisao} e xp_logs.entregue_em.
+// Colunas acrescentadas por sql/fazenda_alteracoes.sql: fazendas.{nome_fazenda, estado, versao_estado, revisao},
+// elementos_fazenda.codigo e xp_logs.entregue_em.
 // =====================================================================
 class FazendaModel
 {
@@ -21,6 +23,14 @@ class FazendaModel
 
     private const LIMITE_DO_ESTADO_BYTES = 1000000;
     private const LIMITE_DE_IDS_POR_SAVE = 500;
+
+    // tipo de cada área em elementos_fazenda.tipo (área desconhecida entra como 'construcao').
+    private const TIPO_DAS_AREAS = [
+        'casa' => 'construcao', 'ponte' => 'construcao', 'celeiro' => 'construcao', 'maquinario' => 'construcao',
+        'moinho' => 'construcao', 'mina' => 'construcao',
+        'plantacaoGrande' => 'plantacao', 'novaPlantacao' => 'plantacao',
+        'curral' => 'animal', 'ovelhal' => 'animal', 'galinheiro' => 'animal', 'chiqueiro' => 'animal', 'estabulo' => 'animal',
+    ];
 
     private PDO $pdo;
 
@@ -82,9 +92,13 @@ class FazendaModel
         $this->garantirFazenda($idAluno);
         $this->pdo->beginTransaction();
         try {
-            $st = $this->pdo->prepare('SELECT revisao FROM fazendas WHERE id_aluno = ? FOR UPDATE');
+            $st = $this->pdo->prepare('SELECT id_fazenda, revisao, estado FROM fazendas WHERE id_aluno = ? FOR UPDATE');
             $st->execute([$idAluno]);
-            $revisaoAtual = (int) $st->fetchColumn();
+            $linha = $st->fetch();
+            $revisaoAtual = (int) $linha['revisao'];
+            $idFazenda    = (int) $linha['id_fazenda'];
+            $anterior     = $linha['estado'] !== null ? json_decode($linha['estado'], true) : null;
+            $anterior     = is_array($anterior) ? $anterior : null;
 
             if ($revisaoAtual !== $revisaoEsperada) {
                 throw new ConflitoDeSaveException('A fazenda foi alterada em outro lugar.');
@@ -99,14 +113,26 @@ class FazendaModel
             );
             $st->execute([$json, $nome, (int) ($estado['versao'] ?? 0), $nova, $idAluno]);
 
+            $xpDeAtividadesAplicado = 0;
             if ($ids) {
                 $marcas = implode(',', array_fill(0, count($ids), '?'));
+                $st = $this->pdo->prepare(
+                    "SELECT COALESCE(SUM(quantidade), 0) FROM xp_logs
+                      WHERE id_aluno = ? AND entregue_em IS NULL AND id_xp IN ($marcas)"
+                );
+                $st->execute(array_merge([$idAluno], $ids));
+                $xpDeAtividadesAplicado = (int) $st->fetchColumn();
+
                 $st = $this->pdo->prepare(
                     "UPDATE xp_logs SET entregue_em = NOW()
                       WHERE id_aluno = ? AND entregue_em IS NULL AND id_xp IN ($marcas)"
                 );
                 $st->execute(array_merge([$idAluno], $ids));
             }
+
+            // Histórico de XP do jogo (xp_logs) e as áreas construídas (elementos_fazenda), derivados deste save.
+            $this->registrarMovimentosDaFazenda($idAluno, $anterior, $estado, $xpDeAtividadesAplicado);
+            $this->sincronizarElementos($idFazenda, is_array($estado['niveis']) ? $estado['niveis'] : []);
 
             // alunos.xp_total = XP que o aluno tem na fazenda. É o saldo do jogo (ganhos e gastos) MAIS o XP que as notas
             // já creditaram no banco e o jogo ainda não aplicou (pendente), para não "perder" a nota enquanto o aluno
@@ -126,6 +152,92 @@ class FazendaModel
             }
             throw $e;
         }
+    }
+
+    /**
+     * Grava em xp_logs o que aconteceu com o XP DENTRO do jogo desde o save anterior (o XP das notas já é gravado por
+     * registrarXPPorNota e não entra aqui):
+     *   - uma linha positiva por origem de ganho (colheitas/mina/monstros, devolução ao dispensar, teste, inicial),
+     *     a partir da diferença em estado.xpPorOrigem;
+     *   - uma linha com o que sobrou (normalmente NEGATIVA): o XP gasto em construções, evoluções, equipe e animais.
+     * A soma das linhas é exatamente a variação do saldo do jogo (menos o XP de atividades aplicado neste save).
+     * Essas linhas nascem já entregues (entregue_em = NOW()): o XP já está no jogo e não deve ser reaplicado.
+     */
+    private function registrarMovimentosDaFazenda(int $idAluno, ?array $anterior, array $novo, int $xpDeAtividadesAplicado): void
+    {
+        $xpAntes = $anterior !== null && isset($anterior['xp']) && is_numeric($anterior['xp']) ? (int) round((float) $anterior['xp']) : 0;
+        $liquido = (int) round((float) $novo['xp']) - $xpAntes - $xpDeAtividadesAplicado;
+
+        $contador = static function (?array $estado, string $origem): float {
+            $origens = is_array($estado['xpPorOrigem'] ?? null) ? $estado['xpPorOrigem'] : [];
+            return isset($origens[$origem]) && is_numeric($origens[$origem]) ? (float) $origens[$origem] : 0.0;
+        };
+
+        $origens = [
+            'fazenda'    => 'Fazenda: XP de colheitas, mina e monstros',
+            'devolucoes' => 'Fazenda: XP devolvido ao dispensar trabalhador',
+            'teste'      => 'Fazenda: XP de teste (modo desenvolvedor)',
+            'inicial'    => 'Fazenda: XP inicial',
+        ];
+
+        $linhas = [];
+        $lancado = 0;
+        foreach ($origens as $origem => $motivo) {
+            $ganho = (int) round($contador($novo, $origem) - $contador($anterior, $origem));
+            if ($ganho > 0) {
+                $linhas[] = [$ganho, $motivo];
+                $lancado += $ganho;
+            }
+        }
+
+        $resto = $liquido - $lancado;
+        if ($resto !== 0) {
+            $linhas[] = [$resto, $resto < 0
+                ? 'Fazenda: XP gasto (construções, evoluções, equipe e animais)'
+                : 'Fazenda: ajuste de XP'];
+        }
+
+        foreach ($linhas as [$quantidade, $motivo]) {
+            $st = $this->pdo->prepare(
+                'INSERT INTO xp_logs (id_aluno, quantidade, motivo, id_nota, entregue_em) VALUES (?, ?, ?, NULL, NOW())'
+            );
+            $st->execute([$idAluno, $quantidade, $motivo]);
+        }
+    }
+
+    /** Uma linha em elementos_fazenda por área construída (nível 1 ou mais), atualizada a cada save. */
+    private function sincronizarElementos(int $idFazenda, array $niveis): void
+    {
+        $areas = [];
+        foreach ($niveis as $codigo => $nivel) {
+            if (!is_string($codigo) || !preg_match('/^[A-Za-z0-9_-]{1,40}$/', $codigo) || !is_numeric($nivel) || (int) $nivel < 1) {
+                continue;
+            }
+            $areas[$codigo] = (int) $nivel;
+        }
+
+        // Remove as que não existem mais (ou todas, se não há nenhuma).
+        if ($areas) {
+            $marcas = implode(',', array_fill(0, count($areas), '?'));
+            $st = $this->pdo->prepare("DELETE FROM elementos_fazenda WHERE id_fazenda = ? AND codigo NOT IN ($marcas)");
+            $st->execute(array_merge([$idFazenda], array_keys($areas)));
+        } else {
+            $st = $this->pdo->prepare('DELETE FROM elementos_fazenda WHERE id_fazenda = ?');
+            $st->execute([$idFazenda]);
+            return;
+        }
+
+        $valores = [];
+        $parametros = [];
+        foreach ($areas as $codigo => $nivel) {
+            $valores[] = '(?, ?, ?, ?)';
+            array_push($parametros, $idFazenda, $codigo, self::TIPO_DAS_AREAS[$codigo] ?? 'construcao', $nivel);
+        }
+        $st = $this->pdo->prepare(
+            'INSERT INTO elementos_fazenda (id_fazenda, codigo, tipo, nivel) VALUES ' . implode(', ', $valores)
+            . ' ON DUPLICATE KEY UPDATE nivel = VALUES(nivel), tipo = VALUES(tipo)'
+        );
+        $st->execute($parametros);
     }
 
     private function validarEstado(array $estado): array

@@ -18,8 +18,16 @@ ALTER TABLE fazendas
   ADD COLUMN versao_estado  INT UNSIGNED  NOT NULL DEFAULT 0,
   ADD COLUMN revisao        INT UNSIGNED  NOT NULL DEFAULT 0;
 
+-- elementos_fazenda: uma linha por área construída (casa, celeiro, curral, mina...). A tabela não tinha uma coluna para
+-- dizer QUAL área é, então entra "codigo" (o id da área no jogo). Se a tabela já tiver linhas, apague-as antes
+-- (o backend as recria no próximo save): DELETE FROM elementos_fazenda;
+ALTER TABLE elementos_fazenda
+  ADD COLUMN codigo VARCHAR(40) NOT NULL AFTER id_fazenda,
+  ADD UNIQUE KEY uq_elementos_fazenda_codigo (id_fazenda, codigo);
+
 -- xp_logs: marca quando o jogo do aluno recebeu cada lançamento.
 --   entregue_em NULL = o XP já está no banco, mas ainda não foi aplicado no jogo.
+--   (Os ganhos e gastos do próprio jogo são gravados já com entregue_em preenchido.)
 ALTER TABLE xp_logs
   ADD COLUMN entregue_em DATETIME NULL AFTER data,
   ADD INDEX idx_xplogs_pendentes (id_aluno, entregue_em);

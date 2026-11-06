@@ -16,7 +16,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 <body class="tema-instrutor" data-instrutor="<?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?>">
 
 <header>
-    <img src="assets/img/png/logo_icone.png" alt="The Farm Edu">
+    <img src="/assets/img/png/logo_icone.png" alt="The Farm Edu">
     <div class="titulo-header">
         <h2 id="cabeçalho-titulo">MINHAS TURMAS</h2>
         <p id="cabecalho-sub">The Farmer Edu</p>

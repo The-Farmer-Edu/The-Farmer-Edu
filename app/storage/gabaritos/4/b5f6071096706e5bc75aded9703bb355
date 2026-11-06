@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurações - Smart Control</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/configurações.css">
+</head>
+
+<body>
+
+<main class="configuracoes-pagina">
+
+<div class="container-config">
+
+<div class="topo-config">
+<img src="assets/imagens/LOGO.png" alt="Logo Smart Control" class="logo">
+<h2>Configurações</h2>
+</div>
+
+<div class="secao">
+
+<h3>Notificações</h3>
+
+<label class="item-opcao">
+<span>Receber avisos por Email</span>
+<input type="checkbox" checked>
+</label>
+
+<label class="item-opcao">
+<span>Avisos pelo WhatsApp</span>
+<input type="checkbox" checked>
+</label>
+
+</div>
+
+<div class="secao">
+
+<h3>Aparência</h3>
+
+<button type="button" id="temaBtn">🌙 Dark Mode</button>
+
+</div>
+
+<a href="dashboard.html" class="botao-voltar">Voltar</a>
+
+</div>
+
+</main>
+
+<script src="assets/js/main.js"></script>
+
+</body>
+</html>

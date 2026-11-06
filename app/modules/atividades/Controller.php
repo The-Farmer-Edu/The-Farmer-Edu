@@ -3,6 +3,7 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
+require_once __DIR__ . '/../turmas_cursos/Model.php'; // ContaModel::estaAtiva()
 
 class AtividadesController
 {
@@ -35,9 +36,11 @@ class AtividadesController
 
             return [
                 'turmas'     => Atividade::turmasDoInstrutor($pdo, $idInstrutor),
+                'pessoas'    => Atividade::pessoasDoInstrutor($pdo, $idInstrutor),
                 'atividades' => Atividade::listarDoInstrutor($pdo, $idInstrutor),
                 'linguagens' => TipoAtividade::linguagens,
                 'formatos'   => TipoAtividade::formatos(),
+                'gabarito'   => Gabarito::configuracao(),
             ];
         });
     }
@@ -50,6 +53,7 @@ class AtividadesController
             if (Gabarito::passouDoLimiteDoPost()) {
                 throw new InvalidArgumentException('Os arquivos passaram do limite de envio do servidor.');
             }
+            $this->validarCsrf();
 
             $pdo = iniciarPDO();
             $idInstrutor = (int) $usuario['idUsuario'];
@@ -73,6 +77,8 @@ class AtividadesController
         $usuario = $this->exigirPerfil('instrutor', true);
 
         $this->responder(function () use ($usuario) {
+            $this->validarCsrf();
+
             $idAtividade = (int) ($_POST['id_atividade'] ?? 0);
             Atividade::remover(iniciarPDO(), $idAtividade, (int) $usuario['idUsuario']);
 
@@ -171,6 +177,12 @@ class AtividadesController
     {
         $usuario = usuarioLogado();
 
+        // Conta desativada em Turmas e Cursos: encerra a sessão, como o módulo turmas_cursos faz
+        if ($usuario !== null && !ContaModel::estaAtiva((int) $usuario['idUsuario'])) {
+            logout();
+            $usuario = null;
+        }
+
         if ($usuario !== null && $usuario['perfilAcesso'] === $perfil) {
             return $usuario;
         }
@@ -206,6 +218,25 @@ class AtividadesController
         exit;
     }
 
+    private function csrf(): string
+    {
+        iniciarSessao();
+        if (empty($_SESSION['csrf_atividades'])) {
+            $_SESSION['csrf_atividades'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_atividades'];
+    }
+
+    private function validarCsrf(): void
+    {
+        $esperado = $_SESSION['csrf_atividades'] ?? '';
+        $recebido = (string) ($_POST['csrf'] ?? '');
+
+        if ($esperado === '' || !hash_equals($esperado, $recebido)) {
+            $this->json(['mensagem' => 'Requisição inválida. Atualize a página e tente de novo.'], 403);
+        }
+    }
+
     private function base(): string
     {
         return rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
@@ -214,6 +245,7 @@ class AtividadesController
     private function view(string $nome, array $dados = []): void
     {
         $dados['base'] = $this->base();
+        $dados['csrf'] = $this->csrf();
         extract($dados);
         require __DIR__ . '/views/' . $nome . '.php';
     }

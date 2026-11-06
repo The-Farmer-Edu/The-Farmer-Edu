@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificações</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="notification-container">
+
+
+        <button class="notification-button" id="notificationButton" aria-label="Abrir notificações">
+            🔔
+            <span class="notification-count" id="notificationCount">0</span>
+        </button>
+
+        
+        <div class="notification-box" id="notificationBox">
+            
+            <div class="notification-arrow"></div>
+
+            
+            <div class="notification-header">
+                <h3>Notificações</h3>
+                <button id="markRead" class="btn-text">Marcar todas como lidas</button>
+            </div>
+
+            
+            <div class="notification-list" id="notificationList"></div>
+
+            
+            <div class="notification-footer">
+                <button id="clearNotifications" class="btn-text danger">Limpar tudo</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

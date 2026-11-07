@@ -35,7 +35,6 @@ body {
     text-align: center;
 }
 
-/* Mensagem de status/erro do PHP */
 #mensagem-status {
     width: 100%;
     max-width: 550px;
@@ -49,7 +48,6 @@ body {
     font-size: 15px;
 }
 
-/* Formulário transparente */
 .form-desativar-conta {
     background-color: transparent;
     border: none;
@@ -61,7 +59,6 @@ body {
     padding: 0;
 }
 
-/* Caixa de aviso de perigo */
 .caixa-aviso {
     background-color: rgba(231, 76, 60, 0.08);
     border: 1px solid rgba(231, 76, 60, 0.3);
@@ -77,7 +74,6 @@ body {
     color: var(--vermelho);
 }
 
-/* Labels */
 .label {
     font-family: "Poppins", sans-serif;
     font-size: 17px;
@@ -87,7 +83,6 @@ body {
     display: block;
 }
 
-/* Campo de input */
 .campo {
     display: flex;
     flex-direction: column;
@@ -135,7 +130,6 @@ body {
     accent-color: var(--vermelho);
 }
 
-/* Container dos botões lado a lado */
 .botoes-acoes {
     display: flex;
     gap: 14px;
@@ -144,7 +138,6 @@ body {
     flex-wrap: wrap;
 }
 
-/* Botão de confirmação (Vermelho) */
 .btn-perigo {
     height: 46px;
     padding: 0 22px;
@@ -168,7 +161,6 @@ body {
     transform: translateY(1px);
 }
 
-/* Botão de Cancelar / Voltar */
 .btn-cancelar {
     height: 46px;
     padding: 0 20px;
@@ -194,7 +186,6 @@ body {
     transform: translateY(1px);
 }
 
-/* Responsividade celular */
 @media (max-width: 580px) {
     .botoes-acoes {
         flex-direction: column;

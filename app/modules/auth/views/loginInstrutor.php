@@ -9,10 +9,7 @@ $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[
 $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
 
 // usuarioLogado: devolve os dados da sessão ou null
-
-sessaoExpirouPorInatividade();
 $logado = usuarioLogado();
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -28,34 +25,29 @@ $logado = usuarioLogado();
         <section class="painel-login" id="painel-login">
             <h1 class="titulo-login" id="titulo-login">Entrar como Instrutor</h1>
 
-    <?php if ($expirou && !$logado): ?>
-        <p><strong>Sua sessão expirou por inatividade.</strong></p>
-        <form action="loginInstrutor" method="GET">
-            <button type="submit">Voltar ao login</button>
-        </form>
-    <?php elseif ($logado): ?>
-        <p>
-            Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
-            (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
-        </p>
-        <p>
-            <a href="editarConta">Editar conta</a> |
-            <a href="desativarConta">Desativar conta</a> |
-            <a href="logout">Sair</a>
-        </p>
-    <?php else: ?>
-        <form action="" method="POST">
-            <p>
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" value="<?= $antigo('email') ?>" required>
-            </p>
+            <?php if (!empty($mensagem)): ?>
+                <div style="background: #ffdddd; color: #d8000c; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: center; font-size: 13px;">
+                    <?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
 
-            <?php if ($logado): ?>
-                <p class="mensagem" id="mensagem-logado">
+            <?php if ($expirou && !$logado): ?>
+                <p><strong>Sua sessão expirou por inatividade.</strong></p>
+                <form action="loginInstrutor" method="GET">
+                    <button type="submit">Voltar ao login</button>
+                </form>
+
+            <?php elseif ($logado): ?>
+                <p>
                     Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
                     (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
                 </p>
-                <p class="mensagem"><a class="link-azul" id="link-sair" href="logout">Sair</a></p>
+                <p>
+                    <a href="editarConta">Editar conta</a> |
+                    <a href="desativarConta">Desativar conta</a> |
+                    <a href="logout">Sair</a>
+                </p>
+
             <?php else: ?>
                 <form class="form-login" id="form-login" action="" method="POST">
                     <div class="campo" id="campo-usuario">

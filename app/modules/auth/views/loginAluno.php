@@ -4,17 +4,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && empty($mensagem)){
     exit();
 }
 
-
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
 
 // primeiro confere se a sessão expirou (4h sem atividade), depois lê o login
-// o "?expirou=1" vem do redirecionamento das páginas de editar/desativar conta
 $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
 
 // usuarioLogado() é do core, devolve os dados da sessão ou null
-
 $logado = usuarioLogado();
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -25,39 +21,42 @@ $logado = usuarioLogado();
     <link rel="stylesheet" href="file?type=css&file=loginAluno.css">
 </head>
 <body>
-        <main class="tela-login">
+    <main class="tela-login">
 
         <section class="painel-login">
             <h1 class="titulo-login">Entrar como Aluno</h1>
 
-    <?php if ($expirou && !$logado): ?>
-        <p><strong>Sua sessão expirou por inatividade.</strong></p>
-        <form action="loginAluno" method="GET">
-            <button type="submit">Voltar ao login</button>
-        </form>
-    <?php elseif ($logado): ?>
-        <p>
-            Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
-            (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
-        </p>
-        <p>
-            <a href="editarConta">Editar conta</a> |
-            <a href="desativarConta">Desativar conta</a> |
-            <a href="logout">Sair</a>
-        </p>
-    <?php else: ?>
-        <form action="" method="POST">
-            <p>
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" value="<?= $antigo('email') ?>" required>
-            </p>
+            <!-- Feedback de Sucesso ou Erro -->
+            <?php if (!empty($mensagem)): ?>
+                <div class="<?= !empty($sucesso) ? 'alerta-sucesso' : 'alerta-erro' ?>">
+                    <?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?>
+                </div>
+            <?php endif; ?>
 
-            <?php if ($logado): ?>
-                <p class="mensagem">
-                    Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
-                    (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
-                </p>
-                <p class="mensagem"><a class="link-verde" href="logout">Sair</a></p>
+            <!-- Caso 1: Sessão Expirada -->
+            <?php if ($expirou && !$logado): ?>
+                <div class="painel-logado">
+                    <p class="saudacao">Sua sessão expirou por inatividade.</p>
+                    <div class="acoes-usuario-logado" style="margin-top: 15px;">
+                        <a href="loginAluno" class="btn-acao-logado btn-primario">Fazer login novamente</a>
+                    </div>
+                </div>
+
+            <!-- Caso 2: Já Logado (Painel com seus botões) -->
+            <?php elseif ($logado): ?>
+                <div class="painel-logado">
+                    <p class="saudacao">Bem-vindo de volta,</p>
+                    <h2 class="nome-usuario"><?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?></h2>
+                    <span class="badge-perfil"><?= htmlspecialchars(ucfirst($logado['perfilAcesso']), ENT_QUOTES, 'UTF-8') ?></span>
+
+                    <div class="acoes-usuario-logado">
+                        <a href="editarConta" class="btn-acao-logado btn-primario">Editar minha conta</a>
+                        <a href="desativarConta" class="btn-acao-logado btn-perigo">Desativar conta</a>
+                        <a href="logout" class="btn-acao-logado btn-neutro">Sair da conta</a>
+                    </div>
+                </div>
+
+            <!-- Caso 3: Formulário de Login Padrão -->
             <?php else: ?>
                 <form class="form-login" action="" method="POST">
                     <div class="campo">
@@ -82,7 +81,6 @@ $logado = usuarioLogado();
         </section>
 
         <aside class="painel-imagem">
-            <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
             <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
             <p class="subtitulo" id="subtitulo">Aluno</p>
         </aside>

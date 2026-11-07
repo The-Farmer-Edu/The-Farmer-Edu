@@ -386,7 +386,7 @@ class UsuarioController
         $this->view('desativarConta', ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
     }
 
-    //sair(logout)
+   //sair(logout)
     public function sair(): void
     {
         // "Descobre" o perfil antes de apagar a sessão
@@ -394,11 +394,11 @@ class UsuarioController
 
         logout();
 
-        $rotaLogin = ($perfil === 'instrutor') ? '/auth/loginInstrutor' : '/auth/loginAluno';
-        redirecionarParaRota($rotaLogin);
+        $rotaLogin = ($perfil === 'instrutor') ? 'loginInstrutor' : 'loginAluno';
+        header("Location: $rotaLogin");
+        exit;
     }
 
-    
     private function autenticar(string $tipo, string $view): void {
         $email = (string) ($_POST['email'] ?? '');
         $senha = (string) ($_POST['senha'] ?? '');
@@ -447,8 +447,8 @@ class UsuarioController
             $mensagem = $e->getMessage();
             } catch (Throwable $e) {
             error_log($e->getMessage());
-            $mensagem = 'Erro interno. Tente novamente.';
-            }
+            $mensagem = 'Erro real: ' . $e->getMessage();
+        }
 
             $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
             }

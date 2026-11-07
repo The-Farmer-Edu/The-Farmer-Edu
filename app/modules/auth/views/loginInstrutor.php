@@ -44,40 +44,27 @@ $logado = usuarioLogado();
             <a href="logout">Sair</a>
         </p>
     <?php else: ?>
-        <form action="" method="POST">
-            <p>
-                <label for="email">E-mail:</label>
+        <form class="form-login" id="form-login" action="" method="POST">
+            <div class="campo" id="campo-usuario">
+                <label for="email">Usuário</label>
                 <input type="email" id="email" name="email" value="<?= $antigo('email') ?>" required>
-            </p>
+            </div>
 
-            <?php if ($logado): ?>
-                <p class="mensagem" id="mensagem-logado">
-                    Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
-                    (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
-                </p>
-                <p class="mensagem"><a class="link-azul" id="link-sair" href="logout">Sair</a></p>
-            <?php else: ?>
-                <form class="form-login" id="form-login" action="" method="POST">
-                    <div class="campo" id="campo-usuario">
-                        <label for="email">Usuário</label>
-                        <input type="email" id="email" name="email" value="<?= $antigo('email') ?>" required>
-                    </div>
+            <div class="campo" id="campo-senha">
+                <label for="senha">Senha</label>
+                <input type="password" id="senha" name="senha" required>
+                <div class="links-campo">
+                    <a class="link-azul" id="link-esqueci" href="esqueciSenha">Esqueci a senha</a>
+                    <a class="link-azul" id="link-aluno" href="loginAluno">Sou Aluno</a>
+                </div>
+            </div>
 
-                    <div class="campo" id="campo-senha">
-                        <label for="senha">Senha</label>
-                        <input type="password" id="senha" name="senha" required>
-                        <div class="links-campo">
-                            <a class="link-azul" id="link-esqueci" href="esqueciSenha">Esqueci a senha</a>
-                            <a class="link-azul" id="link-aluno" href="loginAluno">Sou Aluno</a>
-                        </div>
-                    </div>
+            <button type="submit" class="btn-entrar" id="btn-entrar">Entrar</button>
+        </form>
 
-                    <button type="submit" class="btn-entrar" id="btn-entrar">Entrar</button>
-                </form>
-
-                <a class="criar-conta" id="link-criar-conta" href="novoUsuario">Criar Conta</a>
-            <?php endif; ?>
-        </section>
+            <a class="criar-conta" id="link-criar-conta" href="novoUsuario">Criar Conta</a>
+        <?php endif; ?>
+    </section>
 
         <aside class="painel-imagem" id="painel-imagem">
             <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
@@ -88,3 +75,4 @@ $logado = usuarioLogado();
     </main>
 </body>
 </html>
+

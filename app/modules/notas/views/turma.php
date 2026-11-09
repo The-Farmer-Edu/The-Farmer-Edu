@@ -7,6 +7,21 @@ foreach ($submissoes as $sub) {
     $porAluno[$sub['id_aluno']]['atividades'][] = $sub;
 }
 
+// Organiza submissões agrupando por Atividade (Aba "Por atividades")
+$porAtividade = [];
+foreach ($submissoes as $sub) {
+    $idAtv = (int) $sub['id_atividade'];
+    if (!isset($porAtividade[$idAtv])) {
+        $porAtividade[$idAtv] = [
+            'titulo' => $sub['titulo_atividade'],
+            'tipo' => $sub['tipo_atividade'] ?? '',
+            'data_entrega' => $sub['data_entrega'] ?? null,
+            'submissoes' => []
+        ];
+    }
+    $porAtividade[$idAtv]['submissoes'][] = $sub;
+}
+
 // Organiza atividades e registros para a visualização em boletim.
 $atividadesUnicas = [];
 $notasPorAlunoAtividade = [];
@@ -807,9 +822,9 @@ $msgErro = htmlspecialchars($_GET['erro'] ?? '');
             <input
                 type="text"
                 id="filtro-aluno"
-                placeholder="Buscar aluno pelo nome..."
+                placeholder="Buscar por nome..."
                 oninput="filtrarAlunos(this.value)"
-                aria-label="Filtrar alunos"
+                aria-label="Filtrar alunos ou atividades"
             >
         </div>
 
@@ -831,6 +846,15 @@ $msgErro = htmlspecialchars($_GET['erro'] ?? '');
                 onclick="alternarVisualizacao('boletim')"
             >
                 📊 Boletim de notas
+            </button>
+
+            <button
+                type="button"
+                id="btn-por-atividade"
+                aria-pressed="false"
+                onclick="alternarVisualizacao('atividade')"
+            >
+                📋 Por atividades
             </button>
         </div>
 
@@ -1082,6 +1106,7 @@ $msgErro = htmlspecialchars($_GET['erro'] ?? '');
                                     <?php endforeach; ?>
 
                                 </tbody>
+
                             </table>
 
                         </div>
@@ -1092,413 +1117,445 @@ $msgErro = htmlspecialchars($_GET['erro'] ?? '');
 
             <?php endif; ?>
 
-        </div><!-- Fim da visualização por aluno -->
+        </div>
 
-        <!-- Visualização em formato de boletim -->
-        <div id="view-boletim" style="display:none;">
-
+        <div id="view-boletim" style="display: none;">
             <?php if (empty($porAluno) || empty($atividadesUnicas)): ?>
 
                 <div class="vazio">
-                    <p style="font-size:3rem;">📊</p>
-                    <p>Não há dados suficientes para montar o boletim.</p>
+                    <p style="font-size:3rem">🌾</p>
+                    <p>Nenhum dado disponível para o boletim.</p>
                 </div>
 
             <?php else: ?>
 
                 <div class="boletim-wrap">
-
-                    <table class="tabela-boletim" aria-label="Boletim de notas da turma">
-
+                    <table class="tabela-boletim" aria-label="Boletim geral da turma">
                         <thead>
                             <tr>
                                 <th class="coluna-aluno">Aluno</th>
-
-                                <?php foreach ($atividadesUnicas as $atividade): ?>
-
+                                <?php foreach ($atividadesUnicas as $atv): ?>
                                     <th>
-                                        <span class="nome-atividade">
-                                            <?= htmlspecialchars($atividade['titulo'], ENT_QUOTES, 'UTF-8') ?>
-                                        </span>
-
+                                        <span class="nome-atividade"><?= htmlspecialchars($atv['titulo']) ?></span>
                                         <span class="prazo-atividade">
-                                            <?php
-                                            $prazo = $atividade['data_entrega'] ?? null;
-
-                                            echo $prazo
-                                                ? date('d/m/Y', strtotime($prazo))
-                                                : 'Sem prazo';
-                                            ?>
+                                            <?= !empty($atv['data_entrega']) ? date('d/m/Y', strtotime($atv['data_entrega'])) : 'Sem prazo' ?>
                                         </span>
                                     </th>
-
                                 <?php endforeach; ?>
-
-                                <th>Média</th>
                             </tr>
                         </thead>
-
                         <tbody>
-
                             <?php foreach ($porAluno as $idAluno => $dados): ?>
-
-                                <?php
-                                $nomeAluno = $dados['nome'];
-                                $notasValidas = [];
-
-                                foreach ($dados['atividades'] as $atividadeAluno) {
-                                    if (
-                                        isset($atividadeAluno['nota_valor']) &&
-                                        $atividadeAluno['nota_valor'] !== null &&
-                                        $atividadeAluno['nota_valor'] !== ''
-                                    ) {
-                                        $notasValidas[] = (float) $atividadeAluno['nota_valor'];
-                                    }
-                                }
-
-                                $media = count($notasValidas)
-                                    ? array_sum($notasValidas) / count($notasValidas)
-                                    : null;
-                                ?>
-
-                                <tr
-                                    class="linha-boletim"
-                                    data-nome="<?= htmlspecialchars(mb_strtolower($nomeAluno, 'UTF-8'), ENT_QUOTES, 'UTF-8') ?>"
-                                >
-
+                                <tr>
                                     <td class="coluna-aluno">
-                                        <strong>
-                                            <?= htmlspecialchars($nomeAluno, ENT_QUOTES, 'UTF-8') ?>
-                                        </strong>
+                                        <strong><?= htmlspecialchars($dados['nome']) ?></strong>
                                     </td>
 
-                                    <?php foreach ($atividadesUnicas as $atividade): ?>
+                                    <?php foreach ($atividadesUnicas as $atv): ?>
+                                        <?php
+                                        $idAtv = (int) $atv['id'];
+                                        $sub = $notasPorAlunoAtividade[(int) $idAluno][$idAtv] ?? null;
+
+                                        $notaVal = $sub['nota_valor'] ?? null;
+                                        $status = $sub['status_submissao'] ?? null;
+
+                                        $dataEntrega = strtotime($sub['data_entrega'] ?? '');
+                                        $dataEnvio = !empty($sub['data_envio']) ? strtotime($sub['data_envio']) : null;
+                                        $comAtraso = $dataEnvio && $dataEntrega && $dataEnvio > $dataEntrega;
+                                        ?>
+                                        <td>
+                                            <?php if ($notaVal !== null): ?>
+                                                <span class="nota-boletim">
+                                                    <?= number_format((float) $notaVal, 1, ',', '') ?>
+                                                </span>
+                                                <?php if ($comAtraso): ?>
+                                                    <span class="status-boletim atraso">Entregue com atraso</span>
+                                                <?php else: ?>
+                                                    <span class="status-boletim">No prazo</span>
+                                                <?php endif; ?>
+                                            <?php elseif ($status === 'enviada' || $status === 'processando'): ?>
+                                                <span class="status-boletim pendente">Aguardando nota</span>
+                                            <?php else: ?>
+                                                <span class="sem-nota-boletim">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    <?php endforeach; ?>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+            <?php endif; ?>
+        </div>
+
+        <div id="view-atividade" style="display: none;">
+            <?php if (empty($porAtividade)): ?>
+
+                <div class="vazio">
+                    <p style="font-size:3rem">🌾</p>
+                    <p>Nenhuma atividade encontrada nesta turma.</p>
+                </div>
+
+            <?php else: ?>
+
+                <?php foreach ($porAtividade as $idAtv => $dadosAtv): ?>
+
+                    <?php
+                    $tituloAtv = $dadosAtv['titulo'];
+                    $tipoAtv = $dadosAtv['tipo'];
+                    $prazoAtv = $dadosAtv['data_entrega'];
+                    $subsAtv = $dadosAtv['submissoes'];
+                    
+                    $tiposLabel = [
+                        'codigo' => '💻 Código',
+                        'quiz' => '📝 Quiz',
+                        'texto' => '📄 Texto'
+                    ];
+                    ?>
+
+                    <div
+                        class="aluno-secao"
+                        data-nome="<?= htmlspecialchars(strtolower($tituloAtv)) ?>"
+                    >
+
+                        <div class="aluno-header" onclick="toggleAluno(this)">
+
+                            <span class="tipo-chip tipo-<?= htmlspecialchars($tipoAtv) ?>">
+                                <?= $tiposLabel[$tipoAtv] ?? ucfirst($tipoAtv) ?>
+                            </span>
+
+                            <span class="aluno-nome">
+                                <?= htmlspecialchars($tituloAtv) ?>
+                            </span>
+
+                            <div class="aluno-media">
+                                Prazo: <strong><?= !empty($prazoAtv) ? date('d/m/Y', strtotime($prazoAtv)) : 'Sem prazo' ?></strong>
+
+                                <svg
+                                    class="chevron-icon"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+
+                        </div>
+
+                        <div class="tabela-wrap">
+
+                            <table aria-label="Alunos da atividade <?= htmlspecialchars($tituloAtv) ?>">
+
+                                <thead>
+                                    <tr>
+                                        <th>Aluno</th>
+                                        <th>Status</th>
+                                        <th>Nota atual</th>
+                                        <th>Lançar nota</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+
+                                    <?php foreach ($subsAtv as $atv): ?>
 
                                         <?php
-                                        $idAtividade = $atividade['id'];
+                                        $idSub = $atv['id_submissao'] ?? null;
+                                        $notaVal = $atv['nota_valor'] ?? null;
+                                        $status = $atv['status_submissao'] ?? null;
+                                        $origem = $atv['origem_nota'] ?? null;
 
-                                        $registro = $notasPorAlunoAtividade[$idAluno][$idAtividade] ?? null;
+                                        $notaFmt = $notaVal !== null
+                                            ? number_format((float) $notaVal, 1, ',', '')
+                                            : null;
+
+                                        $classNota = '';
+
+                                        if ($notaVal !== null) {
+                                            if ($notaVal == 10) {
+                                                $classNota = 'nota-10';
+                                            } elseif ($notaVal >= 7) {
+                                                $classNota = 'nota-boa';
+                                            } elseif ($notaVal >= 5) {
+                                                $classNota = 'nota-ok';
+                                            } else {
+                                                $classNota = 'nota-ruim';
+                                            }
+                                        }
+
+                                        $dataEntrega = strtotime($atv['data_entrega'] ?? '');
+                                        $dataEnvio = !empty($atv['data_envio'])
+                                            ? strtotime($atv['data_envio'])
+                                            : null;
+
+                                        $comAtraso = $dataEnvio && $dataEntrega
+                                            && $dataEnvio > $dataEntrega;
                                         ?>
 
-                                        <td>
+                                        <tr>
 
-                                            <?php if ($registro === null): ?>
+                                            <td>
+                                                <strong><?= htmlspecialchars($atv['nome_aluno']) ?></strong>
+                                            </td>
 
-                                                <span class="sem-nota-boletim">—</span>
+                                            <td>
+                                                <?php if ($status === 'corrigida'): ?>
 
-                                            <?php else: ?>
+                                                    <span class="badge badge-corrigido">
+                                                        ✔ Corrigida
+                                                    </span>
 
-                                                <?php
-                                                $nota = $registro['nota_valor'] ?? null;
-                                                $status = $registro['status_submissao'] ?? null;
+                                                <?php elseif ($status === 'enviada' || $status === 'processando'): ?>
 
-                                                $dataEntrega = !empty($registro['data_entrega'])
-                                                    ? strtotime($registro['data_entrega'])
-                                                    : false;
-
-                                                $dataEnvio = !empty($registro['data_envio'])
-                                                    ? strtotime($registro['data_envio'])
-                                                    : false;
-
-                                                $atrasado = $dataEntrega &&
-                                                    $dataEnvio &&
-                                                    $dataEnvio > $dataEntrega;
-                                                ?>
-
-                                                <?php if ($nota !== null && $nota !== ''): ?>
-
-                                                    <span class="nota-boletim">
-                                                        <?= number_format((float) $nota, 1, ',', '') ?>
+                                                    <span class="badge badge-enviado">
+                                                        📤 Enviada
                                                     </span>
 
                                                 <?php else: ?>
 
-                                                    <span class="sem-nota-boletim">—</span>
+                                                    <span class="badge badge-pendente">
+                                                        ⚠ Pendente
+                                                    </span>
 
                                                 <?php endif; ?>
 
-                                                <span class="status-boletim <?= $atrasado ? 'atraso' : (($status === 'corrigida') ? '' : 'pendente') ?>">
-                                                    <?php
-                                                    if ($atrasado) {
-                                                        echo 'Atrasada';
-                                                    } elseif ($status === 'corrigida') {
-                                                        echo 'Corrigida';
-                                                    } elseif ($status === 'enviada' || $status === 'processando') {
-                                                        echo 'Entregue';
-                                                    } else {
-                                                        echo 'Pendente';
-                                                    }
-                                                    ?>
-                                                </span>
+                                                <?php if ($comAtraso): ?>
 
-                                            <?php endif; ?>
+                                                    <div class="substatus-atraso">
+                                                        Concluída com atraso
+                                                    </div>
 
-                                        </td>
+                                                <?php elseif ($status === 'corrigida' || $status === 'enviada'): ?>
+
+                                                    <div class="substatus-prazo">
+                                                        Concluída no prazo
+                                                    </div>
+
+                                                <?php endif; ?>
+                                            </td>
+
+                                            <td>
+                                                <?php if ($notaFmt !== null): ?>
+
+                                                    <span class="nota-atual <?= $classNota ?>">
+                                                        <?= $notaFmt ?>
+                                                    </span>
+
+                                                    <?php if ($origem === 'ia'): ?>
+                                                        <span class="badge badge-ia" style="margin-left:6px">
+                                                            🤖 IA
+                                                        </span>
+                                                    <?php endif; ?>
+
+                                                <?php else: ?>
+
+                                                    <span class="sem-envio">—</span>
+
+                                                <?php endif; ?>
+                                            </td>
+
+                                            <td>
+                                                <?php if ($idSub): ?>
+
+                                                    <form
+                                                        class="form-nota"
+                                                        onsubmit="lancarNota(event, this)"
+                                                        data-submissao="<?= (int) $idSub ?>"
+                                                        data-turma="<?= (int) ($turma['id_turma'] ?? 0) ?>"
+                                                    >
+
+                                                        <input
+                                                            id="nota-atv-<?= (int) $idSub ?>"
+                                                            class="input-nota"
+                                                            type="number"
+                                                            name="valor"
+                                                            min="0"
+                                                            max="10"
+                                                            step="0.1"
+                                                            placeholder="0–10"
+                                                            value="<?= $notaVal !== null ? (float) $notaVal : '' ?>"
+                                                            required
+                                                            aria-label="Nota para <?= htmlspecialchars($atv['nome_aluno']) ?>"
+                                                        >
+
+                                                        <button class="btn-salvar" type="submit">
+                                                            💾 Salvar
+                                                        </button>
+
+                                                    </form>
+
+                                                <?php else: ?>
+
+                                                    <span class="sem-envio">Sem envio</span>
+
+                                                <?php endif; ?>
+                                            </td>
+
+                                        </tr>
 
                                     <?php endforeach; ?>
 
-                                    <td>
-                                        <?php if ($media !== null): ?>
+                                </tbody>
 
-                                            <strong>
-                                                <?= number_format($media, 1, ',', '') ?>
-                                            </strong>
+                            </table>
 
-                                            <span class="status-boletim">de 10</span>
+                        </div>
 
-                                        <?php else: ?>
+                    </div>
 
-                                            <span class="sem-nota-boletim">—</span>
-
-                                        <?php endif; ?>
-                                    </td>
-
-                                </tr>
-
-                            <?php endforeach; ?>
-
-                        </tbody>
-                    </table>
-
-                </div>
-
-                <p style="margin-top:12px;color:var(--texto-secundario);font-size:.8rem;">
-                    💡 Deslize a tabela horizontalmente para consultar todas as atividades.
-                    Para lançar ou editar notas, utilize a visualização “Por aluno”.
-                </p>
+                <?php endforeach; ?>
 
             <?php endif; ?>
-
-        </div><!-- Fim da visualização em boletim -->
+        </div>
 
     </div>
 
-    <div id="toast" role="status" aria-live="polite"></div>
+    <div id="toast"></div>
 
     <script>
-        function toggleAluno(headerElement) {
-            const secao = headerElement.closest('.aluno-secao');
-            const tabela = secao.querySelector('.tabela-wrap');
+    function toggleAluno(header) {
+        const secao = header.parentElement;
+        secao.classList.toggle('fechado');
+        const wrap = secao.querySelector('.tabela-wrap');
+        if (wrap) {
+            wrap.style.display = secao.classList.contains('fechado') ? 'none' : 'block';
+        }
+    }
 
-            secao.classList.toggle('fechado');
+    function filtrarAlunos(termo) {
+        const busca = termo.toLowerCase().trim();
+        const secoes = document.querySelectorAll('.aluno-secao');
 
-            if (tabela.style.display === 'none') {
-                tabela.style.display = 'block';
-            } else {
-                tabela.style.display = 'none';
+        secoes.forEach(secao => {
+            const nome = secao.getAttribute('data-nome') || '';
+            secao.style.display = nome.includes(busca) ? 'block' : 'none';
+        });
+    }
+
+    function alternarVisualizacao(modo) {
+        const viewAluno = document.getElementById('view-aluno');
+        const viewBoletim = document.getElementById('view-boletim');
+        const viewAtividade = document.getElementById('view-atividade');
+
+        const btnAluno = document.getElementById('btn-por-aluno');
+        const btnBoletim = document.getElementById('btn-boletim');
+        const btnAtividade = document.getElementById('btn-por-atividade');
+
+        const filtroInput = document.getElementById('filtro-aluno');
+
+        if (modo === 'boletim') {
+            viewAluno.style.display = 'none';
+            viewAtividade.style.display = 'none';
+            viewBoletim.style.display = 'block';
+
+            btnAluno.classList.remove('ativo');
+            btnAluno.setAttribute('aria-pressed', 'false');
+            btnAtividade.classList.remove('ativo');
+            btnAtividade.setAttribute('aria-pressed', 'false');
+
+            btnBoletim.classList.add('ativo');
+            btnBoletim.setAttribute('aria-pressed', 'true');
+
+            if (filtroInput) filtroInput.parentElement.style.display = 'none';
+        } else if (modo === 'atividade') {
+            viewAluno.style.display = 'none';
+            viewBoletim.style.display = 'none';
+            viewAtividade.style.display = 'block';
+
+            btnAluno.classList.remove('ativo');
+            btnAluno.setAttribute('aria-pressed', 'false');
+            btnBoletim.classList.remove('ativo');
+            btnBoletim.setAttribute('aria-pressed', 'false');
+
+            btnAtividade.classList.add('ativo');
+            btnAtividade.setAttribute('aria-pressed', 'true');
+
+            if (filtroInput) {
+                filtroInput.parentElement.style.display = 'flex';
+                filtroInput.placeholder = 'Buscar atividade pelo título...';
+                filtrarAlunos(filtroInput.value);
+            }
+        } else {
+            viewBoletim.style.display = 'none';
+            viewAtividade.style.display = 'none';
+            viewAluno.style.display = 'block';
+
+            btnBoletim.classList.remove('ativo');
+            btnBoletim.setAttribute('aria-pressed', 'false');
+            btnAtividade.classList.remove('ativo');
+            btnAtividade.setAttribute('aria-pressed', 'false');
+
+            btnAluno.classList.add('ativo');
+            btnAluno.setAttribute('aria-pressed', 'true');
+
+            if (filtroInput) {
+                filtroInput.parentElement.style.display = 'flex';
+                filtroInput.placeholder = 'Buscar aluno pelo nome...';
+                filtrarAlunos(filtroInput.value);
             }
         }
+    }
 
-        function alternarVisualizacao(modo) {
-            const viewAluno = document.getElementById('view-aluno');
-            const viewBoletim = document.getElementById('view-boletim');
+    function exibirToast(msg, ok = true) {
+        const toast = document.getElementById('toast');
+        toast.textContent = (ok ? '✅ ' : '❌ ') + msg;
+        toast.className = ok ? 'toast-ok' : 'toast-err';
+        toast.style.display = 'flex';
 
-            const btnAluno = document.getElementById('btn-por-aluno');
-            const btnBoletim = document.getElementById('btn-boletim');
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3500);
+    }
 
-            const mostrarAluno = modo === 'aluno';
+    async function lancarNota(e, form) {
+        e.preventDefault();
 
-            viewAluno.style.display = mostrarAluno ? 'block' : 'none';
-            viewBoletim.style.display = mostrarAluno ? 'none' : 'block';
+        const btn = form.querySelector('.btn-salvar');
+        const input = form.querySelector('.input-nota');
+        const idSub = form.getAttribute('data-submissao');
+        const idTurma = form.getAttribute('data-turma');
+        const valor = input.value;
 
-            btnAluno.classList.toggle('ativo', mostrarAluno);
-            btnBoletim.classList.toggle('ativo', !mostrarAluno);
+        btn.disabled = true;
+        btn.textContent = '⏳';
 
-            btnAluno.setAttribute('aria-pressed', String(mostrarAluno));
-            btnBoletim.setAttribute('aria-pressed', String(!mostrarAluno));
-
-            filtrarAlunos(document.getElementById('filtro-aluno').value);
-        }
-
-        function filtrarAlunos(termo) {
-            const busca = termo.trim().toLocaleLowerCase('pt-BR');
-
-            document.querySelectorAll('.aluno-secao').forEach(secao => {
-                const nome = secao.dataset.nome || '';
-
-                secao.style.display =
-                    (!busca || nome.includes(busca)) ? '' : 'none';
-            });
-
-            document.querySelectorAll('.linha-boletim').forEach(linha => {
-                const nome = linha.dataset.nome || '';
-
-                linha.style.display =
-                    (!busca || nome.includes(busca)) ? '' : 'none';
-            });
-        }
-
-        function lancarNota(event, form) {
-            event.preventDefault();
-
-            const idSubmissao = form.dataset.submissao;
-            const idTurma = form.dataset.turma;
-            const inputNota = form.querySelector('input[name="valor"]');
-            const btn = form.querySelector('button');
-            const valor = parseFloat(inputNota.value);
-
-            if (isNaN(valor) || valor < 0 || valor > 10) {
-                mostrarToast('⚠ Nota deve ser entre 0 e 10.', false);
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = '⏳ Salvando...';
-
-            const body = new URLSearchParams({
-                id_submissao: idSubmissao,
-                valor: valor,
-                id_turma: idTurma
-            });
-
-            fetch('/notas/salvar', {
+        try {
+            const res = await fetch('/notas/salvar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: body.toString()
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.sucesso) {
-                    mostrarToast('✅ ' + data.mensagem, true);
+                body: new URLSearchParams({
+                    id_submissao: idSub,
+                    id_turma: idTurma,
+                    valor: valor
+                })
+            });
 
-                    const tr = form.closest('tr');
-                    const tdNota = tr.querySelector('td:nth-child(5)');
+            const data = await res.json();
 
-                    if (tdNota) {
-                        const notaFmt = valor.toFixed(1).replace('.', ',');
-                        let classe = 'nota-ruim';
-
-                        if (valor == 10) {
-                            classe = 'nota-10';
-                        } else if (valor >= 7) {
-                            classe = 'nota-boa';
-                        } else if (valor >= 5) {
-                            classe = 'nota-ok';
-                        }
-
-                        tdNota.innerHTML =
-                            `<span class="nota-atual ${classe}">${notaFmt}</span>`;
-                    }
-
-                    const tdStatus = tr.querySelector('td:nth-child(4)');
-
-                    if (tdStatus) {
-                        tdStatus.innerHTML =
-                            '<span class="badge badge-corrigido">✔ Corrigida</span>';
-                    }
-
-                    // Atualiza a nota correspondente no boletim sem recarregar.
-                    const linhaAluno = form.closest('.aluno-secao');
-                    const idAtividade = <?= json_encode(array_column($submissoes, 'id_atividade', 'id_submissao')) ?>[idSubmissao];
-
-                    if (linhaAluno && idAtividade) {
-                        const idAluno = Object.keys(<?= json_encode(array_column($submissoes, 'id_aluno', 'id_submissao')) ?>)
-                            .find(id => String(id) === String(idSubmissao));
-
-                        const nomeAluno = linhaAluno.dataset.nome;
-
-                        const linhasBoletim = document.querySelectorAll('.linha-boletim');
-
-                        linhasBoletim.forEach(linha => {
-                            if (linha.dataset.nome === nomeAluno) {
-                                const cabecalhos = Array.from(
-                                    document.querySelectorAll('.tabela-boletim thead th')
-                                );
-
-                                const coluna = cabecalhos.findIndex(th =>
-                                    th.textContent.trim().startsWith(
-                                        tr.querySelector('td:first-child').textContent.trim()
-                                    )
-                                );
-
-                                if (coluna >= 0) {
-                                    const celula = linha.cells[coluna];
-                                    if (celula) {
-                                        celula.innerHTML =
-                                            `<span class="nota-boletim">${notaFmt}</span>
-                                             <span class="status-boletim">Corrigida</span>`;
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    recalcularMedia(form);
-                } else {
-                    mostrarToast('❌ ' + data.mensagem, false);
-                }
-            })
-            .catch(() => {
-                mostrarToast('❌ Erro de conexão. Tente novamente.', false);
-            })
-            .finally(() => {
+            if (data.sucesso) {
+                exibirToast('Nota lançada com sucesso!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                exibirToast(data.erro || 'Erro ao lançar nota.', false);
                 btn.disabled = false;
-                btn.innerHTML = '💾 Salvar';
-            });
+                btn.textContent = '💾 Salvar';
+            }
+        } catch (err) {
+            exibirToast('Erro de conexão com o servidor.', false);
+            btn.disabled = false;
+            btn.textContent = '💾 Salvar';
         }
-
-        function recalcularMedia(formElement) {
-            const secao = formElement.closest('.aluno-secao');
-
-            if (!secao) {
-                return;
-            }
-
-            const inputs = secao.querySelectorAll('input.input-nota');
-            const valores = [];
-
-            inputs.forEach(inp => {
-                const v = parseFloat(inp.value);
-
-                if (!isNaN(v)) {
-                    valores.push(v);
-                }
-            });
-
-            if (valores.length === 0) {
-                return;
-            }
-
-            const media = valores.reduce((a, b) => a + b, 0) / valores.length;
-            const mediaFmt = media.toFixed(1).replace('.', ',');
-
-            const mediaSpan = secao.querySelector('.aluno-media strong');
-
-            if (mediaSpan) {
-                mediaSpan.textContent = mediaFmt + ' / 10';
-            }
-
-            // Atualiza também a média mostrada no boletim.
-            const linhaBoletim = Array.from(
-                document.querySelectorAll('.linha-boletim')
-            ).find(linha => linha.dataset.nome === secao.dataset.nome);
-
-            if (linhaBoletim) {
-                const celulaMedia = linhaBoletim.cells[linhaBoletim.cells.length - 1];
-
-                if (celulaMedia) {
-                    celulaMedia.innerHTML =
-                        `<strong>${mediaFmt}</strong>
-                         <span class="status-boletim">de 10</span>`;
-                }
-            }
-        }
-
-        function mostrarToast(msg, sucesso) {
-            const toast = document.getElementById('toast');
-
-            toast.textContent = msg;
-            toast.className = sucesso ? 'toast-ok' : 'toast-err';
-            toast.style.display = 'flex';
-
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
+    }
     </script>
-
 </body>
+
 </html>

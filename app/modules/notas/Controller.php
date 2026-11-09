@@ -145,11 +145,12 @@ class NotasController
             $sucesso  = true;
         } catch (Throwable $e) {
             error_log($e->getMessage());
-            $mensagem = "Erro ao salvar nota.";
+            $mensagem = "Erro ao salvar nota." . $e->getMessage();
             $sucesso  = false;
         }
 
         if ($this->isAjax()) {
+            ob_clean();
             header('Content-Type: application/json');
             echo json_encode(['sucesso' => $sucesso, 'mensagem' => $mensagem]);
         } else {

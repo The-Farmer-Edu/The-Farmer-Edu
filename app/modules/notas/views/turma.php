@@ -1,5 +1,29 @@
 <?php
+/**
+ * ============================================================================
+ * VIEW: DETALHES DA TURMA E GESTÃO DE NOTAS (turma.php)
+ * ============================================================================
+ * Painel completo para o instrutor visualizar, filtrar e lançar notas de uma turma.
+ * É renderizada por NotasController::verTurma().
+ *
+ * Funcionalidades principais:
+ * - 3 modos de visualização via abas: "Por aluno", "Boletim de notas" e "Por atividades".
+ * - Lançamento e atualização de notas via AJAX/fetch com recálculo em tempo real da média.
+ * - Filtro dinâmico de busca por nome de aluno ou título de atividade.
+ * - Indicação de pontualidade na entrega (no prazo vs com atraso).
+ *
+ * Variáveis recebidas:
+ * - $usuario    : Array com dados do instrutor logado.
+ * - $turma      : Array com dados cadastrais da turma (id_turma, nome_turma, turno, nome_curso).
+ * - $submissoes : Array de submissões de todos os alunos da turma.
+ * ============================================================================
+ */
 
+// ----------------------------------------------------------------------------
+// ESTRUTURAÇÃO DE DADOS PARA AS TRÊS VISUALIZAÇÕES
+// ----------------------------------------------------------------------------
+
+// 1. Agrupamento de submissões por Aluno (usado na aba "Por aluno")
 $porAluno = [];
 
 foreach ($submissoes as $sub) {
@@ -7,7 +31,7 @@ foreach ($submissoes as $sub) {
     $porAluno[$sub['id_aluno']]['atividades'][] = $sub;
 }
 
-// Organiza submissões agrupando por Atividade (Aba "Por atividades")
+// 2. Agrupamento de submissões por Atividade (usado na aba "Por atividades")
 $porAtividade = [];
 foreach ($submissoes as $sub) {
     $idAtv = (int) $sub['id_atividade'];
@@ -22,7 +46,7 @@ foreach ($submissoes as $sub) {
     $porAtividade[$idAtv]['submissoes'][] = $sub;
 }
 
-// Organiza atividades e registros para a visualização em boletim.
+// 3. Estruturação matricial para o Boletim (usado na aba "Boletim de notas")
 $atividadesUnicas = [];
 $notasPorAlunoAtividade = [];
 
@@ -30,6 +54,7 @@ foreach ($submissoes as $sub) {
     $idAluno = (int) $sub['id_aluno'];
     $idAtividade = (int) $sub['id_atividade'];
 
+    // Mapeia colunas de atividades únicas
     $atividadesUnicas[$idAtividade] = [
         'id' => $idAtividade,
         'titulo' => $sub['titulo_atividade'],
@@ -37,11 +62,13 @@ foreach ($submissoes as $sub) {
         'tipo' => $sub['tipo_atividade'] ?? '',
     ];
 
+    // Matriz de submissões indexada por aluno e atividade
     $notasPorAlunoAtividade[$idAluno][$idAtividade] = $sub;
 }
 
 $atividadesUnicas = array_values($atividadesUnicas);
 
+// Ordena atividades do boletim cronologicamente por prazo de entrega
 usort($atividadesUnicas, function ($a, $b) {
     return strcmp(
         $a['data_entrega'] ?? '',
@@ -49,8 +76,10 @@ usort($atividadesUnicas, function ($a, $b) {
     );
 });
 
+// Mensagens flash de retorno (sucesso ou erro)
 $msgSucesso = htmlspecialchars($_GET['sucesso'] ?? '');
 $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
+// Caminho base para resolução de links
 $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 ?>
 <!DOCTYPE html>
@@ -860,9 +889,11 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 </head>
 <body>
 
+<!-- TOPBAR: Barra de navegação com menu de usuário docente -->
 <nav class="topbar">
     <a class="topbar-logo" href="<?= $base ?>/notas/instrutor">🌱 <span>The Farmer</span>Edu</a>
     <div class="topbar-right">
+        <!-- Gatilho do menu suspenso -->
         <div class="topbar-user" id="userMenuBtn" tabindex="0">
             <div class="avatar"><?= strtoupper(substr($usuario['nome'] ?? 'IN', 0, 2)) ?></div>
             <span><?= htmlspecialchars($usuario['nome'] ?? 'Instrutor') ?></span>
@@ -893,7 +924,8 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         </nav>
         <a class="btn-voltar" href="<?= $base ?>/notas/instrutor">← Voltar às turmas</a>
     </div>
-    <!-- PAGE HEADER com stats -->
+
+    <!-- PAGE HEADER com métricas e contadores da turma -->
     <?php
     $totalAlunos = count($porAluno);
     $totalAtvs   = 0;
@@ -921,6 +953,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 <span class="header-badge hb-laranja">📋 <?= $totalNotas ?>/<?= $totalAtvs ?> notas lançadas</span>
             </div>
         </div>
+        <!-- Estatísticas resumidas de correção -->
         <?php if ($totalAlunos > 0 && $totalAtvs > 0): ?>
         <div class="page-header-stats">
             <?php $pct = round($totalAtvs > 0 ? ($totalNotas / $totalAtvs) * 100 : 0); ?>
@@ -936,6 +969,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <?php endif; ?>
     </header>
 
+    <!-- Alertas informativos de status via query string -->
     <?php if ($msgSucesso): ?>
         <div class="alerta alerta-sucesso" role="alert">✅ <?= $msgSucesso ?></div>
     <?php endif; ?>
@@ -943,6 +977,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <div class="alerta alerta-erro" role="alert">❌ <?= $msgErro ?></div>
     <?php endif; ?>
 
+    <!-- BARRA DE FILTRO DINÂMICO (Input de pesquisa em tempo real) -->
     <div class="filtro-bar">
         <span>🔍</span>
         <input
@@ -954,6 +989,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         >
     </div>
     
+        <!-- ABAS DE NAVEGAÇÃO ENTRE OS MODOS DE VISUALIZAÇÃO -->
         <div class="visualizacao-tabs" role="group" aria-label="Modo de visualização das notas">
             <button
                 type="button"
@@ -984,23 +1020,31 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             </button>
         </div>
 
+        <!-- ==================================================================
+             VISUALIZAÇÃO 1: POR ALUNO (#view-aluno)
+             Agrupa as atividades por estudante em seções colapsáveis (acordeão).
+             ================================================================== -->
         <div id="view-aluno">
 
         <?php if (empty($porAluno)): ?>
+            <!-- Estado vazio quando não houver alunos ou atividades -->
             <div class="vazio">
                 <p style="font-size:3rem">🌾</p>
                 <p>Nenhum aluno ou atividade encontrado nesta turma.</p>
             </div>
         <?php else: ?>
+            <!-- Itera sobre cada aluno matriculado -->
             <?php foreach ($porAluno as $idAluno => $dados):
                 $nome    = $dados['nome'];
                 $atvs    = $dados['atividades'];
 
+                // Calcula a média das notas do aluno
                 $notas     = array_filter(array_column($atvs, 'nota_valor'), fn($v) => $v !== null);
                 $mediaAluno = count($notas) > 0 ? array_sum($notas) / count($notas) : null;
             ?>
             <div class="aluno-secao" data-nome="<?= htmlspecialchars(strtolower($nome)) ?>">
 
+                <!-- Cabeçalho do aluno (clique para expandir/recolher) -->
                 <div class="aluno-header" onclick="toggleAluno(this)">
                     <div class="aluno-avatar"><?= strtoupper(substr($nome, 0, 2)) ?></div>
                     <span class="aluno-nome"><?= htmlspecialchars($nome) ?></span>
@@ -1020,6 +1064,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                     </div>
                 </div>
 
+                <!-- Tabela de atividades do aluno -->
                 <div class="tabela-wrap">
                     <table aria-label="Atividades de <?= htmlspecialchars($nome) ?>">
                         <thead>
@@ -1051,6 +1096,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                     else                    $classNota = 'nota-ruim';
                                 }
 
+                                // Verificação de pontualidade no envio
                                 $dataEntrega = strtotime($atv['data_entrega'] ?? '');
                                 $dataEnvio   = !empty($atv['data_envio']) ? strtotime($atv['data_envio']) : null;
                                 $comAtraso   = $dataEnvio && $dataEnvio > $dataEntrega;
@@ -1058,6 +1104,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                 <tr>
                                     <td><?= htmlspecialchars($atv['titulo_atividade']) ?></td>
 
+                                    <!-- Chip com tipo da atividade -->
                                     <td>
                                         <?php $tiposLabel = ['codigo' => '💻 Código', 'quiz' => '📝 Quiz', 'texto' => '📄 Texto']; ?>
                                         <span class="tipo-chip tipo-<?= htmlspecialchars($tipo) ?>">
@@ -1065,8 +1112,10 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                         </span>
                                     </td>
 
+                                    <!-- Data de entrega -->
                                     <td><?= date('d/m/Y', strtotime($atv['data_entrega'])) ?></td>
 
+                                    <!-- Status da submissão -->
                                     <td>
                                         <?php if ($status === 'corrigida'): ?>
                                             <span class="badge badge-corrigido">✔ Corrigida</span>
@@ -1083,6 +1132,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                         <?php endif; ?>
                                     </td>
 
+                                    <!-- Exibição da nota com badge de IA -->
                                     <td>
                                         <?php if ($notaFmt !== null): ?>
                                             <span class="nota-atual <?= $classNota ?>"><?= $notaFmt ?></span>
@@ -1094,6 +1144,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                         <?php endif; ?>
                                     </td>
 
+                                    <!-- Formulário AJAX de lançamento de nota -->
                                     <td>
                                         <?php if ($idSub): ?>
                                             <form class="form-nota"
@@ -1133,6 +1184,10 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
 </div>
 
+<!-- ==================================================================
+     VISUALIZAÇÃO 2: BOLETIM GERAL (#view-boletim)
+     Grade com matriz Aluno x Atividades para visão panorâmica das notas.
+     ================================================================== -->
 <div id="view-boletim" style="display: none;">
             <?php if (empty($porAluno) || empty($atividadesUnicas)): ?>
 
@@ -1147,7 +1202,9 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                     <table class="tabela-boletim" aria-label="Boletim geral da turma">
                         <thead>
                             <tr>
+                                <!-- Coluna fixa de alunos -->
                                 <th class="coluna-aluno">Aluno</th>
+                                <!-- Cabeçalhos dinâmicos com cada atividade -->
                                 <?php foreach ($atividadesUnicas as $atv): ?>
                                     <th>
                                         <span class="nome-atividade"><?= htmlspecialchars($atv['titulo']) ?></span>
@@ -1159,6 +1216,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                             </tr>
                         </thead>
                         <tbody>
+                            <!-- Linhas com cada aluno e suas respectivas notas -->
                             <?php foreach ($porAluno as $idAluno => $dados): ?>
                                 <tr>
                                     <td class="coluna-aluno">
@@ -1203,6 +1261,10 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             <?php endif; ?>
         </div>
 
+        <!-- ==================================================================
+             VISUALIZAÇÃO 3: POR ATIVIDADES (#view-atividade)
+             Agrupa alunos por atividade para correção em lote.
+             ================================================================== -->
         <div id="view-atividade" style="display: none;">
             <?php if (empty($porAtividade)): ?>
 
@@ -1213,6 +1275,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
             <?php else: ?>
 
+                <!-- Itera sobre as atividades da turma -->
                 <?php foreach ($porAtividade as $idAtv => $dadosAtv): ?>
 
                     <?php
@@ -1233,6 +1296,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                         data-nome="<?= htmlspecialchars(strtolower($tituloAtv)) ?>"
                     >
 
+                        <!-- Cabeçalho colapsável da atividade -->
                         <div class="aluno-header" onclick="toggleAluno(this)">
 
                             <span class="tipo-chip tipo-<?= htmlspecialchars($tipoAtv) ?>">
@@ -1263,6 +1327,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
                         </div>
 
+                        <!-- Tabela de submissões dos estudantes nesta atividade -->
                         <div class="tabela-wrap">
 
                             <table aria-label="Alunos da atividade <?= htmlspecialchars($tituloAtv) ?>">
@@ -1431,9 +1496,16 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
     </div>
 
+    <!-- Feedback visual flutuante via Toast -->
     <div id="toast" role="status" aria-live="polite"></div>
 
+<!-- ======================================================================
+     SCRIPTS: Lógica de front-end, AJAX e manipulação de abas/filtros
+     ====================================================================== -->
 <script>
+/**
+ * Exibe notificação flutuante temporária.
+ */
 function exibirToast(msg, ok = true) {
     const toast = document.getElementById('toast');
     toast.textContent = (ok ? '✅ ' : '❌ ') + msg;
@@ -1445,6 +1517,9 @@ function exibirToast(msg, ok = true) {
     }, 3500);
 }
 
+/**
+ * Expande ou recolhe a seção do acordeão.
+ */
 function toggleAluno(headerElement) {
     const secao = headerElement.closest('.aluno-secao');
 
@@ -1454,6 +1529,10 @@ function toggleAluno(headerElement) {
             wrap.style.display = secao.classList.contains('fechado') ? 'none' : 'block';
         }
 }
+
+/**
+ * Filtro em tempo real de alunos ou atividades.
+ */
 function filtrarAlunos(termo) {
         const secoes = document.querySelectorAll('.aluno-secao');
         const q = termo.toLowerCase().trim();
@@ -1463,6 +1542,9 @@ function filtrarAlunos(termo) {
         });
 }
 
+/**
+ * Alterna entre os modos de visualização ('aluno', 'boletim', 'atividade').
+ */
 function alternarVisualizacao(modo) {
         const viewAluno = document.getElementById('view-aluno');
         const viewBoletim = document.getElementById('view-boletim');
@@ -1527,6 +1609,9 @@ function alternarVisualizacao(modo) {
         }
     }
 
+/**
+ * Processa o envio assíncrono (AJAX) da nota lançada pelo instrutor.
+ */
 function lancarNota(event, form) {
     event.preventDefault();
 
@@ -1580,6 +1665,7 @@ function lancarNota(event, form) {
                 tdStatus.innerHTML = '<span class="badge badge-corrigido">✔ Corrigida</span>';
             }
 
+            // Recalcula a média exibida no cabeçalho
             recalcularMedia(form);
 
         } else {
@@ -1593,6 +1679,9 @@ function lancarNota(event, form) {
     });
 }
 
+/**
+ * Recalcula a média das notas dinamicamente na página.
+ */
 function recalcularMedia(formElement) {
     const secao = formElement.closest('.aluno-secao');
     if (!secao) return;
@@ -1615,6 +1704,9 @@ function recalcularMedia(formElement) {
     }
 }
 
+/**
+ * Exibe mensagem Toast por 3 segundos.
+ */
 function mostrarToast(msg, sucesso) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;
@@ -1624,7 +1716,7 @@ function mostrarToast(msg, sucesso) {
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
 
-// Menu de usuário dropdown
+// Controle de dropdown do perfil
 const userBtn = document.getElementById('userMenuBtn');
 if (userBtn) {
     userBtn.addEventListener('click', function(e) {

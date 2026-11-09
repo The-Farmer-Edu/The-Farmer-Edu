@@ -1,0 +1,59 @@
+/* Fazenda 3D — CSS 3 de 7: barra de ferramentas, recursos e elementos da Mark 8.2. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Painéis de Tempo e Áudio ===== */
+#barra-ferramentas { position: fixed; z-index: 12; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 58px); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: calc(100vw - 24px); pointer-events: none }
+#barra-ferramentas>* { pointer-events: auto }
+.botoes-ferramentas { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end }
+/* ===== Fazenda 8.4 (C2): botão "☰ Menu" na barra superior, menu compacto e navegação "‹ Menu" / "✕" acima dos painéis ===== */
+#recursos-resumo { margin-right: auto }
+#botao-menu { cursor: pointer; font-weight: 700; min-height: 36px; white-space: nowrap }
+#botao-menu.aberto { outline: 2px solid var(--destaque) }
+/* Fazenda 8.4 (C4): botão global de som; silenciado = fundo escuro com borda tracejada (não depende só da cor) */
+#botao-som-global { cursor: pointer; font-weight: 700; min-height: 36px; white-space: nowrap; margin-right: 8px }
+#botao-som-global[aria-pressed="true"] { background: #5d2b2b; color: #fff; outline: 2px dashed #ff9b8f; outline-offset: -2px }
+.aviso-silencio-global { margin: 0 0 8px; padding: 6px 8px; border-radius: 8px; background: #5d2b2b; color: #fff; font-size: 12px }
+.aviso-silencio-global[hidden] { display: none }
+#menu-principal { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 6px; width: min(250px, calc(100vw - 24px)); box-sizing: border-box;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 70px); overflow-y: auto; padding: 10px; border-radius: 16px; background: var(--fundo-card); color: var(--texto); box-shadow: 0 4px 14px #0004 }
+#menu-principal[hidden], .navegacao-do-painel[hidden] { display: none }
+.cabecalho-do-menu { display: flex; align-items: center; justify-content: space-between; font-size: 15px; padding: 0 2px 2px }
+#menu-principal .botao-ferramenta { width: 100%; text-align: left; box-shadow: none; background: #8882; margin: 0; max-width: none }
+#menu-principal #botao-nome-da-fazenda { background: #fff3cf; color: #5e3b1e; border-radius: 20px; padding: 8px 12px; font-size: 14px }
+.botao-fechar { flex: 0 0 auto; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--fundo-card); color: var(--texto); font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 8px #0003 }
+#menu-principal .botao-fechar { background: #8882; box-shadow: none }
+.navegacao-do-painel { display: flex; gap: 8px; justify-content: flex-end }
+.dica-dos-controles { margin: 2px 2px 0; font-size: 11px; line-height: 1.35; opacity: .85 }
+.testes-do-menu { border-top: 1px solid #8884; padding-top: 6px }
+.testes-do-menu h4 { margin: 0 0 6px; font-size: 13px }
+.testes-do-menu button { width: 100%; min-height: 36px; border: 0; border-radius: 10px; background: #8882; color: var(--texto); font-weight: 600; cursor: pointer }
+@media (max-width: 520px) {
+  #barra-topo { padding-left: 8px; padding-right: 8px }
+  #barra-topo>* { padding: 7px 10px; font-size: 13px }
+  #recursos-resumo { margin-left: 6px; font-size: 11px; white-space: normal; line-height: 1.3 }
+  #botao-menu .rotulo-do-menu, #botao-som-global .rotulo-do-som { display: none }
+  #botao-som-global { margin-right: 6px }
+  #barra-ferramentas { right: 8px; max-width: calc(100vw - 16px) }
+}
+/* ===== Mark 8.2: recursos, cartões não construídos e painéis Fazenda/Equipe ===== */
+#recursos-resumo { margin-left: 10px; font-size: 12px; white-space: nowrap; opacity: .9 }
+/* Fazenda 8.4 (D1): lote vazio = papel mais escuro e medalhão esmaecido (antes: borda tracejada); sem XP = botão de papel com cadeado */
+.card.nao-construido { background: var(--gaveta-cartao-vazio) }
+.card.nao-construido .medalhao-do-card { filter: grayscale(.85); opacity: .8 }
+.card button.sem-xp { background: linear-gradient(#f1e6ca, #dccaa2); color: #5e3b1c; text-shadow: none; box-shadow: 0 3px 0 #b89a64 }
+.card button.sem-xp::before { content: "🔒 " }
+.card .info-extra { font-size: 11px; margin: 0; color: var(--gaveta-texto-suave) }
+.card .info-extra.alerta, .linha-painel.alerta { color: #c0392b; font-weight: 600 }
+.painel-largo { width: min(340px, calc(100vw - 24px)) }
+.painel h4 { margin: 10px 0 4px; font-size: 13px }
+.painel .dica { font-size: 12px; opacity: .85; margin: 4px 0 }
+.linha-recursos { display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px }
+.grade-canteiros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 6px }
+.grade-canteiros button { font-size: 11px; padding: 5px 2px; min-height: 42px; border-radius: 8px; border: 1px solid #0002; cursor: pointer; color: #3b2a1a }
+.canteiro.vazio { background: #f3e6cf } .canteiro.crescendo { background: #e8f5dc } .canteiro.pronto { background: #b8ef8a; font-weight: 700 }
+.acoes { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap }
+.linha-painel { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #0001 }
+.linha-painel.apagada { opacity: .55 }
+.barrinha { display: inline-block; vertical-align: middle; width: 58px; height: 6px; border-radius: 3px; background: #0002; overflow: hidden }
+.barrinha > i { display: block; height: 100% }
+.botao-pequeno { font-size: 11px; padding: 5px 8px; border-radius: 8px; border: 0; background: var(--destaque); color: #fff; cursor: pointer; margin-top: 2px }
+.botao-pequeno.secundario { background: #7f8c8d } .botao-pequeno.sem-xp { opacity: .55 }
+.abas button { font-size: 12px }

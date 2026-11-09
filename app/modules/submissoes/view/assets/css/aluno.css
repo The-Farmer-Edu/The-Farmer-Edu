@@ -69,6 +69,11 @@ header .usuario-avatar {
     padding: 0;
 }
 
+.usuario-avatar img {
+    height: 55px;
+    width: 55px;
+}
+
 #botaoIconi {
     display: flex;
     border-radius: 50px;

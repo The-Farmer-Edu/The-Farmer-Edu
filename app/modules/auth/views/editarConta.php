@@ -32,7 +32,7 @@ $valor = static fn(string $campo): string => htmlspecialchars((string) ($dados[$
 
         <div class="campo">
             <label for="nova_senha" class="label">Nova senha (opcional):</label>
-            <input type="password" id="nova_senha" name="nova_senha" minlength="8" required>
+            <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password">
         </div>
 
         <div class="campo">

@@ -1550,7 +1550,7 @@ function lancarNota(event, form) {
         id_turma:     idTurma,
     });
 
-    fetch('/notas/salvar', {
+    fetch('salvar', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',

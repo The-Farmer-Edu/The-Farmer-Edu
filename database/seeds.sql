@@ -300,7 +300,7 @@ INSERT INTO xp_logs (
         id_aluno,
         quantidade,
         motivo,
-        id_submissao,
+        id_nota,
         data
     )
 VALUES (

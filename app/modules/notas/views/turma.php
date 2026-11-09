@@ -9,6 +9,7 @@ foreach ($submissoes as $sub) {
 
 $msgSucesso = htmlspecialchars($_GET['sucesso'] ?? '');
 $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
+$base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -24,12 +25,13 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            --verde-primario:   #1B5E20;
-            --verde-escuro:     #089C2F;
-            --verde-header:     #A0FDA3;
-            --verde-suave:      #E8F5E9;
-            --verde:            #1B5E20;
-            --verde-claro:      #A0FDA3;
+            /* Perfil Instrutor (Azul) - Guia de Design */
+            --verde-primario:   #0B57A8;
+            --verde-escuro:     #1C7AE6;
+            --verde-header:     #D9EEFF;
+            --verde-suave:      #EAF5FF;
+            --verde:            #0B57A8;
+            --verde-claro:      #D9EEFF;
 
             --laranja:          #FF8D28;
             --laranja-suave:    #FFF3E0;
@@ -41,7 +43,7 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             --roxo:             #7E22CE;
             --roxo-claro:       #F3E8FF;
             --azul:             #002D38;
-            --azul-claro:       #A0FDA3;
+            --azul-claro:       #D9EEFF;
 
             --texto-principal:  #002D38;
             --texto-preto:      #000000;
@@ -79,8 +81,8 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         .topbar {
             background: var(--verde-header);
             color: var(--texto-principal);
-            padding: 0 24px;
-            height: 60px;
+            padding: 0 28px;
+            height: 62px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -103,6 +105,12 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
         .topbar-logo span { color: var(--texto-principal); }
 
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
         .topbar-user {
             display: flex;
             align-items: center;
@@ -111,6 +119,16 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             font-weight: 600;
             font-size: .875rem;
             color: var(--texto-principal);
+            position: relative;
+            cursor: pointer;
+            padding: 5px 12px 5px 6px;
+            border-radius: var(--raio-pill);
+            transition: var(--transicao);
+            user-select: none;
+        }
+
+        .topbar-user:hover {
+            background: rgba(255, 255, 255, 0.45);
         }
 
         .avatar {
@@ -128,10 +146,96 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             flex-shrink: 0;
         }
 
+        .seta-user {
+            transition: transform 0.2s ease;
+        }
+
+        .topbar-user.aberto .seta-user {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(0,0,0,.15);
+            min-width: 210px;
+            z-index: 200;
+            overflow: hidden;
+            display: none;
+            animation: fadeInMenu .2s ease;
+        }
+
+        @keyframes fadeInMenu {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topbar-user.aberto .user-dropdown {
+            display: block;
+        }
+
+        .user-dropdown-header {
+            padding: 14px 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-dropdown-header strong {
+            font-size: .875rem;
+            color: var(--texto-principal);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-dropdown-header span {
+            font-size: .75rem;
+            color: var(--verde-primario);
+            font-weight: 600;
+        }
+
+        .user-dropdown-divider {
+            height: 1px;
+            background: var(--cinza-100);
+            margin: 4px 0;
+        }
+
+        .user-dropdown .item-logout {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--vermelho);
+            text-decoration: none;
+            transition: background .15s;
+        }
+
+        .user-dropdown .item-logout:hover {
+            background: var(--vermelho-claro);
+        }
+
         .container {
             max-width: 980px;
             margin: 0 auto;
             padding: 28px 20px 60px;
+        }
+
+        /* ---- BREADCRUMB / BOTÃO VOLTAR ---- */
+        .nav-topo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .breadcrumb {
@@ -141,7 +245,6 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             font-family: 'Inter', sans-serif;
             font-size: .85rem;
             color: var(--texto-secundario);
-            margin-bottom: 20px;
         }
 
         .breadcrumb a {
@@ -152,20 +255,108 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
         .breadcrumb a:hover { text-decoration: underline; }
 
-        .page-header { margin-bottom: 24px; }
+        .btn-voltar {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            background: var(--bg-card);
+            color: var(--verde-primario);
+            border: 1.5px solid rgba(11, 87, 168, 0.35);
+            border-radius: var(--raio-pill);
+            font-family: 'Poppins', sans-serif;
+            font-size: .85rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transicao);
+            box-shadow: var(--sombra-sm);
+        }
+
+        .btn-voltar:hover {
+            background: var(--verde-suave);
+            border-color: var(--verde-primario);
+            transform: translateX(-2px);
+        }
+
+        /* ---- PAGE HEADER ---- */
+        .page-header {
+            margin-bottom: 16px;
+            padding: 20px 24px;
+            background: var(--bg-card);
+            border-radius: var(--raio-card);
+            border: 1px solid var(--borda-card);
+            box-shadow: var(--sombra-sm);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .page-header-info {}
 
         .page-header h1 {
             font-family: 'Poppins', sans-serif;
-            font-size: 1.6rem;
+            font-size: 1.55rem;
             font-weight: 700;
             color: var(--texto-principal);
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .page-header p {
             font-family: 'Inter', sans-serif;
             font-size: .92rem;
             color: var(--texto-secundario);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: var(--raio-pill);
+            font-family: 'Inter', sans-serif;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .hb-verde { background: var(--verde-suave); color: var(--verde-primario); }
+        .hb-laranja { background: var(--laranja-suave); color: var(--laranja); }
+
+        .page-header-stats {
+            display: flex;
+            gap: 24px;
+            flex-shrink: 0;
+        }
+
+        .mini-stat {
+            text-align: center;
+        }
+
+        .mini-stat-valor {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            line-height: 1;
+        }
+
+        .mini-stat-label {
+            font-family: 'Inter', sans-serif;
+            font-size: .72rem;
+            color: var(--texto-secundario);
+            margin-top: 4px;
         }
 
         .alerta {
@@ -183,7 +374,7 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
         .alerta-sucesso {
             background: var(--verde-suave);
             color: var(--verde-primario);
-            border: 1px solid #bbf7d0;
+            border: 1px solid #cfe8ff;
         }
 
         .alerta-erro {
@@ -216,7 +407,10 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
         .filtro-bar input::placeholder { color: var(--texto-secundario); }
 
-        .aluno-secao { margin-bottom: 28px; }
+        /* SEÇÃO DO ALUNO (Espaçamento generoso entre alunos diferentes) */
+        .aluno-secao {
+            margin-bottom: 36px;
+        }
 
         .aluno-header {
             display: flex;
@@ -230,6 +424,16 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
             box-shadow: var(--sombra-card);
             cursor: pointer;
             user-select: none;
+            transition: var(--transicao);
+        }
+
+        .aluno-header:hover {
+            border-color: rgba(28, 122, 230, 0.4);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .aluno-secao.fechado .aluno-header {
+            margin-bottom: 0;
         }
 
         .aluno-avatar {
@@ -295,13 +499,14 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
         .tabela-wrap {
             overflow-x: auto;
+            padding-bottom: 8px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             background: var(--bg-card);
-            border-radius: var(--raio-card);
+            border-radius: 18px;
             overflow: hidden;
             box-shadow: var(--sombra-card);
             border: 1px solid var(--borda-card);
@@ -401,7 +606,7 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
         .input-nota:focus {
             border-color: var(--verde-primario);
-            box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.15);
+            box-shadow: 0 0 0 3px rgba(11, 87, 168, 0.15);
         }
 
         .btn-salvar {
@@ -464,39 +669,87 @@ $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 
         @media (max-width: 680px) {
             .form-nota { flex-direction: column; align-items: flex-start; }
+            .page-header { flex-direction: column; }
+            .page-header-stats { justify-content: flex-start; }
         }
     </style>
 </head>
 <body>
 
 <nav class="topbar">
-    <a class="topbar-logo" href="/">🌱 <span>The Farmer</span>Edu</a>
-    <div class="topbar-user">
-        <div class="avatar"><?= strtoupper(substr($usuario['nome'], 0, 2)) ?></div>
-        <span><?= htmlspecialchars($usuario['nome']) ?></span>
+    <a class="topbar-logo" href="<?= $base ?>/notas/instrutor">🌱 <span>The Farmer</span>Edu</a>
+    <div class="topbar-right">
+        <div class="topbar-user" id="userMenuBtn" tabindex="0">
+            <div class="avatar"><?= strtoupper(substr($usuario['nome'] ?? 'IN', 0, 2)) ?></div>
+            <span><?= htmlspecialchars($usuario['nome'] ?? 'Instrutor') ?></span>
+            <svg class="seta-user" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <div class="user-dropdown">
+                <div class="user-dropdown-header">
+                    <strong><?= htmlspecialchars($usuario['nome'] ?? '') ?></strong>
+                    <span>👨‍🏫 Instrutor</span>
+                </div>
+                <div class="user-dropdown-divider"></div>
+                <a href="<?= $base ?>/notas/logout" class="item-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Sair da conta</span>
+                </a>
+            </div>
+        </div>
     </div>
 </nav>
 
 <div class="container">
 
-    <nav class="breadcrumb" aria-label="Navegação">
-        <a href="/notas/instrutor">Centro de Notas</a>
-        <span>›</span>
-        <span><?= htmlspecialchars($turma['nome_turma'] ?? 'Turma') ?></span>
-    </nav>
-
+    <!-- NAVEGAÇÃO TOPO: breadcrumb + botão voltar -->
+    <div class="nav-topo">
+        <nav class="breadcrumb" aria-label="Navegação">
+            <a href="<?= $base ?>/notas/instrutor">Centro de Notas</a>
+            <span>›</span>
+            <span><?= htmlspecialchars($turma['nome_turma'] ?? 'Turma') ?></span>
+        </nav>
+        <a class="btn-voltar" href="<?= $base ?>/notas/instrutor">← Voltar às turmas</a>
+    </div>
+    <!-- PAGE HEADER com stats -->
+    <?php
+    $totalAlunos = count($porAluno);
+    $totalAtvs   = 0;
+    $totalNotas  = 0;
+    foreach ($porAluno as $dados) {
+        $totalAtvs += count($dados['atividades']);
+        foreach ($dados['atividades'] as $a) {
+            if ($a['nota_valor'] !== null) $totalNotas++;
+        }
+    }
+    $turnos     = ['manha' => '☀️ Manhã', 'tarde' => '🌤️ Tarde', 'noite' => '🌙 Noite'];
+    $turnoExib  = $turnos[$turma['turno'] ?? ''] ?? ($turma['turno'] ?? '');
+    ?>
     <header class="page-header">
-        <h1>📊 <?= htmlspecialchars($turma['nome_turma'] ?? 'Turma') ?></h1>
-        <p>
-            <?= htmlspecialchars($turma['nome_curso'] ?? '') ?>
-            <?php if (!empty($turma['turno'])): ?>
-                &nbsp;·&nbsp;
-                <?php
-                $turnos = ['manha' => '☀️ Manhã', 'tarde' => '🌤️ Tarde', 'noite' => '🌙 Noite'];
-                echo $turnos[$turma['turno']] ?? $turma['turno'];
-                ?>
-            <?php endif; ?>
-        </p>
+        <div class="page-header-info">
+            <h1>📊 <?= htmlspecialchars($turma['nome_turma'] ?? 'Turma') ?></h1>
+            <p>
+                <?= htmlspecialchars($turma['nome_curso'] ?? '') ?>
+                <?php if (!empty($turma['turno'])): ?>
+                    &nbsp;·&nbsp;<?= $turnoExib ?>
+                <?php endif; ?>
+            </p>
+            <div class="header-badges">
+                <span class="header-badge hb-verde">👥 <?= $totalAlunos ?> aluno<?= $totalAlunos !== 1 ? 's' : '' ?></span>
+                <span class="header-badge hb-laranja">📋 <?= $totalNotas ?>/<?= $totalAtvs ?> notas lançadas</span>
+            </div>
+        </div>
+        <?php if ($totalAlunos > 0 && $totalAtvs > 0): ?>
+        <div class="page-header-stats">
+            <?php $pct = round($totalAtvs > 0 ? ($totalNotas / $totalAtvs) * 100 : 0); ?>
+            <div class="mini-stat">
+                <div class="mini-stat-valor"><?= $pct ?>%</div>
+                <div class="mini-stat-label">Corrigidas</div>
+            </div>
+            <div class="mini-stat">
+                <div class="mini-stat-valor"><?= $totalAtvs - $totalNotas ?></div>
+                <div class="mini-stat-label">Pendentes</div>
+            </div>
+        </div>
+        <?php endif; ?>
     </header>
 
     <?php if ($msgSucesso): ?>
@@ -785,6 +1038,20 @@ function mostrarToast(msg, sucesso) {
 
     setTimeout(() => { toast.style.display = 'none'; }, 3000);
 }
+
+// Menu de usuário dropdown
+const userBtn = document.getElementById('userMenuBtn');
+if (userBtn) {
+    userBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('aberto');
+    });
+}
+document.addEventListener('click', function(e) {
+    if (userBtn && !userBtn.contains(e.target)) {
+        userBtn.classList.remove('aberto');
+    }
+});
 </script>
 
 </body>

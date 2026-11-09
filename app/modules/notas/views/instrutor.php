@@ -1,6 +1,7 @@
 <?php
 // View: painel do instrutor — lista as turmas
 // Variaveis disponiveis: $usuario, $turmas
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -16,15 +17,15 @@
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-            /* Perfil Verde - Guia de Design (Mesmo do Index) */
-            --verde-primario:   #1B5E20;
-            --verde-escuro:     #089C2F;
-            --verde-header:     #A0FDA3;
-            --verde-suave:      #E8F5E9;
-            --verde:            #1B5E20;
-            --verde-claro:      #A0FDA3;
+            /* Perfil Instrutor (Azul) - Guia de Design */
+            --verde-primario:   #0088ff;
+            --verde-escuro:     #90bdf0;
+            --verde-header:     #D9EEFF;
+            --verde-suave:      #EAF5FF;
+            --verde:            #2276e3;
+            --verde-claro:      #D9EEFF;
 
-            /* Destaque Secundário (Laranja) - Guia de Design */
+            /* Destaque Secundário */
             --laranja:          #FF8D28;
             --laranja-suave:    #FFF3E0;
             --amarelo:          #FF8D28;
@@ -34,9 +35,9 @@
             --vermelho:         #DC2626;
             --vermelho-claro:   #FEE2E2;
             --azul:             #002D38;
-            --azul-claro:       #A0FDA3;
+            --azul-claro:       #D9EEFF;
 
-            /* Neutros - Guia de Design */
+            /* Neutros */
             --texto-principal:  #002D38;
             --texto-preto:      #000000;
             --texto-secundario: #727272;
@@ -47,21 +48,17 @@
             --cinza-100:        #E6E6E6;
             --cinza-200:        #D9D9D9;
             --cinza-400:        #727272;
-            --cinza-600:        #727272;
-            --cinza-800:        #002D38;
-            --cinza-900:        #002D38;
 
-            /* Sombras do Guia de Design */
-            --sombra-card:      0px 4px 4px rgba(0, 0, 0, 0.25);
+            /* Sombras */
+            --sombra-card:      0px 4px 6px rgba(0, 0, 0, 0.08);
             --sombra-header:    0px 4px 3px rgba(248, 96, 17, 0.5);
-            --sombra-sm:        0px 2px 4px rgba(0, 0, 0, 0.08);
-            --sombra-md:        0px 4px 4px rgba(0, 0, 0, 0.25);
+            --sombra-sm:        0px 2px 4px rgba(0, 0, 0, 0.06);
+            --sombra-md:        0px 6px 14px rgba(0, 0, 0, 0.12);
 
-            /* Geometria do Guia de Design */
-            --raio-card:        25px;
+            /* Geometria */
+            --raio-card:        24px;
             --raio-pill:        20px;
-            --raio-icone:       10px;
-            --raio:             25px;
+            --raio-icone:       12px;
             --transicao:        all .2s ease;
         }
 
@@ -72,17 +69,12 @@
             min-height: 100vh;
         }
 
-        /* ============================================================
-           TOPBAR (HEADER) - Guia de Design
-           Faixa verde claro (#A0FDA3) de ponta a ponta, logo circular + "The Farmer Edu"
-           com "Edu" em verde (#1B5E20) e o restante em navy (#002D38),
-           avatar em verde escuro (#089C2F) e brilho laranja por baixo.
-           ============================================================ */
+        /* TOPBAR */
         .topbar {
             background: var(--verde-header);
             color: var(--texto-principal);
-            padding: 0 24px;
-            height: 60px;
+            padding: 0 28px;
+            height: 62px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -103,8 +95,12 @@
             text-decoration: none;
         }
 
-        .topbar-logo span {
-            color: var(--texto-principal);
+        .topbar-logo span { color: var(--texto-principal); }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .topbar-user {
@@ -115,6 +111,16 @@
             font-weight: 600;
             font-size: .875rem;
             color: var(--texto-principal);
+            position: relative;
+            cursor: pointer;
+            padding: 5px 12px 5px 6px;
+            border-radius: var(--raio-pill);
+            transition: var(--transicao);
+            user-select: none;
+        }
+
+        .topbar-user:hover {
+            background: rgba(255, 255, 255, 0.45);
         }
 
         .avatar {
@@ -132,51 +138,216 @@
             flex-shrink: 0;
         }
 
-        /* CONTAINER */
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 28px 20px 60px;
+        .seta-user {
+            transition: transform 0.2s ease;
         }
 
-        /* PAGE HEADER */
-        .page-header {
+        .topbar-user.aberto .seta-user {
+            transform: rotate(180deg);
+        }
+
+        /* DROPDOWN DO USUÁRIO */
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(0,0,0,.15);
+            min-width: 210px;
+            z-index: 200;
+            overflow: hidden;
+            display: none;
+            animation: fadeInMenu .2s ease;
+        }
+
+        @keyframes fadeInMenu {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topbar-user.aberto .user-dropdown {
+            display: block;
+        }
+
+        .user-dropdown-header {
+            padding: 14px 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-dropdown-header strong {
+            font-size: .875rem;
+            color: var(--texto-principal);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-dropdown-header span {
+            font-size: .75rem;
+            color: var(--verde-primario);
+            font-weight: 600;
+        }
+
+        .user-dropdown-divider {
+            height: 1px;
+            background: var(--cinza-100);
+            margin: 4px 0;
+        }
+
+        .user-dropdown .item-logout {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--vermelho);
+            text-decoration: none;
+            transition: background .15s;
+        }
+
+        .user-dropdown .item-logout:hover {
+            background: var(--vermelho-claro);
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 36px 20px 72px;
+        }
+
+        /* HERO */
+        .hero {
             margin-bottom: 28px;
         }
 
-        .page-header h1 {
+        .badge-perfil {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--verde-suave);
+            color: var(--verde-primario);
+            border: 1px solid rgba(11, 87, 168, 0.25);
+            padding: 5px 14px;
+            border-radius: var(--raio-pill);
             font-family: 'Poppins', sans-serif;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--texto-principal);
-            margin-bottom: 4px;
+            font-size: .75rem;
+            font-weight: 600;
+            margin-bottom: 12px;
         }
 
-        .page-header p {
+        .hero h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.85rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero p {
             font-family: 'Inter', sans-serif;
             font-size: .95rem;
             color: var(--texto-secundario);
         }
 
-        /* BADGE DE PERFIL */
-        .badge-perfil {
-            display: inline-block;
+        /* STATS RÁPIDOS */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 34px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: 18px;
+            padding: 18px 22px;
+            box-shadow: var(--sombra-sm);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: var(--transicao);
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--sombra-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-icone {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            background: var(--verde-suave);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-valor {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-family: 'Inter', sans-serif;
+            font-size: .78rem;
+            color: var(--texto-secundario);
+            margin-top: 3px;
+        }
+
+        /* SEÇÃO DE TURMAS HEADER */
+        .secao-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .secao-titulo {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-contador {
             background: var(--verde-suave);
             color: var(--verde-primario);
-            border: 1px solid rgba(27, 94, 32, 0.25);
-            padding: 4px 14px;
-            border-radius: var(--raio-pill);
-            font-family: 'Poppins', sans-serif;
             font-size: .75rem;
-            font-weight: 600;
-            margin-bottom: 16px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: var(--raio-pill);
         }
 
         /* GRID DE TURMAS */
         .turmas-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 18px;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 22px;
         }
 
         .card-turma {
@@ -187,7 +358,8 @@
             box-shadow: var(--sombra-card);
             text-decoration: none;
             color: inherit;
-            display: block;
+            display: flex;
+            flex-direction: column;
             transition: var(--transicao);
             position: relative;
             overflow: hidden;
@@ -202,113 +374,229 @@
         }
 
         .card-turma:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-            transform: translateY(-3px);
-            border-color: var(--verde-escuro);
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+            border-color: rgba(28, 122, 230, 0.4);
         }
 
-        .card-turma .icone-turma {
-            font-size: 2.2rem;
-            margin-bottom: 14px;
-            display: block;
+        .card-topo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
         }
 
-        .card-turma h2 {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--texto-preto);
-            margin-bottom: 6px;
+        .icone-turma {
+            font-size: 1.8rem;
+            width: 46px;
+            height: 46px;
+            background: var(--verde-suave);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .card-turma .curso {
-            font-family: 'Inter', sans-serif;
-            font-size: .82rem;
-            color: var(--texto-secundario);
-            margin-bottom: 14px;
-        }
-
-        .card-turma .turno-badge {
-            display: inline-block;
-            padding: 3px 12px;
+        .turno-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
             border-radius: var(--raio-pill);
             font-family: 'Inter', sans-serif;
             font-size: .75rem;
             font-weight: 600;
-            background: var(--verde-suave);
-            color: var(--verde-primario);
         }
 
-        .card-turma .cta {
-            margin-top: 16px;
+        .turno-badge.manha { background: #FFF8E1; color: #E65100; }
+        .turno-badge.tarde { background: #E3F2FD; color: #1565C0; }
+        .turno-badge.noite { background: #EDE7F6; color: #4527A0; }
+
+        .card-turma h2 {
             font-family: 'Poppins', sans-serif;
-            font-size: .85rem;
-            color: var(--verde-primario);
-            font-weight: 600;
+            font-size: 1.12rem;
+            font-weight: 700;
+            color: var(--texto-preto);
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .card-turma .curso {
+            font-family: 'Inter', sans-serif;
+            font-size: .84rem;
+            color: var(--texto-secundario);
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
 
-        /* ESTADO VAZIO */
+        .card-footer {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 1px solid var(--cinza-100);
+        }
+
+        .btn-acao-card {
+            font-family: 'Poppins', sans-serif;
+            font-size: .82rem;
+            font-weight: 600;
+            color: var(--verde-primario);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: var(--transicao);
+        }
+
+        .card-turma:hover .btn-acao-card {
+            color: var(--verde-escuro);
+        }
+
+        .seta-card {
+            transition: transform .2s ease;
+        }
+
+        .card-turma:hover .seta-card {
+            transform: translateX(4px);
+        }
+
+        /* VAZIO */
         .vazio {
             text-align: center;
-            padding: 60px 20px;
+            padding: 64px 20px;
             color: var(--texto-secundario);
-            font-family: 'Inter', sans-serif;
+            background: var(--bg-card);
+            border-radius: var(--raio-card);
+            border: 1px dashed var(--borda-card);
         }
-
-        .vazio p {
-            margin-top: 12px;
-            font-size: 1rem;
-        }
+        .vazio-emoji { font-size: 3rem; margin-bottom: 12px; display: block; }
     </style>
 </head>
 <body>
 
 <nav class="topbar">
-    <a class="topbar-logo" href="/">🌱 <span>The Farmer</span>Edu</a>
-    <div class="topbar-user">
-        <div class="avatar"><?= strtoupper(substr($usuario['nome'], 0, 2)) ?></div>
-        <span><?= htmlspecialchars($usuario['nome']) ?></span>
+    <a class="topbar-logo" href="<?= $base ?>/notas/instrutor">🌱 <span>The Farmer</span>Edu</a>
+    <div class="topbar-right">
+        <div class="topbar-user" id="userMenuBtn" tabindex="0">
+            <div class="avatar"><?= strtoupper(substr($usuario['nome'] ?? 'IN', 0, 2)) ?></div>
+            <span><?= htmlspecialchars($usuario['nome'] ?? 'Instrutor') ?></span>
+            <svg class="seta-user" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            <div class="user-dropdown">
+                <div class="user-dropdown-header">
+                    <strong><?= htmlspecialchars($usuario['nome'] ?? '') ?></strong>
+                    <span>👨‍🏫 Instrutor</span>
+                </div>
+                <div class="user-dropdown-divider"></div>
+                <a href="<?= $base ?>/notas/logout" class="item-logout">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    <span>Sair da conta</span>
+                </a>
+            </div>
+        </div>
     </div>
 </nav>
 
 <div class="container">
 
-    <header class="page-header">
-        <div class="badge-perfil">👨‍🏫 Instrutor</div>
+    <!-- HERO -->
+    <section class="hero">
+        <div class="badge-perfil">👨‍🏫 Painel do Instrutor</div>
         <h1>🏫 Centro de Controle de Notas</h1>
-        <p>Selecione uma turma para visualizar e lançar notas</p>
-    </header>
+        <p>Selecione uma turma para gerenciar notas, submissões e médias dos alunos.</p>
+    </section>
+
+    <!-- STATS -->
+    <?php $totalTurmas = count($turmas); ?>
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icone">🏫</div>
+            <div class="stat-info">
+                <div class="stat-valor"><?= $totalTurmas ?></div>
+                <div class="stat-label"><?= $totalTurmas === 1 ? 'Turma ativa' : 'Turmas ativas' ?></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icone">📊</div>
+            <div class="stat-info">
+                <div class="stat-valor">Avaliação</div>
+                <div class="stat-label">Painel sincronizado</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icone">📅</div>
+            <div class="stat-info">
+                <div class="stat-valor"><?= date('d/m/Y') ?></div>
+                <div class="stat-label"><?php
+                    $dias = ['Sunday'=>'Domingo','Monday'=>'Segunda-feira','Tuesday'=>'Terça-feira','Wednesday'=>'Quarta-feira','Thursday'=>'Quinta-feira','Friday'=>'Sexta-feira','Saturday'=>'Sábado'];
+                    echo $dias[date('l')] ?? date('D');
+                ?></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEÇÃO TURMAS -->
+    <div class="secao-header">
+        <h2 class="secao-titulo">
+            Suas Turmas
+            <span class="badge-contador"><?= $totalTurmas ?></span>
+        </h2>
+    </div>
 
     <?php if (empty($turmas)): ?>
         <div class="vazio">
-            <p style="font-size:3rem">🌾</p>
-            <p>Nenhuma turma vinculada a você ainda.</p>
+            <span class="vazio-emoji">🌾</span>
+            <h3>Nenhuma turma vinculada a você</h3>
+            <p>Assim que turmas forem atribuídas à sua conta, elas aparecerão aqui.</p>
         </div>
     <?php else: ?>
         <div class="turmas-grid">
             <?php
             $icones = ['🌱','🚜','🌾','🐄','🌻','🏡'];
-            $i = 0;
-            foreach ($turmas as $turma):
-                $icone = $icones[$i % count($icones)];
-                $i++;
-                $turnoLabel = ['manha' => '☀️ Manhã', 'tarde' => '🌤️ Tarde', 'noite' => '🌙 Noite'];
-                $turnoExib = $turnoLabel[$turma['turno']] ?? $turma['turno'];
+            $turnosLabel = [
+                'manha' => ['emoji' => '☀️', 'texto' => 'Manhã',  'cls' => 'manha'],
+                'tarde' => ['emoji' => '🌤️', 'texto' => 'Tarde',  'cls' => 'tarde'],
+                'noite' => ['emoji' => '🌙', 'texto' => 'Noite',  'cls' => 'noite'],
+            ];
+            foreach ($turmas as $i => $turma):
+                $icone  = $icones[$i % count($icones)];
+                $turnoInfo = $turnosLabel[$turma['turno']] ?? ['emoji' => '📅', 'texto' => $turma['turno'], 'cls' => ''];
             ?>
-                <a class="card-turma" href="turma?id=<?= (int)$turma['id_turma'] ?>">
-                    <span class="icone-turma"><?= $icone ?></span>
+                <a class="card-turma" href="<?= $base ?>/notas/turma?id=<?= (int)$turma['id_turma'] ?>">
+                    <div class="card-topo">
+                        <div class="icone-turma"><?= $icone ?></div>
+                        <span class="turno-badge <?= $turnoInfo['cls'] ?>"><?= $turnoInfo['emoji'] ?> <?= $turnoInfo['texto'] ?></span>
+                    </div>
                     <h2><?= htmlspecialchars($turma['nome_turma']) ?></h2>
-                    <p class="curso"><?= htmlspecialchars($turma['nome_curso']) ?></p>
-                    <span class="turno-badge"><?= $turnoExib ?></span>
-                    <p class="cta">Ver notas →</p>
+                    <p class="curso">📘 <?= htmlspecialchars($turma['nome_curso']) ?></p>
+                    <div class="card-footer">
+                        <span class="btn-acao-card">
+                            Ver notas e alunos <span class="seta-card">→</span>
+                        </span>
+                    </div>
                 </a>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
 </div>
+
+<script>
+const userBtn = document.getElementById('userMenuBtn');
+if (userBtn) {
+    userBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('aberto');
+    });
+}
+document.addEventListener('click', function(e) {
+    if (userBtn && !userBtn.contains(e.target)) {
+        userBtn.classList.remove('aberto');
+    }
+});
+</script>
+
 </body>
 </html>

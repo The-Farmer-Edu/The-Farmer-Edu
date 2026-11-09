@@ -217,11 +217,15 @@
                     throw new InvalidArgumentException('Save da fazenda ausente.');
                 }
                 $ids = isset($dados['xp_entregues']) && is_array($dados['xp_entregues']) ? $dados['xp_entregues'] : [];
+                // "aba": identificador desta aba do navegador (letras, números e hífen); permite saber se um conflito veio dela mesma.
+                $aba = isset($dados['aba']) && is_string($dados['aba']) && preg_match('/^[A-Za-z0-9-]{8,64}$/', $dados['aba'])
+                    ? $dados['aba'] : null;
                 $revisao = (new FazendaModel())->salvar(
                     (int) $usuario['idUsuario'],
                     $dados['estado'],
                     (int) ($dados['revisao'] ?? 0),
-                    $ids
+                    $ids,
+                    $aba
                 );
                 return ['ok' => true, 'revisao' => $revisao];
             });
@@ -254,13 +258,13 @@
         private function injetarDadosDoServidor(string $html, array $usuario, string $base): string {
             $idAluno = (int) $usuario['idUsuario'];
             $modelo = new FazendaModel();
-            $carga = $modelo->carregar($idAluno);
+            $carga = $modelo->carregarTudo($idAluno);   // estado, revisão e XP pendente lidos juntos
 
             $dados = [
                 'idUsuario'  => $idAluno,
                 'estado'     => $carga['estado'],
                 'revisao'    => $carga['revisao'],
-                'xpPendente' => $modelo->xpPendente($idAluno),
+                'xpPendente' => $carga['xpPendente'],
                 'urls'       => ['salvar' => $base . '/fazenda/salvar', 'xpPendente' => $base . '/fazenda/xp-pendente'],
             ];
             $json = json_encode($dados, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
@@ -274,7 +278,7 @@
             try {
                 $this->json($acao());
             } catch (ConflitoDeSaveException $e) {
-                $this->json(['mensagem' => $e->getMessage()], 409);
+                $this->json(['mensagem' => $e->getMessage(), 'mesmaAba' => $e->mesmaAba], 409);
             } catch (PDOException $e) {
                 error_log($e->getMessage());
                 $this->json(['mensagem' => 'Erro no banco de dados. Tente novamente.'], 500);

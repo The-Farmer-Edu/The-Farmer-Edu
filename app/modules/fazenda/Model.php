@@ -5,6 +5,9 @@ require_once __DIR__ . '/../../core/database.php';
 // Lançada quando o save do banco já foi alterado por outra aba/computador desde que este jogo o carregou.
 class ConflitoDeSaveException extends RuntimeException
 {
+    // true quando o último save no banco foi feito por esta mesma aba (ex.: a resposta de um envio se perdeu, ou a página
+    // foi recarregada logo depois de um envio). O jogo então recarrega sozinho em vez de acusar "aberta em outra aba".
+    public bool $mesmaAba = false;
 }
 
 // =====================================================================
@@ -45,7 +48,14 @@ class FazendaModel
 
     private function garantirFazenda(int $idAluno): void
     {
-        $st = $this->pdo->prepare('INSERT IGNORE INTO fazendas (id_aluno) VALUES (?)');
+        // Consulta antes de inserir: um INSERT IGNORE em linha que já existe NÃO grava nada, mas ainda assim consome um
+        // número do AUTO_INCREMENT (os ids de id_fazenda "pulavam" a cada save). Assim o id só avança em fazenda nova.
+        $st = $this->pdo->prepare('SELECT 1 FROM fazendas WHERE id_aluno = ? LIMIT 1');
+        $st->execute([$idAluno]);
+        if ($st->fetchColumn()) {
+            return;
+        }
+        $st = $this->pdo->prepare('INSERT IGNORE INTO fazendas (id_aluno) VALUES (?)');   // IGNORE cobre duas requisições simultâneas
         $st->execute([$idAluno]);
     }
 
@@ -67,12 +77,58 @@ class FazendaModel
     }
 
     /**
+     * Tudo o que a página da fazenda precisa ao abrir, lido de uma vez só e já com a linha da fazenda travada.
+     * Como salvar() trava a mesma linha, a leitura nunca pega "metade" de um save (estado de antes do save e lista de XP
+     * pendente de depois, que faria o XP entregue sumir). O nome vem da coluna fazendas.nome_fazenda: se alguém o
+     * alterar direto no banco, o jogo mostra o novo nome ao recarregar.
+     */
+    public function carregarTudo(int $idAluno): array
+    {
+        $this->garantirFazenda($idAluno);
+        $this->pdo->beginTransaction();
+        try {
+            $st = $this->pdo->prepare('SELECT estado, revisao, nome_fazenda FROM fazendas WHERE id_aluno = ? FOR UPDATE');
+            $st->execute([$idAluno]);
+            $linha = $st->fetch();
+
+            $estado = $linha['estado'] !== null ? json_decode($linha['estado'], true) : null;
+            $estado = is_array($estado) ? $estado : null;
+            if ($estado !== null) {
+                unset($estado['_abaId']);   // marca interna do servidor, não faz parte do jogo
+                $nome = mb_substr(trim((string) $linha['nome_fazenda']), 0, 28);
+                if ($nome !== '') {
+                    $estado['nomeDaFazenda'] = $nome;
+                }
+            }
+
+            $resultado = [
+                'estado'     => $estado,
+                'revisao'    => (int) $linha['revisao'],
+                'xpPendente' => $this->xpPendente($idAluno),
+            ];
+            $this->pdo->commit();
+            return $resultado;
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
      * Grava o save e, na MESMA transação, marca como entregues os XP que o jogo acabou de aplicar.
      * Devolve a nova revisão. Lança ConflitoDeSaveException se a revisão enviada não for a atual.
      */
-    public function salvar(int $idAluno, array $estado, int $revisaoEsperada, array $idsXpEntregues): int
+    public function salvar(int $idAluno, array $estado, int $revisaoEsperada, array $idsXpEntregues, ?string $abaId = null): int
     {
         $estado = $this->validarEstado($estado);
+
+        // Marca qual aba fez este save (dentro do JSON, sem coluna nova), para distinguir "mesma aba" de "outra aba" num conflito.
+        unset($estado['_abaId']);
+        if ($abaId !== null) {
+            $estado['_abaId'] = $abaId;
+        }
 
         $json = json_encode($estado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false || strlen($json) > self::LIMITE_DO_ESTADO_BYTES) {
@@ -101,7 +157,10 @@ class FazendaModel
             $anterior     = is_array($anterior) ? $anterior : null;
 
             if ($revisaoAtual !== $revisaoEsperada) {
-                throw new ConflitoDeSaveException('A fazenda foi alterada em outro lugar.');
+                $conflito = new ConflitoDeSaveException('A fazenda foi alterada em outro lugar.');
+                $conflito->mesmaAba = $abaId !== null && isset($anterior['_abaId'])
+                    && hash_equals((string) $anterior['_abaId'], $abaId);
+                throw $conflito;
             }
 
             $nova = $revisaoAtual + 1;
@@ -205,7 +264,11 @@ class FazendaModel
         }
     }
 
-    /** Uma linha em elementos_fazenda por área construída (nível 1 ou mais), atualizada a cada save. */
+    /**
+     * Uma linha em elementos_fazenda por área construída (nível 1 ou mais), atualizada a cada save.
+     * Só insere o que é novo, só atualiza o que mudou e só apaga o que sumiu: as linhas que já existem mantêm o mesmo id
+     * (um INSERT ... ON DUPLICATE KEY UPDATE gastaria números do AUTO_INCREMENT a cada save).
+     */
     private function sincronizarElementos(int $idFazenda, array $niveis): void
     {
         $areas = [];
@@ -216,28 +279,30 @@ class FazendaModel
             $areas[$codigo] = (int) $nivel;
         }
 
-        // Remove as que não existem mais (ou todas, se não há nenhuma).
-        if ($areas) {
-            $marcas = implode(',', array_fill(0, count($areas), '?'));
-            $st = $this->pdo->prepare("DELETE FROM elementos_fazenda WHERE id_fazenda = ? AND codigo NOT IN ($marcas)");
-            $st->execute(array_merge([$idFazenda], array_keys($areas)));
-        } else {
-            $st = $this->pdo->prepare('DELETE FROM elementos_fazenda WHERE id_fazenda = ?');
-            $st->execute([$idFazenda]);
-            return;
+        $st = $this->pdo->prepare('SELECT id_elemento, codigo, tipo, nivel FROM elementos_fazenda WHERE id_fazenda = ?');
+        $st->execute([$idFazenda]);
+        $existentes = [];
+        foreach ($st->fetchAll() as $linha) {
+            $existentes[$linha['codigo']] = $linha;
         }
 
-        $valores = [];
-        $parametros = [];
-        foreach ($areas as $codigo => $nivel) {
-            $valores[] = '(?, ?, ?, ?)';
-            array_push($parametros, $idFazenda, $codigo, self::TIPO_DAS_AREAS[$codigo] ?? 'construcao', $nivel);
+        foreach ($existentes as $codigo => $linha) {
+            if (!isset($areas[$codigo])) {
+                $st = $this->pdo->prepare('DELETE FROM elementos_fazenda WHERE id_elemento = ?');
+                $st->execute([(int) $linha['id_elemento']]);
+            }
         }
-        $st = $this->pdo->prepare(
-            'INSERT INTO elementos_fazenda (id_fazenda, codigo, tipo, nivel) VALUES ' . implode(', ', $valores)
-            . ' ON DUPLICATE KEY UPDATE nivel = VALUES(nivel), tipo = VALUES(tipo)'
-        );
-        $st->execute($parametros);
+
+        foreach ($areas as $codigo => $nivel) {
+            $tipo = self::TIPO_DAS_AREAS[$codigo] ?? 'construcao';
+            if (!isset($existentes[$codigo])) {
+                $st = $this->pdo->prepare('INSERT INTO elementos_fazenda (id_fazenda, codigo, tipo, nivel) VALUES (?, ?, ?, ?)');
+                $st->execute([$idFazenda, $codigo, $tipo, $nivel]);
+            } elseif ((int) $existentes[$codigo]['nivel'] !== $nivel || $existentes[$codigo]['tipo'] !== $tipo) {
+                $st = $this->pdo->prepare('UPDATE elementos_fazenda SET nivel = ?, tipo = ? WHERE id_elemento = ?');
+                $st->execute([$nivel, $tipo, (int) $existentes[$codigo]['id_elemento']]);
+            }
+        }
     }
 
     private function validarEstado(array $estado): array

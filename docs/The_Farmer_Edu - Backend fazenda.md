@@ -18,11 +18,21 @@
   - A coluna é `UNSIGNED`: saldo negativo no jogo aparece como 0 em `xp_total`.
 - Esse XP não entra no limite diário de 100 XP da Fazenda (é XP de atividades).
 
+## O que é gravado em cada tabela
+
+| Tabela | Quando recebe dados |
+|---|---|
+| `fazendas` | A cada save: o JSON do jogo, o nome da fazenda e a revisão. |
+| `elementos_fazenda` | A cada save: uma linha por área construída (nível 1 ou mais), com `codigo` (id da área), `tipo` (construcao, plantacao ou animal) e `nivel`. |
+| `xp_logs` | (a) A cada save em que o saldo de XP do jogo mudou: uma linha por origem de ganho (colheitas, mina e monstros, devolução, teste) e uma linha negativa com o XP gasto. (b) Quando o instrutor lança ou altera uma nota (precisa do bloco no módulo de Notas). |
+| `alunos` | `xp_total` é recalculado a cada save e a cada nota. |
+
+
 ## Arquivos
 
 | Arquivo | Destino | O que mudou |
 |---|---|---|
-| `sql/fazenda_alteracoes.sql` | rodar no banco | Novo: `ALTER TABLE` em `fazendas` (+4 colunas) e `xp_logs` (+`entregue_em` e um índice) |
+| `sql/fazenda_alteracoes.sql` | rodar no banco | Novo: `ALTER TABLE` em `fazendas` (+4 colunas), `elementos_fazenda` (+`codigo` e índice único) e `xp_logs` (+`entregue_em` e um índice) |
 | `sql/schema.sql` | opcional | Seu `schema.sql` com essas mesmas colunas já incluídas (só linhas acrescentadas); use no lugar do original em instalações novas |
 | `Model.php` | `app/modules/fazenda/` | Novo conteúdo (antes vazio): `FazendaModel` |
 | `Controller.php` | `app/modules/fazenda/` | Login de aluno, injeção do save, rotas `salvar` e `xpPendente`, **`sendFile` corrigido** |
@@ -30,6 +40,18 @@
 | `views/assets/js/34-sincronizacao-com-servidor.js` | `app/modules/fazenda/views/assets/js/` | Novo: envia o save e aplica o XP |
 | `views/assets/js/05-progresso-e-salvamento.js` | idem | 3 trechos marcados com `Backend:` |
 | `views/assets/js/fazenda.js` | idem | 1 linha: o arquivo 34 entra na montagem |
+
+## Conflito de abas, nome da fazenda e ids (ajustes da 2ª rodada de testes)
+
+**Aviso "a fazenda foi aberta em outra aba"** (HTTP 409). Ele aparece quando o save enviado tem uma `revisao` diferente da do banco. Além de duas abas de verdade, dois casos inofensivos também causavam o aviso: recarregar a página logo depois de um envio (o save da página antiga e a leitura da nova se cruzavam) e uma resposta perdida. Agora:
+- cada aba tem um identificador (`sessionStorage`, sobrevive ao recarregar) que o servidor grava junto com o save;
+- se o conflito veio da **mesma aba**, o jogo recarrega sozinho **uma vez por minuto** para pegar o save mais novo (pode perder o que foi feito nos últimos ~5 s);
+- se veio de **outra aba ou computador**, ou se acontecer de novo em menos de 1 minuto, o aviso continua e o salvamento é bloqueado;
+- ao abrir a fazenda, o estado e o XP pendente passam a ser lidos juntos, com a linha travada (`carregarTudo`), para nunca pegar "metade" de um save.
+
+**Editar o banco com o jogo aberto não é suportado.** O jogo grava o save inteiro a cada mudança, então uma alteração feita direto na tabela enquanto a fazenda está aberta é sobrescrita (e a `revisao` não muda, então o jogo não percebe). Para renomear pelo phpMyAdmin: feche a fazenda, altere `fazendas.nome_fazenda` e abra de novo. Agora o nome da coluna `nome_fazenda` é o que vale ao abrir o jogo.
+
+**Ids que "aumentam".** As linhas existentes **não** mudam de id: o que crescia era o contador `AUTO_INCREMENT`, porque um `INSERT IGNORE` ou `INSERT ... ON DUPLICATE KEY UPDATE` em linha que já existe não grava nada, mas consome um número. Agora a fazenda só é inserida se não existir, e `elementos_fazenda` só recebe `INSERT` para área nova, `UPDATE` para nível alterado e `DELETE` para área que sumiu. Números já pulados continuam pulados (é inofensivo). Em banco de teste dá para reiniciar o contador com `ALTER TABLE fazendas AUTO_INCREMENT = 1;` (o MySQL usa o maior id + 1); nunca renumere linhas existentes.
 
 ## Instalação
 

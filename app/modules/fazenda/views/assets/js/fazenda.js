@@ -467,7 +467,7 @@
     iniciarFarmEdu().catch(erro => carregamento.falhar(erro));
     
     // Botão "Sair da fazenda": salva o progresso e volta ao site
-    const DESTINO_AO_SAIR = 'home';   // TROQUE pela página ou rota de destino
+    const DESTINO_AO_SAIR = 'auth/novoUsuario';   // TROQUE pela página ou rota de destino
 
     selecionar('#botao-sair-da-fazenda').addEventListener('click', () => {
       if (!confirm('Sair da fazenda? Seu progresso será salvo.')) return;

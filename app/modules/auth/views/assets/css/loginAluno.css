@@ -7,11 +7,9 @@
 :root {
     --verde: #34c759;
     --verde-texto: #2ecc5a;
-    --verde-borda: #0e3f1c;
+    --verde-borda:#0e3f1c;
     --azul-escuro: #0b2a3a;
     --borda-input: #5f7f86;
-    --vermelho: #e74c3c;
-    --vermelho-borda: #7a1f14;
 }
 
 html,
@@ -32,126 +30,25 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 20px;
 }
 
 .titulo-login {
     font-size: 30px;
-    font-weight: 600;
-    color: var(--azul-escuro);
-    margin-bottom: 24px;
-    text-align: center;
-}
-
-/* Alertas de Feedback */
-.alerta-sucesso {
-    width: 100%;
-    max-width: 280px;
-    background-color: rgba(52, 199, 89, 0.15);
-    border: 1px solid var(--verde);
-    color: var(--verde-borda);
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 13px;
     font-weight: 500;
-    margin-bottom: 20px;
+    color: var(--azul-escuro);
+    margin-bottom: 50px;
     text-align: center;
 }
 
-.alerta-erro {
+.mensagem {
     width: 100%;
-    max-width: 280px;
-    background-color: #ffdddd;
-    border: 1px solid var(--vermelho);
-    color: #d8000c;
-    padding: 10px 14px;
-    border-radius: 6px;
+    max-width: 265px;
     font-size: 13px;
-    margin-bottom: 20px;
+    color: var(--azul-escuro);
+    margin-bottom: 14px;
     text-align: center;
 }
 
-/* Painel de Usuário Conectado */
-.painel-logado {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 280px;
-}
-
-.saudacao {
-    font-size: 14px;
-    color: var(--borda-input);
-    margin-bottom: 2px;
-}
-
-.nome-usuario {
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--azul-escuro);
-    margin-bottom: 6px;
-}
-
-.badge-perfil {
-    background-color: rgba(11, 42, 58, 0.08);
-    color: var(--azul-escuro);
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    margin-bottom: 25px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.acoes-usuario-logado {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    width: 100%;
-}
-
-.btn-acao-logado {
-    height: 42px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    border-radius: 5px;
-    transition: filter 0.2s, transform 0.1s;
-    font-family: inherit;
-}
-
-.btn-acao-logado:active {
-    transform: translateY(1px);
-}
-
-.btn-primario {
-    background-color: var(--verde);
-    color: #fff;
-    box-shadow: 0 3px 4px var(--verde-borda);
-}
-
-.btn-perigo {
-    background-color: var(--vermelho);
-    color: #fff;
-    box-shadow: 0 3px 4px var(--vermelho-borda);
-}
-
-.btn-neutro {
-    background-color: var(--borda-input);
-    color: #fff;
-    box-shadow: 0 3px 4px #34484c;
-}
-
-.btn-acao-logado:hover {
-    filter: brightness(0.93);
-}
-
-/* Formulário de Login */
 .form-login {
     width: 100%;
     max-width: 265px;
@@ -162,19 +59,19 @@ body {
 .campo {
     display: flex;
     flex-direction: column;
-    margin-bottom: 24px;
+    margin-bottom: 28px;
 }
 
 .campo label {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 500;
     color: var(--azul-escuro);
-    margin-bottom: 6px;
+    margin: 0 0 8px 14px;
 }
 
 .campo input {
     width: 100%;
-    height: 40px;
+    height: 38px;
     padding: 0 12px;
     font-family: inherit;
     font-size: 14px;
@@ -197,22 +94,24 @@ body {
     margin-top: 8px;
 }
 
-.links-campo a {
+.links-campo a,
+.link-verde {
     font-size: 11px;
     color: var(--verde-texto);
     text-decoration: none;
 }
 
-.links-campo a:hover {
+.links-campo a:hover,
+.link-verde:hover {
     text-decoration: underline;
 }
 
 #btn-entrar {
     width: 100%;
     height: 42px;
-    margin-top: 4px;
+    margin-top: -4px;
     font-family: inherit;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 500;
     color: #fff;
     background: var(--verde);
@@ -232,9 +131,9 @@ body {
 }
 
 .criar-conta {
-    margin-top: 20px;
-    font-size: 16px;
-    font-weight: 500;
+    margin-top: 22px;
+    font-size: 18px;
+    font-weight: 400;
     color: var(--verde-texto);
     text-decoration: none;
 }
@@ -243,7 +142,6 @@ body {
     text-decoration: underline;
 }
 
-/* Painel da Fazenda (Direita) */
 .painel-imagem {
     flex: 1;
     display: flex;
@@ -253,6 +151,14 @@ body {
     background: url("file?type=images&file=dia_ensolarado.jpg") center / cover no-repeat;
     image-rendering: pixelated;
     height: 100vh;
+}
+
+.logo {
+    width: 138px;
+    height: 138px;
+    border-radius: 50%;
+    object-fit: cover;
+    image-rendering: auto;
 }
 
 #nome-marca {
@@ -271,7 +177,7 @@ body {
 
 #subtitulo {
     color: #fff;
-    font-size: 24px;
+    font-size: 25px;
     text-shadow:
         -1px -1px 0 rgba(0, 0, 0, 0.6),
          1px -1px 0 rgba(0, 0, 0, 0.6),
@@ -287,7 +193,6 @@ body {
 
     .painel-login {
         flex: none;
-        width: 100%;
         padding: 40px 24px;
     }
 
@@ -295,4 +200,111 @@ body {
         min-height: 260px;
         padding-top: 40px;
     }
+}
+
+.alerta-sucesso {
+    width: 100%;
+    max-width: 265px;
+    background-color: rgba(52, 199, 89, 0.15);
+    border: 1px solid var(--verde);
+    color: var(--verde-borda);
+    padding: 10px 14px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.alerta-erro {
+    width: 100%;
+    max-width: 265px;
+    background-color: #ffdddd;
+    border: 1px solid #e74c3c;
+    color: #d8000c;
+    padding: 10px 14px;
+    border-radius: 5px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.painel-logado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 265px;
+}
+
+.saudacao {
+    font-size: 14px;
+    color: var(--borda-input);
+    margin-bottom: 2px;
+}
+
+.nome-usuario {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--azul-escuro);
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.badge-perfil {
+    background-color: rgba(11, 42, 58, 0.08);
+    color: var(--azul-escuro);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.acoes-usuario-logado {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn-acao-logado {
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 5px;
+    transition: filter 0.2s, transform 0.1s;
+    font-family: inherit;
+}
+
+.btn-acao-logado:active {
+    transform: translateY(1px);
+}
+
+.btn-primario {
+    background-color: var(--verde);
+    color: #fff;
+    box-shadow: 0 3px 4px var(--verde-borda);
+}
+
+.btn-perigo {
+    background-color: #e74c3c;
+    color: #fff;
+    box-shadow: 0 3px 4px #7a1f14;
+}
+
+.btn-neutro {
+    background-color: var(--borda-input);
+    color: #fff;
+    box-shadow: 0 3px 4px #34484c;
+}
+
+.btn-acao-logado:hover {
+    filter: brightness(0.95);   
 }

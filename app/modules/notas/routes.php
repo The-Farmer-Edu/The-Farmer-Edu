@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 require_once __DIR__ . '/../../core/router.php';
 require_once __DIR__ . '/Controller.php';
@@ -14,3 +14,5 @@ Router::get('/notas/turma', [NotasController::class, 'verTurma']);
 
 // Instrutor: salvar/atualizar nota (AJAX ou POST normal)
 Router::post('/notas/salvar', [NotasController::class, 'salvarNota']);
+
+?>

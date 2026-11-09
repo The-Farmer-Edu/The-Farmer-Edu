@@ -1,0 +1,232 @@
+/* Fazenda 3D — CSS 2 de 7: barra superior, cartões das áreas e aviso. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
+/* ===== Barra superior (XP e botão de teste), cartões das áreas no rodapé e aviso temporário ===== */
+#barra-topo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) 12px 8px;
+  z-index: 10;
+  pointer-events: none
+}
+
+#barra-topo>* {
+  pointer-events: auto;
+  background: var(--fundo-card);
+  color: var(--texto);
+  border-radius: 20px;
+  padding: 8px 14px;
+  font-size: 15px;
+  box-shadow: 0 2px 8px #0003;
+  border: 0
+}
+
+/* Fazenda 8.4 (C3/D1): gaveta de construções no rodapé. Fechada, é só a tábua do cabeçalho (com o resumo); aberta, mostra
+   os cartões por grupo sobre um "papel" emoldurado em madeira, com rolagem própria, sem alcançar a barra superior. Cores nos
+   tokens --gaveta-* (01-base.css), com versão para o tema escuro. Estados nunca dependem só da cor: selo com texto, forma
+   dos pontos da trilha, ícone no botão (::before, que não altera o texto do botão). */
+#lista-cards {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  transform: translateX(-50%);
+  max-width: calc(100vw - 24px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--gaveta-papel);
+  color: var(--gaveta-texto);
+  border: 3px solid var(--gaveta-madeira);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--gaveta-madeira-escura), 0 10px 24px #0005
+}
+
+#lista-cards.aberta { width: min(1280px, calc(100vw - 24px)) }
+
+/* cabeçalho: tábua de madeira com veios */
+#botao-gaveta-construcoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  min-height: 44px;
+  padding: 7px 16px;
+  border: 0;
+  background: repeating-linear-gradient(90deg, #ffffff0d 0 2px, transparent 2px 13px), linear-gradient(180deg, #a5703d, var(--gaveta-madeira) 55%, var(--gaveta-madeira-escura));
+  color: #fff6e2;
+  text-shadow: 0 1px 0 #0006;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: .3px;
+  cursor: pointer
+}
+
+#botao-gaveta-construcoes:focus-visible { outline: 3px solid #f2c94c; outline-offset: -3px }
+#resumo-da-gaveta { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: center }
+.selo-resumo { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: #0004; border: 1px solid #ffffff2e; text-shadow: none }
+.selo-resumo.evoluir { background: #3d7a30; color: #fff }
+.selo-resumo.reparo { background: #c0392b; color: #fff }
+.seta-da-gaveta { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #0004; font-size: 10px; transition: transform .2s }
+#lista-cards.aberta .seta-da-gaveta { transform: rotate(180deg) }
+
+/* conteúdo: papel com pontilhado leve */
+#conteudo-da-gaveta {
+  max-height: min(58vh, 600px, calc(100vh - 170px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 2px 12px 12px;
+  background-image: radial-gradient(#7a4e2612 1px, transparent 1px);
+  background-size: 12px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gaveta-madeira) transparent
+}
+
+#conteudo-da-gaveta[hidden] { display: none }
+
+/* títulos dos grupos: fita com contagem e linha até a borda */
+.grupo-da-gaveta h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--gaveta-titulo)
+}
+
+.grupo-da-gaveta h4::after { content: ""; flex: 1; height: 2px; border-radius: 2px; background: var(--gaveta-borda) }
+.contagem-do-grupo { min-width: 18px; padding: 1px 6px; border-radius: 999px; background: var(--gaveta-madeira); color: #fff6e2; font-size: 10px; text-align: center; letter-spacing: 0 }
+.cartoes-do-grupo { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px }
+
+/* cartão: medalhão + nome (largura toda) / trilha + botão / linha de estado (largura toda) */
+.card {
+  display: grid;
+  grid-template-columns: 44px minmax(84px, 1fr) auto;
+  grid-template-areas: "medalhao titulo titulo" "medalhao trilha botao" "estado estado estado";
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 3px;
+  padding: 8px 10px;
+  background: var(--gaveta-cartao);
+  color: var(--gaveta-texto);
+  border: 1px solid var(--gaveta-borda);
+  border-radius: 14px;
+  box-shadow: 0 2px 0 var(--gaveta-borda);
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s
+}
+
+.card:hover { transform: translateY(-1px); box-shadow: 0 3px 0 var(--gaveta-borda), 0 6px 12px #0000001a }
+.card.disponivel { box-shadow: inset 4px 0 0 #5d9a3c, 0 2px 0 var(--gaveta-borda) }
+.card.maximo { box-shadow: inset 4px 0 0 #e0b04a, 0 2px 0 var(--gaveta-borda) }
+
+.medalhao-do-card {
+  grid-area: medalhao;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 23px;
+  background: radial-gradient(circle at 35% 30%, #fffdf3, #ead6a8);
+  border: 2px solid #c8a46a;
+  box-shadow: inset 0 -3px 0 #0000001a
+}
+
+.card.disponivel .medalhao-do-card { border-color: #5d9a3c; box-shadow: inset 0 -3px 0 #0000001a, 0 0 0 3px #5d9a3c33 }
+.card.maximo .medalhao-do-card { border-color: #e0b04a; background: radial-gradient(circle at 35% 30%, #fff8d8, #f2d67a); box-shadow: inset 0 -3px 0 #0000001a, 0 0 0 3px #e0b04a40 }
+
+.titulo-do-card { grid-area: titulo; display: flex; align-items: baseline; gap: 6px; min-width: 0; font-size: 14px; line-height: 1.2 }
+.titulo-do-card b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.nivel-do-card { flex: 0 0 auto; padding: 1px 6px; border-radius: 6px; background: #7a4e261f; color: var(--gaveta-titulo); font-size: 10px; font-weight: 800; letter-spacing: .3px }
+
+/* trilha 0 → 3: pontos sobre uma linha; cheio = concluído, maior com anel = atual, vazado = futuro */
+.trilha-de-niveis {
+  grid-area: trilha;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(var(--gaveta-borda), var(--gaveta-borda)) center / calc(100% - 16px) 2px no-repeat
+}
+
+.trilha-de-niveis li { display: grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; font-size: 8px; font-weight: 800; box-sizing: border-box }
+.trilha-de-niveis li.feito { background: #5d9a3c; color: #fff }
+.trilha-de-niveis li.atual { width: 18px; height: 18px; font-size: 10px; background: var(--gaveta-madeira); color: #fff6e2; box-shadow: 0 0 0 2px var(--gaveta-cartao), 0 0 0 4px #e0b04a }
+.trilha-de-niveis li.futuro { background: var(--gaveta-cartao); color: var(--gaveta-texto-suave); border: 1.5px solid var(--gaveta-borda) }
+.card.maximo .trilha-de-niveis li.feito, .card.maximo .trilha-de-niveis li.atual { background: #e0b04a; color: #3b2a1a }
+
+/* linha de estado: um selo + detalhe e informações da área */
+.pontos-nivel { grid-area: estado; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; margin: 2px 0 0; font-size: 11px; color: var(--gaveta-texto-suave) }
+.detalhe-do-card { white-space: nowrap }
+.selo-estado { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 1px 7px; border-radius: 999px; white-space: nowrap }
+.selo-estado.disponivel { background: #3d7a30; color: #fff }
+.selo-estado.bloqueado { background: #6e5638; color: #fff8e8 }
+.selo-estado.maximo { background: #f2c94c; color: #3b2a1a }
+.selo-estado.destruida { background: #fff; color: #9b2316 }
+
+/* botões com volume de jogo; o texto continua o mesmo de antes */
+.card button {
+  grid-area: botao;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(#64aa45, #3f7f2a);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 #0004;
+  box-shadow: 0 3px 0 #2c5c1d, inset 0 1px 0 #ffffff4d;
+  cursor: pointer
+}
+
+.card button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #2c5c1d, inset 0 1px 0 #ffffff4d }
+.card button:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+
+.card button:disabled {
+  background: linear-gradient(#f6dc7a, #e0b04a);
+  color: #5e3b1c;
+  text-shadow: none;
+  box-shadow: 0 3px 0 #b7892a;
+  cursor: default
+}
+
+.card button:disabled::before { content: "⭐ " }
+
+@media (max-width: 560px) {
+  .cartoes-do-grupo { grid-template-columns: minmax(0, 1fr) }
+  .card { grid-template-columns: 40px minmax(0, 1fr); grid-template-areas: "medalhao titulo" "medalhao trilha" "estado estado" "botao botao" }
+  .medalhao-do-card { width: 40px; height: 40px; font-size: 21px }
+  .card button { width: 100%; margin-top: 4px }
+}
+
+#aviso {
+  position: fixed;
+  z-index: 20;   /* Mark 8.3.1: acima da barra de ferramentas (12), para os motivos ("casa cheia", "XP insuficiente") ficarem legíveis; não bloqueia cliques */
+  left: 50%;
+  top: 70px;
+  transform: translateX(-50%);
+  background: var(--fundo-card);
+  color: var(--texto);
+  padding: 10px 16px;
+  border-radius: 20px;
+  box-shadow: 0 2px 10px #0004;
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+  font-size: 14px;
+  text-align: center
+}

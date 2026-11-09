@@ -31,13 +31,8 @@
             [CÓDIGO DESENVOLVIDO PELO ALUNO]
             $codigoAluno
 
-<<<<<<< HEAD
             [SAÍDA DO MOTOR DE AVALIAÇÃO (Judge0)]
             - Status: $statusJudge0
-=======
-            [SAÍDA DO COMPILADOR (Judge0)]
-            - Status: " . implode(', ', $statusJudge0) . "
->>>>>>> ce39ba26f5f452f34e9cb6bcdb5a29e1b031a481
             - Terminal (stdout/stderr): $saidaJudge0
 
             [DIRETRIZES DE AVALIAÇÃO]
@@ -56,22 +51,26 @@
                 \"pontos_melhoria\": [\"...\", \"...\"],
                 \"feedback_geral\": \"...\"
             }";
+            return $this->gerar($this->promptSistema);
+            }
 
-            $this->payload = json_encode([
-                "model" => $this->model,
-                "prompt" => $this->promptSistema,
-                "stream" => false // false para receber a resposta toda de uma vez
-            ]);
+            public function gerar(string $prompt): string{ // manda o prompt e retorna a resposta da IA
+                $this->payload = json_encode([
+                    "model" => $this->model,
+                    "prompt" => $prompt,
+                    "stream" => false // false para receber a resposta toda de uma vez
+                ]);
 
-            $curlOllama = curl_init();
-            curl_setopt($curlOllama, CURLOPT_URL, $this->host . base64_encode($this->routes['apiGen']) . '&isBase64=true');
-            curl_setopt($curlOllama, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curlOllama, CURLOPT_POST, true);
-            curl_setopt($curlOllama, CURLOPT_POSTFIELDS, $this->payload);
-            curl_setopt($curlOllama, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                $curlOllama = curl_init();
+                curl_setopt($curlOllama, CURLOPT_URL, $this->host . base64_encode($this->routes['apiGen']) . '&isBase64=true');
+                curl_setopt($curlOllama, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($curlOllama, CURLOPT_POST, true);
+                curl_setopt($curlOllama, CURLOPT_POSTFIELDS, $this->payload);
+                curl_setopt($curlOllama, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
 
-            $respostaOllama = json_decode(curl_exec($curlOllama), true);
-            return $respostaOllama['response'] ?? "A IA não conseguiu gerar um feedback.";
+                $respostaOllama = json_decode(curl_exec($curlOllama), true);
+
+                return $respostaOllama['response'] ?? "A IA não conseguiu gerar um feedback.";
         }
     }
 

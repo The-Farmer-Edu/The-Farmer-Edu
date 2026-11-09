@@ -21,4 +21,13 @@ Router::post('/auth/editarConta', [UsuarioController::class, 'editarConta']);
 Router::get('/auth/desativarConta', [UsuarioController::class, 'showDesativarConta']);
 Router::post('/auth/desativarConta', [UsuarioController::class, 'desativarConta']);
 
+Router::get('/auth/esqueciSenha', [UsuarioController::class, 'showEsqueciSenha']);
+Router::post('/auth/esqueciSenha', [UsuarioController::class, 'solicitarCodigo']);
+
+Router::get('/auth/verificarCodigo', [UsuarioController::class, 'showVerificarCodigo']);
+Router::post('/auth/verificarCodigo', [UsuarioController::class, 'verificarCodigo']);
+
+Router::get('/auth/redefinirSenha', [UsuarioController::class, 'showRedefinirSenha']);
+Router::post('/auth/redefinirSenha', [UsuarioController::class, 'redefinirSenha']);
+
 Router::get('/auth/testeEmail', [UsuarioController::class, 'showTesteEmail']);

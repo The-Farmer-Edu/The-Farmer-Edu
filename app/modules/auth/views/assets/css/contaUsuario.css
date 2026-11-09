@@ -1,0 +1,87 @@
+/* Complemento do desativa e editar conta */
+
+.titulo-login {
+    margin-bottom: 28px;
+}
+
+.painel-login {
+    padding: 32px 0;
+}
+
+.campo {
+    margin-bottom: 20px;
+}
+
+.dica {
+    margin: 6px 0 0 14px;
+    font-size: 11px;
+    color: var(--borda-input);
+}
+
+.texto-aviso {
+    width: 100%;
+    max-width: 265px;
+    margin-bottom: 22px;
+    font-size: 13px;
+    color: var(--azul-escuro);
+    text-align: center;
+}
+
+.campo-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 24px;
+}
+
+.campo-check input {
+    margin-top: 3px;
+    accent-color: #d93025;
+}
+
+.campo-check label {
+    font-size: 13px;
+    color: var(--azul-escuro);
+}
+
+#btn-entrar.btn-perigo {
+    background: #d93025;
+    box-shadow: 0 3px 4px rgba(120, 20, 15, 0.6);
+}
+
+.links-conta {
+    width: 100%;
+    max-width: 265px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+    margin-top: 22px;
+}
+
+.links-conta a {
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.links-conta a:hover {
+    text-decoration: underline;
+}
+
+.link-perigo {
+    color: #d93025;
+}
+
+/* Deixa a foto fixa na tela enquanto o formulário rola */
+.painel-imagem {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+}
+
+@media (max-width: 760px) {
+    .painel-imagem {
+        position: static;
+        align-self: stretch;
+    }
+}

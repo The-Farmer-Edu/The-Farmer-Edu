@@ -4,18 +4,17 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
-
+require_once __DIR__ . '/enviadorEmail.php';
 
 class UsuarioController
 {
 
     public function sendFile(): void {
-            $type = $_GET['type'] ?? null;
-            $file = $_GET['file'] ?? null;
+            $type = (string) ($_GET['type'] ?? '');
+            $file = (string) ($_GET['file'] ?? '');
             $caminhoArquivo = __DIR__ . "/views/assets/$type/$file";
-            if(file_exists($caminhoArquivo)) {
-                $mimeType = $this->
-                get_content_mime_type($caminhoArquivo);
+            if (preg_match('/^[a-z0-9_-]+$/i', $type) && basename($file) === $file && is_file($caminhoArquivo)) {
+                $mimeType = $this->tipoDoArquivo($caminhoArquivo);
 
                 // header("Content-Type: " . $mimeType);
                 // header("X-Content-Type-Options: nosniff");
@@ -62,10 +61,28 @@ class UsuarioController
                     $restante -= strlen($bloco);
                 }
                 fclose($leitor);
-                require_once $caminhoArquivo;
+                
             } else {
                 http_response_code(404);
             }
+        }
+
+        private function tipoDoArquivo(string $arquivo): string{
+            $tipos = [
+                'css'   => 'text/css; charset=UTF-8',
+                'js'    => 'application/javascript; charset=UTF-8',
+                'png'   => 'image/png',
+                'jpg'   => 'image/jpeg',
+                'jpeg'  => 'image/jpeg',
+                'gif'   => 'image/gif',
+                'svg'   => 'image/svg+xml',
+                'webp'  => 'image/webp',
+                'ico'   => 'image/x-icon',
+                'woff'  => 'font/woff',
+                'woff2' => 'font/woff2',
+            ];
+            $ext = strtolower(pathinfo($arquivo, PATHINFO_EXTENSION));
+            return $tipos[$ext] ?? 'application/octet-stream';
         }
 
         private function get_content_mime_type($content)
@@ -384,6 +401,151 @@ class UsuarioController
         }
 
         $this->view('desativarConta', ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
+    }
+
+    //recuperação de senha 
+    //pedir o código por e-mail
+    public function showEsqueciSenha(): void{
+        $this->view('esqueciSenha');
+    }
+
+    public function solicitarCodigo(): void {
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+
+        try {
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new InvalidArgumentException('Informe um e-mail válido.');
+            }
+
+            iniciarSessao();
+            $idRecuperacao = (int) ($_SESSION['recuperacao']['id'] ?? 0);
+
+            $pdo     = iniciarPDO();
+            $usuario = Usuario::buscarPorEmail($pdo, $email);
+
+            // só envia se a conta existe,ta ativa e o tempo de reenvio passou
+            // a resposta da tela é a mesma em todos os casos 
+            if ($usuario !== null && $usuario->ativo
+                && RecuperacaoSenha::segundosParaReenviar($pdo, $usuario->id) === 0) {
+                $pedido = RecuperacaoSenha::criar($pdo, $usuario->id);
+                try {
+                    EnviadorEmail::enviarCodigoRecuperacao($usuario->email, $usuario->nome, $pedido['codigo']);
+                } catch (Throwable $e) {
+                    RecuperacaoSenha::apagar($pdo, $pedido['id']);
+                    throw $e;
+                }
+                $idRecuperacao = $pedido['id'];
+            }
+
+            $_SESSION['recuperacao'] = ['id' => $idRecuperacao, 'verificado' => false];
+            header('Location: verificarCodigo');
+            exit;
+        } catch (InvalidArgumentException $e) {
+            $mensagem = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Não foi possível enviar o e-mail. Tente novamente.';
+        }
+
+        $this->view('esqueciSenha', ['mensagem' => $mensagem]);
+    }
+
+    //digitar o código recebido
+    public function showVerificarCodigo(): void {
+        iniciarSessao();
+        if (!isset($_SESSION['recuperacao'])) {
+            header('Location: esqueciSenha');
+            exit;
+        }
+        $this->view('verificarCodigo');
+    }
+
+    public function verificarCodigo(): void {
+        iniciarSessao();
+        if (!isset($_SESSION['recuperacao'])) {
+            header('Location: esqueciSenha');
+            exit;
+        }
+
+        try {
+            RecuperacaoSenha::validar(iniciarPDO(), (int) $_SESSION['recuperacao']['id'], (string) ($_POST['codigo'] ?? ''));
+
+            // o verificado fica na sessão: só esse navegador pode abrir a tela da nova senha
+            $_SESSION['recuperacao']['verificado'] = true;
+            session_regenerate_id(true);
+            header('Location: redefinirSenha');
+            exit;
+        } catch (InvalidArgumentException $e) {
+            $mensagem = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+        }
+
+        $this->view('verificarCodigo', ['mensagem' => $mensagem]);
+    }
+
+    // definir a nova senha (com o código já validado)
+    private function usuarioDaRecuperacao(): ?int {
+        iniciarSessao();
+        $recuperacao = $_SESSION['recuperacao'] ?? null;
+        if ($recuperacao === null || empty($recuperacao['verificado'])) {
+            return null;
+        }
+        return RecuperacaoSenha::buscarIdUsuario(iniciarPDO(), (int) $recuperacao['id']);
+    }
+
+    public function showRedefinirSenha(): void {
+        if ($this->usuarioDaRecuperacao() === null) {
+            header('Location: esqueciSenha');
+            exit;
+        }
+        $this->view('redefinirSenha');
+    }
+
+    public function redefinirSenha(): void {
+        $idUsuario = $this->usuarioDaRecuperacao();
+        if ($idUsuario === null) {
+            header('Location: esqueciSenha');
+            exit;
+        }
+
+        $novaSenha   = (string) ($_POST['nova_senha'] ?? '');
+        $confirmacao = (string) ($_POST['confirmar_senha'] ?? '');
+
+        $mensagem     = '';
+        $sucesso      = false;
+        $destinoLogin = 'loginAluno';
+
+        try {
+            if ($novaSenha !== $confirmacao) {
+                throw new InvalidArgumentException('As senhas não coincidem.');
+            }
+
+            $pdo     = iniciarPDO();
+            $usuario = Usuario::buscarPorId($pdo, $idUsuario);
+
+            if ($usuario === null || !$usuario->ativo) {
+                throw new RuntimeException('Conta não encontrada.');
+            }
+
+            $usuario->redefinirSenha($pdo, $novaSenha);
+            $usuario->zerarTentativasLogin($pdo); // quem esqueceu a senha pode estar bloqueado por tentativas
+
+            RecuperacaoSenha::apagar($pdo, (int) $_SESSION['recuperacao']['id']);
+            unset($_SESSION['recuperacao']);
+
+            $destinoLogin = $usuario->tipo === 'instrutor' ? 'loginInstrutor' : 'loginAluno';
+            $mensagem     = 'Senha redefinida com sucesso!';
+            $sucesso      = true;
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            $mensagem = $e->getMessage();
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+            $mensagem = 'Erro interno. Tente novamente.';
+        }
+
+        $this->view('redefinirSenha', ['mensagem' => $mensagem, 'sucesso' => $sucesso, 'destinoLogin' => $destinoLogin]);
     }
 
     //sair(logout)

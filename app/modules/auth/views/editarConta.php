@@ -8,38 +8,57 @@ $valor = static fn(string $campo): string => htmlspecialchars((string) ($dados[$
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Editar conta - The Farmer Edu</title>
+    <link rel="stylesheet" href="file?type=css&file=loginAluno.css">
+    <link rel="stylesheet" href="file?type=css&file=contaUsuario.css">
 </head>
 <body>
-    <h1>Editar conta</h1>
+    <main class="tela-login">
 
-    <?php if (!empty($mensagem)): ?>
-        <p><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
-    <?php endif; ?>
+        <section class="painel-login">
+            <h1 class="titulo-login">Editar conta</h1>
 
-    <form action="" method="POST">
-        <p>
-            <label for="nome">Nome:</label>
-            <input type="text" id="nome" name="nome" value="<?= $valor('nome') ?>" required>
-        </p>
+            <?php if (!empty($mensagem)): ?>
+                <p class="mensagem"><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
+            <?php endif; ?>
 
-        <p>
-            <label for="email">E-mail:</label>
-            <input type="email" id="email" name="email" value="<?= $valor('email') ?>" required>
-        </p>
+            <form class="form-login" action="" method="POST">
+                <div class="campo">
+                    <label for="nome">Nome</label>
+                    <input type="text" id="nome" name="nome" value="<?= $valor('nome') ?>" required>
+                </div>
 
-        <p>
-            <label for="nova_senha">Nova senha (deixe em branco para manter a atual):</label>
-            <input type="password" id="nova_senha" name="nova_senha" minlength="8">
-        </p>
+                <div class="campo">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" value="<?= $valor('email') ?>" required>
+                </div>
 
-        <p>
-            <label for="senha_atual">Senha atual (para confirmar):</label>
-            <input type="password" id="senha_atual" name="senha_atual" required>
-        </p>
+                <div class="campo">
+                    <label for="nova_senha">Nova senha</label>
+                    <input type="password" id="nova_senha" name="nova_senha" minlength="8" autocomplete="new-password">
+                    <span class="dica">Deixe em branco para manter a atual</span>
+                </div>
 
-        <button type="submit">Salvar alterações</button>
-    </form>
+                <div class="campo">
+                    <label for="senha_atual">Senha atual</label>
+                    <input type="password" id="senha_atual" name="senha_atual" autocomplete="current-password" required>
+                    <span class="dica">Necessária para confirmar as alterações</span>
+                </div>
 
-    <p><a href="desativarConta">Desativar conta</a> | <a href="logout">Sair</a></p>
+                <button type="submit" id="btn-entrar">Salvar alterações</button>
+            </form>
+
+            <div class="links-conta">
+                <a class="link-perigo" href="desativarConta">Desativar conta</a>
+                <a class="link-verde" href="logout">Sair</a>
+            </div>
+        </section>
+
+        <aside class="painel-imagem">
+            <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
+            <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
+            <p class="subtitulo" id="subtitulo">Minha conta</p>
+        </aside>
+
+    </main>
 </body>
 </html>

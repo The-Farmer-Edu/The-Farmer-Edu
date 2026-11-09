@@ -143,6 +143,14 @@ class Usuario {
         $this->email = $email;
         $this->senha_hash = $hash;
     }
+
+    // troca a senha, valida o tamanho, gera o hash e grava
+    public function redefinirSenha(PDO $pdo, string $novaSenha): void {
+        $this->definirSenha($novaSenha);
+        $stmt = $pdo->prepare('UPDATE usuarios SET senha_hash = ? WHERE id_usuario = ?');
+        $stmt->execute([$this->senha_hash, $this->id]);
+    }
+
      public function desativar(PDO $pdo): void {
         $stmt = $pdo->prepare('UPDATE usuarios SET ativo = 0 WHERE id_usuario =?');
         $stmt->execute([$this->id]);
@@ -242,6 +250,72 @@ class Aluno extends Usuario {
             $this->matricula = null;
             throw $e;
         }
+    }
+}
+
+class RecuperacaoSenha {
+    public const VALIDADE_MINUTOS = 15;
+    public const MAX_TENTATIVAS = 3;
+    public const INTERVALO_REENVIO_SEGUNDOS = 60;
+
+    // cria o pedido (apaga o anterior do usuário)
+    public static function criar(PDO $pdo, int $idUsuario): array {
+        $codigo = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        $stmt = $pdo->prepare('DELETE FROM recuperacao_senha WHERE id_usuario = ?');
+        $stmt->execute([$idUsuario]);
+
+        $stmt = $pdo->prepare('INSERT INTO recuperacao_senha (id_usuario, codigo_hash, expira_em)
+            VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))');
+        $stmt->execute([$idUsuario, password_hash($codigo, PASSWORD_BCRYPT), self::VALIDADE_MINUTOS]);
+
+        return ['id' => (int) $pdo->lastInsertId(), 'codigo' => $codigo];
+    }
+
+    // segundos que faltam para poder pedir outro código 
+    public static function segundosParaReenviar(PDO $pdo, int $idUsuario): int {
+        $stmt = $pdo->prepare('SELECT TIMESTAMPDIFF(SECOND, NOW(), DATE_ADD(criado_em, INTERVAL ? SECOND))
+        FROM recuperacao_senha WHERE id_usuario = ?');
+        $stmt->execute([self::INTERVALO_REENVIO_SEGUNDOS, $idUsuario]);
+        $s = $stmt->fetchColumn();
+        return $s === false || $s === null ? 0 : max(0, (int) $s);
+    }
+
+    // confere o código se não passar, manda InvalidArgumentException
+    public static function validar(PDO $pdo, int $idRecuperacao, string $codigo): void {
+        $invalido = 'Código inválido ou expirado. Peça um novo código.';
+
+        $stmt = $pdo->prepare('SELECT codigo_hash, tentativas, expira_em <= NOW() AS expirado
+            FROM recuperacao_senha WHERE id_recuperacao = ?');
+        $stmt->execute([$idRecuperacao]);
+        $pedido = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$pedido) {
+            throw new InvalidArgumentException($invalido);
+        }
+        if ((int) $pedido['expirado'] === 1 || (int) $pedido['tentativas'] >= self::MAX_TENTATIVAS) {
+            self::apagar($pdo, $idRecuperacao);
+            throw new InvalidArgumentException($invalido);
+        }
+        if (!password_verify(trim($codigo), $pedido['codigo_hash'])) {
+            $stmt = $pdo->prepare('UPDATE recuperacao_senha SET tentativas = tentativas + 1 WHERE id_recuperacao = ?');
+            $stmt->execute([$idRecuperacao]);
+            throw new InvalidArgumentException($invalido);
+        }
+    }
+
+    // devolve o id do usuário se o pedido ainda existe e não expirou
+    public static function buscarIdUsuario(PDO $pdo, int $idRecuperacao): ?int {
+        $stmt = $pdo->prepare('SELECT id_usuario FROM recuperacao_senha
+            WHERE id_recuperacao = ? AND expira_em > NOW()');
+        $stmt->execute([$idRecuperacao]);
+        $id = $stmt->fetchColumn();
+        return $id === false ? null : (int) $id;
+    }
+
+    public static function apagar(PDO $pdo, int $idRecuperacao): void {
+        $stmt = $pdo->prepare('DELETE FROM recuperacao_senha WHERE id_recuperacao = ?');
+        $stmt->execute([$idRecuperacao]);
     }
 }
  

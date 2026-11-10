@@ -4,6 +4,7 @@
 
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
+require_once __DIR__ . '/../../core/session.php';
 
 class NotificacoesController
 {
@@ -11,14 +12,17 @@ class NotificacoesController
     {
         $pdo = iniciarPDO();
 
-        // Buscar usuário de teste
-        $stmt = $pdo->prepare(
-            "SELECT id_usuario FROM usuarios WHERE email = ?"
-        );
+        // Buscar usuário logado
+$usuario = usuarioLogado();
 
-        $stmt->execute(['teste.notificacoes@exemplo.com']);
+if (!$usuario) {
+    http_response_code(401);
+    echo 'Você precisa estar logado.';
+    return;
+}
 
-        $idUsuario = $stmt->fetchColumn();
+$idUsuario = (int) $usuario['idUsuario'];
+$perfilAcesso = $usuario['perfilAcesso'];
 
         // Buscar notificações do usuário
         $notificacoes = $idUsuario
@@ -46,14 +50,19 @@ class NotificacoesController
 
         $pdo = iniciarPDO();
 
-        // Buscar usuário
-        $stmt = $pdo->prepare(
-            "SELECT id_usuario FROM usuarios WHERE email = ?"
-        );
+        // Identificar usuário logado
+$usuario = usuarioLogado();
 
-        $stmt->execute(['teste.notificacoes@exemplo.com']);
+if (!$usuario) {
+    http_response_code(401);
+    echo json_encode([
+        'sucesso' => false,
+        'erro' => 'Usuário não autenticado'
+    ]);
+    return;
+}
 
-        $idUsuario = $stmt->fetchColumn();
+$idUsuario = (int) $usuario['idUsuario'];
 
         // Receber dados da notificação
         $idNotificacao = filter_input(

@@ -438,70 +438,60 @@ function atualizarBotao(card) {
     botao.classList.toggle('btn-cinza', lida);
 }
 
-function alternarLeitura(botao) {
+async function alternarLeitura(botao) {
     const card = botao.closest('.notificacao');
-
     if (!card) return;
 
-    card.classList.toggle('lida');
+    const id = Number(card.dataset.id);
+    const lida = card.classList.contains('lida') ? 0 : 1;
 
-    const chave = card.dataset.chave;
-    let lidas = obterLidas();
+    if (!Number.isInteger(id) || id <= 0) return;
 
-    if (card.classList.contains('lida')) {
-        if (!lidas.includes(chave)) {
-            lidas.push(chave);
+    botao.disabled = true;
+
+    try {
+        const resposta = await fetch('/The-Farmer-Edu/public/notificacoes/marcar-lida', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+                id_notificacao: id,
+                lida: lida
+            })
+        });
+
+        const dados = await resposta.json();
+
+        if (!resposta.ok || !dados.sucesso) {
+            throw new Error('Erro ao salvar no banco');
         }
-    } else {
-        lidas = lidas.filter(item => item !== chave);
-    }
 
-    const idNotificacao = Number(card.dataset.id);
-const lida = card.classList.contains('lida') ? 1 : 0;
-
-if (Number.isInteger(idNotificacao) && idNotificacao > 0) {
-    fetch('/notificacoes/marcar-lida', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-            id_notificacao: idNotificacao,
-            lida: lida
-        })
-    })
-    .then(resposta => resposta.json())
-    .then(dados => {
-        if (!dados.sucesso) {
-            console.error('Não foi possível salvar a leitura.');
-        }
-    })
-    .catch(erro => console.error(erro));
-}
-
-    atualizarBotao(card);
-    atualizarResumo();
-    aplicarFiltro();
-}
-
-function marcarTodas() {
-    const lidas = obterLidas();
-
-    document.querySelectorAll('.notificacao').forEach(card => {
-        card.classList.add('lida');
-
-        const chave = card.dataset.chave;
-
-        if (!lidas.includes(chave)) {
-            lidas.push(chave);
-        }
+        card.classList.toggle('lida', lida === 1);
+        card.dataset.lida = String(lida);
 
         atualizarBotao(card);
-    });
+        atualizarResumo();
+        aplicarFiltro();
 
-    salvarLidas(lidas);
-    atualizarResumo();
-    aplicarFiltro();
+    } catch (erro) {
+        console.error(erro);
+        alert('Não foi possível salvar a notificação.');
+    } finally {
+        botao.disabled = false;
+    }
+}
+
+async function marcarTodas() {
+    const cards = document.querySelectorAll('.notificacao:not(.lida)');
+
+    for (const card of cards) {
+        const botao = card.querySelector('.botao-leitura');
+
+        if (botao) {
+            await alternarLeitura(botao);
+        }
+    }
 }
 
 function aplicarFiltro() {

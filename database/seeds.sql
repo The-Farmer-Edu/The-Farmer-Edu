@@ -6,9 +6,7 @@
 -- Executar este arquivo após a criação do schema.
 -- Os hashes de senha de exemplo utilizam a senha '12345678' gerada via BCRYPT.
 -- =====================================================================
-
 USE the_farmer_edu;
-
 -- ---------------------------------------------------------------------
 -- 1. USUÁRIOS
 -- IDs 1 e 2: Instrutores | IDs 3, 4 e 5: Alunos
@@ -300,7 +298,7 @@ INSERT INTO xp_logs (
         id_aluno,
         quantidade,
         motivo,
-        id_nota,
+        id_submissao,
         data
     )
 VALUES (

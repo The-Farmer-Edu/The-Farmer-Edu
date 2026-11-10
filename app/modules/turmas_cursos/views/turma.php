@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head><meta charset="UTF-8"><title>Alunos da turma - The Farmer Edu</title></head>
-    
+
 <body>
     <header>
         <b>The Farmer Edu</b> | Bem-vindo, <?= e($u['nome']) ?> |

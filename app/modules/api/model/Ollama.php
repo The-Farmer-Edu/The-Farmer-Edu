@@ -56,8 +56,55 @@
             $this->model = "sophia";
         }
 
-        public function obterResultadoSophia(string $linguagem, string $objetivoAtividade, string $notaMax, string $notaMin, string $codigoBase, string $codigoAluno, mixed $statusJudge0, mixed $saidaJudge0): mixed {
-            $this->prompt = "";
+        public function obterResultadoSophia(
+            string $linguagem, 
+            string $objetivoAtividade, 
+            string $notaMax, 
+            string $notaMin, 
+            string $codigoBase, 
+            string $codigoAluno, 
+            mixed $statusJudge0, 
+            mixed $saidaJudge0
+        ): mixed {
+            // Tratamento de segurança para dados que vêm como array ou objeto
+            $statusStr = is_array($statusJudge0) || is_object($statusJudge0) ? json_encode($statusJudge0, JSON_UNESCAPED_UNICODE) : (string)$statusJudge0;
+            $saidaStr  = is_array($saidaJudge0)  || is_object($saidaJudge0)  ? json_encode($saidaJudge0, JSON_UNESCAPED_UNICODE)  : (string)$saidaJudge0;
+
+            $this->prompt = <<<PROMPT
+            Você deve processar a submissão de um aluno e gerar um feedback pedagógico intermediado no papel de Sophia.
+
+            === CONTEXTO DA ATIVIDADE ===
+            Linguagem de Programação: {$linguagem}
+            Objetivo da Atividade: {$objetivoAtividade}
+            Intervalo de Nota Permitido: Mínima {$notaMin} até Máxima {$notaMax}
+
+            === CÓDIGOS ===
+            [Código Base Fornecido]:
+            {$codigoBase}
+
+            [Código Enviado pelo Aluno]:
+            {$codigoAluno}
+
+            === EXECUÇÃO NO JUDGE0 ===
+            Status de Execução: {$statusStr}
+            Saída / Logs do Compilador/Interpretador: {$saidaStr}
+
+            === FORMATO DE SAÍDA EXIGIDO (JSON) ===
+            Retorne EXCLUSIVAMENTE um objeto JSON válido no seguinte formato:
+            {
+                "sucesso": boolean,          // true se o status do Judge0 for de sucesso/aprovação total, false caso contrário.
+                "nota_sugerida": float,     // Valor numérico entre {$notaMin} e {$notaMax} baseado no progresso e acerto.
+                "analise_tecnica": "string", // Breve resumo técnico interno do erro para o sistema/professor (máx 2 frases).
+                "resposta_aluno": "string"   // Mensagem encorajadora de Sophia diretamente para o aluno (cumprindo TODAS as regras pedagógicas).
+            }
+
+            === REGRAS PARA O CAMPO 'resposta_aluno' ===
+            - Seja didática, encorajadora e use o tom do SENAI.
+            - Explique o erro de {$linguagem} ou a lógica incorreta de forma simples.
+            - NUNCA dê a solução, trechos de código corrigidos ou respostas prontas.
+            - Termine OBRIGATORIAMENTE com uma pergunta reflexiva para guiar o próximo passo do aluno.
+            PROMPT;
+
             return $this->gerar();
         }
     }

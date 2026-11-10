@@ -171,8 +171,7 @@
     // Atividade vinda do banco: usa o próprio id.
     A.chave = String(A.chave || A.id);
 
-    // Limite de entrega
-    A.limiteEntrega = "2026-11-10T09:59";
+    // Limite de entrega: vem do bloco #dadosAtividade (banco) ou do teste; não hardcode aqui.
     const _lim = A.limiteEntrega ? new Date(A.limiteEntrega) : null;
     A.limite = _lim && !isNaN(_lim) ? _lim : null;
     A.prazoExcedido = () => !!A.limite && Date.now() > A.limite.getTime();

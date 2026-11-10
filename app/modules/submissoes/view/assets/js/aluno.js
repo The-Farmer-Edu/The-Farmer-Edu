@@ -45,6 +45,7 @@ renderizarAtividade();
 /*  Status da entrega, prazo e botão principal  */
 // A entrega é guardada por atividade
 const CHAVE_ENTREGA = 'farmedu:entrega:' + window.FarmAtividade.chave;
+const CHAVE_AVALIACAO = 'farmedu:avaliacao:' + window.FarmAtividade.chave;
 const status = document.querySelector('.status');
 const texto = document.getElementById('texto');
 const botaoComecar = document.getElementById('comecar');

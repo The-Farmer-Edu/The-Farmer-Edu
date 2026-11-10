@@ -601,7 +601,7 @@ async function consultarIAcomFallback(extra) {
 }
 
 function temProblema(f) {
-    const aceito = !f.compilador || /accepted|aceito/i.test(f.compilador);
+    const aceito = modo === 'web' || !f.compilador || /accepted|aceito/i.test(f.compilador);
     const aprovado = !f.status || /^aprovado$/i.test(String(f.status).trim());
     return !aceito || !aprovado || errosAtuais().length > 0 || f.faltando.length > 0;
 }

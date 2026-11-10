@@ -70,21 +70,37 @@ const AUDIO_CONFIG = {
   },
 
   // Efeitos sonoros gerais e de mecânicas do jogo unificados
-  efeitos: {
-    global: { distanciaMaxima: 80, intervaloMinimo: 0.15 },
+    efeitos: {
+  global: { distanciaMaxima: 80, intervaloMinimo: 0.15 },
 
-    cliqueMenu: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaoenter.mp3', volume: 0.6, intervaloMinimo: 0.05 },
+  // --- BOTÕES E MENUS ---
+  Enter:   { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaoenter.mp3', volume: 0.6, intervaloMinimo: 0.05 },
+  Fecha:  { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaovoltar.mp3', volume: 0.6, intervaloMinimo: 0.05 },
+  ativar:       { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/ativar.mp3', volume: 0.7 },
+  desativar:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/desativar.mp3', volume: 0.7 },
+  desenvolvedor:{ arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/desenvolvedor.mp3', volume: 0.7 },
+  erro:         { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/erros.mp3', volume: 0.8 },
 
-
-    fazendeiroDano: { arquivo: 'assets/audio/SFX/mobs/porradanosmobs.mp3', volume: 1, intervaloMinimo: 0.2, distanciaMaxima: 60 },
+  // --- AÇÕES E PROGRESSÃO ---
+  construir: { arquivo: 'assets/audio/SFX/sons-do-jogo/acoes/reparar_danos.mp3', volume: 0.8 },
+  plantar:      { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/plantar.mp3', volume: 1 },
+  colher:       { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/colher.mp3', volume: 1 },
+  contratar:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/contratar.mp3', volume: 0.7 },
+  demitir:      { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/demitir.mp3', volume: 0.7 },
+  analise:      { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/analise.mp3', volume: 0.7 },
+  analiseTbm:   { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/analisetbm.mp3', volume: 0.7 },
+  levelUp:      { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/Level Up.mp3', volume: 0.9 },
+  xp:           { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/Xp.mp3', volume: 0.8 },
+  mina: { arquivo: 'assets/audio/SFX/areas-do-jogo/carrinho_da_mina.mp3', volume: 0.7 },
+fazendeiroDano: { arquivo: 'assets/audio/SFX/mobs/porradanosmobs.mp3', volume: 1, intervaloMinimo: 0.2, distanciaMaxima: 60 },
     fazendeiroMorte: { arquivo: 'assets/audio/SFX/mobs/fazendeiros/mortehomem.mp3', volume: 1, intervaloMinimo: 0.5, distanciaMaxima: 60 },
 
 
-    plantar: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/plantar.mp3', volume: 3 },
-    colher: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/colher.mp3', volume: 3 },
-    construir: { arquivo: 'assets/audio/SFX/sons-do-jogo/acoes/reparar_danos.mp3', volume: 0.8 },
-    mina: { arquivo: 'assets/audio/SFX/areas-do-jogo/carrinho_da_mina.mp3', volume: 0.7 },
-    contratar: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/contratar.mp3', volume: 0.7 },
+
+
+
+     
+
 
     golpe: {
       // arquivo: [

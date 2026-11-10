@@ -1,0 +1,80 @@
+:root {
+    --cor-primaria: #0088FF;
+    --cor-escura: #2276E3;
+    --texto: #002D38;
+    --menu-fundo: #E6E6E6;
+    --raio-campo: 10px;
+    --raio-botao: 20px;
+    --raio-card: 25px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    padding: 8px 4px 16px;
+    color: var(--texto);
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+
+h1 {
+    margin-bottom: 12px;
+    font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+    font-size: 1.2rem;
+    color: var(--cor-primaria);
+}
+
+input {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    color: var(--texto);
+    border: 2px solid var(--texto);
+    border-radius: var(--raio-campo);
+}
+
+button {
+    margin-top: 6px;
+    padding: 8px 18px;
+    font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+    font-weight: 700;
+    font-size: 0.88rem;
+    color: #fff;
+    background: var(--cor-primaria);
+    border: 2px solid var(--cor-primaria);
+    border-radius: var(--raio-botao);
+    cursor: pointer;
+}
+
+#remover-criterio-btn {
+    color: var(--cor-primaria);
+    background: #fff;
+}
+
+#criteria-container {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 40px;
+    margin-top: 10px;
+}
+
+.criterio {
+    padding: 10px 14px;
+    cursor: pointer;
+    background: var(--menu-fundo);
+    border: 2px solid transparent;
+    border-radius: var(--raio-campo);
+}
+
+.criterio.selected {
+    font-weight: 700;
+    background: #fff;
+    border-color: var(--cor-escura);
+}
+
+p {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #727272;
+}

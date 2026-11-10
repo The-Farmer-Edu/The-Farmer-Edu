@@ -16,10 +16,15 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 <body class="tema-aluno">
 
 <header>
-    <img src="assets/img/png/logo_icone.png" alt="The Farm Edu">
+    <img src="assets/img/svg/logo_icone.svg" alt="The Farmer Edu">
     <div>
         <h2>MINHAS ATIVIDADES</h2>
     </div>
+    <nav class="header-links">
+        <a href="turmas_cursos/aluno">Meus cursos e turmas</a>
+        <a href="turmas_cursos/minhaConta">Minha conta</a>
+        <a href="auth/logout">Sair</a>
+    </nav>
     <div class="avatar"><?= htmlspecialchars($inicial, ENT_QUOTES, 'UTF-8') ?></div>
 </header>
 

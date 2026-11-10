@@ -48,7 +48,7 @@
             font-weight: bold;
             margin-top: 10px;
             border-radius: 5px;
-            transition: background 0.2s;
+            transition: 0.2s;
         }
         button:hover {
             background: #00a8cc;

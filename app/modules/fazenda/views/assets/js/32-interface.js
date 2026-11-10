@@ -129,6 +129,7 @@
       // não passa mais por window.adicionarXP: usa a mesma regra interna com a origem 'teste'.
       const receberXP = function receberXP(quantidade, origem) {
         if (typeof quantidade !== 'number' || !Number.isFinite(quantidade)) { console.warn('[FarmEdu] adicionarXP recusou um valor inválido:', quantidade); return false; }
+        if (quantidade > 0) tocarEfeito('xp');
         estado.xp += quantidade; registrarOrigemDoXP(origem, quantidade); registrarAtividade(); desenharCards(); atualizarPaineisDaMark82(true);
         return true;
       };
@@ -177,6 +178,7 @@
       };
       botaoDoModoDesenvolvedor.onclick = () => {
         if (!modoDesenvolvedorAtivo) return;
+        tocarEfeito('desativar');
         definirModoDesenvolvedor(false); mostrarAviso('🛠️ Modo desenvolvedor desligado.');
       };
       let letrasDigitadas = '';
@@ -185,7 +187,7 @@
         if (evento.target && evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]')) return;   // ex.: nome da fazenda
         letrasDigitadas = (letrasDigitadas + evento.key.toLowerCase()).slice(-PALAVRA_DO_MODO_DESENVOLVEDOR.length);
         if (letrasDigitadas !== PALAVRA_DO_MODO_DESENVOLVEDOR || modoDesenvolvedorAtivo) return;
-        letrasDigitadas = ''; definirModoDesenvolvedor(true);
+        letrasDigitadas = ''; tocarEfeito('desenvolvedor'); definirModoDesenvolvedor(true);
         mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
       });
       // Com o modo desligado, um clique (ou Enter) num controle de teste para aqui, antes do handler original: além de escondidos,
@@ -197,3 +199,4 @@
       atualizarNomeNaInterface();
       desenharCards();
       arquivoDaMontagemConcluido('32-interface.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
+ isFinite

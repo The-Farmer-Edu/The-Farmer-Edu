@@ -306,7 +306,7 @@ button::after {
 <body>
     <header>
         <div id="esquerda_cabecalho">
-            <img src="/The-Farmer-Edu-Tarde-Setup/public/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
+            <img src="/The-Farmer-Edu-Tarde-Setup/public//assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
             <p id="nome_cabecalho">The Farmer Edu</p>
         </div>
         

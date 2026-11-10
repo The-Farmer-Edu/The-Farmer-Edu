@@ -1,12 +1,17 @@
 <?php
 
-// require_once __DIR__ . '/../../core/router.php';
+require_once __DIR__ . '/../../core/router.php';
 require_once __DIR__ . '/Controller.php';
 
 Router::get('/turmas_cursos', [CursosController::class, 'inicio']);
 Router::get('/turmas_cursos/instrutor', [CursosController::class, 'instrutor']);
 Router::get('/turmas_cursos/aluno', [CursosController::class, 'aluno']);
 Router::get('/turmas_cursos/alunos', [CursosController::class, 'alunos']);
+Router::get('/turmas_cursos/cursoNovo', [CursosController::class, 'cursoNovo']);
+Router::post('/turmas_cursos/cursoSalvar', [CursosController::class, 'cursoSalvar']);
+Router::get('/turmas_cursos/cursoEditar', [CursosController::class, 'cursoEditar']);
+Router::post('/turmas_cursos/cursoAtualizar', [CursosController::class, 'cursoAtualizar']);
+Router::post('/turmas_cursos/cursoExcluir', [CursosController::class, 'cursoExcluir']);
 Router::get('/turmas_cursos/turmaForm', [CursosController::class, 'form']);
 Router::post('/turmas_cursos/turmaSalvar', [CursosController::class, 'salvar']);
 Router::get('/turmas_cursos/turmaEditar', [CursosController::class, 'editar']);

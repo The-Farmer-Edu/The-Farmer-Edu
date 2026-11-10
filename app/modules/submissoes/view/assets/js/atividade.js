@@ -172,6 +172,7 @@
     A.chave = String(A.chave || A.id);
 
     // Limite de entrega
+    A.limiteEntrega = "2026-11-10T08:41"; // ano-mês-dia T hora:minuto
     const _lim = A.limiteEntrega ? new Date(A.limiteEntrega) : null;
     A.limite = _lim && !isNaN(_lim) ? _lim : null;
     A.prazoExcedido = () => !!A.limite && Date.now() > A.limite.getTime();

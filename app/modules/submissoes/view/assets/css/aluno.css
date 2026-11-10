@@ -500,3 +500,46 @@ header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: 
     }
     .card-principal > article:last-child { order: 2; }
 }
+
+/* Pontuação da IA (feedback final) */
+.btn-nota-ia {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    border: 2px solid var(--Verde-principal);
+    background: var(--Branco);
+    color: var(--Titulo);
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+.btn-nota-ia:hover:not(:disabled) { background: var(--Hoover); }
+.btn-nota-ia:active:not(:disabled) { transform: scale(0.98); }
+.btn-nota-ia:disabled { cursor: not-allowed; opacity: 0.65; border-color: #bdbdbd; color: var(--Texto); }
+.card_trabalhos p.nota-aviso { font-size: 0.78rem; line-height: 1.4; margin: 0 0 16px 4px; }
+
+.modal-card.nota-card { position: relative; text-align: left; max-width: 560px; max-height: 85vh; overflow-y: auto; padding: 28px; }
+.nota-card h3 { font-size: 1.3rem; margin-bottom: 14px; padding-right: 40px; }
+.nota-fechar {
+    position: absolute; top: 14px; right: 14px; width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #ccc; background: var(--Off-white); color: var(--Titulo); font-size: 0.9rem; cursor: pointer;
+}
+.nota-fechar:hover { background: var(--Hoover); }
+.nota-card .nota-valor { font-family: var(--Fonte-ui); font-size: 1.5rem; font-weight: 800; color: var(--Titulo); margin-bottom: 4px; }
+.nota-selo { display: inline-block; margin-left: 10px; padding: 4px 14px; border-radius: var(--Raio-pilula); font-size: 0.8rem; font-weight: 700; vertical-align: middle; }
+.nota-selo.aprovado { background: rgba(52, 199, 89, 0.2); color: var(--Titulo); }
+.nota-selo.reprovado { background: rgba(255, 141, 40, 0.2); color: #c25b00; }
+.nota-card h4 { font-family: var(--Fonte-ui); font-size: 0.95rem; color: var(--Titulo); margin: 14px 0 6px; }
+.nota-card p, .nota-card li { font-size: 0.95rem; line-height: 1.55; color: var(--Texto); margin: 0; }
+.nota-card ul { margin-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.nota-card pre {
+    background: #0f1a15; color: #a0fda3; padding: 12px; border-radius: 10px;
+    font-family: Consolas, 'Cascadia Code', monospace; font-size: 0.85rem; white-space: pre-wrap;
+}
+.nota-card .nota-pequeno { font-size: 0.78rem; color: #888; margin-top: 12px; }
+
+@media (max-width: 780px) {
+    .modal-card.nota-card { padding: 20px 16px; }
+}

@@ -53,6 +53,7 @@ let resultadoAberto = false;
 let executadoAtual = false;
 let executando = false;
 let enviando = false;
+let saindo = false;   // o aluno confirmou que quer sair
 let avaliacaoSeq = 0;
 const usos = { executar: 0, sophia: 0 };
 // Erros da última execução: só valem enquanto o código não mudou depois dela
@@ -379,7 +380,7 @@ function atualizarEntrega() {
     ed.readOnly = entregue || encerrado || A.vazia;
 
     $('chipEntrega').hidden = !entregue;
-    if (entregue) $('chipEntrega').textContent = '✔ Entregue em ' + formatarData(entrega.data);
+    if (entregue) $('chipEntrega').textContent = '✔ Entregue em ' + formatarData(entrega.data) + (enviando ? ' · IA avaliando...' : '');
 
     // Limite de entrega
     $('chipPrazo').hidden = !A.limite;
@@ -459,8 +460,9 @@ function cancelarEntrega() {
 
 /*FEEDBACK — PONTO DE INTEGRAÇÃO COM O GRUPO feedback_ia*/
 const FEEDBACK = {
-    // Tenta nesta ordem; só passa para o próximo se o endereço não existir (404/405) ou não responder.
-    endpoints: ['enviarSubmissao', 'sendAvaliacao', 'api/sendAvaliacao'],
+    // Rota do squad feedback_ia (POST /feedback_ia/sendAvaliacao). A rota do módulo (enviarSubmissao) fica como plano B:
+    // só passa para o próximo se o endereço não existir (404/405) ou não responder.
+    endpoints: ['feedback_ia/sendAvaliacao', 'enviarSubmissao'],
     usarExemploSeFalhar: true,
 
     montarPayload(ctx) {
@@ -651,19 +653,21 @@ function responderSophia(texto) {
 async function enviarParaAvaliacao() {
     const seq = ++avaliacaoSeq;
     enviando = true;
+    atualizarEntrega();
     try {
         const r = await consultarIAcomFallback({ erros_execucao: errosAtuais() });
         if (seq !== avaliacaoSeq) return;
         try {
             localStorage.setItem(CHAVE_AVALIACAO, JSON.stringify({
                 nota: r.nota, status: r.status, feedback: r.feedback, melhorias: r.melhorias,
-                feitos: r.feitos, faltando: r.faltando, exemplo: !!r.exemplo, data: new Date().toISOString()
+                feitos: r.feitos, faltando: r.faltando, compilador: r.compilador, saida: r.saida,
+                exemplo: !!r.exemplo, data: new Date().toISOString()
             }));
         } catch (e) {}
     } catch (erro) {
         console.warn('Não foi possível avaliar a entrega agora:', erro);
     }
-    if (seq === avaliacaoSeq) enviando = false;
+    if (seq === avaliacaoSeq) { enviando = false; atualizarEntrega(); }
 }
 
 /*  Eventos  */
@@ -758,8 +762,16 @@ $('conForm').addEventListener('submit', e => {
     if (texto) responderSophia(texto);
 });
 
-// Voltar sempre leva à página do aluno (não às páginas visitadas antes)
-$('btnVoltar').onclick = () => { location.href = 'aluno' + (A.queryAluno || ''); };
+// Voltar sempre leva à página do aluno (não às páginas visitadas antes).
+// Se a IA ainda está avaliando a entrega, avisa: sair agora perderia a pontuação.
+$('btnVoltar').onclick = () => {
+    if (enviando && !confirm('A IA ainda está avaliando a sua entrega. Se sair agora, a pontuação pode não ser gerada. Sair mesmo assim?')) return;
+    saindo = true;
+    location.href = 'aluno' + (A.queryAluno || '');
+};
+window.addEventListener('beforeunload', e => {
+    if (enviando && !saindo) { e.preventDefault(); e.returnValue = ''; }
+});
 $('btnEntregar').onclick = () => (entrega ? cancelarEntrega() : iniciarEntrega());
 $('btnConfirmar').onclick = confirmarEntrega;
 $('btnCancelarModal').onclick = fecharModalEntrega;

@@ -54,6 +54,108 @@ function lerEntrega() {
     try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) { return null; }
 }
 
+/*  Pontuação da IA (feedback final)  */
+// A avaliação da IA é guardada quando o aluno entrega (iniciaratv.js) e só abre depois do prazo.
+// INTEGRAÇÃO
+const btnNota = document.getElementById('btnNota');
+const notaAviso = document.getElementById('notaAviso');
+const modalNota = document.getElementById('modalNota');
+const notaConteudo = document.getElementById('notaConteudo');
+
+function lerAvaliacao() {
+    try { return JSON.parse(localStorage.getItem(CHAVE_AVALIACAO)); } catch (e) { return null; }
+}
+
+// Bloqueado até o prazo acabar; depois do prazo, só abre se o aluno entregou e a IA já avaliou
+function atualizarNota(entregue, encerrado) {
+    if (!btnNota) return;
+    const A = window.FarmAtividade;
+    let liberado = false;
+    let msg;
+    if (!encerrado) {
+        msg = A.limite
+            ? '🔒 Disponível depois do prazo de entrega (' + A.limiteTexto() + ').'
+            : '🔒 Disponível quando o prazo de entrega terminar.';
+    } else if (!entregue) {
+        msg = 'Você não entregou esta atividade, então não há pontuação.';
+    } else if (!lerAvaliacao()) {
+        msg = 'Sua entrega ainda não foi avaliada pela IA.';
+    } else {
+        liberado = true;
+        msg = 'O prazo acabou. Sua pontuação já está disponível.';
+    }
+    btnNota.disabled = !liberado;
+    btnNota.textContent = liberado ? 'Ver pontuação da IA' : '🔒 Pontuação da IA';
+    if (notaAviso) notaAviso.textContent = msg;
+}
+
+function abrirNota() {
+    const A = window.FarmAtividade;
+    const aval = lerAvaliacao();
+    // segurança: só abre depois do prazo e com avaliação guardada
+    if (!modalNota || !notaConteudo || !aval || !A.prazoExcedido()) return;
+
+    // monta com textContent (o texto vem da IA: nunca entra como HTML)
+    const novo = (tag, classe, texto) => {
+        const e = document.createElement(tag);
+        if (classe) e.className = classe;
+        if (texto !== undefined) e.textContent = texto;
+        return e;
+    };
+    const lista = (titulo, itens) => {
+        if (!itens || !itens.length) return;
+        notaConteudo.appendChild(novo('h4', '', titulo));
+        const ul = novo('ul');
+        itens.forEach(t => ul.appendChild(novo('li', '', String(t))));
+        notaConteudo.appendChild(ul);
+    };
+
+    notaConteudo.innerHTML = '';
+    const nota = aval.nota != null ? aval.nota : '—';
+    const aprovado = aval.status ? /^aprovado$/i.test(String(aval.status).trim()) : Number(aval.nota) >= A.notaMin;
+
+    const valor = novo('p', 'nota-valor', `Nota atribuída: ${nota} / ${A.notaMax}`);
+    valor.appendChild(novo('span', 'nota-selo ' + (aprovado ? 'aprovado' : 'reprovado'), aprovado ? 'Aprovado' : 'Reprovado'));
+    notaConteudo.appendChild(valor);
+    notaConteudo.appendChild(novo('p', 'nota-pequeno', `Nota mínima para aprovação: ${A.notaMin}`));
+
+    if (aval.compilador) {
+        const p = novo('p');
+        p.append(novo('strong', '', 'Status do compilador: '), String(aval.compilador));
+        notaConteudo.appendChild(p);
+    }
+    if (aval.saida && String(aval.saida).trim()) {
+        notaConteudo.appendChild(novo('h4', '', 'Terminal'));
+        notaConteudo.appendChild(novo('pre', '', String(aval.saida).trim()));
+    }
+    if (aval.feedback) {
+        notaConteudo.appendChild(novo('h4', '', 'Feedback do Professor IA'));
+        notaConteudo.appendChild(novo('p', '', String(aval.feedback)));
+    }
+    lista('✔ O que você fez', aval.feitos);
+    lista('✖ O que ficou faltando', aval.faltando);
+    lista('Missões de correção (pontos de melhoria)', aval.melhorias);
+    if (!(aval.faltando || []).length && !(aval.melhorias || []).length) {
+        notaConteudo.appendChild(novo('p', 'nota-pequeno', 'Lógica perfeita! Nenhuma correção necessária.'));
+    }
+    if (aval.exemplo) {
+        notaConteudo.appendChild(novo('p', 'nota-pequeno', '(Resposta de exemplo: a IA não respondeu na hora da entrega.)'));
+    }
+    if (aval.data) {
+        const quando = new Date(aval.data);
+        if (!isNaN(quando)) {
+            notaConteudo.appendChild(novo('p', 'nota-pequeno', 'Avaliado em ' + quando.toLocaleString('pt-BR', {
+                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+            })));
+        }
+    }
+    modalNota.classList.add('active');
+}
+
+function fecharNota() {
+    if (modalNota) modalNota.classList.remove('active');
+}
+
 function atualizarStatus() {
     const A = window.FarmAtividade;
     if (A.vazia) {
@@ -62,6 +164,8 @@ function atualizarStatus() {
         prazoEl.hidden = true;
         texto.style.display = 'none';
         botaoComecar.style.display = 'none';
+        if (btnNota) btnNota.style.display = 'none';
+        if (notaAviso) notaAviso.style.display = 'none';
         return;
     }
     const entrega = lerEntrega();
@@ -108,6 +212,8 @@ function atualizarStatus() {
     } else {
         prazoEl.hidden = true;
     }
+
+    atualizarNota(entregue, encerrado);
 }
 
 atualizarStatus();
@@ -158,5 +264,11 @@ botaoUsuario.addEventListener('click', (e) => {
 // Clicar fora ou apertar Esc fecha
 document.addEventListener('click', fecharMenus);
 document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') fecharMenus();
+    if (e.key === 'Escape') { fecharMenus(); fecharNota(); }
 });
+
+/*  Pontuação da IA: abrir e fechar  */
+if (btnNota) btnNota.addEventListener('click', abrirNota);
+const notaFechar = document.getElementById('notaFechar');
+if (notaFechar) notaFechar.addEventListener('click', fecharNota);
+if (modalNota) modalNota.addEventListener('click', e => { if (e.target === modalNota) fecharNota(); });

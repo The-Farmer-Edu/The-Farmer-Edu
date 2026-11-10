@@ -87,6 +87,10 @@
                     <form action="iniciarAtv" method="get">
                         <button id="comecar" type="submit" class="btn-comecar-principal">Começar</button>
                     </form>
+
+                    <!-- Feedback final da IA: bloqueado até o prazo de entrega acabar -->
+                    <button id="btnNota" class="btn-nota-ia" type="button" disabled>🔒 Pontuação da IA</button>
+                    <p class="nota-aviso" id="notaAviso"></p>
                 </article>
             </section>
         </aside>
@@ -100,6 +104,15 @@
             </button>
         </div>
     </footer>
+
+    <!-- Pontuação final da IA -->
+    <div class="modal-overlay" id="modalNota" role="dialog" aria-modal="true" aria-labelledby="notaTitulo">
+        <div class="modal-card nota-card">
+            <button type="button" class="nota-fechar" id="notaFechar" aria-label="Fechar">✕</button>
+            <h3 id="notaTitulo">Pontuação da IA</h3>
+            <div id="notaConteudo"></div>
+        </div>
+    </div>
 </body>
 
 <script src="submissoes/file?type=js&file=atividade.js"></script>

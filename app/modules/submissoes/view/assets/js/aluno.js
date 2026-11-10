@@ -56,7 +56,7 @@ function lerEntrega() {
 
 /*  Pontuação da IA (feedback final)  */
 // A avaliação da IA é guardada quando o aluno entrega (iniciaratv.js) e só abre depois do prazo.
-// INTEGRAÇÃO
+// INTEGRAÇÃOsquad2-submissoes/integracao-feedbackIA
 const btnNota = document.getElementById('btnNota');
 const notaAviso = document.getElementById('notaAviso');
 const modalNota = document.getElementById('modalNota');

@@ -41,26 +41,21 @@ try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) {}
 let cancelamentos = 0;
 try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (e) {}
 
-// Ajuda da Sophia: analisando = esperando a IA; aguardando = esperando o aluno digitar sim/não no console; dados = resposta da IA
+// Ajuda da Sophia
 const ajuda = { analisando: false, aguardando: false, dados: null, assinatura: '' };
-// Erros de execução da página (capturados do iframe) enviados junto para a IA
 let errosConsole = [];
-// Última resposta do servidor para um código (a execução já traz o Judge0 e a avaliação da IA)
 let ultimaResposta = null;
-
 let atual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
 let executadoAtual = false;
 let executando = false;
 let enviando = false;
-let saindo = false;   // o aluno confirmou que quer sair
+let saindo = false;  
 let avaliacaoSeq = 0;
 const usos = { executar: 0, sophia: 0 };
-// Erros da última execução: só valem enquanto o código não mudou depois dela
-const errosAtuais = () => (executadoAtual ? errosConsole : []);
-// "Foto" do código + erros: a Sophia usa para saber se o aluno mexeu no código depois da pergunta
-const assinaturaDoCodigo = () => contextoEntrega().codigo + '\u0000' + JSON.stringify(errosAtuais());
 
+const errosAtuais = () => (executadoAtual ? errosConsole : []);
+const assinaturaDoCodigo = () => contextoEntrega().codigo + '\u0000' + JSON.stringify(errosAtuais());
 const mobile = () => window.matchMedia('(max-width: 780px)').matches;
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const esperar = ms => new Promise(r => setTimeout(r, ms));
@@ -458,10 +453,8 @@ function cancelarEntrega() {
     aviso(`Entrega cancelada. Cancelamentos restantes: ${LIMITE_CANCELAMENTOS - cancelamentos}/${LIMITE_CANCELAMENTOS}`);
 }
 
-/*FEEDBACK — PONTO DE INTEGRAÇÃO COM O GRUPO feedback_ia*/
+/*FEEDBACK - Avaliação da entrega (IA)*/
 const FEEDBACK = {
-    // Rota do squad feedback_ia (POST /feedback_ia/sendAvaliacao). A rota do módulo (enviarSubmissao) fica como plano B:
-    // só passa para o próximo se o endereço não existir (404/405) ou não responder.
     endpoints: ['feedback_ia/sendAvaliacao', 'enviarSubmissao'],
     usarExemploSeFalhar: true,
 
@@ -494,9 +487,7 @@ const FEEDBACK = {
         };
     },
 
-    /*Resposta de exemplo (usada só se a IA falhar). Monta o texto com os requisitos da própria
-      atividade, então serve para web, Python, PHP e para as atividades que vierem do banco.
-      Se o código acabou de rodar no Judge0 e a saída confere com "saidaEsperada", responde "aprovado".*/
+    /*Resposta de exemplo (usada só se a IA falhar)*/
     exemplo() {
         const req = A.requisitos || [];
         const saidaOk = modo === 'terminal' && typeof A.saidaEsperada === 'string'
@@ -542,7 +533,6 @@ function contextoEntrega() {
 
 /*Chamada à IA (usada pela ajuda da Sophia e pela avaliação da entrega)*/
 async function avaliarNoServidor(extra = {}) {
-    // payload com as regras da atividade (igual ao exemplo): linguagem, codigo_aluno, id_linguagem, objetivo_atividade, nota_max, nota_min...
     const corpo = JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra });
     let ultimoErro = null;
     for (const endereco of FEEDBACK.endpoints) {
@@ -560,7 +550,7 @@ async function avaliarNoServidor(extra = {}) {
             texto = await resposta.text();
         } catch (e) {
             ultimoErro = e.name === 'AbortError' ? new Error('o servidor demorou demais para responder') : e;
-            continue;   // sem conexão com este endereço: tenta o próximo
+            continue;
         } finally {
             clearTimeout(relogio);
         }
@@ -574,8 +564,8 @@ async function avaliarNoServidor(extra = {}) {
         } catch (e) {
             console.error(`"${endereco}" não devolveu JSON. Resposta:`, texto);
             ultimoErro = new Error('o servidor não devolveu JSON: ' + e.message);
-            if (erroDoPHP(texto)) throw ultimoErro;   // erro do próprio servidor: não repete em outro endereço
-            continue;                                  // página qualquer (rota inexistente): tenta o próximo
+            if (erroDoPHP(texto)) throw ultimoErro;  
+            continue;                                  
         }
         console.log('Resposta do servidor:', data);
         if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');

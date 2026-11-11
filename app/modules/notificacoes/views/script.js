@@ -1,85 +1,35 @@
+const notification = document.getElementById("phoneNotification");
+const closeBtn = document.getElementById("closeNotificationBtn");
+let autoHideTimeout;
 
-let notifications = [
-    { id: 1, text: "Sua fazenda esta sendo atacada.", time: "Há 5 min", read: false },
-    { id: 2, text: "Seu relatório da IA esta pronto.", time: "Há 1 hora", read: false },
-    { id: 3, text: "Sua senha foi alterada com sucesso.", time: "Há 3 horas", read: false }
-];
+// Função para exibir a notificação
+function showNotification() {
+    clearTimeout(autoHideTimeout);
+    notification.classList.add("show");
 
-
-const container = document.querySelector(".notification-container");
-const button = document.getElementById("notificationButton");
-const box = document.getElementById("notificationBox");
-const list = document.getElementById("notificationList");
-const countBadge = document.getElementById("notificationCount");
-const markReadBtn = document.getElementById("markRead");
-const clearBtn = document.getElementById("clearNotifications");
-
-
-button.addEventListener("click", (e) => {
-    e.stopPropagation();
-    box.classList.toggle("active");
-});
-
-
-document.addEventListener("click", (e) => {
-    if (!container.contains(e.target)) {
-        box.classList.remove("active");
-    }
-});
-
-
-function render() {
-    list.innerHTML = "";
-
-    if (notifications.length === 0) {
-        list.innerHTML = `<div class="empty-message">Nenhuma notificação por aqui.</div>`;
-    } else {
-        notifications.forEach((item) => {
-            const div = document.createElement("div");
-            div.className = `notification-item ${item.read ? "" : "unread"}`;
-            div.innerHTML = `
-                <p>${item.text}</p>
-                <span class="time">${item.time}</span>
-            `;
-
-           
-            div.addEventListener("click", () => markAsRead(item.id));
-            list.appendChild(div);
-        });
-    }
-
-    updateCount();
+    // Esconde automaticamente após 5 segundos
+    autoHideTimeout = setTimeout(() => {
+        hideNotification();
+    }, 5000);
 }
 
-
-function updateCount() {
-    const unreadCount = notifications.filter(n => !n.read).length;
-    countBadge.textContent = unreadCount;
-
-    if (unreadCount === 0) {
-        countBadge.style.display = "none";
-    } else {
-        countBadge.style.display = "inline-block";
-    }
+// Função para esconder a notificação
+function hideNotification() {
+    notification.classList.remove("show");
 }
 
+// Dispara a notificação automaticamente 1 segundo após abrir a página
+window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(showNotification, 1000);
+});
 
-function markAsRead(id) {
-    notifications = notifications.map(n => n.id === id ? { ...n, read: true } : n);
-    render();
+// Fechar ao clicar no botão "X"
+if (closeBtn) {
+    closeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        hideNotification();
+    });
 }
 
-
-markReadBtn.addEventListener("click", () => {
-    notifications = notifications.map(n => ({ ...n, read: true }));
-    render();
-});
-
-
-clearBtn.addEventListener("click", () => {
-    notifications = [];
-    render();
-});
-
-
-render();
+// Fechar ao clicar no corpo da notificação
+notification.addEventListener("click", hideNotification);

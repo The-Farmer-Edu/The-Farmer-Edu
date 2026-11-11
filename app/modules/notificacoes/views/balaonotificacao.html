@@ -3,39 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notificações</title>
+    <title>Balão de Notificação Push</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="notification-container">
-
-
-        <button class="notification-button" id="notificationButton" aria-label="Abrir notificações">
-            🔔
-            <span class="notification-count" id="notificationCount">0</span>
-        </button>
-
-        
-        <div class="notification-box" id="notificationBox">
-            
-            <div class="notification-arrow"></div>
-
-            
+    <div class="phone-notification" id="phoneNotification">
+        <div class="app-icon" id="appIcon">💬</div>
+        <div class="notification-content">
             <div class="notification-header">
-                <h3>Notificações</h3>
-                <button id="markRead" class="btn-text">Marcar todas como lidas</button>
+                <span class="app-name" id="appName">The Farmer Edu</span>
+                <span class="time-stamp">Agora</span>
             </div>
-
-            
-            <div class="notification-list" id="notificationList"></div>
-
-            
-            <div class="notification-footer">
-                <button id="clearNotifications" class="btn-text danger">Limpar tudo</button>
-            </div>
+            <div class="message-sender" id="messageSender">A fazenda está sento atacada !!!</div>
         </div>
-
+        <div class="drag-indicator"></div>
     </div>
 
     <script src="script.js"></script>

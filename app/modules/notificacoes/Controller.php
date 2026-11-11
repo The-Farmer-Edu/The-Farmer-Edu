@@ -1,5 +1,3 @@
-
-
 <?php
 
 require_once __DIR__ . '/Model.php';
@@ -13,16 +11,17 @@ class NotificacoesController
         $pdo = iniciarPDO();
 
         // Buscar usuário logado
-$usuario = usuarioLogado();
+        $usuario = usuarioLogado();
 
-if (!$usuario) {
-    http_response_code(401);
-    echo 'Você precisa estar logado.';
-    return;
-}
+        if (!$usuario) {
+            solicitarLogin();
+            // http_response_code(401);
+            // echo 'Você precisa estar logado.';
+            return;
+        }
 
-$idUsuario = (int) $usuario['idUsuario'];
-$perfilAcesso = $usuario['perfilAcesso'];
+        $idUsuario = (int) $usuario['idUsuario'];
+        $perfilAcesso = $usuario['perfilAcesso'];
 
         // Buscar notificações do usuário
         $notificacoes = $idUsuario

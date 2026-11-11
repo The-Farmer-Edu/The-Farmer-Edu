@@ -25,6 +25,7 @@ class Router {
 
     public static function enviarRota(): void {
         self::carregarRotas();
+require_once __DIR__ . '/../modules/notificacoes/routes.php';
 
         $rotaConsulta = $_GET['rota'] ?? null;
 

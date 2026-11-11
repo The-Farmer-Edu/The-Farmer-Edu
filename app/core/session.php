@@ -43,7 +43,7 @@ function usuarioLogado(): ?array {
 
 function solicitarLogin(): void {
     if(!usuarioLogado()){
-        header('Location: ../auth/loginAluno');
+        header('Location: auth/loginAluno');
         exit();
     }
 }

@@ -450,7 +450,8 @@ async function alternarLeitura(botao) {
     botao.disabled = true;
 
     try {
-        const resposta = await fetch('/The-Farmer-Edu/public/notificacoes/marcar-lida', {
+        const resposta = await fetch('/guilherme22/The-Farmer-Edu/public/index.php?rota=/notificacoes/marcar-lida'
+, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'

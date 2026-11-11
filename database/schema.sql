@@ -36,14 +36,14 @@ CREATE TABLE usuarios (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE recuperacao_senha (
-    id_recuperacao INT AUTO_INCREMENT PRIMARY KEY,
-    id_usuario     INT NOT NULL,
+    id_recuperacao INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_usuario     INT UNSIGNED NOT NULL,
     codigo_hash    VARCHAR(255) NOT NULL,
     expira_em      DATETIME NOT NULL,
     tentativas     INT NOT NULL DEFAULT 0,
     criado_em      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
-);
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 -- 2. INSTRUTORES  [Instrutor]

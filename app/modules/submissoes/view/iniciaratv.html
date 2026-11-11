@@ -1,38 +1,36 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Farm Edu - Execução da Resposta</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="submissoes/file?type=css&file=base.css">
     <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
     <script src="https://kit.fontawesome.com/7d729e43cb.js" crossorigin="anonymous"></script>
 </head>
+
 <body>
-    <header class="topbar">
+
+    <header>
         <div class="brand">
-            <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
-            <button id="botaoIconi" class="botao-iconi" type="button" aria-expanded="false" aria-controls="menuIconi" aria-label="Menu principal">
-                <span class="logo">
-                    <img src="submissoes/file?type=img&file=logo_icone.png" alt="The Farm Edu">
-                </span>
+            <button id="botaoIconi" class="botao-iconi" type="button" aria-expanded="false" aria-controls="menuIconi">
+                <img src="submissoes/file?type=img&file=logo_icone.png" alt="iconiEDU" height="55px" width="55px">
             </button>
+
             <span class="nome">The Farm <b>Edu</b></span>
             <span class="modulo">Escrever código</span>
         </div>
 
-        <span class="chip-entrega" id="chipEntrega" hidden></span>
-        <span class="chip-prazo" id="chipPrazo" hidden></span>
 
         <div class="acoes">
+            <span class="chip-entrega" id="chipEntrega" hidden></span>
             <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
             <button class="btn btn-verde" id="btnEntregar">Entregar atividade</button>
-            <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário" aria-expanded="false" aria-controls="menuUsuario">
-                <img class="usuario-avatar" src="submissoes/file?type=img&file=icone_user.png" alt="Perfil">
-            </button>
         </div>
     </header>
 
@@ -46,25 +44,6 @@
             <button class="menu-item" type="button">
                 <i class="fa-solid fa-medal"></i>
                 visão geral
-            </button>
-        </div>
-    </div>
-
-    <div id="menuUsuario" class="menu-usuario" role="menu" aria-hidden="true">
-        <div class="menu-coluna">
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-gear"></i>
-                configurações
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                logout
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-regular fa-envelope"></i>
-                meus dados
             </button>
         </div>
     </div>
@@ -95,15 +74,18 @@
             <ul id="arquivos"></ul>
             <div class="contador-limite" id="contadorLimite">
                 <span class="contador-limite__titulo">Limites</span>
-                <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong></div>
+                <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong>
+                </div>
                 <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div>
-                <div class="contador-limite__linha"><span>Cancelar entrega</span><strong id="contadorCancelar">3/3</strong></div>
+                <div class="contador-limite__linha"><span>Cancelar entrega</span><strong
+                        id="contadorCancelar">3/3</strong></div>
             </div>
         </aside>
 
         <section class="card editor" id="painelCodigo">
             <!-- Celular: X para sair do editor expandido -->
-            <button type="button" class="btn-fechar-editor" id="fecharEditor" aria-label="Fechar editor expandido">✕</button>
+            <button type="button" class="btn-fechar-editor" id="fecharEditor"
+                aria-label="Fechar editor expandido">✕</button>
             <div class="editor-wrap">
                 <pre class="gutter" id="gutter" aria-hidden="true"></pre>
                 <div class="code">
@@ -112,7 +94,8 @@
                 </div>
             </div>
             <!-- Celular: volta ao início da linha quando o texto rolou para o lado -->
-            <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤ Início</button>
+            <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤
+                Início</button>
             <div class="status">
                 <span id="stLang">HTML</span>
                 <span id="stPos">Ln 1, Col 1</span>
@@ -135,7 +118,8 @@
                 <div class="con-corpo" id="console"></div>
                 <form class="con-input" id="conForm" autocomplete="off">
                     <span class="con-prompt">›</span>
-                    <input type="text" id="conInput" placeholder="Responder à Sophia (sim ou não)" aria-label="Responder à Sophia" disabled>
+                    <input type="text" id="conInput" placeholder="Responder à Sophia (sim ou não)"
+                        aria-label="Responder à Sophia" disabled>
                 </form>
             </div>
         </section>
@@ -164,4 +148,5 @@
     <div class="toast" id="toast" role="status"></div>
     <script src="submissoes/file?type=js&file=main.js"></script>
 </body>
+
 </html>

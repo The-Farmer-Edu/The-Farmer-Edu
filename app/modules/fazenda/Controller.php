@@ -212,20 +212,34 @@
                 if (stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === false) {
                     throw new InvalidArgumentException('Formato de envio inválido.');
                 }
-                $dados = json_decode((string) file_get_contents('php://input'), true);
+                $bruto = (string) file_get_contents('php://input');
+                $dados = json_decode($bruto, true);
                 if (!is_array($dados) || !isset($dados['estado']) || !is_array($dados['estado'])) {
                     throw new InvalidArgumentException('Save da fazenda ausente.');
                 }
+                // IMPORTANTE: o save é guardado como o jogo o enviou. Decodificar como array e codificar de novo transformaria todo
+                // objeto vazio {} em lista vazia [] (no PHP os dois são o mesmo array vazio), e o jogo perderia o que gravasse depois
+                // nessas chaves (instalações destruídas, melhorias da equipe, estado das invasões...). Por isso o JSON do estado
+                // é recodificado a partir de OBJETOS, que preservam {} e [].
+                $objeto = json_decode($bruto);
+                $estadoJson = null;
+                if (is_object($objeto) && isset($objeto->estado) && is_object($objeto->estado)) {
+                    unset($objeto->estado->_abaId);   // marca de uma versão anterior do backend
+                    $estadoJson = json_encode($objeto->estado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                    if ($estadoJson === false) {
+                        $estadoJson = null;
+                    }
+                }
                 $ids = isset($dados['xp_entregues']) && is_array($dados['xp_entregues']) ? $dados['xp_entregues'] : [];
-                // "aba": identificador desta aba do navegador (letras, números e hífen); permite saber se um conflito veio dela mesma.
-                $aba = isset($dados['aba']) && is_string($dados['aba']) && preg_match('/^[A-Za-z0-9-]{8,64}$/', $dados['aba'])
-                    ? $dados['aba'] : null;
+                // "sessao": código que a página recebeu ao abrir (32 caracteres hexadecimais). Sem ele (página antiga), vira conflito.
+                $sessao = isset($dados['sessao']) && is_string($dados['sessao']) && preg_match('/^[a-f0-9]{32}$/', $dados['sessao'])
+                    ? $dados['sessao'] : '';
                 $revisao = (new FazendaModel())->salvar(
                     (int) $usuario['idUsuario'],
                     $dados['estado'],
-                    (int) ($dados['revisao'] ?? 0),
+                    $sessao,
                     $ids,
-                    $aba
+                    $estadoJson
                 );
                 return ['ok' => true, 'revisao' => $revisao];
             });
@@ -258,12 +272,13 @@
         private function injetarDadosDoServidor(string $html, array $usuario, string $base): string {
             $idAluno = (int) $usuario['idUsuario'];
             $modelo = new FazendaModel();
-            $carga = $modelo->carregarTudo($idAluno);   // estado, revisão e XP pendente lidos juntos
+            // estado e XP pendente lidos juntos; só uma abertura real da página (GET) vira a "sessão ativa" que pode salvar
+            $carga = $modelo->carregarTudo($idAluno, ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET');
 
             $dados = [
                 'idUsuario'  => $idAluno,
                 'estado'     => $carga['estado'],
-                'revisao'    => $carga['revisao'],
+                'sessao'     => $carga['sessao'],
                 'xpPendente' => $carga['xpPendente'],
                 'urls'       => ['salvar' => $base . '/fazenda/salvar', 'xpPendente' => $base . '/fazenda/xp-pendente'],
             ];
@@ -278,7 +293,7 @@
             try {
                 $this->json($acao());
             } catch (ConflitoDeSaveException $e) {
-                $this->json(['mensagem' => $e->getMessage(), 'mesmaAba' => $e->mesmaAba], 409);
+                $this->json(['mensagem' => $e->getMessage()], 409);
             } catch (PDOException $e) {
                 error_log($e->getMessage());
                 $this->json(['mensagem' => 'Erro no banco de dados. Tente novamente.'], 500);

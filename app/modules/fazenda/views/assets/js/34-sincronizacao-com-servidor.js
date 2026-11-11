@@ -8,39 +8,21 @@
       // Só age quando a fazenda foi aberta pela aplicação PHP (window.FARMEDU_SERVIDOR, injetado pelo Controller). Aberta direto pelo
       // arquivo, não faz nada e o jogo segue só com localStorage.
       //   • SAVE: o objeto "estado" inteiro é enviado a POST /fazenda/salvar ~5 s depois da última mudança, ao esconder a aba e ao
-      //     fechar a página. O servidor devolve a nova "revisão"; se outra aba/computador gravou antes (HTTP 409), o envio é
-      //     BLOQUEADO e o jogador é avisado para recarregar (assim um save velho nunca sobrescreve um mais novo).
-      //   • XP DAS ATIVIDADES: quando o instrutor lança a nota, o servidor registra o XP em xp_log. Aqui o jogo busca o XP pendente
+      //     fechar a página. Junto vai o código da SESSÃO desta página (recebido ao abrir). O servidor só aceita save da sessão
+      //     ativa, isto é, da página aberta POR ÚLTIMO. Se outra aba/janela abrir a fazenda depois, esta página recebe HTTP 409,
+      //     para de salvar e pergunta ao jogador se quer continuar por aqui (o que recarrega e torna esta aba a ativa).
+      //   • XP DAS ATIVIDADES: quando o instrutor lança a nota, o servidor registra o XP em xp_logs. Aqui o jogo busca o XP pendente
       //     (ao abrir, ao voltar para a aba e a cada 60 s), aplica com window.adicionarXP (valores negativos valem) e devolve os ids
       //     aplicados junto com o próximo save: o servidor grava o save e marca esses XP como entregues na MESMA transação, então
       //     um XP nunca é aplicado duas vezes nem se perde.
       // ====================================================================================================
       if (SERVIDOR_DA_FAZENDA) {
         const ESPERA_PARA_ENVIAR_MS = 5000, ESPERA_APOS_FALHA_MS = 15000, INTERVALO_DA_CONSULTA_DE_XP_MS = 60000;
-        // Identificador desta aba (sessionStorage: sobrevive ao recarregar a página, mas cada aba nova tem o seu). O servidor o
-        // grava junto com o save e, num conflito de revisão, diz se o último save foi desta mesma aba.
-        const gerarIdDaAba = () => {
-          try {
-            let id = sessionStorage.getItem('fazenda3d-aba-v1');
-            if (!id) { id = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Math.random().toString(36).slice(2) + Date.now().toString(36) + 'aaaaaaaa').slice(0, 40); sessionStorage.setItem('fazenda3d-aba-v1', id); }
-            return id;
-          } catch (erro) { return (Math.random().toString(36).slice(2) + Date.now().toString(36) + 'aaaaaaaa').slice(0, 40); }
-        };
-        const ID_DA_ABA = gerarIdDaAba();
-        // Conflito causado por esta mesma aba (resposta perdida, ou recarga logo depois de um envio) → recarrega UMA vez por minuto
-        // para pegar o save mais novo do banco. Se acontecer de novo em seguida, é conflito de verdade e o jogador é avisado.
-        const podeRecarregarPorConflito = () => {
-          try {
-            const ultima = Number(sessionStorage.getItem('fazenda3d-recarga-v1')) || 0;
-            if (Date.now() - ultima < 60000) return false;
-            sessionStorage.setItem('fazenda3d-recarga-v1', String(Date.now()));
-            return true;
-          } catch (erro) { return false; }
-        };
         const sincronia = {
-          revisao: SERVIDOR_DA_FAZENDA.revisao | 0,
+          sessao: SERVIDOR_DA_FAZENDA.sessao || '',
           ultimoEstadoEnviado: '',          // vazio de propósito: o primeiro envio grava também a fazenda nova/migrada
           enviando: false, bloqueada: false, temporizador: null,
+          superada: false,                  // true quando o servidor informou que outra aba/janela abriu a fazenda depois desta
           idsParaConfirmar: [],             // XP já aplicado no jogo e ainda não confirmado ao servidor
           idsJaAplicados: new Set(),        // evita aplicar o mesmo XP duas vezes enquanto a confirmação não chegou
           agendar(espera = ESPERA_PARA_ENVIAR_MS) {
@@ -51,6 +33,16 @@
           bloquear(texto) {
             sincronia.bloqueada = true; clearTimeout(sincronia.temporizador);
             mostrarFaixaDeInvasao('⚠️ Sua fazenda não está sendo salva', texto, 30000);
+          },
+          // O servidor recusou o save: outra aba/janela abriu a fazenda depois desta.
+          foiSuperada() {
+            sincronia.superada = true;
+            sincronia.bloquear('Esta fazenda foi aberta em outra aba ou computador, então esta aqui parou de salvar.');
+            if (!document.hidden) setTimeout(() => sincronia.perguntarSeContinuaAqui(), 0);   // aba escondida pergunta ao voltar
+          },
+          perguntarSeContinuaAqui() {
+            if (!sincronia.superada) return;
+            if (confirm('Esta fazenda foi aberta em outra aba ou janela, então esta aqui parou de salvar.\n\nQuer continuar jogando por aqui? A página será recarregada e a outra aba deixará de salvar.')) location.reload();
           },
           async enviar() {
             clearTimeout(sincronia.temporizador);
@@ -63,19 +55,11 @@
             try {
               const resposta = await fetch(SERVIDOR_DA_FAZENDA.urls.salvar, {
                 method: 'POST', credentials: 'same-origin', keepalive: true, headers: { 'Content-Type': 'application/json' },
-                body: '{"revisao":' + sincronia.revisao + ',"aba":"' + ID_DA_ABA + '","xp_entregues":' + JSON.stringify(idsEnviados) + ',"estado":' + textoDoEstado + '}',
+                body: '{"sessao":"' + sincronia.sessao + '","xp_entregues":' + JSON.stringify(idsEnviados) + ',"estado":' + textoDoEstado + '}',
               });
-              if (resposta.status === 409) {
-                let mesmaAba = false;
-                try { mesmaAba = !!(await resposta.json()).mesmaAba; } catch (erro) { }
-                if (mesmaAba && podeRecarregarPorConflito()) { sincronia.bloqueada = true; location.reload(); return; }
-                sincronia.bloquear('Esta fazenda foi aberta em outra aba ou computador. Recarregue a página para continuar salvando.');
-                return;
-              }
+              if (resposta.status === 409) { sincronia.foiSuperada(); return; }
               if (resposta.status === 401) { sincronia.bloquear('Sua sessão expirou. Entre novamente na plataforma para continuar salvando.'); return; }
               if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
-              const dados = await resposta.json();
-              sincronia.revisao = dados.revisao | 0;
               sincronia.ultimoEstadoEnviado = textoDoEstado;
               sincronia.idsParaConfirmar = sincronia.idsParaConfirmar.filter(id => !idsEnviados.includes(id));
             } catch (erro) {
@@ -109,7 +93,14 @@
         };
         window.FarmEduSincronia = sincronia;
         addEventListener('pagehide', () => sincronia.enviar());
-        document.addEventListener('visibilitychange', () => { if (document.hidden) sincronia.enviar(); else sincronia.buscarXPPendente(); });
+        // Voltar para a fazenda pelo botão "Voltar" do navegador pode restaurar a página antiga da memória (com a sessão de antes):
+        // recarrega para pegar o save e a sessão atuais.
+        addEventListener('pageshow', evento => { if (evento.persisted) location.reload(); });
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) sincronia.enviar();
+          else if (sincronia.superada) sincronia.perguntarSeContinuaAqui();
+          else sincronia.buscarXPPendente();
+        });
         setInterval(() => sincronia.buscarXPPendente(), INTERVALO_DA_CONSULTA_DE_XP_MS);
         setTimeout(() => sincronia.aplicarXP(SERVIDOR_DA_FAZENDA.xpPendente || []), 2500);   // depois da tela de carregamento
         sincronia.agendar(1000);

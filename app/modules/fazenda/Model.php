@@ -3,11 +3,10 @@
 require_once __DIR__ . '/../../core/database.php';
 
 // Lançada quando o save do banco já foi alterado por outra aba/computador desde que este jogo o carregou.
+// Lançada quando o save vem de uma página que NÃO é mais a "sessão ativa" da fazenda: outra aba ou janela abriu a fazenda
+// depois dela. Regra: quem abriu a fazenda por último é quem salva (ver carregarTudo e salvar).
 class ConflitoDeSaveException extends RuntimeException
 {
-    // true quando o último save no banco foi feito por esta mesma aba (ex.: a resposta de um envio se perdeu, ou a página
-    // foi recarregada logo depois de um envio). O jogo então recarrega sozinho em vez de acusar "aberta em outra aba".
-    public bool $mesmaAba = false;
 }
 
 // =====================================================================
@@ -81,29 +80,41 @@ class FazendaModel
      * Como salvar() trava a mesma linha, a leitura nunca pega "metade" de um save (estado de antes do save e lista de XP
      * pendente de depois, que faria o XP entregue sumir). O nome vem da coluna fazendas.nome_fazenda: se alguém o
      * alterar direto no banco, o jogo mostra o novo nome ao recarregar.
+     *
+     * SESSÃO ATIVA: cada vez que a página da fazenda é aberta, este método gera um código novo, grava em
+     * fazendas.sessao_ativa e o entrega à página. Só a página com o código atual consegue salvar (ver salvar()). Assim
+     * uma aba esquecida em segundo plano, ou uma página antiga, nunca sobrescreve a aba que o aluno está usando agora.
      */
-    public function carregarTudo(int $idAluno): array
+    public function carregarTudo(int $idAluno, bool $abrirSessao = true): array
     {
         $this->garantirFazenda($idAluno);
         $this->pdo->beginTransaction();
         try {
-            $st = $this->pdo->prepare('SELECT estado, revisao, nome_fazenda FROM fazendas WHERE id_aluno = ? FOR UPDATE');
+            $st = $this->pdo->prepare('SELECT estado, nome_fazenda FROM fazendas WHERE id_aluno = ? FOR UPDATE');
             $st->execute([$idAluno]);
             $linha = $st->fetch();
 
-            $estado = $linha['estado'] !== null ? json_decode($linha['estado'], true) : null;
-            $estado = is_array($estado) ? $estado : null;
+            // Lido como OBJETO (não array) para preservar {} e []: o jogo recebe o estado exatamente como o gravou.
+            $estado = $linha['estado'] !== null ? json_decode($linha['estado']) : null;
+            $estado = is_object($estado) ? $estado : null;
             if ($estado !== null) {
-                unset($estado['_abaId']);   // marca interna do servidor, não faz parte do jogo
+                unset($estado->_abaId);   // marca de uma versão anterior do backend, não faz parte do jogo
                 $nome = mb_substr(trim((string) $linha['nome_fazenda']), 0, 28);
                 if ($nome !== '') {
-                    $estado['nomeDaFazenda'] = $nome;
+                    $estado->nomeDaFazenda = $nome;
                 }
+            }
+
+            $sessao = null;
+            if ($abrirSessao) {
+                $sessao = bin2hex(random_bytes(16));
+                $st = $this->pdo->prepare('UPDATE fazendas SET sessao_ativa = ? WHERE id_aluno = ?');
+                $st->execute([$sessao, $idAluno]);
             }
 
             $resultado = [
                 'estado'     => $estado,
-                'revisao'    => (int) $linha['revisao'],
+                'sessao'     => $sessao,
                 'xpPendente' => $this->xpPendente($idAluno),
             ];
             $this->pdo->commit();
@@ -117,20 +128,18 @@ class FazendaModel
     }
 
     /**
-     * Grava o save e, na MESMA transação, marca como entregues os XP que o jogo acabou de aplicar.
+     * Grava o save (só da sessão ativa) e, na MESMA transação, marca como entregues os XP que o jogo acabou de aplicar.
      * Devolve a nova revisão. Lança ConflitoDeSaveException se a revisão enviada não for a atual.
      */
-    public function salvar(int $idAluno, array $estado, int $revisaoEsperada, array $idsXpEntregues, ?string $abaId = null): int
+    public function salvar(int $idAluno, array $estado, string $sessao, array $idsXpEntregues, ?string $estadoJson = null): int
     {
         $estado = $this->validarEstado($estado);
 
-        // Marca qual aba fez este save (dentro do JSON, sem coluna nova), para distinguir "mesma aba" de "outra aba" num conflito.
-        unset($estado['_abaId']);
-        if ($abaId !== null) {
-            $estado['_abaId'] = $abaId;
-        }
+        unset($estado['_abaId']);   // marca de uma versão anterior do backend; não faz parte do jogo
 
-        $json = json_encode($estado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        // $estadoJson é o JSON do estado recodificado a partir de objetos (preserva {} e []); $estado (array) serve só para
+        // validar e para os cálculos (xp, níveis, origens de XP). Nunca grave $estado de volta: ele troca {} por [].
+        $json = $estadoJson ?? json_encode($estado, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($json === false || strlen($json) > self::LIMITE_DO_ESTADO_BYTES) {
             throw new InvalidArgumentException('O save da fazenda é inválido ou grande demais.');
         }
@@ -148,7 +157,7 @@ class FazendaModel
         $this->garantirFazenda($idAluno);
         $this->pdo->beginTransaction();
         try {
-            $st = $this->pdo->prepare('SELECT id_fazenda, revisao, estado FROM fazendas WHERE id_aluno = ? FOR UPDATE');
+            $st = $this->pdo->prepare('SELECT id_fazenda, revisao, sessao_ativa, estado FROM fazendas WHERE id_aluno = ? FOR UPDATE');
             $st->execute([$idAluno]);
             $linha = $st->fetch();
             $revisaoAtual = (int) $linha['revisao'];
@@ -156,11 +165,9 @@ class FazendaModel
             $anterior     = $linha['estado'] !== null ? json_decode($linha['estado'], true) : null;
             $anterior     = is_array($anterior) ? $anterior : null;
 
-            if ($revisaoAtual !== $revisaoEsperada) {
-                $conflito = new ConflitoDeSaveException('A fazenda foi alterada em outro lugar.');
-                $conflito->mesmaAba = $abaId !== null && isset($anterior['_abaId'])
-                    && hash_equals((string) $anterior['_abaId'], $abaId);
-                throw $conflito;
+            // Só a sessão ativa (a página aberta por último) pode salvar. Reenviar o mesmo save várias vezes é seguro.
+            if ($linha['sessao_ativa'] === null || $sessao === '' || !hash_equals((string) $linha['sessao_ativa'], $sessao)) {
+                throw new ConflitoDeSaveException('Esta fazenda foi aberta em outra aba ou computador.');
             }
 
             $nova = $revisaoAtual + 1;

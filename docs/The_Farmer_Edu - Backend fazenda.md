@@ -5,7 +5,7 @@
 1. **Salva a fazenda no banco.** O jogo envia o objeto `estado` inteiro para `POST /fazenda/salvar` (5 s depois da última mudança, ao esconder a aba e ao fechar a página). Fica em `fazendas.estado` (JSON), uma linha por aluno (a tabela `fazendas` já existe no `schema.sql`; ganha 4 colunas).
 2. **Carrega a fazenda do banco.** `GET /fazenda` exige aluno logado e injeta o save no HTML (`window.FARMEDU_SERVIDOR`). Com o servidor, o `localStorage` não é mais lido nem gravado (em computador compartilhado ele misturaria alunos).
 3. **Credita XP das atividades.** Quando o instrutor lança ou altera uma nota, `FazendaModel::registrarXPPorNota()` grava em `xp_logs` (XPLog do schema) o XP da atividade, ligado à nota por `id_nota`, e ajusta `alunos.xp_total` na hora. O jogo busca o XP pendente (`GET /fazenda/xp-pendente`), aplica com `window.adicionarXP` e confirma no próximo save, na mesma transação.
-4. **Protege contra conflito.** Cada save tem uma `revisao`. Se outra aba ou computador gravou antes, o servidor responde 409 e o jogo avisa para recarregar (um save velho nunca sobrescreve um novo).
+4. **Só a aba aberta por último salva.** Cada abertura da fazenda gera um código (`fazendas.sessao_ativa`) e só a página com o código atual consegue gravar. Uma aba esquecida em segundo plano, ou uma página antiga, nunca sobrescreve a que o aluno está usando.
 
 ### Regra de XP implementada (confirmar com a equipe)
 
@@ -41,13 +41,20 @@
 | `views/assets/js/05-progresso-e-salvamento.js` | idem | 3 trechos marcados com `Backend:` |
 | `views/assets/js/fazenda.js` | idem | 1 linha: o arquivo 34 entra na montagem |
 
-## Conflito de abas, nome da fazenda e ids (ajustes da 2ª rodada de testes)
+## Conflito de abas, nome da fazenda e ids (ajustes das rodadas 2 e 3)
 
-**Aviso "a fazenda foi aberta em outra aba"** (HTTP 409). Ele aparece quando o save enviado tem uma `revisao` diferente da do banco. Além de duas abas de verdade, dois casos inofensivos também causavam o aviso: recarregar a página logo depois de um envio (o save da página antiga e a leitura da nova se cruzavam) e uma resposta perdida. Agora:
-- cada aba tem um identificador (`sessionStorage`, sobrevive ao recarregar) que o servidor grava junto com o save;
-- se o conflito veio da **mesma aba**, o jogo recarrega sozinho **uma vez por minuto** para pegar o save mais novo (pode perder o que foi feito nos últimos ~5 s);
-- se veio de **outra aba ou computador**, ou se acontecer de novo em menos de 1 minuto, o aviso continua e o salvamento é bloqueado;
-- ao abrir a fazenda, o estado e o XP pendente passam a ser lidos juntos, com a linha travada (`carregarTudo`), para nunca pegar "metade" de um save.
+**Aviso "esta fazenda foi aberta em outra aba" (HTTP 409).** Na 2ª rodada o controle era um número de revisão: se o número da página não fosse o do banco, o save era recusado. Isso era frágil: uma aba esquecida em segundo plano continua salvando (o jogo muda o estado o tempo todo) e fazia a aba que o aluno estava usando ser recusada; recarregar, voltar pelo botão "Voltar" do navegador ou perder a resposta de um envio também deixavam o número velho. E a recarga automática que eu tinha acrescentado fazia a tela de carregamento aparecer duas vezes. Agora:
+- cada vez que a página da fazenda abre, o servidor gera um código novo e o grava em `fazendas.sessao_ativa`; a página envia esse código em cada save;
+- só a **página aberta por último** consegue salvar; reenviar o mesmo save é sempre seguro (resposta perdida não causa mais aviso);
+- a aba mais antiga é a recusada: ela para de salvar, avisa e pergunta se o jogador quer continuar por ali (se aceitar, recarrega e passa a ser a ativa). Se a aba antiga estiver escondida, a pergunta aparece quando ele voltar a ela;
+- ao voltar para a fazenda pelo botão "Voltar" do navegador, a página é recarregada para pegar a sessão atual;
+- ao abrir a fazenda, o estado e o XP pendente continuam sendo lidos juntos, com a linha travada (`carregarTudo`);
+- a coluna `revisao` continua subindo a cada save, só como contador; ela não bloqueia mais nada.
+
+**Instalação destruída voltava ao normal ao recarregar (objetos vazios `{}` virando `[]`).** No PHP, `{}` e `[]` decodificados como array são o mesmo array vazio, então regravar o save com `json_decode(..., true)` + `json_encode` trocava todo objeto vazio por lista vazia. Uma lista não guarda propriedades por nome e o `JSON.stringify` do jogo as descarta: `danos` (instalações destruídas), `invasao`, `melhorias` da equipe e outras chaves que começam vazias não eram salvas. Agora:
+- o `Controller.php` guarda o JSON do estado recodificado a partir de **objetos**, preservando `{}` e `[]` como o jogo enviou; o `carregarTudo` também lê como objeto;
+- o `05-progresso-e-salvamento.js` conserta, ao abrir, os saves que **já** foram gravados com `[]` (campos que devem ser objetos). O que foi destruído ou melhorado antes da correção não estava salvo e não dá para recuperar.
+- Regra para qualquer mudança futura no PHP: nunca grave de volta um estado decodificado como array; use o JSON original ou objetos.
 
 **Editar o banco com o jogo aberto não é suportado.** O jogo grava o save inteiro a cada mudança, então uma alteração feita direto na tabela enquanto a fazenda está aberta é sobrescrita (e a `revisao` não muda, então o jogo não percebe). Para renomear pelo phpMyAdmin: feche a fazenda, altere `fazendas.nome_fazenda` e abra de novo. Agora o nome da coluna `nome_fazenda` é o que vale ao abrir o jogo.
 
@@ -76,7 +83,7 @@
 3. Como **instrutor**, lance a nota 8 numa submissão desse aluno: `xp_logs` ganha `+80` com `entregue_em` NULL e `alunos.xp_total` sobe 80. Com o jogo aberto, em até 60 s (ou ao voltar para a aba) aparece "📚 Atividades: +80 XP" e `entregue_em` é preenchido.
 4. Altere a nota para 6: entra `-20` (o saldo do jogo e o `xp_total` descem 20).
 5. Gaste XP no jogo (por exemplo, construa algo) e espere o save: `xp_total` desce o mesmo valor.
-6. Abra a fazenda em duas abas e jogue nas duas: a primeira que salvar depois da outra recebe o aviso de recarregar.
+6. Abra a fazenda em duas abas: a mais antiga, ao tentar salvar, recebe o aviso e a pergunta "quer continuar por aqui?"; a mais nova continua salvando normalmente.
 7. Sem login, `/fazenda` redireciona para `/auth/loginAluno`; como instrutor, responde 403.
 
 > Observação: o PHP e o MySQL **não estavam disponíveis no meu ambiente**, então o código PHP e o SQL foram revisados mas **não executados**. A lógica de sincronização do JavaScript foi testada com um servidor simulado (aplicar XP positivo e negativo sem repetir id, nova tentativa após erro 500, bloqueio no 409).

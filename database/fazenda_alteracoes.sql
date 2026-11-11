@@ -35,3 +35,10 @@ ALTER TABLE xp_logs
 -- Se o banco já tiver lançamentos antigos em xp_logs que NÃO devem chegar ao jogo, marque-os como entregues
 -- (descomente e rode uma única vez, logo depois dos ALTER acima):
 -- UPDATE xp_logs SET entregue_em = NOW() WHERE entregue_em IS NULL;
+
+-- =====================================================================
+-- 3ª rodada (conflito de abas): a fazenda passa a guardar qual página aberta é a "sessão ativa" (a aberta por último).
+-- Se você já rodou os ALTER acima, rode SÓ este comando:
+-- =====================================================================
+ALTER TABLE fazendas
+  ADD COLUMN sessao_ativa VARCHAR(40) NULL;   -- código gerado a cada abertura da fazenda; só a página com ele consegue salvar

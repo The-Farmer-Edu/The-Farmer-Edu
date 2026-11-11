@@ -222,6 +222,7 @@ CREATE TABLE fazendas (
   estado          LONGTEXT      NULL,
   versao_estado   INT UNSIGNED  NOT NULL DEFAULT 0,
   revisao         INT UNSIGNED  NOT NULL DEFAULT 0,
+  sessao_ativa    VARCHAR(40)   NULL,       -- [Fazenda/backend] código da página aberta por último (só ela salva)
   atualizado_em   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                   ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_fazendas_aluno

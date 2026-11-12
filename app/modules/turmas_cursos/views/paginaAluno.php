@@ -1,72 +1,56 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head><meta charset="UTF-8"><title>The Farmer Edu - Aluno</title></head>
+<head>
+    <meta charset="UTF-8">
+    <title>The Farmer Edu - Turmas</title>
+</head>
 <body>
-    <header>
-        <b>The Farmer Edu</b> | Bem-vindo, <?= e($u['nome']) ?> |
-        <a href="<?= $base ?>/turmas_cursos/minhaConta">Minha conta</a> |
-        <a href="<?= $base ?>/auth/logout">Sair</a>
-    </header>
+    <?php require __DIR__ . '/partials/cabecalho.php'; ?>
 
-    <h1>Meus cursos</h1>
-    <?php foreach ($cursos as $c): ?>
-        <div>
-            <h3><?= e($c['nome_curso']) ?></h3>
-            <p><?= e($c['descricao']) ?></p>
-            <ul>
-                <?php foreach ($turmas as $t): if ((int) $t['id_curso'] !== (int) $c['id_curso'] || (int) $t['ativo'] !== 1) continue; ?>
-                    <li>
-                        Turma <b><?= e($t['nome_turma']) ?></b>
-                        (<?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?>)
-                        - Instrutor: <?= e($t['nome_instrutor']) ?>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-        </div>
-    <?php endforeach; ?>
-    <?php if (!$cursos): ?><p>Você ainda não está matriculado em nenhum curso.</p><?php endif; ?>
+    <main>
+        <h1>Turmas</h1>
+        <?php
+            $ativas = array_filter($turmas, static fn($t) => (int) $t['ativo'] === 1);
+            $arquivadas = array_filter($turmas, static fn($t) => (int) $t['ativo'] !== 1);
+        ?>
 
-    <?php
-        $ativas = array_filter($turmas, fn($t) => (int) $t['ativo'] === 1);
-        $arquivadas = array_filter($turmas, fn($t) => (int) $t['ativo'] !== 1);
-    ?>
-    <h2>Minhas turmas</h2>
-    <?php if ($ativas): ?>
-    <table border="1" cellpadding="6" cellspacing="0">
-        <tr><th>Turma</th><th>Curso</th><th>Turno</th><th>Instrutor</th></tr>
-        <?php foreach ($ativas as $t): ?>
-            <tr>
-                <td><?= e($t['nome_turma']) ?></td>
-                <td><?= e($t['nome_curso']) ?></td>
-                <td><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></td>
-                <td><?= e($t['nome_instrutor']) ?></td>
-            </tr>
-        <?php endforeach; ?>
-    </table>
-    <?php else: ?>
-        <p>Você não tem turmas ativas. Aguarde seu instrutor realizar a matrícula.</p>
-    <?php endif; ?>
+        <section aria-labelledby="minhas-turmas-titulo">
+            <h2 id="minhas-turmas-titulo">Minhas turmas</h2>
+            <?php if ($ativas): ?>
+                <ul>
+                    <?php foreach ($ativas as $t): ?>
+                        <li>
+                            <article>
+                                <h2><?= e($t['nome_turma']) ?></h2>
+                                <p>Curso: <?= e($t['nome_curso']) ?></p>
+                                <p>Turno: <?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></p>
+                                <p>Instrutor: <?= e($t['nome_instrutor']) ?></p>
+                            </article>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p>Você não está matriculado em nenhuma turma ativa. Aguarde seu instrutor realizar a matrícula.</p>
+            <?php endif; ?>
+        </section>
 
-    <?php if ($arquivadas): ?>
-    <h2>Turmas arquivadas</h2>
-    <table border="1" cellpadding="6" cellspacing="0">
-        <tr><th>Turma</th><th>Curso</th><th>Turno</th><th>Instrutor</th></tr>
-        <?php foreach ($arquivadas as $t): ?>
-            <tr>
-                <td><?= e($t['nome_turma']) ?></td>
-                <td><?= e($t['nome_curso']) ?></td>
-                <td><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></td>
-                <td><?= e($t['nome_instrutor']) ?></td>
-            </tr>
-        <?php endforeach; ?>
-    </table>
-    <?php endif; ?>
-
-    <h2>Cursos da plataforma</h2>
-    <ul>
-        <?php foreach ($todosCursos as $c): ?>
-            <li><b><?= e($c['nome_curso']) ?></b><?= $c['descricao'] ? ' - ' . e($c['descricao']) : '' ?></li>
-        <?php endforeach; ?>
-    </ul>
+        <?php if ($arquivadas): ?>
+            <section aria-labelledby="turmas-arquivadas-titulo">
+                <h2 id="turmas-arquivadas-titulo">Turmas arquivadas</h2>
+                <ul>
+                    <?php foreach ($arquivadas as $t): ?>
+                        <li>
+                            <article>
+                                <h2><?= e($t['nome_turma']) ?></h2>
+                                <p>Curso: <?= e($t['nome_curso']) ?></p>
+                                <p>Turno: <?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></p>
+                                <p>Instrutor: <?= e($t['nome_instrutor']) ?></p>
+                            </article>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </section>
+        <?php endif; ?>
+    </main>
 </body>
 </html>

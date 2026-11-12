@@ -1,4 +1,23 @@
 <?php
+/**
+ * ============================================================================
+ * VIEW: PAINEL DO INSTRUTOR - SELEÇÃO DE TURMAS (instrutor.php)
+ * ============================================================================
+ * Esta view é o ponto de entrada do módulo de notas para o perfil Docente/Instrutor.
+ * É carregada a partir de NotasController::painelInstrutor().
+ *
+ * Funcionalidades:
+ * - Cabeçalho com identificação do usuário e menu suspenso de logout.
+ * - Cartões de métricas rápidas (total de turmas sob gestão, status de sincronização e data).
+ * - Vitrine de turmas com badges informativos de turno (Manhã, Tarde, Noite).
+ * - Acesso direto ao painel detalhado de lançamento de notas de cada turma.
+ *
+ * Variáveis disponíveis:
+ * - $usuario : Array com os dados da sessão do instrutor.
+ * - $turmas  : Array com as turmas atribuídas ao instrutor no banco de dados.
+ * ============================================================================
+ */
+
 // View: painel do instrutor — lista as turmas
 // Variaveis disponiveis: $usuario, $turmas
 $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
@@ -10,6 +29,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centro de Notas — Instrutor | The Farmer Edu</title>
     <meta name="description" content="Painel do instrutor para gerenciar notas das turmas no The Farmer Edu.">
+    <!-- Fontes do Google (Inter e Poppins) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
@@ -69,7 +89,11 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             min-height: 100vh;
         }
 
+<<<<<<< HEAD
         /* TOPBAR */
+=======
+        /* TOPBAR: Barra de cabeçalho fixa */
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
         .topbar {
             background: var(--verde-header);
             color: var(--texto-principal);
@@ -215,14 +239,22 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             background: var(--vermelho-claro);
         }
 
+<<<<<<< HEAD
         /* CONTAINER */
+=======
+        /* CONTAINER PRINCIPAL */
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
         .container {
             max-width: 980px;
             margin: 0 auto;
             padding: 36px 20px 72px;
         }
 
+<<<<<<< HEAD
         /* HERO */
+=======
+        /* HERO: Banner de boas-vindas do instrutor */
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
         .hero {
             margin-bottom: 28px;
         }
@@ -463,7 +495,11 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             transform: translateX(4px);
         }
 
+<<<<<<< HEAD
         /* VAZIO */
+=======
+        /* VAZIO: Quando não há turmas vinculadas ao docente */
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
         .vazio {
             text-align: center;
             padding: 64px 20px;
@@ -477,13 +513,22 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 </head>
 <body>
 
+<!-- TOPBAR: Barra de navegação com logotipo e controle de perfil do instrutor -->
 <nav class="topbar">
     <a class="topbar-logo" href="<?= $base ?>/notas/instrutor">🌱 <span>The Farmer</span>Edu</a>
     <div class="topbar-right">
+<<<<<<< HEAD
+=======
+        <!-- Gatilho do menu suspenso do usuário -->
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
         <div class="topbar-user" id="userMenuBtn" tabindex="0">
             <div class="avatar"><?= strtoupper(substr($usuario['nome'] ?? 'IN', 0, 2)) ?></div>
             <span><?= htmlspecialchars($usuario['nome'] ?? 'Instrutor') ?></span>
             <svg class="seta-user" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+<<<<<<< HEAD
+=======
+            <!-- Dropdown do perfil -->
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
             <div class="user-dropdown">
                 <div class="user-dropdown-header">
                     <strong><?= htmlspecialchars($usuario['nome'] ?? '') ?></strong>
@@ -501,12 +546,17 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
 <div class="container">
 
+<<<<<<< HEAD
     <!-- HERO -->
+=======
+    <!-- HERO: Cabeçalho com identificação do painel docente -->
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
     <section class="hero">
         <div class="badge-perfil">👨‍🏫 Painel do Instrutor</div>
         <h1>🏫 Centro de Controle de Notas</h1>
         <p>Selecione uma turma para gerenciar notas, submissões e médias dos alunos.</p>
     </section>
+<<<<<<< HEAD
 
     <!-- STATS -->
     <?php $totalTurmas = count($turmas); ?>
@@ -544,8 +594,52 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             <span class="badge-contador"><?= $totalTurmas ?></span>
         </h2>
     </div>
+=======
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
 
+    <!-- STATS: Resumo numérico com turmas ativas e data corrente -->
+    <?php $totalTurmas = count($turmas); ?>
+    <div class="stats-row">
+        <!-- Quantidade de turmas sob coordenação do instrutor -->
+        <div class="stat-card">
+            <div class="stat-icone">🏫</div>
+            <div class="stat-info">
+                <div class="stat-valor"><?= $totalTurmas ?></div>
+                <div class="stat-label"><?= $totalTurmas === 1 ? 'Turma ativa' : 'Turmas ativas' ?></div>
+            </div>
+        </div>
+        <!-- Status do painel de notas -->
+        <div class="stat-card">
+            <div class="stat-icone">📊</div>
+            <div class="stat-info">
+                <div class="stat-valor">Avaliação</div>
+                <div class="stat-label">Painel sincronizado</div>
+            </div>
+        </div>
+        <!-- Data e dia da semana formatados em português -->
+        <div class="stat-card">
+            <div class="stat-icone">📅</div>
+            <div class="stat-info">
+                <div class="stat-valor"><?= date('d/m/Y') ?></div>
+                <div class="stat-label"><?php
+                    $dias = ['Sunday'=>'Domingo','Monday'=>'Segunda-feira','Tuesday'=>'Terça-feira','Wednesday'=>'Quarta-feira','Thursday'=>'Quinta-feira','Friday'=>'Sexta-feira','Saturday'=>'Sábado'];
+                    echo $dias[date('l')] ?? date('D');
+                ?></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEÇÃO TURMAS: Cabeçalho com contador -->
+    <div class="secao-header">
+        <h2 class="secao-titulo">
+            Suas Turmas
+            <span class="badge-contador"><?= $totalTurmas ?></span>
+        </h2>
+    </div>
+
+    <!-- LISTAGEM DAS TURMAS ATRIBUÍDAS -->
     <?php if (empty($turmas)): ?>
+        <!-- Estado vazio exibido quando o instrutor não possui turmas vinculadas -->
         <div class="vazio">
             <span class="vazio-emoji">🌾</span>
             <h3>Nenhuma turma vinculada a você</h3>
@@ -554,7 +648,12 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <?php else: ?>
         <div class="turmas-grid">
             <?php
+            // Ícones ilustrativos alternados para os cards das turmas
             $icones = ['🌱','🚜','🌾','🐄','🌻','🏡'];
+<<<<<<< HEAD
+=======
+            // Rótulos e classes visuais dos turnos letivos
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
             $turnosLabel = [
                 'manha' => ['emoji' => '☀️', 'texto' => 'Manhã',  'cls' => 'manha'],
                 'tarde' => ['emoji' => '🌤️', 'texto' => 'Tarde',  'cls' => 'tarde'],
@@ -564,6 +663,10 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 $icone  = $icones[$i % count($icones)];
                 $turnoInfo = $turnosLabel[$turma['turno']] ?? ['emoji' => '📅', 'texto' => $turma['turno'], 'cls' => ''];
             ?>
+<<<<<<< HEAD
+=======
+                <!-- Card de link para a turma específica -->
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
                 <a class="card-turma" href="<?= $base ?>/notas/turma?id=<?= (int)$turma['id_turma'] ?>">
                     <div class="card-topo">
                         <div class="icone-turma"><?= $icone ?></div>
@@ -583,6 +686,10 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
 </div>
 
+<<<<<<< HEAD
+=======
+<!-- SCRIPT: Controle de abertura e fechamento do dropdown de usuário -->
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
 <script>
 const userBtn = document.getElementById('userMenuBtn');
 if (userBtn) {
@@ -591,6 +698,10 @@ if (userBtn) {
         this.classList.toggle('aberto');
     });
 }
+<<<<<<< HEAD
+=======
+// Fecha o dropdown ao clicar em qualquer outra área da página
+>>>>>>> 3e9abe84a4120effc4f0447c0318bbb0ab5d726f
 document.addEventListener('click', function(e) {
     if (userBtn && !userBtn.contains(e.target)) {
         userBtn.classList.remove('aberto');

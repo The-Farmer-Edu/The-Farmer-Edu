@@ -62,28 +62,4 @@ class SubmissoesModel
         $st = $this->pdo->prepare('UPDATE submissoes SET status = ?, resultado_execucao = ? WHERE id_submissao = ?');
         $st->execute([$status, $resultadoExecucao, $idSubmissao]);
     }
-
-    // #25 — a coluna sugestao_resposta guarda o feedback_geral da IA
-    public function salvarFeedback(int $idSubmissao, string $positivos, string $negativos, string $geral): void
-    {
-        $st = $this->pdo->prepare(
-            'INSERT INTO feedback_ia (id_submissao, pontos_positivos, pontos_negativos, sugestao_resposta)
-             VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE pontos_positivos = VALUES(pontos_positivos),
-                                     pontos_negativos = VALUES(pontos_negativos),
-                                     sugestao_resposta = VALUES(sugestao_resposta)'
-        );
-        $st->execute([$idSubmissao, $positivos, $negativos, $geral]);
-    }
-
-    // nota sugerida pela IA (origem 'ia'); o instrutor sobrescreve depois
-    public function salvarNotaIA(int $idSubmissao, float $valor): void
-    {
-        $valor = max(0.0, min(10.0, $valor));
-        $st = $this->pdo->prepare(
-            "INSERT INTO notas (id_submissao, valor, origem) VALUES (?, ?, 'ia')
-             ON DUPLICATE KEY UPDATE valor = VALUES(valor)"
-        );
-        $st->execute([$idSubmissao, $valor]);
-    }
 }

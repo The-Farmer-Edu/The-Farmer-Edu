@@ -73,7 +73,9 @@
 }
 
 /* ─── Reset Básico ─────────────────────────────────────────────────── */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -152,7 +154,8 @@ header {
     color: var(--verde-escuro);
 }
 
-.modulo, .titulo-modulo {
+.modulo,
+.titulo-modulo {
     font-size: 0.95rem;
     font-weight: 600;
     letter-spacing: 0.3px;
@@ -182,16 +185,6 @@ header {
     cursor: pointer;
     padding: 0;
     transition: transform 0.15s ease;
-}
-
-.botao-iconi:hover,
-.botao-usuario:hover {
-    transform: scale(1.05);
-}
-
-.botao-iconi:active,
-.botao-usuario:active {
-    transform: scale(0.96);
 }
 
 #botaoIconi {
@@ -294,19 +287,19 @@ header .usuario-avatar {
 /* ─── Botão Voltar Compartilhado ───────────────────────────────────── */
 .btn-voltar {
     background: var(--branco);
-    color: var(--verde-primario);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 8px 18px;
-    border-radius: var(--raio-pilula);
-    font-weight: 700;
-    font-size: 0.9rem;
+    border: none;
+    padding: 12px 28px;
+    margin: 28px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1rem;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    color: var(--texto);
+    transition: background 0.2s, transform 0.1s;
     width: fit-content;
-    text-decoration: none;
 }
 
 .btn-voltar:hover {
@@ -379,7 +372,9 @@ header .usuario-avatar {
 
 /* ─── Responsividade do Header ─────────────────────────────────────── */
 @media (max-width: 780px) {
-    header, .topbar {
+
+    header,
+    .topbar {
         padding: 8px 12px;
         gap: 10px;
     }
@@ -397,7 +392,8 @@ header .usuario-avatar {
         height: 44px;
     }
 
-    .menu-iconi, .menu-usuario {
+    .menu-iconi,
+    .menu-usuario {
         top: 64px;
         width: min(240px, calc(100vw - 24px));
     }
@@ -410,4 +406,3 @@ header .usuario-avatar {
         right: 12px;
     }
 }
-

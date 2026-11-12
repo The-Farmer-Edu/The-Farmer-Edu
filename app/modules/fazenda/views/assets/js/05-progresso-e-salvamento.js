@@ -16,13 +16,28 @@
       // trabalhadores com atributos completos e melhorias, fazendeiro inicial único). A chave do localStorage não muda.
       const VERSAO_DO_SALVAMENTO = 5;
       const nivelInicialDaArea = () => 0;   // todas as áreas começam no nível 0 (a casa no nível 0 é a "base", que já existe)
+      // Backend: quando a fazenda é aberta pela aplicação PHP, o Controller injeta window.FARMEDU_SERVIDOR (save do banco, revisão e XP
+      // pendente das atividades). Nesse caso o BANCO é a fonte do save e o localStorage do navegador NÃO é lido nem gravado (em
+      // computadores compartilhados ele misturaria a fazenda de alunos diferentes). Aberto direto pelo arquivo (file://), sem
+      // o objeto, tudo continua como antes: só localStorage. A gravação no banco fica em 34-sincronizacao-com-servidor.js.
+      const SERVIDOR_DA_FAZENDA = window.FARMEDU_SERVIDOR || null;
       let estado = { versao: VERSAO_DO_SALVAMENTO, xp: 0, niveis: Object.fromEntries(AREAS.map(area => [area.id, 0])) };
       const avisosDaMigracao = [];   // mensagens mostradas uma vez ao abrir (seção 33)
       let existiaSalvamento = false; // false = fazenda nova (a seção 32 pergunta o nome da fazenda)
       try {
-        const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
+        const salvo = SERVIDOR_DA_FAZENDA ? SERVIDOR_DA_FAZENDA.estado : JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));   // Backend: save do banco quando existe
         if (salvo && salvo.niveis) { estado = salvo; existiaSalvamento = true; }
       } catch (erro) { }
+      // Backend: uma versão anterior do PHP regravava objetos vazios {} como listas vazias [] (json_decode associativo). Uma lista
+      // não guarda propriedades por nome e o JSON.stringify as descarta, então tudo o que o jogo gravava nessas chaves depois
+      // (instalações destruídas em "danos", estado das invasões, melhorias da equipe...) "voltava ao normal" ao recarregar. O
+      // servidor já preserva o formato; este trecho só conserta saves que JÁ foram gravados assim.
+      for (const campo of ['niveis', 'danos', 'invasao', 'calendarioDasInvasoes', 'xpPorOrigem', 'xpDaFazendaHoje', 'recursos', 'lavouras', 'animais', 'mina', 'atividade']) {
+        if (Array.isArray(estado[campo])) estado[campo] = {};
+      }
+      for (const lista of [estado.trabalhadores, estado.candidatos]) {
+        if (Array.isArray(lista)) for (const pessoa of lista) if (pessoa && Array.isArray(pessoa.melhorias)) pessoa.melhorias = {};
+      }
       if (!estado.niveis || typeof estado.niveis !== 'object') estado.niveis = {};
       if (!Number.isFinite(estado.xp)) estado.xp = 0;
       const versaoCarregada = Number.isFinite(estado.versao) ? estado.versao : 0;
@@ -128,7 +143,27 @@
       const xpDaFazendaSalvo = estado.xpDaFazendaHoje && typeof estado.xpDaFazendaHoje === 'object' ? estado.xpDaFazendaHoje : {};
       estado.xpDaFazendaHoje = Number.isInteger(xpDaFazendaSalvo.dia) && Number.isFinite(xpDaFazendaSalvo.total) && xpDaFazendaSalvo.total >= 0 ? { dia: xpDaFazendaSalvo.dia, total: xpDaFazendaSalvo.total } : { dia: null, total: 0 };
       estado.recursos = estado.recursos && typeof estado.recursos === 'object' ? estado.recursos : {};
-      for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
+      for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios', 'madeira']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
+      // Campo opcional e compatível com saves antigos: cada entrada guarda o instante em que uma árvore volta a ficar disponível.
+      const arvoresColetaveisSalvas = estado.arvoresColetaveis && typeof estado.arvoresColetaveis === 'object' ? estado.arvoresColetaveis : {};
+      estado.arvoresColetaveis = Object.fromEntries(Object.entries(arvoresColetaveisSalvas)
+        .filter(([id, instante]) => /^arvore-\d+$/.test(id) && Number.isFinite(instante) && instante >= 0)
+        .map(([id, instante]) => [id, Math.floor(instante)]));
+      // Economia integrada (campos opcionais; saves antigos começam zerados, sem perder nada):
+      //   pocoes       → quantas poções de cada tipo o jogador guarda (POCOES_DO_GUARDIAO, seção 01)
+      //   madeiraHoje  → madeira já coletada HOJE pelo lenhador (limite diário, mesmo formato de xpDaFazendaHoje)
+      const pocoesSalvas = estado.pocoes && typeof estado.pocoes === 'object' ? estado.pocoes : {};
+      estado.pocoes = Object.fromEntries(Object.keys(POCOES_DO_GUARDIAO).map(tipo => [tipo, Math.floor(numeroValido(pocoesSalvas[tipo]))]));
+      const madeiraHojeSalva = estado.madeiraHoje && typeof estado.madeiraHoje === 'object' ? estado.madeiraHoje : {};
+      estado.madeiraHoje = Number.isInteger(madeiraHojeSalva.dia) && Number.isFinite(madeiraHojeSalva.total) && madeiraHojeSalva.total >= 0 ? { dia: madeiraHojeSalva.dia, total: madeiraHojeSalva.total } : { dia: null, total: 0 };
+      // Rebalanceamento (campos opcionais; saves antigos começam zerados):
+      //   cotasDoDia → XP já usado HOJE em cada atividade (COTAS_DIARIAS_DE_XP) e a reserva guardada de dias anteriores (seção 27).
+      //                xpDaFazendaHoje continua existindo como o TOTAL do dia (somado pela seção 27), para quem já o lia.
+      //   recompensasRecebidas → ids das recompensas externas já creditadas por window.adicionarXP (impede crédito duplicado).
+      const cotasSalvas = estado.cotasDoDia && typeof estado.cotasDoDia === 'object' ? estado.cotasDoDia : {};
+      const numerosPorAtividade = objeto => Object.fromEntries(Object.keys(COTAS_DIARIAS_DE_XP).map(atividade => [atividade, numeroValido(objeto && objeto[atividade])]));
+      estado.cotasDoDia = { dia: Number.isInteger(cotasSalvas.dia) ? cotasSalvas.dia : null, usado: numerosPorAtividade(cotasSalvas.usado), reserva: numerosPorAtividade(cotasSalvas.reserva) };
+      estado.recompensasRecebidas = Array.isArray(estado.recompensasRecebidas) ? estado.recompensasRecebidas.filter(id => typeof id === 'string' && id.length <= 120).slice(-500) : [];
       // Plantações: cada uma tem a PRÓPRIA lista de canteiros (estado.lavouras[id].canteiros). A lista antiga (estado.lavoura, só da
       // Nova plantação) é migrada para a Nova plantação, com o progresso preservado.
       const normalizarCanteiros = lista => Array.from({ length: LAVOURA_CONFIG.maximoDeCanteiros }, (_, indice) => {
@@ -143,7 +178,8 @@
       for (const idDaArea in ANIMAIS_DAS_AREAS) {
         const salvo = estado.animais[idDaArea] || {}, limite = ANIMAIS_DAS_AREAS[idDaArea].porNivel[NIVEL_MAXIMO - 1];
         estado.animais[idDaArea] = { comida: Math.min(100, numeroValido(salvo.comida, 100)), saude: Math.min(100, numeroValido(salvo.saude, 100)), mortos: Math.min(limite, Math.floor(numeroValido(salvo.mortos))),
-          atualizadoEm: Math.min(numeroValido(salvo.atualizadoEm, agoraNoJogo()), agoraNoJogo()), avisouFome: !!salvo.avisouFome };
+          atualizadoEm: Math.min(numeroValido(salvo.atualizadoEm, agoraNoJogo()), agoraNoJogo()), avisouFome: !!salvo.avisouFome,
+          produtos: Math.min(limite * PRODUCAO_DOS_ANIMAIS.maximoPorAnimal, numeroValido(salvo.produtos)) };   // rebalanceamento: produção guardada (saves antigos: 0)
       }
       const FASES_DA_MINA = ['parado', 'indo', 'minerando', 'voltando', 'descarregando'];
       const minaSalva = estado.mina || {};
@@ -191,7 +227,11 @@
       const animaisVivosDaArea = function animaisVivosDaArea(idDaArea) { return Math.max(0, totalDeAnimais(idDaArea) - Math.min(estado.animais[idDaArea].mortos, totalDeAnimais(idDaArea))); };
       // Grava o objeto "estado" (xp, niveis, atividade, danos e invasao) no localStorage. Falhas de
       // armazenamento (modo privado, cota cheia) são ignoradas para não travar o jogo.
-      const salvarProgresso = function salvarProgresso() { try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { } };
+      // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
+      const salvarProgresso = function salvarProgresso() {
+        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { }
+        if (window.FarmEduSincronia) window.FarmEduSincronia.agendar();
+      };
       salvarProgresso();   // grava os campos novos de saves antigos uma única vez
 
       arquivoDaMontagemConcluido('05-progresso-e-salvamento.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

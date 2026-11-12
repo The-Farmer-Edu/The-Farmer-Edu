@@ -23,16 +23,25 @@
       // primeira ser construída; depois, os custos normais da tabela (seção 01) valem para tudo.
       const plantacaoGratuitaDisponivel = (idDaArea, nivel = estado.niveis[idDaArea]) => nivel === 0 && PLANTACOES_COM_CANTEIROS.includes(idDaArea) && !estado.primeiraPlantacaoGratuitaUsada;
       const custoAtualDaEvolucao = idDaArea => plantacaoGratuitaDisponivel(idDaArea) ? 0 : custoParaProximoNivel(idDaArea, estado.niveis[idDaArea]);
-      // Sobe a área um nível se há XP suficiente e ela não está destruída; reconstrói o modelo, foca a câmera e
+      // Economia integrada: MADEIRA é o segundo requisito (tabela na seção 01). A primeira plantação grátis também não pede madeira,
+      // para o começo do jogo (e o tutorial) continuarem funcionando sem precisar do lenhador.
+      const madeiraAtualDaEvolucao = idDaArea => plantacaoGratuitaDisponivel(idDaArea) ? 0 : madeiraParaProximoNivel(idDaArea, estado.niveis[idDaArea]);
+      // O que falta para construir/evoluir agora: { xp, madeira } (0 = já tem o suficiente). Usado pela cobrança, pelo cartão e pelo resumo.
+      const faltaParaEvoluir = idDaArea => ({ xp: Math.max(0, custoAtualDaEvolucao(idDaArea) - estado.xp), madeira: Math.max(0, madeiraAtualDaEvolucao(idDaArea) - estado.recursos.madeira) });
+      const textoDoQueFalta = falta => [falta.xp ? falta.xp + ' XP' : '', falta.madeira ? falta.madeira + ' madeira' + (falta.madeira > 1 ? 's' : '') : ''].filter(Boolean).join(' e ');
+      // Sobe a área um nível se há XP E madeira suficientes e ela não está destruída; reconstrói o modelo, foca a câmera e
       // salva. Contagem como atividade do jogador.
-      // Mark 8.2: no nível 0 o mesmo botão CONSTRÓI a área (nível 1). Sem XP suficiente, explica quanto falta.
+      // Mark 8.2: no nível 0 o mesmo botão CONSTRÓI a área (nível 1). Sem os recursos, explica quanto falta de cada um.
+      // Os DOIS requisitos são conferidos antes de qualquer desconto: nunca há cobrança parcial.
       const evoluirArea = function evoluirArea(idDaArea) {
         if (instalacaoDestruida(idDaArea)) { mostrarAviso('Repare ' + nomeDaArea(idDaArea) + ' antes de evoluir.'); return; }
-        const nivel = estado.niveis[idDaArea], gratuita = plantacaoGratuitaDisponivel(idDaArea, nivel), custo = custoAtualDaEvolucao(idDaArea), nome = nomeDaArea(idDaArea);
+        const nivel = estado.niveis[idDaArea], gratuita = plantacaoGratuitaDisponivel(idDaArea, nivel), custo = custoAtualDaEvolucao(idDaArea), madeira = madeiraAtualDaEvolucao(idDaArea), nome = nomeDaArea(idDaArea);
         if (nivel >= NIVEL_MAXIMO) { mostrarAviso(nome + ' já está no nível máximo.'); return; }
         const construindo = nivel === 0 && !AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(idDaArea);
-        if (estado.xp < custo) { mostrarAviso('XP insuficiente para ' + (construindo ? 'construir ' : 'evoluir ') + nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
+        const falta = faltaParaEvoluir(idDaArea);
+        if (falta.xp || falta.madeira) { tocarEfeito('erro'); mostrarAviso('Recursos insuficientes para ' + (construindo ? 'construir ' : 'evoluir ') + nome + ': faltam ' + textoDoQueFalta(falta) + '.' + (falta.madeira ? ' 🪓 Peça madeira ao lenhador, depois da ponte.' : '')); return; }
         estado.xp -= custo;
+        estado.recursos.madeira -= madeira;
         estado.niveis[idDaArea]++;
         // Gratuidade consumida no MESMO passo da construção (nada roda entre a checagem e a marcação): um segundo clique ou a outra
         // plantação já encontram o benefício usado e pagam o custo normal. registrarAtividade(), logo abaixo, salva os dois juntos.
@@ -43,12 +52,15 @@
         tocarEfeito('construir');                       // 8.4.1: efeito sonoro (seção 23)
         focarCameraNaArea(idDaArea);
         desenharCards();
+        atualizarResumoDeRecursos();                     // a madeira gasta aparece na barra superior
         mostrarAviso(construindo ? nome + ' construído! 🏗️' + (gratuita ? ' Sua primeira plantação saiu de graça 🎁.' : '') : nivel === 0 && idDaArea === 'ponte' ? nome + ' reparada! 🛠️ A travessia está inteira de novo.' : nome + ' evoluiu para o nível ' + (nivel + 1) + '! 🎉' + (idDaArea === 'casa' ? ' Agora cabem ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel + 1] + ' trabalhadores.' : ''));
         atualizarPaineisDaMark82(true);
         aoEvoluirArea(idDaArea, nivel);   // Fazenda 8.4.1: a primeira evolução do nível 1 para o 2 libera as invasões (seção 26)
       };
       // Clique em um cartão de área: conta como atividade do jogador e foca a câmera na área.
-      const aoClicarNoCard = function aoClicarNoCard(idDaArea) { registrarAtividade(); focarCameraNaArea(idDaArea); if (idDaArea === 'mina' && estado.niveis.mina) mostrarAviso(textoDoEstadoDaMina()); };   // tocar numa área também conta como atividade
+      // Ajuste de interface: o cartão (ou o botão dele) não evolui direto. A gaveta se fecha, a câmera vai até a estrutura e o
+      // PAINEL DA ESTRUTURA abre com os requisitos de XP e madeira; a evolução é feita nele (mesmas verificações de evoluirArea).
+      const aoClicarNoCard = function aoClicarNoCard(idDaArea) { registrarAtividade(); abrirPainelDaEstrutura(idDaArea); };   // tocar numa área também conta como atividade
       // ---- Fazenda 8.4 (C3): gaveta de construções ----
       // Grupos só visuais (não criam dependências). Uma área que não esteja em nenhum grupo aparece em "Outras", para nunca sumir.
       const GRUPOS_DA_GAVETA = [
@@ -58,7 +70,7 @@
         ['🛠️ Infraestrutura', ['celeiro', 'maquinario', 'ponte']],
       ];
       // Mesmas condições de evoluirArea (não destruída, abaixo do máximo, XP suficiente) e de repararArea (destruída).
-      const podeEvoluirAgora = idDaArea => !instalacaoDestruida(idDaArea) && estado.niveis[idDaArea] < NIVEL_MAXIMO && estado.xp >= custoAtualDaEvolucao(idDaArea);
+      const podeEvoluirAgora = idDaArea => { if (instalacaoDestruida(idDaArea) || estado.niveis[idDaArea] >= NIVEL_MAXIMO) return false; const falta = faltaParaEvoluir(idDaArea); return !falta.xp && !falta.madeira; };
       const atualizarResumoDaGaveta = function atualizarResumoDaGaveta() {
         const quantasPodemEvoluir = AREAS.filter(area => podeEvoluirAgora(area.id)).length, quantasPrecisamDeReparo = AREAS.filter(area => instalacaoDestruida(area.id)).length;
         const html = (quantasPodemEvoluir ? `<span class="selo-resumo evoluir">⬆ ${quantasPodemEvoluir} pode${quantasPodemEvoluir > 1 ? 'm' : ''} evoluir</span>` : '<span class="selo-resumo">⬆ nenhuma pode evoluir agora</span>')
@@ -79,7 +91,8 @@
       let interagindoComAGaveta = false, redesenhoDaGavetaPendente = false;
       const desenharCards = function desenharCards() {
         selecionar('#valor-xp').textContent = estado.xp;
-        selecionar('#valor-xp').parentElement.title = 'XP da Fazenda hoje: ' + (ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda - xpDaFazendaRestanteHoje()) + ' de ' + ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda + ' (colheitas, mina e monstros). O XP principal virá das atividades do instrutor (a ligação com a plataforma ainda está em desenvolvimento).';
+        // rebalanceamento: resumo das cotas por atividade (detalhe no painel 🌾 Fazenda)
+        selecionar('#valor-xp').parentElement.title = 'XP da Fazenda hoje · ' + ATIVIDADES_COM_COTA.map(atividade => COTAS_DIARIAS_DE_XP[atividade].nome + ': ' + Math.min(cotaDaAtividade(atividade), estado.cotasDoDia.usado[atividade]) + '/' + cotaDaAtividade(atividade)).join(' · ') + '. O XP das atividades do curso não tem limite diário.';
         atualizarResumoDaGaveta();
         const conteudo = selecionar('#conteudo-da-gaveta');
         // Com o dedo/mouse pressionado num cartão, o redesenho espera o fim do toque (senão o botão some e o clique se perde).
@@ -92,17 +105,22 @@
             return `<div class="card destruida" onclick="aoClicarNoCard('${area.id}')">
         ${cabecaDoCartao(area, nivel)}
         <div class="pontos-nivel"><span class="selo-estado destruida">💥 Destruído</span> nível ${nivel} preservado</div>
-        <button data-foco="${area.id}" ${estado.xp < reparo ? 'disabled' : ''} onclick="event.stopPropagation(); repararArea('${area.id}')">Reparar · ${reparo} XP</button>
+        <button data-foco="${area.id}" class="${estado.xp < reparo ? "sem-xp" : ""}" onclick="event.stopPropagation(); aoClicarNoCard('${area.id}')">Reparar · ${reparo} XP</button>
       </div>`;
           }
           // nível 0: lote reservado com botão "Construir"; sem XP o botão continua clicável e explica quanto falta
           const temBase = AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(area.id), loteVazio = !nivel && !temBase;
-          const selo = maximo ? '<span class="selo-estado maximo">⭐ Nível máximo</span>' : gratuita ? '<span class="selo-estado disponivel">🎁 1ª plantação grátis</span>' : semXp ? `<span class="selo-estado bloqueado">🔒 Faltam ${custo - estado.xp} XP</span>` : '<span class="selo-estado disponivel">⬆ Disponível</span>';
+          // Economia integrada: o cartão mostra os DOIS requisitos (XP e madeira), quanto o jogador tem de cada um e se já basta.
+          const madeira = madeiraAtualDaEvolucao(area.id), falta = maximo ? { xp: 0, madeira: 0 } : faltaParaEvoluir(area.id), semRecursos = !!(falta.xp || falta.madeira);
+          const selo = maximo ? '<span class="selo-estado maximo">⭐ Nível máximo</span>' : gratuita ? '<span class="selo-estado disponivel">🎁 1ª plantação grátis</span>' : semRecursos ? `<span class="selo-estado bloqueado">🔒 Faltam ${textoDoQueFalta(falta)}</span>` : '<span class="selo-estado disponivel">⬆ Disponível</span>';
           const detalhe = [loteVazio ? '🚧 Não construído' : !nivel ? ROTULOS_DO_NIVEL_0[area.id].estado : '', area.id === 'casa' ? CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s)' : ''].filter(Boolean).join(' · ');
-          return `<div class="card${loteVazio ? ' nao-construido' : ''}${maximo ? ' maximo' : semXp ? '' : ' disponivel'}" onclick="aoClicarNoCard('${area.id}')">
+          const requisito = (icone, nome, tem, precisa) => `<span class="requisito-do-card ${tem >= precisa ? 'ok' : 'falta'}" title="${nome}: você tem ${tem}, precisa de ${precisa}">${icone} <b>${Math.min(tem, precisa)}</b>/${precisa} ${nome}<i aria-hidden="true">${tem >= precisa ? '✔' : '✖'}</i></span>`;
+          const requisitos = maximo || gratuita ? '' : `<div class="requisitos-do-card" aria-label="Requisitos">${requisito('⭐', 'XP', estado.xp, custo)}${requisito('🪵', 'madeira', estado.recursos.madeira, madeira)}</div>`;
+          return `<div class="card${loteVazio ? ' nao-construido' : ''}${maximo ? ' maximo' : semRecursos ? '' : ' disponivel'}" onclick="aoClicarNoCard('${area.id}')">
         ${cabecaDoCartao(area, nivel)}
         <div class="pontos-nivel">${selo}${detalhe ? ` <span class="detalhe-do-card">${detalhe}</span>` : ''}${informacaoExtraDoCard(area.id)}</div>
-        <button data-foco="${area.id}" class="${semXp ? 'sem-xp' : ''}" ${maximo ? 'disabled' : ''} title="${semXp ? 'Faltam ' + (custo - estado.xp) + ' XP' : ''}" onclick="event.stopPropagation(); evoluirArea('${area.id}')">${maximo ? 'Nível máximo' : (loteVazio ? 'Construir · ' : !nivel && temBase ? ROTULOS_DO_NIVEL_0[area.id].acao + ' · ' : 'Evoluir · ') + (gratuita ? 'grátis (0 XP)' : custo + ' XP')}</button>
+        ${requisitos}
+        <button data-foco="${area.id}" class="${semRecursos ? 'sem-xp' : ''}" ${maximo ? 'disabled' : ''} title="${semRecursos ? 'Faltam ' + textoDoQueFalta(falta) : ''}" onclick="event.stopPropagation(); aoClicarNoCard('${area.id}')">${maximo ? 'Nível máximo' : (loteVazio ? 'Construir · ' : !nivel && temBase ? ROTULOS_DO_NIVEL_0[area.id].acao + ' · ' : 'Evoluir · ') + (gratuita ? 'grátis' : custo + ' XP + ' + madeira + ' 🪵')}</button>
       </div>`;
         };
         const agrupadas = new Set(GRUPOS_DA_GAVETA.flatMap(([, ids]) => ids));
@@ -125,19 +143,124 @@
       // NaN, Infinity e outros tipos são recusados sem tocar no XP (antes um texto virava concatenação e o XP se perdia ao recarregar).
       // Devolve true se creditou e false se recusou. Não depende do Modo desenvolvedor.
       // Contadores (seção 05): o que entra por window.adicionarXP conta como 'atividades' (só depois de validado; valor recusado não
-      // conta). Ainda NÃO há chamador no projeto: o contador fica em 0 até a integração escolar existir. O botão de teste +5000 XP
-      // não passa mais por window.adicionarXP: usa a mesma regra interna com a origem 'teste'.
-      const receberXP = function receberXP(quantidade, origem) {
+      // conta). Ainda NÃO há chamador no projeto: o XP das atividades nasce da NOTA no servidor (tabelas notas → xp_logs), então
+      // quem vai chamar esta função é a integração com o back-end, quando existir. O botão de teste +5000 XP não passa por aqui
+      // pela API pública: usa a mesma regra interna com a origem 'teste'.
+      // Rebalanceamento — recompensa sem duplicação: window.adicionarXP(quantidade, { id, motivo }) aceita um id único da recompensa
+      // (ex.: 'nota-123'). Um id já creditado é recusado (false), mesmo depois de recarregar: os ids ficam em
+      // estado.recompensasRecebidas (os 500 mais recentes). Chamada sem id continua funcionando como antes.
+      const receberXP = function receberXP(quantidade, origem, opcoes = {}) {
         if (typeof quantidade !== 'number' || !Number.isFinite(quantidade)) { console.warn('[FarmEdu] adicionarXP recusou um valor inválido:', quantidade); return false; }
+        const id = opcoes && typeof opcoes.id === 'string' ? opcoes.id.slice(0, 120) : null;
+        if (id && estado.recompensasRecebidas.includes(id)) { console.warn('[FarmEdu] adicionarXP recusou uma recompensa já creditada:', id); return false; }
+        if (id) { estado.recompensasRecebidas.push(id); if (estado.recompensasRecebidas.length > 500) estado.recompensasRecebidas.splice(0, estado.recompensasRecebidas.length - 500); }
         if (quantidade > 0) tocarEfeito('xp');
         estado.xp += quantidade; registrarOrigemDoXP(origem, quantidade); registrarAtividade(); desenharCards(); atualizarPaineisDaMark82(true);
         return true;
       };
-      window.adicionarXP = quantidade => receberXP(quantidade, 'atividades');
+      window.adicionarXP = (quantidade, opcoes) => receberXP(quantidade, 'atividades', opcoes);
       selecionar('#botao-teste-xp').onclick = () => receberXP(5000, 'teste');
+      // Modo desenvolvedor: +5000 de madeira (mesmo padrão do botão de XP; só funciona com o modo ligado, ver CONTROLES_DE_TESTE).
+      // Uma trava curta impede que um clique duplo some duas vezes; o valor é salvo na hora e todos os painéis são redesenhados.
+      let madeiraDeTesteTravadaAte = 0;
+      selecionar('#botao-teste-madeira').onclick = () => {
+        if (!modoDesenvolvedorAtivo || Date.now() < madeiraDeTesteTravadaAte) return;
+        madeiraDeTesteTravadaAte = Date.now() + 600;
+        estado.recursos.madeira += 5000;
+        tocarEfeito('xp'); registrarAtividade();   // registrarAtividade também salva
+        atualizarResumoDeRecursos(); desenharCards(); atualizarPaineisDaMark82(true);
+        mostrarAviso('🪵 +5000 de madeira (teste).');
+      };
       // Os cartões usam onclick="evoluirArea(...)" etc. no HTML; como o jogo roda dentro de iniciarFarmEdu(), essas funções
       // são publicadas em window com os mesmos nomes de antes.
-      Object.assign(window, { evoluirArea, repararArea, aoClicarNoCard });
+      // ---- Painel específico da estrutura (ajuste de interface) ----
+      // Aberto ao escolher um cartão da gaveta: a gaveta FECHA (não cobre o mapa nem o painel), a câmera vai até a estrutura e o
+      // painel mostra nível, estado, os requisitos de XP e madeira (quanto tem × quanto precisa) e o botão de construir, evoluir
+      // ou reparar. A cobrança continua SÓ em evoluirArea/repararArea, com as verificações de sempre (nada de cobrança parcial).
+      // Fechar (✕ ou Esc) não reabre nada: a interface volta ao estado normal. Abrir a gaveta de novo fecha este painel.
+      const painelDaEstrutura = selecionar('#painel-da-estrutura');
+      let estruturaSelecionada = null, assinaturaDoPainelDaEstrutura = '', acaoDaEstruturaTravadaAte = 0;
+      const linhaDeRequisito = (icone, nome, tem, precisa) => {
+        const ok = tem >= precisa;
+        return `<li class="${ok ? 'ok' : 'falta'}"><span>${icone} ${nome}</span><span>você tem <b>${tem}</b> · precisa <b>${precisa}</b></span><strong>${ok ? '✔ ok' : '✖ faltam ' + (precisa - tem)}</strong></li>`;
+      };
+      // Rebalanceamento: o que a construção FAZ no jogo, no nível dado (mostrado no painel com o efeito atual e o do próximo nível).
+      // Os números saem das mesmas configurações usadas pelas regras (seção 01), então o texto nunca fica diferente do jogo.
+      const efeitoDaConstrucao = function efeitoDaConstrucao(idDaArea, nivel) {
+        const cotas = COTAS_DIARIAS_DE_XP, funcoes = FUNCOES_DAS_CONSTRUCOES;
+        if (PLANTACOES_COM_CANTEIROS.includes(idDaArea)) return quantidadeDeCanteirosNoNivel(nivel).total + ' canteiros · +' + cotas.lavoura.porNivelDePlantacao * nivel + ' na cota diária de Lavoura';
+        if (idDaArea === 'mina') return nivel ? MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1] + ' minérios por viagem · cota de Mina e alquimia ' + (cotas.mina.base + cotas.mina.porNivelDaMina * nivel) + ' XP/dia' : 'sem mina, sem minérios';
+        if (ANIMAIS_DAS_AREAS[idDaArea]) { const produto = PRODUCAO_DOS_ANIMAIS.produtos[idDaArea]; return (nivel ? ANIMAIS_DAS_AREAS[idDaArea].porNivel[nivel - 1] : 0) + ' animal(is) produzindo ' + produto.icone + ' ' + produto.nome + ' · +' + cotas.criacao.porNivelDeInstalacao * nivel + ' na cota de Criação'; }
+        if (idDaArea === 'casa') return CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s) na equipe (cada trabalhador soma na cota da sua especialidade)';
+        if (idDaArea === 'celeiro') return 'cocho cheio dura ' + (ALIMENTACAO_CONFIG.horasParaAComidaAcabar * (1 + funcoes.celeiro.duracaoDoCochoPorNivel * nivel)).toLocaleString('pt-BR') + ' h';
+        if (idDaArea === 'moinho') return 'trigo e milho rendem +' + Math.round(funcoes.moinho.alimentoDosGraosPorNivel * nivel * 100) + '% de comida no cocho';
+        if (idDaArea === 'maquinario') return '+' + funcoes.maquinario.colheitaExtraPorNivel * nivel + ' unidade(s) por canteiro colhido';
+        if (idDaArea === 'ponte') return 'lenhador entrega até ' + (funcoes.ponte.madeiraDiariaBase + funcoes.ponte.madeiraDiariaPorNivel * nivel) + ' madeiras por dia';
+        return '';
+      };
+      const desenharPainelDaEstrutura = function desenharPainelDaEstrutura(forcar = false) {
+        if (!estruturaSelecionada || painelDaEstrutura.hidden) return;
+        const idDaArea = estruturaSelecionada, area = AREAS.find(item => item.id === idDaArea), nivel = estado.niveis[idDaArea];
+        const destruida = instalacaoDestruida(idDaArea), maximo = nivel >= NIVEL_MAXIMO, gratuita = plantacaoGratuitaDisponivel(idDaArea, nivel);
+        const custo = custoAtualDaEvolucao(idDaArea), madeira = madeiraAtualDaEvolucao(idDaArea), falta = faltaParaEvoluir(idDaArea);
+        const assinatura = JSON.stringify([idDaArea, nivel, destruida, estado.xp, estado.recursos.madeira, gratuita, informacaoExtraDoCard(idDaArea)]);
+        if (!forcar && assinatura === assinaturaDoPainelDaEstrutura) return;
+        assinaturaDoPainelDaEstrutura = assinatura;
+        const temBase = AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(idDaArea), loteVazio = !nivel && !temBase;
+        const verbo = loteVazio ? 'Construir' : !nivel && temBase ? ROTULOS_DO_NIVEL_0[idDaArea].acao : 'Evoluir';
+        let corpo;
+        if (destruida) {
+          const reparo = custoDeReparo(idDaArea);
+          corpo = `<p class="selo-estado destruida">💥 Destruído · nível ${nivel} preservado</p>
+            <ul class="requisitos-da-estrutura">${linhaDeRequisito('⭐', 'XP', estado.xp, reparo)}</ul>
+            <button type="button" class="botao-da-estrutura" data-acao-estrutura="reparar" ${estado.xp < reparo ? 'disabled' : ''}>🔧 Reparar · ${reparo} XP</button>`;
+        } else if (maximo) {
+          corpo = '<p class="selo-estado maximo">⭐ Nível máximo alcançado</p>';
+        } else {
+          const semRecursos = !!(falta.xp || falta.madeira);
+          corpo = `<p class="proximo-passo">${verbo} para o <b>nível ${nivel + 1}</b></p>
+            ${gratuita ? '<p class="selo-estado disponivel">🎁 Sua primeira plantação é grátis (0 XP e 0 madeira)</p>' : `<ul class="requisitos-da-estrutura">${linhaDeRequisito('⭐', 'XP', estado.xp, custo)}${linhaDeRequisito('🪵', 'Madeira', estado.recursos.madeira, madeira)}</ul>`}
+            ${falta.madeira ? '<p class="dica-da-estrutura">🪓 A madeira vem do lenhador, no acampamento depois da ponte.</p>' : ''}
+            <button type="button" class="botao-da-estrutura" data-acao-estrutura="evoluir" ${semRecursos ? 'disabled' : ''}>${semRecursos ? '🔒 Faltam ' + textoDoQueFalta(falta) : (loteVazio ? '🏗️ ' : '⬆ ') + verbo + (gratuita ? ' · grátis' : ' · ' + custo + ' XP + ' + madeira + ' 🪵')}</button>`;
+        }
+        const detalhe = [loteVazio ? '🚧 Não construído' : !nivel ? ROTULOS_DO_NIVEL_0[idDaArea].estado : '', idDaArea === 'casa' ? CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s)' : ''].filter(Boolean).join(' · ');
+        painelDaEstrutura.innerHTML = `<header class="cabecalho-da-estrutura"><span class="medalhao-do-card" aria-hidden="true">${area.icone}</span>
+            <div><h3 id="titulo-da-estrutura">${area.nome}</h3><span class="nivel-do-card">Nv ${nivel}/${NIVEL_MAXIMO}</span></div>
+            <button type="button" class="botao-fechar" data-acao-estrutura="fechar" aria-label="Fechar o painel da estrutura">✕</button></header>
+          ${trilhaDeNiveis(idDaArea, nivel)}
+          <p class="funcao-da-estrutura"><b>Função:</b> ${efeitoDaConstrucao(idDaArea, nivel)}${!maximo && !destruida ? `<br><span>Próximo nível: ${efeitoDaConstrucao(idDaArea, nivel + 1)}</span>` : ''}</p>
+          ${detalhe || informacaoExtraDoCard(idDaArea) ? `<div class="estado-da-estrutura">${detalhe ? `<span>${detalhe}</span>` : ''}${informacaoExtraDoCard(idDaArea)}</div>` : ''}
+          ${corpo}`;
+      };
+      const abrirPainelDaEstrutura = function abrirPainelDaEstrutura(idDaArea) {
+        if (!AREAS.some(area => area.id === idDaArea)) return;
+        definirGavetaAberta(false);                      // a janela geral de construções sai da frente
+        estruturaSelecionada = idDaArea; painelDaEstrutura.hidden = false;
+        focarCameraNaArea(idDaArea);                     // a estrutura fica visível no mapa
+        desenharPainelDaEstrutura(true); tocarEfeito('Enter');
+        const botao = painelDaEstrutura.querySelector('.botao-da-estrutura:not(:disabled)') || painelDaEstrutura.querySelector('.botao-fechar');
+        if (botao) botao.focus({ preventScroll: true });
+      };
+      const fecharPainelDaEstrutura = function fecharPainelDaEstrutura(comSom = true) {
+        if (painelDaEstrutura.hidden) return;
+        painelDaEstrutura.hidden = true; estruturaSelecionada = null;
+        if (comSom) tocarEfeito('Fecha');
+      };
+      painelDaEstrutura.addEventListener('click', evento => {
+        const botao = evento.target.closest('[data-acao-estrutura]');
+        if (!botao || botao.disabled) return;
+        const acao = botao.dataset.acaoEstrutura;
+        if (acao === 'fechar') { fecharPainelDaEstrutura(); return; }
+        if (Date.now() < acaoDaEstruturaTravadaAte) return;   // trava curta: um clique duplo não evolui dois níveis de uma vez
+        acaoDaEstruturaTravadaAte = Date.now() + 700;
+        if (acao === 'evoluir') evoluirArea(estruturaSelecionada);
+        else if (acao === 'reparar') repararArea(estruturaSelecionada);
+        desenharPainelDaEstrutura(true);
+      });
+      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !painelDaEstrutura.hidden) fecharPainelDaEstrutura(); });
+      // Chamada pelo loop (seção 30b): com o painel aberto, redesenha só quando XP, madeira, nível ou o estado da área mudam.
+      const atualizarPainelDaEstrutura = function atualizarPainelDaEstrutura() { if (!painelDaEstrutura.hidden) desenharPainelDaEstrutura(false); };
+      Object.assign(window, { evoluirArea, repararArea, aoClicarNoCard, abrirPainelDaEstrutura });
       // ---- Nome da fazenda (Mark 8.3): botão na barra superior → janela com prévia → placa redesenhada na hora ----
       const janelaDoNome = selecionar('#janela-nome-da-fazenda'), campoDoNome = selecionar('#campo-nome-da-fazenda'), previaDoNome = selecionar('#previa-nome-da-fazenda'), erroDoNome = selecionar('#erro-nome-da-fazenda');
       const atualizarNomeNaInterface = () => { selecionar('#nome-da-fazenda-na-barra').textContent = estado.nomeDaFazenda; };
@@ -164,7 +287,7 @@
       // campos de texto), sem janela de senha. O botão do menu só aparece com o modo ligado e serve para desligá-lo. É só uma
       // conveniência da interface: quem lê este código vê a palavra.
       const PALAVRA_DO_MODO_DESENVOLVEDOR = 'pitufo';
-      const CONTROLES_DE_TESTE = '#botao-teste-xp, #painel-tempo [data-modo], #teste-invasao, #teste-dia-elegivel, #teste-reparar, #teste-monstros, #teste-avancar';
+      const CONTROLES_DE_TESTE = '#botao-teste-xp, #botao-teste-madeira, #painel-tempo [data-modo], #teste-invasao, #teste-dia-elegivel, #teste-reparar, #teste-monstros, #teste-avancar';
       let modoDesenvolvedorAtivo = false;
       const botaoDoModoDesenvolvedor = selecionar('#botao-modo-desenvolvedor');
       const definirModoDesenvolvedor = function definirModoDesenvolvedor(ativo) {

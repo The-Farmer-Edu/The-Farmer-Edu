@@ -1,0 +1,16 @@
+* [33mc3b11c2[m[33m ([m[1;31morigin/squad-1/fazenda-setores[m[33m)[m Configurando áudio
+* [33me0131b0[m Adicionado keylogger para validação de acesso admin na fazenda
+* [33m82cfe74[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msquad-1/fazenda-setores[m[33m)[m melhorias visuais e modo desenvolvedor
+* [33mf71a79f[m refactor: modulariza JavaScript da Fazenda
+* [33m45ede39[m Mark 8.3 melhorias
+* [33m7ea1033[m Implantação de melhorias
+* [33me04efe7[m Modificação de luz e construção de praça
+* [33m5c3cd32[m Atualiza fazenda 3D
+* [33m2617c53[m Squad 12/frontend tarde (#94)
+* [33m05a72cb[m Ajuste do diretorio das imagens
+* [33mc02c503[m Ajustes Gerais
+*   [33m9afefc9[m Ajustes gerais
+[32m|[m[33m\[m  
+[32m|[m * [33mce39ba2[m Mudança de paleta realizada, saimos de #34C759 para #1B5E20 (#88)
+[32m|[m * [33m658d2a5[m Squad2 submissoes/frontend (#71)
+[32m|[m * [33m7b0cd16[m feat: adicionar notas da squad 3 (#81)

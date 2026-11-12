@@ -481,11 +481,13 @@ O que o loop faz em cada frame:
 |---|---|
 | `mostrarAviso(mensagem)` (450) | Mostra uma mensagem no topo por 2,2 s. `temporizadorDoAviso` guarda o cronômetro; `clearTimeout` cancela o anterior se um novo aviso chegar. |
 | `evoluirArea(idDaArea)` (458) | Tenta evoluir: ① pega o nível atual e o custo; ② se estiver no nível máximo ou faltar XP, **não faz nada** (`return`); ③ senão, desconta o XP, soma 1 ao nível, salva, redesenha a área, foca a câmera, atualiza os cards e mostra o aviso. |
-| `desenharCards()` (473) | Recria a lista de cards na parte de baixo. Para cada área, mostra ícone, nome, bolinhas de nível (`●` cheias e `○` vazias) e o botão. O botão fica desativado se o nível estiver no máximo ou o XP for insuficiente. Guarda e restaura a rolagem (`rolagemAnterior`) para a lista não "pular" ao atualizar. |
+| `desenharCards()` (32-interface.js) | Atualiza o XP da barra e o resumo da gaveta de construções e recria os cartões, agrupados em `GRUPOS_DA_GAVETA` (Moradia, Animais, Produção, Infraestrutura; área sem grupo cai em "Outras"). Cada cartão mostra o ícone num medalhão, o nome com "Nv X/3", a trilha de níveis 0 → 3 em pontos (`trilhaDeNiveis`), uma linha de estado com um selo de texto (disponível, faltam N XP, nível máximo, destruído) e o botão de evoluir/construir/reparar. As cores ficam nos tokens `--gaveta-*` (01-base.css), com versão para o tema escuro. Preserva a rolagem e o foco; com o dedo pressionado num cartão, adia a troca da lista para o clique não se perder. |
+| `atualizarResumoDaGaveta()` | Conta, pelo estado real, quantas áreas podem evoluir agora (mesmas condições de `evoluirArea`) e quantas estão destruídas (`instalacaoDestruida`). |
 | `window.adicionarXP(quantidade)` | **Ponto de ligação com o sistema de atividades.** Soma XP, salva e atualiza a tela. É `window.` para outros códigos poderem chamá-la. |
-| `botao-teste-xp` | Botão "+50 XP (teste)" que chama `adicionarXP(50)`. Pode ser removido depois. |
-
-**Variáveis dentro de `desenharCards`:** `nivel` (nível da área), `estaNoMaximo` (se chegou ao 5), `custo` (XP para o próximo), `botaoDesativado` (se o botão deve ficar cinza) e `textoDoBotao` (o texto exibido).
+| `botao-teste-xp` | Botão "+5000 XP (teste)", dentro da seção "🧪 Testes" do menu. Pode ser removido depois. |
+| `abrirMenu()`, `fecharMenuEPaineis()`, `alternarPainel()` (24-paineis-de-tempo-e-audio.js) | Menu compacto (☰) e painéis Tempo, Áudio, Fazenda e Equipe: um painel por vez; abrir um painel esconde o menu; Esc volta um nível (painel → menu → fechado). |
+| `definirGavetaAberta(aberta)` | Abre/fecha a gaveta de construções; a gaveta e o menu/painéis não ficam abertos juntos. |
+| `definirSilencioGlobal(silenciado)` (23-audio.js) | Botão global 🔊/🔇: liga `muted` em todas as fontes de `FONTES_DE_SOM` sem mudar volumes nem o liga/desliga de cada categoria; salvo em `fazenda3d-audio-v1` (campo `silenciado`). |
 
 ---
 
@@ -493,11 +495,15 @@ O que o loop faz em cada frame:
 
 | Elemento | Função |
 |---|---|
-| `#barra-topo` | Barra no topo com o XP e o botão de teste |
+| `#barra-topo` | Barra no topo: XP, recursos, botão global de som (`#botao-som-global`) e botão do menu (`#botao-menu`) |
 | `#valor-xp` | O número de XP exibido |
-| `#lista-cards` | Lista horizontal de cards na parte inferior |
-| `.card` | Cada card de área |
-| `.pontos-nivel` | As bolinhas de nível (●●○○○) |
+| `#menu-principal` | Menu compacto: nome da fazenda, Tempo, Áudio, Fazenda, Equipe, Modo Leve, dica de controles e "🧪 Testes" |
+| `#navegacao-do-painel` | Botões "‹ Menu" e "✕" que aparecem acima do painel aberto |
+| `#lista-cards` | Gaveta de construções no rodapé: cabeçalho `#botao-gaveta-construcoes` com o resumo e conteúdo `#conteudo-da-gaveta` com os grupos |
+| `.card` | Cada cartão de área (dentro de `.grupo-da-gaveta`) |
+| `.medalhao-do-card` | Ícone da área num medalhão (esmaecido no lote vazio, dourado no nível máximo, vermelho se destruída) |
+| `.trilha-de-niveis` | A trilha 0 → 1 → 2 → 3 em pontos ligados (cheios = concluídos, maior com anel = atual, vazados = futuros) |
+| `.pontos-nivel` / `.selo-estado` | Linha de estado do cartão e o selo com o texto do estado |
 | `#aviso` | A mensagem temporária de evolução |
 | Variáveis CSS (`--fundo-card`, `--texto`, `--destaque`, `--desativado`) | Cores da interface; mudam automaticamente no modo escuro |
 

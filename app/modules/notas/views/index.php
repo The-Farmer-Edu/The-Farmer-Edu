@@ -1,283 +1,555 @@
- <?php
-// Inicia a sessão
-session_start();
+<?php
+/**
+ * ============================================================================
+ * VIEW: MINHAS NOTAS - PERFIL DO ALUNO (index.php)
+ * ============================================================================
+ * Esta view é renderizada pelo método NotasController::verNotasAluno().
+ * Permite ao estudante visualizar:
+ * - Cartões de resumo com métricas consolidadas (total de tarefas, corrigidas, pendentes e média geral).
+ * - Lista de atividades agrupadas por turma/curso com indicação de prazos e tentativas.
+ * - Notas individuais com código de cores e identificação de correção via Inteligência Artificial.
+ *
+ * Variáveis recebidas do Controller:
+ * - $usuario    : Array com informações da sessão do aluno autenticado.
+ * - $atividades : Array com as atividades matriculadas, submissões e notas.
+ * - $resumo     : Array associativo com totais agregados e média calculada.
+ * ============================================================================
+ */
 
-// Dados da Turma Atual
-$nome_turma = "Desenvolvimento Web - Módulo notas";
-$professor = "Prof. Pedro Lucas de Oliveira";
+// Esta view e carregada pelo NotasController::verNotasAluno()
+// Variaveis disponiveis: $usuario, $atividades, $resumo
 
-// Histórico de Atividades e Notas (Simulação de Banco de Dados)
-$atividades = [
-    [
-        "titulo" => "Atividade Prática 01: Criação de Estrutura HTML5",
-        "data_entrega" => "10 de Mar, 14:00",
-        "status" => "Avaliado", // Avaliado, Entregue, Pendente
-        "nota_aluno" => 100,
-        "nota_maxima" => 100,
-        "categoria" => "Trabalhos Práticos"
-    ],
-    [
-        "titulo" => "Desafio CSS Grid: Recriando um Dashboard Responsivo",
-        "data_entrega" => "28 de Mar, 23:59",
-        "status" => "Avaliado",
-        "nota_aluno" => 85,
-        "nota_maxima" => 100,
-        "categoria" => "Trabalhos Práticos"
-    ],
-    [
-        "titulo" => "Questionário Teórico: Introdução ao PHP Estruturado",
-        "data_entrega" => "14 de Abr, 11:30",
-        "status" => "Avaliado",
-        "nota_aluno" => 9.0,
-        "nota_maxima" => 10,
-        "categoria" => "Avaliações Oficiais"
-    ],
-    [
-        "titulo" => "Mini-projeto: Sistema de Login com Sessões do PHP",
-        "data_entrega" => "02 de Mai, 23:59",
-        "status" => "Entregue", // Entregue mas o professor ainda não deu nota
-        "nota_aluno" => null,
-        "nota_maxima" => 100,
-        "categoria" => "Projetos Semestrais"
-    ],
-    [
-        "titulo" => "Exercício de Fixação: Manipulação de Arrays e Loops",
-        "data_entrega" => "Amanhã, 18:00",
-        "status" => "Pendente", // Ainda não enviado pelo aluno
-        "nota_aluno" => null,
-        "nota_maxima" => 50,
-        "categoria" => "Exercícios Semanais"
-    ]
-];
-
-// Agrupa as atividades por categoria para imitar os "Tópicos" do Google Classroom
-$topicos = [];
+// Agrupa atividades por turma/curso para exibicao em secoes
+$grupos = [];
 foreach ($atividades as $atv) {
-    $topicos[$atv['categoria']][] = $atv;
+    // Chave composta para separar visualmente as disciplinas/turmas
+    $chave = $atv['nome_curso'] . ' — ' . $atv['nome_turma'];
+    $grupos[$chave][] = $atv;
 }
-?>
 
+// Calcula cor da media para o card de resumo
+// Verde para média >= 7, Laranja para média >= 5 e Vermelho para notas abaixo de 5
+$media = (float) ($resumo['media_geral'] ?? 0);
+$corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minhas Atividades - Google Classroom Style</title>
+    <title>Minhas Notas — The Farmer Edu</title>
+    <meta name="description" content="Veja todas as suas notas e atividades na plataforma The Farmer Edu.">
+    <!-- Fontes Google (Inter e Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
+        /* ============================================================
+           RESET E BASE
+           ============================================================ */
+        *, *::before, *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+        }
+
+        :root {
+            /* Perfil Aluno (Verde) - Guia de Design */
+            --verde-primario:   #1B5E20;
+            --verde-escuro:     #089C2F;
+            --verde-header:     #A0FDA3;
+            --verde-suave:      #E8F5E9;
+            --verde:            #1B5E20;
+            --verde-claro:      #A0FDA3;
+
+            /* Destaque Secundário (Laranja) - Guia de Design */
+            --laranja:          #FF8D28;
+            --laranja-suave:    #FFF3E0;
+            --amarelo:          #FF8D28;
+            --amarelo-claro:    #FFF3E0;
+
+            /* Feedback / Status */
+            --vermelho:         #DC2626;
+            --vermelho-claro:   #FEE2E2;
+            --azul:             #002D38;
+            --azul-claro:       #A0FDA3;
+
+            /* Neutros - Guia de Design */
+            --texto-principal:  #002D38;
+            --texto-preto:      #000000;
+            --texto-secundario: #727272;
+            --bg-pagina:        #F5F7F0;
+            --bg-card:          #FFFFFF;
+            --borda-card:       #E6E6E6;
+            --cinza-50:         #F5F7F0;
+            --cinza-100:        #E6E6E6;
+            --cinza-200:        #D9D9D9;
+            --cinza-400:        #727272;
+            --cinza-600:        #727272;
+            --cinza-800:        #002D38;
+            --cinza-900:        #002D38;
+
+            /* Sombras do Guia de Design */
+            --sombra-card:      0px 4px 4px rgba(0, 0, 0, 0.25);
+            --sombra-header:    0px 4px 3px rgba(248, 96, 17, 0.5);
+            --sombra-sm:        0px 2px 4px rgba(0, 0, 0, 0.08);
+            --sombra-md:        0px 4px 4px rgba(0, 0, 0, 0.25);
+            --sombra-lg:        0 10px 15px rgba(0, 0, 0, 0.1);
+
+            /* Geometria do Guia de Design */
+            --raio-card:        25px;
+            --raio-pill:        20px;
+            --raio-icone:       10px;
+            --raio:             25px;
+            --transicao:        all .2s ease;
         }
 
         body {
-            background-color: #ffffff;
-            color: #3c4043;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-pagina);
+            color: var(--texto-principal);
+            min-height: 100vh;
         }
 
-        /* Banner Superior (Estilo Header Classroom) */
-        .classroom-nav {
-            border-bottom: 1px solid #e0e0e0;
-            padding: 15px 24px;
+        /* ============================================================
+           TOPBAR (HEADER) - Guia de Design
+           Faixa colorida de ponta a ponta (#A0FDA3), logo circular + "The Farmer Edu"
+           com "Edu" em verde (#1B5E20) e o restante em navy (#002D38),
+           avatar em verde escuro (#089C2F) e brilho laranja por baixo.
+           ============================================================ */
+        .topbar {
+            background: var(--verde-header);
+            color: var(--texto-principal);
+            padding: 0 24px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--sombra-header);
         }
 
-        .class-title h1 {
-            font-size: 1.35rem;
-            color: #1f1f1f;
-            font-weight: 400;
-        }
-
-        .class-title p {
-            font-size: 0.85rem;
-            color: #5f6368;
-        }
-
-        /* Container Principal */
-        .main-container {
-            max-width: 860px;
-            margin: 30px auto;
-            padding: 0 20px;
-        }
-
-        /* Menu de Abas Fictício do Classroom */
-        .classroom-tabs {
+        .topbar-logo {
             display: flex;
-            border-bottom: 1px solid #e0e0e0;
-            margin-bottom: 30px;
-        }
-
-        .tab {
-            padding: 15px 24px;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #5f6368;
-            cursor: pointer;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--verde-primario);
             text-decoration: none;
         }
 
-        .tab.active {
-            color: #1a73e8;
-            border-bottom: 3px solid #1a73e8;
+        .topbar-logo span {
+            color: var(--texto-principal);
         }
 
-        /* Tópicos (Módulos / Categorias) */
-        .topic-section {
-            margin-bottom: 40px;
-        }
-
-        .topic-title {
-            font-size: 1.5rem;
-            color: #1a73e8;
-            font-weight: 400;
-            margin-bottom: 15px;
-            border-bottom: 1px solid #1a73e8;
-            padding-bottom: 8px;
-        }
-
-        /* Lista de Atividades */
-        .activity-card {
-            border: 1px solid #dadce0;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            background: #fff;
-            transition: box-shadow 0.2s;
-        }
-
-        .activity-card:hover {
-            box-shadow: 0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15);
-        }
-
-        .activity-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 24px;
-            cursor: pointer;
-        }
-
-        .activity-left {
+        .topbar-user {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: .875rem;
+            color: var(--texto-principal);
         }
 
-        /* Ícone redondo simulando o Classroom */
-        .icon-circle {
-            width: 40px;
-            height: 40px;
+        .avatar {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            background-color: #f1f3f4;
+            background: var(--verde-escuro);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #1a73e8;
-            font-weight: bold;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: .875rem;
+            color: #ffffff;
+            flex-shrink: 0;
         }
 
-        .activity-details h3 {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #3c4043;
+        /* ============================================================
+           CONTAINER PRINCIPAL
+           ============================================================ */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+        }
+
+        /* ============================================================
+           CABECALHO DA PAGINA
+           ============================================================ */
+        .page-header {
+            margin-bottom: 28px;
+        }
+
+        .page-header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--texto-principal);
             margin-bottom: 4px;
         }
 
-        .activity-details p {
-            font-size: 0.8rem;
-            color: #5f6368;
+        .page-header p {
+            font-family: 'Inter', sans-serif;
+            font-size: .95rem;
+            color: var(--texto-secundario);
         }
 
-        .activity-right {
-            text-align: right;
+        /* ============================================================
+           CARDS DE RESUMO (Raio: 25px, Sombra padrão de card)
+           ============================================================ */
+        .resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .card-resumo {
+            background: var(--bg-card);
+            border-radius: var(--raio-card);
+            padding: 20px 24px;
+            box-shadow: var(--sombra-card);
+            border: 1px solid var(--borda-card);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: var(--transicao);
+        }
+
+        .card-resumo:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card-resumo .icone {
+            font-size: 1.6rem;
+        }
+
+        .card-resumo .valor {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .card-resumo .label {
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            color: var(--texto-secundario);
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           SECAO DE DISCIPLINA / TURMA
+           ============================================================ */
+        .secao {
+            margin-bottom: 36px;
+        }
+
+        .secao-titulo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--verde-primario);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--verde-header);
+        }
+
+        /* ============================================================
+           CARDS DE ATIVIDADE (Raio: 25px, Sombra padrão de card)
+           ============================================================ */
+        .lista-atividades {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card-atividade {
+            background: var(--bg-card);
+            border-radius: var(--raio-card);
+            border: 1px solid var(--borda-card);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: var(--sombra-card);
+            transition: var(--transicao);
+        }
+
+        .card-atividade:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            border-color: var(--verde-escuro);
+        }
+
+        .atividade-esq {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .tipo-icone {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--raio-icone);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            background: var(--cinza-100);
+        }
+
+        .tipo-codigo  { background: var(--laranja-suave); }
+        .tipo-quiz    { background: var(--verde-suave); }
+        .tipo-texto   { background: #E0F2FE; }
+
+        .atividade-info h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: .925rem;
+            font-weight: 700;
+            color: var(--texto-preto);
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 420px;
+        }
+
+        .atividade-info .meta {
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            color: var(--texto-secundario);
+        }
+
+        .atividade-dir {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* NOTA */
+        .nota {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .nota-10  { color: var(--verde-primario); }
+        .nota-boa { color: var(--verde-escuro); }
+        .nota-ok  { color: var(--laranja); }
+        .nota-ruim{ color: var(--vermelho); }
+
+        .nota-max {
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            color: var(--texto-secundario);
+            font-weight: 400;
+        }
+
+        /* BADGES (Formato pílula: 20px) */
+        .badge {
+            display: inline-flex;
+            align-items: center;
             gap: 4px;
+            padding: 3px 10px;
+            border-radius: var(--raio-pill);
+            font-family: 'Inter', sans-serif;
+            font-size: .75rem;
+            font-weight: 600;
         }
 
-        /* Badges de Status e Notas */
-        .grade-text {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #1e8e3e; /* Verde padrão Google */
+        .badge-avaliado  { background: var(--verde-suave);   color: var(--verde-primario); }
+        .badge-enviado   { background: #E0F2FE;              color: #0284C7; }
+        .badge-pendente  { background: var(--laranja-suave); color: var(--laranja); }
+        .badge-ia        { background: #F3E8FF;              color: #7E22CE; }
+
+        /* ============================================================
+           ESTADO VAZIO
+           ============================================================ */
+        .vazio {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--texto-secundario);
+            font-family: 'Inter', sans-serif;
         }
 
-        .status-badge {
-            font-size: 0.8rem;
-            font-weight: 500;
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
+        .vazio p { font-size: 1rem; margin-top: 12px; }
 
-        .status-eval {
-            color: #5f6368;
-        }
-
-        .status-sent {
-            color: #1e8e3e;
-            background: #e6f4ea;
-        }
-
-        .status-missing {
-            color: #d93025;
-            background: #fce8e6;
+        /* ============================================================
+           RESPONSIVO
+           ============================================================ */
+        @media (max-width: 600px) {
+            .atividade-info h3 { max-width: 200px; }
+            .nota { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header do topo -->
-    <nav class="classroom-nav">
-        <div class="class-title">
-            <h1><?php echo $nome_turma; ?></h1>
-            <p><?php echo $professor; ?></p>
-        </div>
-    </nav>
+<!-- TOPBAR: Barra de navegação com logotipo e avatar do estudante -->
+<nav class="topbar">
+    <a class="topbar-logo" href="/">
+        🌱 <span>The Farmer</span>Edu
+    </a>
+    <div class="topbar-user">
+        <!-- Avatar circular com iniciais do aluno -->
+        <div class="avatar"><?= strtoupper(substr($usuario['nome'], 0, 2)) ?></div>
+        <span><?= htmlspecialchars($usuario['nome']) ?></span>
+    </div>
+</nav>
 
-    <div class="main-container">
-        <!-- Navegação de Abas -->
-        <div class="classroom-tabs">
-            <a href="#" class="tab active">Atividades e notas</a>
+<div class="container">
+
+    <!-- CABECALHO: Título da página -->
+    <header class="page-header">
+        <h1>📋 Minhas Notas</h1>
+        <p>Acompanhe seu desempenho em todas as atividades</p>
+    </header>
+
+    <!-- CARDS DE RESUMO: Indicadores consolidados de progresso -->
+    <section class="resumo-grid" aria-label="Resumo das notas">
+
+        <!-- Total de atividades vinculadas -->
+        <div class="card-resumo">
+            <span class="icone">📚</span>
+            <span class="valor" style="color: var(--azul)">
+                <?= (int) ($resumo['total_atividades'] ?? 0) ?>
+            </span>
+            <span class="label">Total de atividades</span>
         </div>
 
-        <!-- Loop pelos Tópicos da Disciplina -->
-        <?php foreach ($topicos as $nome_topico => $lista_atividades): ?>
-            <div class="topic-section">
-                <h2 class="topic-title"><?php echo $nome_topico; ?></h2>
-                
-                <!-- Loop pelas Atividades do Tópico -->
-                <?php foreach ($lista_atividades as $atv): ?>
-                    <div class="activity-card">
-                        <div class="activity-header">
-                            <div class="activity-left">
-                                <!-- Ícone de prancheta/tarefa -->
-                                <div class="icon-circle">📋</div>
-                                <div class="activity-details">
-                                    <h3><?php echo $atv['titulo']; ?></h3>
-                                    <p>Data de entrega: <?php echo $atv['data_entrega']; ?></p>
+        <!-- Atividades já corrigidas/avaliadas -->
+        <div class="card-resumo">
+            <span class="icone">✅</span>
+            <span class="valor" style="color: var(--verde)">
+                <?= (int) ($resumo['total_avaliadas'] ?? 0) ?>
+            </span>
+            <span class="label">Avaliadas</span>
+        </div>
+
+        <!-- Atividades pendentes de entrega -->
+        <div class="card-resumo">
+            <span class="icone">⏳</span>
+            <span class="valor" style="color: var(--amarelo)">
+                <?= (int) ($resumo['pendentes'] ?? 0) ?>
+            </span>
+            <span class="label">Pendentes</span>
+        </div>
+
+        <!-- Média geral com cor dinâmica -->
+        <div class="card-resumo">
+            <span class="icone">🎯</span>
+            <span class="valor" style="color: <?= $corMedia ?>">
+                <?= number_format($media, 1, ',', '') ?>
+            </span>
+            <span class="label">Média geral</span>
+        </div>
+
+    </section>
+
+    <!-- LISTA DE ATIVIDADES AGRUPADAS POR TURMA -->
+    <?php if (empty($atividades)): ?>
+        <!-- Mensagem de estado vazio caso não haja atividades -->
+        <div class="vazio">
+            <p style="font-size:3rem">🌾</p>
+            <p>Nenhuma atividade encontrada para a sua turma ainda.</p>
+        </div>
+    <?php else: ?>
+
+        <!-- Itera sobre cada grupo de curso / turma -->
+        <?php foreach ($grupos as $nomeTurma => $itens): ?>
+            <section class="secao">
+                <h2 class="secao-titulo">
+                    📖 <?= htmlspecialchars($nomeTurma) ?>
+                </h2>
+
+                <div class="lista-atividades">
+                    <?php foreach ($itens as $atv): ?>
+                        <?php
+                        // Determina ícone visual conforme o tipo de atividade (código, quiz, texto)
+                        $iconesTipo = ['codigo' => '💻', 'quiz' => '📝', 'texto' => '📄'];
+                        $icone = $iconesTipo[$atv['tipo_atividade']] ?? '📋';
+                        $classTipo = 'tipo-' . ($atv['tipo_atividade'] ?? 'texto');
+
+                        // Formatação numérica da nota obtida e definição da classe CSS
+                        $notaVal  = $atv['nota_valor'];
+                        $notaFmt  = $notaVal !== null ? number_format((float)$notaVal, 1, ',', '') : null;
+                        $classNota = '';
+                        if ($notaVal !== null) {
+                            if ($notaVal == 10)     $classNota = 'nota-10';
+                            elseif ($notaVal >= 7)  $classNota = 'nota-boa';
+                            elseif ($notaVal >= 5)  $classNota = 'nota-ok';
+                            else                    $classNota = 'nota-ruim';
+                        }
+
+                        // Status da submissão e origem da nota
+                        $status = $atv['status_submissao'] ?? null;
+                        $origem = $atv['origem_nota'] ?? null;
+                        ?>
+                        <!-- Card individual da atividade -->
+                        <article class="card-atividade">
+                            <div class="atividade-esq">
+                                <!-- Ícone do tipo -->
+                                <div class="tipo-icone <?= $classTipo ?>">
+                                    <?= $icone ?>
+                                </div>
+
+                                <div class="atividade-info">
+                                    <h3 title="<?= htmlspecialchars($atv['titulo']) ?>">
+                                        <?= htmlspecialchars($atv['titulo']) ?>
+                                    </h3>
+                                    <p class="meta">
+                                        Prazo: <?= date('d/m/Y H:i', strtotime($atv['data_entrega'])) ?>
+                                        <?php if ($atv['tentativa_num'] ?? 0): ?>
+                                            &nbsp;·&nbsp; Tentativa <?= (int)$atv['tentativa_num'] ?>
+                                        <?php endif; ?>
+                                    </p>
                                 </div>
                             </div>
-                            
-                            <div class="activity-right">
-                                <?php if ($atv['status'] === 'Avaliado'): ?>
-                                    <span class="grade-text"><?php echo $atv['nota_aluno'] . '/' . $atv['nota_maxima']; ?></span>
-                                    <span class="status-badge status-eval">Com nota</span>
-                                <?php elseif ($atv['status'] === 'Entregue'): ?>
-                                    <span class="status-badge status-sent">Devolvido (Pendente de nota)</span>
+
+                            <!-- Lado direito com nota ou badge de status -->
+                            <div class="atividade-dir">
+                                <?php if ($notaVal !== null): ?>
+                                    <!-- Nota numerica sobre 10 -->
+                                    <span class="nota <?= $classNota ?>">
+                                        <?= $notaFmt ?><span class="nota-max">&nbsp;/10</span>
+                                    </span>
+                                    <?php if ($origem === 'ia'): ?>
+                                        <span class="badge badge-ia">🤖 IA</span>
+                                    <?php else: ?>
+                                        <span class="badge badge-avaliado">✔ Avaliado</span>
+                                    <?php endif; ?>
+
+                                <?php elseif ($status === 'corrigida' || $status === 'enviada' || $status === 'processando'): ?>
+                                    <span class="badge badge-enviado">📤 Enviado</span>
+
                                 <?php else: ?>
-                                    <span class="status-badge status-missing">Pendente</span>
+                                    <span class="badge badge-pendente">⚠ Pendente</span>
                                 <?php endif; ?>
                             </div>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            </section>
         <?php endforeach; ?>
-    </div>
+
+    <?php endif; ?>
+
+</div><!-- /container -->
 
 </body>
 </html>
-

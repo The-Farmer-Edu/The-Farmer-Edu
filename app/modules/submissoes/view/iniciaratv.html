@@ -56,6 +56,7 @@
             <div class="contador-limite" id="contadorLimite">
                 <span class="contador-limite__titulo">Limites</span>
                 <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong></div>
+                <!-- <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div> -->
                 <div class="contador-limite__linha"><span>Cancelar entrega</span><strong id="contadorCancelar">3/3</strong></div>
             </div>
         </aside>
@@ -92,6 +93,10 @@
                     <button id="btnLimpar" type="button">Limpar</button>
                 </div>
                 <div class="con-corpo" id="console"></div>
+                <form class="con-input" id="conForm" autocomplete="off">
+                    <span class="con-prompt">›</span>
+                    <input type="text" id="conInput" placeholder="Responder à Sophia (sim ou não)" aria-label="Responder à Sophia" disabled>
+                </form>
             </div>
         </section>
 

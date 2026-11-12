@@ -10,6 +10,7 @@
 -- Ordem de criação respeita as dependências de chave estrangeira —
 -- execute o arquivo de cima para baixo, sem pular trechos.
 -- =====================================================================
+DROP DATABASE IF EXISTS the_farmer_edu;
 
 CREATE DATABASE IF NOT EXISTS the_farmer_edu
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -33,6 +34,16 @@ CREATE TABLE usuarios (
   ativo TINYINT(1) NOT NULL DEFAULT 1,
   UNIQUE KEY uq_usuarios_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE recuperacao_senha (
+    id_recuperacao INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario     INT NOT NULL,
+    codigo_hash    VARCHAR(255) NOT NULL,
+    expira_em      DATETIME NOT NULL,
+    tentativas     INT NOT NULL DEFAULT 0,
+    criado_em      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE
+);
 
 -- ---------------------------------------------------------------------
 -- 2. INSTRUTORES  [Instrutor]
@@ -90,10 +101,11 @@ CREATE TABLE cursos (
 -- ---------------------------------------------------------------------
 CREATE TABLE turmas (
   id_turma       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nome_turma     VARCHAR(100)    NOT NULL,
+  nome_turma     VARCHAR(100)                    NOT NULL,
   turno          ENUM('manha', 'tarde', 'noite') NOT NULL,
-  id_curso       INT UNSIGNED    NOT NULL,
-  id_instrutor   INT UNSIGNED    NOT NULL,
+  id_curso       INT UNSIGNED                    NOT NULL,
+  id_instrutor   INT UNSIGNED                    NOT NULL,
+  ativo          TINYINT(1)                      NOT NULL     DEFAULT 1,
   CONSTRAINT fk_turmas_curso
     FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)
     ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -135,8 +147,7 @@ CREATE TABLE atividades (
   descricao            TEXT          NULL,
   tipo_atividade       ENUM('codigo', 'quiz', 'texto') NOT NULL DEFAULT 'codigo',
   linguagem            VARCHAR(30)   NULL,
-  resposta_referencia  TEXT          NULL,
-  criterios_correcao   JSON          NULL,
+  criterios_correcao   TEXT          NULL, -- Converter JSON->TEXT e TEXT->JSON, dependendo da operação, no JavaScript
   data_entrega         DATETIME      NOT NULL,
   criado_em            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_atividades_turma
@@ -245,20 +256,20 @@ CREATE TABLE elementos_fazenda (
 -- ---------------------------------------------------------------------
 -- 13. HISTÓRICO DE XP  [XPLog]
 -- quantidade aceita valores negativos para representar retrocesso
--- (RF19). id_submissao é opcional pois nem todo XP vem de uma atividade.
+-- (RF19). id_nota é opcional pois nem todo XP vem de uma atividade.
 -- ---------------------------------------------------------------------
 CREATE TABLE xp_logs (
   id_xp          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_aluno       INT UNSIGNED  NOT NULL,
   quantidade     INT           NOT NULL,
   motivo         VARCHAR(255)  NOT NULL,
-  id_submissao   INT UNSIGNED  NULL,
+  id_nota        INT UNSIGNED  NULL,
   data           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_xplogs_aluno
     FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_xplogs_submissao
-    FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)
+  CONSTRAINT fk_xplogs_nota
+    FOREIGN KEY (id_nota) REFERENCES notas(id_nota)
     ON DELETE SET NULL ON UPDATE CASCADE,
   INDEX idx_xplogs_aluno (id_aluno)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -280,3 +291,12 @@ CREATE TABLE notificacoes (
     ON DELETE CASCADE ON UPDATE CASCADE,
   INDEX idx_notificacoes_usuario (id_usuario, lida)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE arquivos (
+  id_arquivo         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_atividade        INT UNSIGNED NOT NULL,
+  descricao_arquivo   VARCHAR(45) NOT NULL,
+  caminho             VARCHAR(255) NOT NULL,
+  FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
+  INDEX id_arquivo_atividade (id_atividade)
+)

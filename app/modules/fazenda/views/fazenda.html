@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="assets/css/06-invasoes.css">
   <link rel="stylesheet" href="assets/css/07-carregamento.css">
   <link rel="stylesheet" href="assets/css/08-tutorial.css">
+  <link rel="stylesheet" href="assets/css/09-guardiao-e-lenhador.css">
 </head>
 
 <body>
@@ -53,7 +54,9 @@
        Os ids abaixo são usados pelo JavaScript: não os renomeie.
        O atributo "inert" deixa a interface sem foco e sem clique até a fazenda estar pronta (a SEÇÃO 00 o remove). -->
   <!-- Fazenda 8.4 (C2/C4): a barra superior mostra só o essencial (XP, recursos, som global e menu); os demais controles ficam no menu -->
-  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora e minérios"></span><button id="botao-som-global" aria-pressed="false" aria-label="Silenciar todos os sons" title="Silenciar ou religar todos os sons (os ajustes do painel Áudio são mantidos)"><span class="icone-do-som" aria-hidden="true">🔊</span> <span class="rotulo-do-som">Som ligado</span></button><button id="botao-menu" aria-expanded="false" aria-controls="menu-principal" aria-label="Abrir menu">☰ <span class="rotulo-do-menu">Menu</span></button>
+  <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora, minérios e madeira"></span><button id="botao-som-global" aria-pressed="false" aria-label="Silenciar todos os sons" title="Silenciar ou religar todos os sons (os ajustes do painel Áudio são mantidos)"><span class="icone-do-som" aria-hidden="true">🔊</span> <span class="rotulo-do-som">Som ligado</span></button><button id="botao-menu" aria-expanded="false" aria-controls="menu-principal" aria-label="Abrir menu">☰ <span class="rotulo-do-menu">Menu</span></button>
+    <!-- Inventário geral (SEÇÃO 27b): fica logo abaixo do indicador de XP -->
+    <button id="botao-inventario" aria-expanded="false" aria-controls="janela-inventario" title="Ver tudo o que você possui">🎒 Inventário</button>
   </div>
   <!-- Fazenda 8.4 (C3): gaveta de construções. O cabeçalho abre/fecha e resume o estado; os cartões (seção 32) vão no conteúdo -->
   <section id="lista-cards" class="gaveta-de-construcoes" aria-label="Construções" inert>
@@ -80,7 +83,7 @@
       <!-- Fazenda 8.4 (D2): ferramentas de teste só aparecem com o Modo desenvolvedor (começa desligado a cada carregamento).
            Fazenda 8.4.1: o botão só aparece com o modo ligado e serve para desligá-lo (o desbloqueio fica na seção 32). -->
       <button class="botao-ferramenta" id="botao-modo-desenvolvedor" hidden aria-pressed="false" aria-controls="ferramentas-de-desenvolvedor" title="Desligar as ferramentas de teste">🛠️ Modo desenvolvedor <span class="estado-modo-desenvolvedor">desligado</span></button>
-      <div class="testes-do-menu" id="ferramentas-de-desenvolvedor" hidden><h4>🧪 Testes</h4><button id="botao-teste-xp">+5000 XP (teste)</button></div>
+      <div class="testes-do-menu" id="ferramentas-de-desenvolvedor" hidden><h4>🧪 Testes</h4><button id="botao-teste-xp">+5000 XP (teste)</button><button id="botao-teste-madeira">+5000 de madeira (teste)</button></div>
     </nav>
     <div class="navegacao-do-painel" id="navegacao-do-painel" hidden><button class="botao-ferramenta" id="voltar-ao-menu" aria-label="Voltar ao menu">‹ Menu</button><button class="botao-fechar" id="fechar-painel" aria-label="Fechar painel">✕</button></div>
     <section class="painel" id="painel-tempo" hidden>
@@ -101,7 +104,7 @@
         <button id="teste-reparar">🔧 Reparar tudo</button>
         <h4>🧪 Testes da Mark 8.2</h4>
         <button id="teste-monstros">👾 Monstros noturnos agora (vira noite)</button>
-        <button id="teste-avancar">⏩ Avançar 10 min (plantações, animais e mina)</button>
+        <button id="teste-avancar">⏩ Avançar 10 min (plantações, animais, mina e árvores)</button>
         <div id="invasao-info"></div></div>
     </section>
     <section class="painel" id="painel-audio" hidden></section>
@@ -147,6 +150,48 @@
       <div id="texto-defesa"></div>
       <div class="acoes-ajuda"><button type="button" class="botao-pequeno" id="defesa-equipe">👷 Preparar a equipe</button><button type="button" class="botao-pequeno secundario" id="defesa-entendi">Entendi</button></div>
     </div>
+  </div>
+  <!-- Economia integrada (SEÇÃO 28b): painel de TELA CHEIA do Guardião da Mina. O conteúdo de #saldos-do-guardiao,
+       #prateleira-de-pocoes e #balcao-do-guardiao é desenhado pelo JavaScript. -->
+  <div id="painel-do-guardiao" class="tela-do-guardiao" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-do-guardiao">
+    <div class="moldura-do-guardiao">
+      <header class="cabecalho-do-guardiao">
+        <span class="retrato-do-guardiao" aria-hidden="true">🧙</span>
+        <div class="fala-do-guardiao"><h2 id="titulo-do-guardiao">Alquimia do Guardião da Mina</h2>
+          <p>“Traga os minérios que o carrinho tira da caverna. Eu preparo poções, e cada poção vira experiência para a sua fazenda.”</p></div>
+        <button type="button" class="botao-fechar" id="fechar-guardiao" aria-label="Fechar a alquimia">✕</button>
+      </header>
+      <div class="saldos-do-guardiao" id="saldos-do-guardiao"></div>
+      <div class="abas-do-guardiao" id="abas-do-guardiao" role="tablist" aria-label="Seções da alquimia"></div>
+      <div class="corpo-do-guardiao">
+        <section class="prateleira-de-pocoes" id="prateleira-de-pocoes" aria-label="Poções disponíveis"></section>
+        <section class="balcao-do-guardiao" id="balcao-do-guardiao" aria-label="Poção selecionada"></section>
+      </div>
+      <p class="rodape-do-guardiao">Como funciona: <b>preparar</b> gasta minérios e guarda a poção · <b>usar</b> concede o XP, dentro da cota diária de Mina e alquimia (a mesma das viagens do carrinho). Se a cota de hoje não comporta o XP inteiro, a poção continua guardada.</p>
+    </div>
+  </div>
+  <!-- Inventário geral (SEÇÃO 27b): o conteúdo é desenhado pelo JavaScript a partir de estado.recursos e estado.pocoes. -->
+  <div id="janela-inventario" class="janela-npc" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-inventario">
+    <section class="cartao-npc cartao-do-inventario">
+      <header class="cabecalho-npc"><h2 id="titulo-inventario">🎒 Inventário</h2><button type="button" class="botao-fechar" id="fechar-inventario" aria-label="Fechar o inventário">✕</button></header>
+      <p class="resumo-do-inventario" id="resumo-do-inventario" aria-live="polite"></p>
+      <div id="conteudo-do-inventario"></div>
+      <p class="dica-do-inventario">As poções são usadas no <b>🧙 Guardião da Mina</b>, ao lado da caverna (aba “Minhas Poções”).</p>
+    </section>
+  </div>
+  <!-- Painel específico de uma estrutura (SEÇÃO 32): abre ao escolher um cartão na gaveta de construções, que se fecha. -->
+  <section id="painel-da-estrutura" class="painel-da-estrutura" hidden aria-labelledby="titulo-da-estrutura"></section>
+  <!-- Lenhador (SEÇÃO 29b): diálogo do acampamento depois da ponte. -->
+  <div id="janela-lenhador" class="janela-npc" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-lenhador">
+    <section class="cartao-npc cartao-do-lenhador">
+      <header class="cabecalho-npc"><h2 id="titulo-lenhador">🪓 Lenhador · Acampamento da Floresta</h2><button type="button" class="botao-fechar" id="fechar-lenhador" aria-label="Fechar diálogo">✕</button></header>
+      <p>“Trabalho por conta própria aqui no acampamento, depois da ponte. Não sou da equipe e não entro em brigas. Peça e eu derrubo uma árvore para você.”</p>
+      <div class="resumo-npc"><span>🪵 Madeira no inventário</span><b id="estoque-madeira-lenhador">0</b><span>📅 Madeira coletada hoje</span><b id="madeira-hoje-lenhador">0 / 0</b><span>🌲 Árvores prontas</span><b id="arvores-disponiveis">0</b><span>🪓 Madeira por árvore</span><b id="madeira-por-arvore">4</b></div>
+      <ul class="arvores-do-acampamento" id="arvores-do-acampamento" aria-label="Árvores do acampamento"></ul>
+      <p id="estado-lenhador" class="previa-npc" aria-live="polite">Pronto para trabalhar.</p>
+      <p id="erro-lenhador" class="erro-npc" role="alert"></p>
+      <div class="acoes-npc"><button type="button" class="botao-pequeno secundario" id="dispensar-lenhador">Fechar</button><button type="button" class="botao-pequeno" id="coletar-madeira" disabled>🪓 Pedir coleta de madeira</button></div>
+    </section>
   </div>
   <!-- Vigia da tela de carregamento: se o script principal do jogo nem chegar a rodar (por exemplo, um erro de sintaxe),
        mostra uma mensagem em vez de deixar o jogador preso numa tela de carregamento infinita. -->

@@ -52,6 +52,26 @@ input[type=range], input[type=checkbox] { accent-color: var(--destaque) }
 .animal-audio span { font-size: 11px; color: #c0392b }
 .dica-audio { margin: 8px 0 0; font-size: 11px; opacity: .7 }
 
+/* NPCs da mina e da floresta: mantêm a moldura de madeira e o papel dos painéis do jogo. */
+.janela-npc { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; background: #0008 }
+.janela-npc[hidden] { display: none }
+.cartao-npc { width: min(420px, 100%); max-height: min(90vh, 640px); overflow-y: auto; box-sizing: border-box; padding: 0 16px 16px; border: 3px solid var(--gaveta-madeira); border-radius: 18px; color: var(--gaveta-texto); background: var(--gaveta-papel) radial-gradient(#7a4e2612 1px, transparent 1px) 0 0 / 12px 12px; box-shadow: 0 4px 0 var(--gaveta-madeira-escura), 0 10px 24px #0007 }
+.cabecalho-npc { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 -16px 12px; padding: 10px 14px; color: #fff6e2; background: linear-gradient(180deg, #a5703d, var(--gaveta-madeira) 55%, var(--gaveta-madeira-escura)) }
+.cabecalho-npc h2 { margin: 0; font-size: 18px }
+.cabecalho-npc .botao-fechar { border: 0; border-radius: 8px; padding: 6px 9px; color: inherit; background: #ffffff20; cursor: pointer }
+.resumo-npc { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; padding: 12px; border: 1px solid var(--gaveta-borda); border-radius: 12px; background: var(--gaveta-cartao) }
+.resumo-npc b { text-align: right }
+.cartao-npc label { display: block; margin: 14px 0 6px; font-weight: 700 }
+.cartao-npc input { width: 100%; box-sizing: border-box; border: 2px solid var(--gaveta-madeira); border-radius: 9px; padding: 9px; color: var(--gaveta-texto); background: var(--gaveta-cartao); font: inherit }
+.quantidades-npc { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px }
+.quantidades-npc button { border: 1px solid var(--gaveta-borda); border-radius: 8px; padding: 6px 10px; color: var(--gaveta-texto); background: var(--gaveta-cartao); cursor: pointer }
+.previa-npc, .resumo-confirmacao-npc { padding: 10px; border-radius: 10px; background: var(--gaveta-cartao); font-weight: 700 }
+.erro-npc { min-height: 1.2em; color: #a92f25; font-size: 13px }
+.acoes-npc { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px }
+.acoes-npc .botao-pequeno { min-height: 40px }
+.acoes-npc button:disabled { opacity: .55; cursor: not-allowed }
+.cartao-npc [hidden] { display: none }
+
 /* ===== Fazenda 8.4 (D2): a identidade da gaveta de construções (madeira, papel, botões com volume; tokens --gaveta-* em
    01-base.css) aplicada à barra superior, ao menu, aos painéis Tempo, Áudio, Fazenda e Equipe e às janelas. As regras ficam
    sob #barra-ferramentas para valer sobre as antigas sem apagá-las; cada painel mantém seus elementos próprios (relógio,

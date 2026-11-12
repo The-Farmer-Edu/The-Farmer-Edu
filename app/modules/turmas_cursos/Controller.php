@@ -12,21 +12,35 @@ class CursosController
         $this->ir($u ? $u['perfilAcesso'] : 'auth/loginAluno', $u ? 'turmas_cursos/' : '');
     }
 
-    // Cursos vêm do banco; o instrutor escolhe um para criar uma turma
+    // Tela inicial do instrutor: turmas, como na tela inicial do aluno.
     public function instrutor(): void
     {
+        $u = $this->exigir('instrutor');
+        $this->view('paginaInstrutor', [
+            'cursos'     => CursoModel::listar(),
+            'turmas'     => TurmaModel::listarDoInstrutor((int) $u['idUsuario'], 1),
+            'arquivadas' => TurmaModel::listarDoInstrutor((int) $u['idUsuario'], 0),
+            'msg'        => $_GET['msg'] ?? '',
+            'erro'       => $_GET['erro'] ?? '',
+        ]);
+    }
+
+    // Área de CRUD dos cursos, acessada pelo menu do instrutor.
+    public function cursos(): void
+    {
         $this->exigir('instrutor');
-        CursoModel::garantirCursosDeTeste(); // só age se não houver nenhum curso cadastrado
-        $this->view('paginaInstrutor', ['cursos' => CursoModel::listar(), 'msg' => $_GET['msg'] ?? '']);
+        $this->view('cursos', [
+            'cursos' => CursoModel::listar(),
+            'msg'    => $_GET['msg'] ?? '',
+            'erro'   => $_GET['erro'] ?? '',
+        ]);
     }
 
     public function aluno(): void
     {
         $u = $this->exigir('aluno');
         $this->view('paginaAluno', [
-            'cursos'       => CursoModel::listarDoAluno($u['idUsuario']),
-            'turmas'       => TurmaModel::listarDoAluno($u['idUsuario']),
-            'todosCursos'  => CursoModel::listar(),
+            'turmas' => TurmaModel::listarDoAluno((int) $u['idUsuario']),
         ]);
     }
 
@@ -41,13 +55,96 @@ class CursosController
         ]);
     }
 
+    // ---------- CRUD de cursos (somente instrutor) ----------
+
+    // Formulário vazio para cadastrar um curso
+    public function cursoNovo(): void
+    {
+        $this->exigir('instrutor');
+        $this->view('cursoForm', ['curso' => null, 'erro' => $_GET['erro'] ?? '']);
+    }
+
+    public function cursoSalvar(): void
+    {
+        $this->exigir('instrutor');
+        $this->validarCsrf();
+        [$nome, $descricao, $erro] = $this->lerCurso(0);
+        if ($erro) {
+            $this->ir('turmas_cursos/cursoNovo?erro=' . urlencode($erro));
+        }
+        CursoModel::criar($nome, $descricao);
+        $this->ir('turmas_cursos/cursos?msg=' . urlencode('Curso criado.'));
+    }
+
+    // Formulário preenchido para editar o curso (?id=ID)
+    public function cursoEditar(): void
+    {
+        $this->exigir('instrutor');
+        $curso = $this->cursoExistente((int) ($_GET['id'] ?? 0));
+        $this->view('cursoForm', ['curso' => $curso, 'erro' => $_GET['erro'] ?? '']);
+    }
+
+    public function cursoAtualizar(): void
+    {
+        $this->exigir('instrutor');
+        $this->validarCsrf();
+        $curso = $this->cursoExistente((int) ($_POST['id_curso'] ?? 0));
+        [$nome, $descricao, $erro] = $this->lerCurso((int) $curso['id_curso']);
+        if ($erro) {
+            $this->ir('turmas_cursos/cursoEditar?id=' . (int) $curso['id_curso'] . '&erro=' . urlencode($erro));
+        }
+        CursoModel::atualizar((int) $curso['id_curso'], $nome, $descricao);
+        $this->ir('turmas_cursos/cursos?msg=' . urlencode('Curso atualizado.'));
+    }
+
+    public function cursoExcluir(): void
+    {
+        $this->exigir('instrutor');
+        $this->validarCsrf();
+        $curso = $this->cursoExistente((int) ($_POST['id_curso'] ?? 0));
+        try {
+            $ok = CursoModel::excluir((int) $curso['id_curso']);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            $ok = false;
+        }
+        $this->ir('turmas_cursos/cursos?' . ($ok
+            ? 'msg=' . urlencode('Curso excluído.')
+            : 'erro=' . urlencode('Não é possível excluir: o curso possui turmas (ativas ou arquivadas).')));
+    }
+
+    // Lê e valida nome/descrição do formulário. Devolve [nome, descricao, erro]
+    private function lerCurso(int $idAtual): array
+    {
+        $nome = trim((string) ($_POST['nome'] ?? ''));
+        $descricao = trim((string) ($_POST['descricao'] ?? ''));
+        $erro = '';
+        if ($nome === '' || mb_strlen($nome) > 150) {
+            $erro = 'Nome inválido (1 a 150 caracteres).';
+        } elseif (mb_strlen($descricao) > 1000) {
+            $erro = 'A descrição pode ter no máximo 1000 caracteres.';
+        } elseif (CursoModel::nomeExiste($nome, $idAtual)) {
+            $erro = 'Já existe um curso com esse nome.';
+        }
+        return [$nome, $descricao === '' ? null : $descricao, $erro];
+    }
+
+    private function cursoExistente(int $id): array
+    {
+        $curso = CursoModel::buscar($id);
+        if (!$curso) {
+            $this->ir('turmas_cursos/cursos?erro=' . urlencode('Curso não encontrado.'));
+        }
+        return $curso;
+    }
+
     // Formulário de criação de turma para o curso escolhido (?curso=ID)
     public function form(): void
     {
         $u = $this->exigir('instrutor');
         $curso = CursoModel::buscar((int) ($_GET['curso'] ?? 0));
         if (!$curso) {
-            $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Curso não encontrado.'));
+            $this->ir('turmas_cursos/cursos?msg=' . urlencode('Curso não encontrado.'));
         }
         $this->view('form', [
             'curso'  => $curso,
@@ -61,14 +158,15 @@ class CursosController
     public function salvar(): void
     {
         $u = $this->exigir('instrutor');
+        $this->validarCsrf();
         $idCurso = (int) ($_POST['id_curso'] ?? 0);
         $nome = trim((string) ($_POST['nome'] ?? ''));
         $turno = (string) ($_POST['turno'] ?? '');
 
         if (!CursoModel::buscar($idCurso)) {
-            $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Curso não encontrado.'));
+            $this->ir('turmas_cursos/cursos?msg=' . urlencode('Curso não encontrado.'));
         }
-        $voltar = 'turmas_cursos/turmaForm?curso=' . $idCurso . '&erro=';
+        $voltar = 'turmas_cursos/instrutor?erro=';
         if ($nome === '' || mb_strlen($nome) > 100) {
             $this->ir($voltar . urlencode('Nome inválido (1 a 100 caracteres).'));
         }
@@ -77,7 +175,7 @@ class CursosController
         }
 
         TurmaModel::criar($nome, $turno, $idCurso, (int) $u['idUsuario']);
-        $this->ir('turmas_cursos/turmaForm?curso=' . $idCurso . '&msg=' . urlencode('Turma criada.'));
+        $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Turma criada.'));
     }
 
     // ---------- Editar turma ----------
@@ -109,7 +207,7 @@ class CursosController
         }
 
         TurmaModel::atualizar($idTurma, (int) $u['idUsuario'], $nome, $turno);
-        $this->ir('turmas_cursos/turmaForm?curso=' . (int) $turma['id_curso'] . '&msg=' . urlencode('Turma atualizada.'));
+        $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Turma atualizada.'));
     }
 
     // ---------- Arquivar / restaurar turma ----------
@@ -131,7 +229,7 @@ class CursosController
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
         TurmaModel::definirAtivo((int) $turma['id_turma'], (int) $u['idUsuario'], $ativo);
-        $this->ir('turmas_cursos/turmaForm?curso=' . (int) $turma['id_curso'] . '&msg=' . urlencode($mensagem));
+        $this->ir('turmas_cursos/instrutor?msg=' . urlencode($mensagem));
     }
 
     // ---------- Alunos da turma (matrícula) ----------
@@ -245,7 +343,7 @@ class CursosController
         return $u;
     }
 
-    // Turma só é acessível ao instrutor dono dela; senão volta para a lista de cursos
+    // Turma só é acessível ao instrutor dono dela; senão volta para a lista de turmas
     private function turmaDoInstrutor(int $idTurma, array $u): array
     {
         $turma = TurmaModel::buscarDoInstrutor($idTurma, (int) $u['idUsuario']);

@@ -4,27 +4,6 @@ require_once __DIR__ . '/../../core/database.php';
 
 class CursoModel
 {
-    // Cursos de teste, usados só enquanto a tabela `cursos` estiver vazia.
-    // Para remover: apague este array e a chamada garantirCursosDeTeste() no Controller.
-    private const CURSOS_DE_TESTE = [
-        ['PHP',    'Fundamentos de PHP: sintaxe, orientação a objetos e desenvolvimento web.'],
-        ['MySQL',  'Modelagem de dados, SQL e administração de bancos MySQL.'],
-        ['Python', 'Lógica de programação e desenvolvimento com Python.'],
-    ];
-
-    // Se não existir nenhum curso no banco, cadastra PHP, MySQL e Python para visualização
-    public static function garantirCursosDeTeste(): void
-    {
-        $pdo = iniciarPDO();
-        if ((int) $pdo->query('SELECT COUNT(*) FROM cursos')->fetchColumn() > 0) {
-            return;
-        }
-        $stmt = $pdo->prepare('INSERT INTO cursos (nome_curso, descricao) VALUES (?, ?)');
-        foreach (self::CURSOS_DE_TESTE as [$nome, $descricao]) {
-            $stmt->execute([$nome, $descricao]);
-        }
-    }
-
     // Instrutor: todos os cursos, com a quantidade de turmas de cada um
     public static function listar(): array
     {
@@ -56,6 +35,46 @@ class CursoModel
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
     }
+
+    // Já existe um curso com esse nome? ($ignorarId evita comparar o curso consigo mesmo ao editar)
+    public static function nomeExiste(string $nome, int $ignorarId = 0): bool
+    {
+        $stmt = iniciarPDO()->prepare('SELECT 1 FROM cursos WHERE nome_curso = ? AND id_curso <> ?');
+        $stmt->execute([$nome, $ignorarId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public static function criar(string $nome, ?string $descricao): void
+    {
+        iniciarPDO()->prepare('INSERT INTO cursos (nome_curso, descricao) VALUES (?, ?)')
+            ->execute([$nome, $descricao]);
+    }
+
+    public static function atualizar(int $id, string $nome, ?string $descricao): void
+    {
+        iniciarPDO()->prepare('UPDATE cursos SET nome_curso = ?, descricao = ? WHERE id_curso = ?')
+            ->execute([$nome, $descricao, $id]);
+    }
+
+    // Quantas turmas (ativas ou arquivadas, de qualquer instrutor) o curso tem
+    public static function totalTurmas(int $id): int
+    {
+        $stmt = iniciarPDO()->prepare('SELECT COUNT(*) FROM turmas WHERE id_curso = ?');
+        $stmt->execute([$id]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    // Só exclui curso sem nenhuma turma (o banco também impede, via ON DELETE RESTRICT).
+    // Devolve false se o curso tem turmas ou não existe.
+    public static function excluir(int $id): bool
+    {
+        if (self::totalTurmas($id) > 0) {
+            return false;
+        }
+        $stmt = iniciarPDO()->prepare('DELETE FROM cursos WHERE id_curso = ?');
+        $stmt->execute([$id]);
+        return $stmt->rowCount() > 0;
+    }
 }
 
 class TurmaModel
@@ -74,6 +93,23 @@ class TurmaModel
              ORDER BY t.nome_turma'
         );
         $stmt->execute([$idCurso, $idInstrutor, $ativo]);
+        return $stmt->fetchAll();
+    }
+
+    // Todas as turmas de um instrutor, separadas por situação (ativas/arquivadas).
+    // Inclui o curso e a quantidade de alunos para a tela inicial do instrutor.
+    public static function listarDoInstrutor(int $idInstrutor, int $ativo = 1): array
+    {
+        $stmt = iniciarPDO()->prepare(
+            'SELECT t.*, c.nome_curso, COUNT(m.id_matricula) AS total_alunos
+             FROM turmas t
+             JOIN cursos c ON c.id_curso = t.id_curso
+             LEFT JOIN matriculas m ON m.id_turma = t.id_turma
+             WHERE t.id_instrutor = ? AND t.ativo = ?
+             GROUP BY t.id_turma, c.nome_curso
+             ORDER BY c.nome_curso, t.nome_turma'
+        );
+        $stmt->execute([$idInstrutor, $ativo]);
         return $stmt->fetchAll();
     }
 

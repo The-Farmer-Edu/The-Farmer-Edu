@@ -5,14 +5,8 @@ if($_SERVER['REQUEST_METHOD'] === 'POST' && empty($mensagem)){
 }
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
 
-// primeiro confere se a sessão expirou (4h sem atividade), depois lê o login
 $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
-
-// usuarioLogado: devolve os dados da sessão ou null
-
-sessaoExpirouPorInatividade();
 $logado = usuarioLogado();
-
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -29,15 +23,30 @@ $logado = usuarioLogado();
             <h1 class="titulo-login" id="titulo-login">Entrar como Instrutor</h1>
 
             <?php if (!empty($mensagem)): ?>
-                <p class="mensagem" id="mensagem-erro"><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
+                <div class="alerta-erro">
+                    <?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?>
+                </div>
             <?php endif; ?>
 
-            <?php if ($logado): ?>
-                <p class="mensagem" id="mensagem-logado">
-                    Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
-                    (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
-                </p>
-                <p class="mensagem"><a class="link-azul" id="link-sair" href="logout">Sair</a></p>
+            <?php if ($expirou && !$logado): ?>
+                <p><strong>Sua sessão expirou por inatividade.</strong></p>
+                <form action="loginInstrutor" method="GET">
+                    <button type="submit">Voltar ao login</button>
+                </form>
+
+            <?php elseif ($logado): ?>
+                <div class="painel-logado">
+                    <p class="saudacao">Bem-vindo de volta,</p>
+                    <h2 class="nome-usuario"><?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?></h2>
+                    <span class="badge-perfil"><?= htmlspecialchars(ucfirst($logado['perfilAcesso']), ENT_QUOTES, 'UTF-8') ?></span>
+
+                    <div class="acoes-usuario-logado">
+                        <a href="editarConta" class="btn-acao-logado btn-primario">Editar minha conta</a>
+                        <a href="desativarConta" class="btn-acao-logado btn-perigo">Desativar conta</a>
+                        <a href="logout" class="btn-acao-logado btn-neutro">Sair da conta</a>
+                    </div>
+                </div>
+
             <?php else: ?>
                 <form class="form-login" id="form-login" action="" method="POST">
                     <div class="campo" id="campo-usuario">
@@ -62,7 +71,6 @@ $logado = usuarioLogado();
         </section>
 
         <aside class="painel-imagem" id="painel-imagem">
-            <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
             <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
             <p class="subtitulo" id="subtitulo">Instrutor</p>
         </aside>

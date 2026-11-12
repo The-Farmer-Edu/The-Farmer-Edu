@@ -1,70 +1,22 @@
-/**
- * main.js — Ponto de entrada único do módulo submissoes
- *
- * Detecta em qual página estamos e injeta dinamicamente apenas os scripts
- * necessários para aquela página, na ordem correta de dependência.
- *
- * Uso (substitui todas as tags <script src="..."> individuais):
- *
- *   <script src="submissoes/file?type=js&file=main.js"></script>
- *
- * Mapa de módulos:
- *   Todas as páginas  → atividade.js
- *   /aluno            → aluno.js
- *   /iniciarAtv       → iniciaratv.js → submissao.js → sophia.js
- */
-
 (function () {
-    'use strict';
-
-    /** Carrega um script JS e retorna uma Promise que resolve quando ele terminar. */
-    function carregarScript(arquivo) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'submissoes/file?type=js&file=' + arquivo;
-            s.onload  = resolve;
-            s.onerror = () => reject(new Error('Falha ao carregar: ' + arquivo));
-            document.head.appendChild(s);
-        });
-    }
-
-    /** Carrega múltiplos scripts em sequência (ordem importa). */
-    async function carregarSequencial(arquivos) {
-        for (const arq of arquivos) {
-            await carregarScript(arq);
-        }
-    }
-
-    /* ─── Detectar página atual ─────────────────────────────────── */
-    const caminho = window.location.pathname.replace(/\/$/, '');
-    const pagina  = caminho.split('/').pop(); // ex: "aluno", "iniciarAtv"
-
-    /* ─── Mapa de módulos por página ────────────────────────────── */
-    const modulos = {
-        // Página do aluno: lista de atividades
-        aluno: ['atividade.js', 'menu.js', 'aluno.js'],
-
-        // IDE: editor de código, execução, Sophia
-        iniciarAtv: [
-            'atividade.js',
-            'menu.js',
-            'submissao.js',   // avaliarNoServidor, entrega, contadores
-            'sophia.js',      // balão + interação console
-            'iniciaratv.js'   // editor, execução, abas
-        ]
+    const PASTA_JS = 'submissoes/file?type=js&file=';
+    const MODULOS_POR_PAGINA = {
+        aluno: ['atividade.js', 'aluno.js'],
+        iniciaratv: ['atividade.js', 'iniciaratv.js', 'submissao.js', 'sophia.js']
     };
+    const modulos = MODULOS_POR_PAGINA[document.body.dataset.pagina] || [];
 
-    const lista = modulos[pagina];
-
-    if (!lista) {
-        // Página sem módulos específicos (ex: home, 404)
-        console.info('[main.js] Página sem módulos JS: "' + pagina + '"');
-        return;
+    function carregarModulo(indice) {
+        if (indice >= modulos.length) {
+            if (typeof iniciarPagina === 'function') iniciarPagina();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = PASTA_JS + modulos[indice];
+        script.onload = () => carregarModulo(indice + 1);
+        script.onerror = () => console.error('Não foi possível carregar o módulo: ' + modulos[indice]);
+        document.head.appendChild(script);
     }
 
-    /* ─── Carregar módulos ───────────────────────────────────────── */
-    carregarSequencial(lista).catch(err => {
-        console.error('[main.js] Erro ao carregar módulos:', err);
-    });
+    carregarModulo(0);
 })();
-

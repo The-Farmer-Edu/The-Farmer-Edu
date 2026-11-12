@@ -1,438 +1,318 @@
-/**
- * iniciaratv.js — IDE: editor de código, execução e navegação
- *
- * Responsabilidades:
- *   - Editor com syntax highlight e gutter de linhas
- *   - Execução web (iframe) e terminal (Judge0 via servidor)
- *   - Console de saída
- *   - Abas de arquivos
- *   - Comportamento mobile (editor expandido)
- *
- * Depende de: atividade.js  → window.FarmAtividade, window.FarmLinguagens
- *             submissao.js  → avaliarNoServidor, FEEDBACK, lerJson, erroDoPHP,
- *                             atualizarEntrega, LIMITE_CLICKS
- *             sophia.js     → sophiaFala (opcional)
- */
+// IDE: editor, destaque de sintaxe, abas de arquivos, execução e modo celular.
+const atividadeAtual = window.FarmAtividade;
+const linguagemAtual = atividadeAtual.linguagem;
+const modoExecucao = linguagemAtual.modo;
+const ARQUIVOS = linguagemAtual.arquivos;
+const LIMITE_EXECUCOES = 10;
+const LIMITE_CANCELAMENTOS = 3;
+const ID_LINGUAGEM_PYTHON = 71;
+const CONSULTA_CELULAR = '(max-width: 780px)';
 
-'use strict';
-
-/* ─── Referências globais ─────────────────────────────────────────── */
-const A    = window.FarmAtividade;
-const L    = A.linguagem;
-const modo = L.modo;
-const ARQUIVOS = L.arquivos;
-
-const $id = id => document.getElementById(id);
-
-const ed           = $id('ed');
-const hl           = $id('hl');
-const gutter       = $id('gutter');
-const pv           = $id('pv');
-const pvPy         = $id('pvPy');
-const con          = $id('console');
-const ide          = $id('ide');
-const btnInicio    = $id('btnInicio');
-const btnFecharEditor = $id('fecharEditor');
-
-/* ─── Chaves de armazenamento ────────────────────────────────────── */
-const CHAVE = `farmedu:codigo:${A.chave}:${L.id}`;
-
-/* ─── Estado do editor ───────────────────────────────────────────── */
-let dados = {};
-try { dados = { ...L.inicial, ...JSON.parse(localStorage.getItem(CHAVE)) }; }
-catch (e) { dados = { ...L.inicial }; }
-if (A.vazia) ARQUIVOS.forEach(a => { dados[a.lang] = ''; });
-
-let atual          = ARQUIVOS[0].lang;
-let resultadoAberto = false;
-let executadoAtual  = false;
-let executando      = false;
-let errosConsole    = [];
-
-// Expõe estado para sophia.js e submissao.js
-window._errosConsole  = () => executadoAtual ? errosConsole : [];
-window._dadosCodigo   = () => dados;
-window._executadoAtual = false;
-window._executando    = false;
-window._resultadoAberto = false;
-
-// Contadores de uso (compartilhados com submissao.js)
-window._usos = { executar: 0, sophia: 0 };
-
-/* ─── Regras de syntax highlight ─────────────────────────────────── */
-const REGRAS = {
-    html: [
-        ['c', '<!--[\\s\\S]*?-->'],
-        ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'],
-        ['s', '"[^"]*"|\'[^\']*\''],
-        ['a', '[\\w-]+(?==)']
-    ],
-    css: [
-        ['c', '\\/\\*[\\s\\S]*?\\*\\/'],
-        ['s', '"[^"]*"|\'[^\']*\''],
-        ['k', '@[\\w-]+'],
-        ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'],
-        ['p', '[\\w-]+(?=\\s*:)']
-    ],
-    js: [
-        ['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/'],
-        ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
-        ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
-        ['n', '\\b\\d+(?:\\.\\d+)?\\b'],
-        ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']
-    ],
-    py: [
-        ['c', '#.*'],
-        ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
-        ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
-        ['n', '\\b\\d+(?:\\.\\d+)?\\b'],
-        ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']
-    ],
-    php: [
-        ['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\\/'],
-        ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
-        ['a', '\\$[a-zA-Z_]\\w*'],
-        ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
-        ['n', '\\b\\d+(?:\\.\\d+)?\\b'],
-        ['f', '\\b[a-zA-Z_]\\w*(?=\\()']
-    ]
+const REGRAS_DESTAQUE = {
+    html: [['c', '<!--[\\s\\S]*?-->'], ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'], ['s', '"[^"]*"|\'[^\']*\''], ['a', '[\\w-]+(?==)']],
+    css: [['c', '\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
+          ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
+    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/'],
+         ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+         ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
+         ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
+    py: [['c', '#.*'], ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
+         ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
+         ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']],
+    php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+          ['a', '\\$[a-zA-Z_]\\w*'],
+          ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']]
 };
 
-/* ─── Utilitários ─────────────────────────────────────────────────── */
-const esc    = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const esperar = ms => new Promise(r => setTimeout(r, ms));
-const mobile  = () => window.matchMedia('(max-width: 780px)').matches;
+/* Elementos da página */
+const porId = id => document.getElementById(id);
+const editorTexto = porId('ed');
+const camadaDestaque = porId('hl');
+const numeracaoLinhas = porId('gutter');
+const quadroPreview = porId('pv');
+const saidaTerminal = porId('pvPy');
+const consoleCorpo = porId('console');
+const areaIde = porId('ide');
+const botaoInicio = porId('btnInicio');
+const botaoFecharEditor = porId('fecharEditor');
 
-/** Assinatura do código + erros para detectar mudanças (usado por sophia.js) */
-function assinaturaDoCodigo() {
-    return contextoEntrega().codigo + '\u0000' + JSON.stringify(window._errosConsole());
+/* Chaves do localStorage (por atividade, para não misturar atividades) */
+const CHAVE_CODIGO = `farmedu:codigo:${atividadeAtual.chave}:${linguagemAtual.id}`;
+const CHAVE_ENTREGA = `farmedu:entrega:${atividadeAtual.chave}`;
+const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${atividadeAtual.chave}`;
+
+/* Estado da página (também usado por submissao.js e sophia.js) */
+let dadosDosArquivos;
+try {
+    dadosDosArquivos = { ...linguagemAtual.inicial, ...JSON.parse(localStorage.getItem(CHAVE_CODIGO)) };
+} catch (erro) {
+    dadosDosArquivos = { ...linguagemAtual.inicial };
 }
-window.assinaturaDoCodigo = assinaturaDoCodigo;
+if (atividadeAtual.vazia) ARQUIVOS.forEach(arquivo => { dadosDosArquivos[arquivo.lang] = ''; });
 
-/* ─── Editor: syntax highlight ───────────────────────────────────── */
+let entrega = null;
+try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) {}
+let cancelamentos = 0;
+try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) {}
+
+let arquivoAtual = ARQUIVOS[0].lang;
+let resultadoAberto = false;
+let executadoAtual = false;
+let executando = false;
+let usosExecutar = 0;
+
+/* Utilitários */
+const ehCelular = () => window.matchMedia(CONSULTA_CELULAR).matches;
+const escaparHtml = texto => texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esperar = ms => new Promise(resolver => setTimeout(resolver, ms));
+
+function aviso(mensagem) {
+    const aviso_ = porId('toast');
+    aviso_.textContent = mensagem;
+    aviso_.classList.add('on');
+    clearTimeout(aviso.temporizador);
+    aviso.temporizador = setTimeout(() => aviso_.classList.remove('on'), 3000);
+}
+
+function salvar() {
+    try { localStorage.setItem(CHAVE_CODIGO, JSON.stringify(dadosDosArquivos)); } catch (erro) {}
+}
+
+/* Informações da atividade na tela (vindas do atividade.js) */
+if (atividadeAtual.vazia) {
+    porId('atvTitulo').textContent = 'Nenhuma atividade carregada';
+    porId('atvDescricao').textContent = 'Volte à página do aluno e clique em "Começar" na atividade.';
+    porId('atvId').hidden = true;
+    porId('atvLang').hidden = true;
+    const detalhes = document.querySelector('.atv-detalhes');
+    if (detalhes) detalhes.hidden = true;
+} else {
+    const totalRequisitos = atividadeAtual.requisitos.length;
+    porId('atvId').textContent = `Atividade #${atividadeAtual.id}`;
+    porId('atvTitulo').textContent = atividadeAtual.titulo;
+    porId('atvLang').textContent = linguagemAtual.nome;
+    porId('atvDescricao').textContent = atividadeAtual.descricao;
+    porId('atvResumo').textContent = `O que fazer (${totalRequisitos} ${totalRequisitos === 1 ? 'item' : 'itens'})`;
+    atividadeAtual.requisitos.forEach(requisito => {
+        const item = document.createElement('li');
+        item.textContent = requisito;
+        porId('atvRequisitos').appendChild(item);
+    });
+}
+
+/* Editor */
 function colorir(codigo, regras) {
-    const re = new RegExp(regras.map(r => '(' + r[1] + ')').join('|'), 'g');
-    let saida = '', ultimo = 0, m;
-    while ((m = re.exec(codigo))) {
-        if (!m[0]) { re.lastIndex++; continue; }
-        const i = m.slice(1).findIndex(x => x !== undefined);
-        saida += esc(codigo.slice(ultimo, m.index)) + `<span class="${regras[i][0]}">${esc(m[0])}</span>`;
-        ultimo = re.lastIndex;
+    const expressao = new RegExp(regras.map(regra => '(' + regra[1] + ')').join('|'), 'g');
+    let saida = '', ultimoIndice = 0, correspondencia;
+    while ((correspondencia = expressao.exec(codigo))) {
+        if (!correspondencia[0]) { expressao.lastIndex++; continue; }
+        const indiceRegra = correspondencia.slice(1).findIndex(grupo => grupo !== undefined);
+        saida += escaparHtml(codigo.slice(ultimoIndice, correspondencia.index))
+            + `<span class="${regras[indiceRegra][0]}">${escaparHtml(correspondencia[0])}</span>`;
+        ultimoIndice = expressao.lastIndex;
     }
-    return saida + esc(codigo.slice(ultimo));
+    return saida + escaparHtml(codigo.slice(ultimoIndice));
 }
 
 function sincronizar() {
-    hl.scrollTop  = ed.scrollTop;
-    hl.scrollLeft = ed.scrollLeft;
-    gutter.scrollTop = ed.scrollTop;
+    camadaDestaque.scrollTop = editorTexto.scrollTop;
+    camadaDestaque.scrollLeft = editorTexto.scrollLeft;
+    numeracaoLinhas.scrollTop = editorTexto.scrollTop;
     atualizarBtnInicio();
 }
 
 function atualizarEditor() {
-    hl.innerHTML = colorir(ed.value, REGRAS[atual]) + '\n';
-    gutter.textContent = Array.from({ length: ed.value.split('\n').length }, (_, i) => i + 1).join('\n');
+    camadaDestaque.innerHTML = colorir(editorTexto.value, REGRAS_DESTAQUE[arquivoAtual]) + '\n';
+    numeracaoLinhas.textContent = Array.from({ length: editorTexto.value.split('\n').length }, (_, indice) => indice + 1).join('\n');
     sincronizar();
 }
 
 function posicao() {
-    const antes = ed.value.slice(0, ed.selectionStart).split('\n');
-    $id('stPos').textContent = `Ln ${antes.length}, Col ${antes[antes.length - 1].length + 1}`;
+    const linhasAntes = editorTexto.value.slice(0, editorTexto.selectionStart).split('\n');
+    porId('stPos').textContent = `Ln ${linhasAntes.length}, Col ${linhasAntes[linhasAntes.length - 1].length + 1}`;
 }
 
-/* ─── Abas de arquivos ───────────────────────────────────────────── */
 function montarAbas() {
-    $id('arquivos').innerHTML = '';
-    ARQUIVOS.forEach(a => {
-        const li = document.createElement('li');
-        if (a.lang === atual) li.className = 'on';
+    porId('arquivos').innerHTML = '';
+    ARQUIVOS.forEach(arquivo => {
+        const item = document.createElement('li');
+        if (arquivo.lang === arquivoAtual) item.className = 'on';
         const bolinha = document.createElement('span');
-        bolinha.className = 'dot dot-' + a.lang;
-        li.append(bolinha, a.nome);
-        li.onclick = () => trocar(a.lang);
-        $id('arquivos').appendChild(li);
+        bolinha.className = 'dot dot-' + arquivo.lang;
+        item.append(bolinha, arquivo.nome);
+        item.onclick = () => trocar(arquivo.lang);
+        porId('arquivos').appendChild(item);
     });
-    $id('stLang').textContent = ARQUIVOS.find(a => a.lang === atual).rotulo;
+    porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
 }
 
 function trocar(lang) {
-    atual = lang;
-    ed.value = dados[atual];
+    arquivoAtual = lang;
+    editorTexto.value = dadosDosArquivos[arquivoAtual];
     montarAbas();
     atualizarEditor();
     posicao();
-    if (!mobile()) ed.focus();
+    if (!ehCelular()) editorTexto.focus();
 }
 
-/* ─── Toast (aviso rápido) ───────────────────────────────────────── */
-function aviso(msg) {
-    const t = $id('toast');
-    t.textContent = msg;
-    t.classList.add('on');
-    clearTimeout(aviso._t);
-    aviso._t = setTimeout(() => t.classList.remove('on'), 3000);
-}
-window.aviso = aviso;
-
-/* ─── Console de saída ───────────────────────────────────────────── */
-function escreverConsole(msg, tipo = 'log') {
-    const linha = document.createElement('div');
-    linha.className = tipo;
-    linha.textContent = msg;
-    con.appendChild(linha);
-    con.scrollTop = con.scrollHeight;
-}
-window.escreverConsole = escreverConsole;
-
-/* ─── Painel de resultado ─────────────────────────────────────────── */
+/* Executar */
 function setAba(aba) {
-    ide.dataset.aba = aba;
-    document.querySelectorAll('.aba').forEach(b => b.classList.toggle('on', b.dataset.aba === aba));
+    areaIde.dataset.aba = aba;
+    document.querySelectorAll('.aba').forEach(botao => botao.classList.toggle('on', botao.dataset.aba === aba));
 }
-window.setAba = setAba;
 
 function mostrarResultado(focar) {
     if (!resultadoAberto) {
         resultadoAberto = true;
-        window._resultadoAberto = true;
-        $id('painelResultado').hidden = false;
-        ide.classList.add('com-resultado');
-        $id('abaResultado').disabled = false;
+        porId('painelResultado').hidden = false;
+        areaIde.classList.add('com-resultado');
+        porId('abaResultado').disabled = false;
     }
-    if (focar && mobile()) setAba('resultado');
+    if (focar && ehCelular()) setAba('resultado');
 }
-window.mostrarResultado = mostrarResultado;
 
-/* ─── Contexto de entrega ─────────────────────────────────────────── */
-function contextoEntrega() {
-    const web = modo === 'web';
-    return {
-        linguagem:   web ? 'HTML/CSS/JS' : L.rotulo,
-        idLinguagem: L.judge0,
-        codigo: web
-            ? ARQUIVOS.map(a => `/* ${a.nome} */\n${dados[a.lang]}`).join('\n\n')
-            : dados[ARQUIVOS[0].lang]
-    };
+function escreverConsole(mensagem, tipo = 'log') {
+    const linha = document.createElement('div');
+    linha.className = tipo;
+    linha.textContent = mensagem;
+    consoleCorpo.appendChild(linha);
+    consoleCorpo.scrollTop = consoleCorpo.scrollHeight;
 }
-window.contextoEntrega = contextoEntrega;
 
-/* ─── Atualizar botões ────────────────────────────────────────────── */
-function atualizarBotoes() {
-    const usos = window._usos;
-    $id('btnRodar').disabled  = A.vazia || executando || usos.executar >= LIMITE_CLICKS;
-    $id('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
-    $id('btnSophia').disabled = A.vazia || usos.sophia >= LIMITE_CLICKS;
-    if (typeof atualizarEntrega === 'function') atualizarEntrega();
-}
-window.atualizarBotoes = atualizarBotoes;
+// Ponte que envia console.log/erros da página executada para o console da IDE
+const PONTE_CONSOLE = '<script>(function(){' +
+    'var enviar=function(tipo,args){parent.postMessage({farm:1,t:tipo,m:[].map.call(args,function(x){' +
+    'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")},"*")};' +
+    '["log","warn","error"].forEach(function(k){var original=console[k];console[k]=function(){enviar(k,arguments);original.apply(console,arguments)}});' +
+    'window.addEventListener("error",function(e){enviar("error",[e.message])});' +
+    '})()<\/script>';
 
-/* ─── Ponte para o console do iframe (modo web) ──────────────────── */
-const PONTE = '<script>(function(){' +
-    'var s=function(t,a){parent.postMessage({farm:1,t:t,m:[].map.call(a,function(x){' +
-    'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")' +
-    '},"*")};' +
-    '["log","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);o.apply(console,arguments)}});' +
-    'window.addEventListener("error",function(e){s("error",[e.message])});' +
-    '})()\<\/script>';
-
-/* ─── Execução web (iframe) ───────────────────────────────────────── */
 function rodarWeb() {
-    pv.hidden  = false;
-    pvPy.hidden = true;
-    const css = `<style>${dados.css}</style>`;
-    const js  = PONTE + `<script>${dados.js}<\/script>`;
-    let doc = dados.html;
-    doc = doc.includes('</head>') ? doc.replace('</head>', () => css + '</head>') : css + doc;
-    doc = doc.includes('</body>') ? doc.replace('</body>', () => js  + '</body>') : doc + js;
-    pv.srcdoc = doc;
+    quadroPreview.hidden = false;
+    saidaTerminal.hidden = true;
+    const estilo = `<style>${dadosDosArquivos.css}</style>`;
+    const script = PONTE_CONSOLE + `<script>${dadosDosArquivos.js}<\/script>`;
+    let documentoHtml = dadosDosArquivos.html;
+    documentoHtml = documentoHtml.includes('</head>') ? documentoHtml.replace('</head>', () => estilo + '</head>') : estilo + documentoHtml;
+    documentoHtml = documentoHtml.includes('</body>') ? documentoHtml.replace('</body>', () => script + '</body>') : documentoHtml + script;
+    quadroPreview.srcdoc = documentoHtml;
     escreverConsole('Página renderizada com o código do momento do clique.', 'info');
 }
 
-/* ─── Execução terminal (Judge0 via servidor) ────────────────────── */
-async function rodarTerminal() {
-    pv.hidden  = true;
-    pvPy.hidden = false;
-    const arq = ARQUIVOS[0];
-    pvPy.textContent = `$ ${arq.nome}\nExecutando...`;
-    escreverConsole('Enviando o código para executar no Judge0...', 'info');
-    const codigoEnviado = contextoEntrega().codigo;
-    try {
-        const data = await avaliarNoServidor();
-        const f    = FEEDBACK.interpretar(data);
-        window._setUltimaResposta && window._setUltimaResposta({ codigo: codigoEnviado, f });
-        const saida  = String(f.saida || '').trim();
-        const aceito = !f.compilador || /accepted|aceito/i.test(f.compilador);
-        pvPy.textContent = `$ ${arq.nome}\n` + (saida || '(sem saída)');
-        escreverConsole(`Judge0: ${f.compilador || 'sem status'}`, aceito ? 'info' : 'error');
-        if (saida) escreverConsole('Saída: ' + saida, aceito ? 'log' : 'error');
-        if (!aceito) {
-            errosConsole.push((saida || String(f.compilador)).slice(0, 300));
-        } else if (typeof A.saidaEsperada === 'string') {
-            const esperado = A.saidaEsperada.trim();
-            const ok = saida === esperado;
-            escreverConsole(ok
-                ? '✔ Saída confere com o esperado'
-                : '✖ Saída diferente. Esperado: ' + esperado,
-                ok ? 'info' : 'error');
-            if (!ok) errosConsole.push(`A saída foi "${saida}", mas o esperado é "${esperado}".`);
-        }
-    } catch (e) {
-        pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.`;
-        escreverConsole('Falha ao falar com o servidor: ' + e.message, 'error');
-    }
+window.addEventListener('message', evento => {
+    if (evento.source !== quadroPreview.contentWindow || !evento.data || !evento.data.farm) return;
+    escreverConsole((evento.data.t === 'error' ? '✖ ' : '› ') + evento.data.m, evento.data.t);
+});
+
+// Python, PHP e Node: a execução no servidor (Judge0) será integrada depois
+function rodarTerminal() {
+    quadroPreview.hidden = true;
+    saidaTerminal.hidden = false;
+    saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\nA execução de ${linguagemAtual.rotulo} será integrada em breve.`;
+    escreverConsole('Execução no servidor (Judge0) ainda não integrada.', 'info');
 }
 
-/* ─── Executar (botão ▶) ─────────────────────────────────────────── */
 async function executar(opcoes = {}) {
     if (executando) return;
     executando = true;
-    window._executando = true;
     atualizarBotoes();
-    con.innerHTML = '';
-    errosConsole  = [];
+    consoleCorpo.innerHTML = '';
     mostrarResultado(!!opcoes.focar);
     try {
-        if (modo === 'web') rodarWeb(); else await rodarTerminal();
+        if (modoExecucao === 'web') rodarWeb(); else rodarTerminal();
         executadoAtual = true;
-        window._executadoAtual = true;
-        $id('pvStale').hidden = true;
+        porId('pvStale').hidden = true;
     } finally {
         executando = false;
-        window._executando = false;
         atualizarBotoes();
     }
 }
-window.executar = executar;
 
-/* ─── Salvar ─────────────────────────────────────────────────────── */
-function salvar() {
-    try { localStorage.setItem(CHAVE, JSON.stringify(dados)); } catch (e) {}
+function atualizarBotoes() {
+    porId('btnRodar').disabled = atividadeAtual.vazia || executando || usosExecutar >= LIMITE_EXECUCOES;
+    porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
+    porId('btnSophia').disabled = atividadeAtual.vazia;
+    atualizarEntrega();
 }
-window.salvar = salvar;
 
-/* ─── Inicializar informações da atividade na tela ───────────────── */
-(function inicializarAtividade() {
-    if (A.vazia) {
-        $id('atvTitulo').textContent   = 'Nenhuma atividade carregada';
-        $id('atvDescricao').textContent = 'Volte à página do aluno e clique em "Começar" na atividade.';
-        $id('atvId').hidden  = true;
-        $id('atvLang').hidden = true;
-        const detalhes = document.querySelector('.atv-detalhes');
-        if (detalhes) detalhes.hidden = true;
-    } else {
-        $id('atvId').textContent      = `Atividade #${A.id}`;
-        $id('atvTitulo').textContent   = A.titulo;
-        $id('atvLang').textContent     = L.nome;
-        $id('atvDescricao').textContent = A.descricao;
-        $id('atvResumo').textContent   = `O que fazer (${A.requisitos.length} ${A.requisitos.length === 1 ? 'item' : 'itens'})`;
-        A.requisitos.forEach(r => {
-            const li = document.createElement('li');
-            li.textContent = r;
-            $id('atvRequisitos').appendChild(li);
-        });
-    }
-})();
-
-/* ─── Eventos do editor ───────────────────────────────────────────── */
-ed.addEventListener('input', () => {
-    dados[atual] = ed.value;
+/* Eventos do editor */
+editorTexto.addEventListener('input', () => {
+    dadosDosArquivos[arquivoAtual] = editorTexto.value;
     executadoAtual = false;
-    window._executadoAtual = false;
-    if (resultadoAberto) $id('pvStale').hidden = false;
+    if (resultadoAberto) porId('pvStale').hidden = false;
     atualizarEditor();
     posicao();
     salvar();
 });
-ed.addEventListener('scroll', sincronizar);
-ed.addEventListener('click',  posicao);
-ed.addEventListener('keyup',  posicao);
+editorTexto.addEventListener('scroll', sincronizar);
+editorTexto.addEventListener('click', posicao);
+editorTexto.addEventListener('keyup', posicao);
 
-ed.addEventListener('keydown', e => {
-    if (e.key === 'Tab' && !ed.readOnly) {
-        e.preventDefault();
-        // Python: indentação de 4 espaços; demais: 2
-        ed.setRangeText(
-            modo === 'terminal' && L.id === 71 ? '    ' : '  ',
-            ed.selectionStart, ed.selectionEnd, 'end'
-        );
-        ed.dispatchEvent(new Event('input'));
+editorTexto.addEventListener('keydown', evento => {
+    if (evento.key === 'Tab' && !editorTexto.readOnly) {
+        evento.preventDefault();
+        const recuo = modoExecucao === 'terminal' && linguagemAtual.id === ID_LINGUAGEM_PYTHON ? '    ' : '  ';
+        editorTexto.setRangeText(recuo, editorTexto.selectionStart, editorTexto.selectionEnd, 'end');
+        editorTexto.dispatchEvent(new Event('input'));
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        if (ed.readOnly) return;
+    if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 's') {
+        evento.preventDefault();
+        if (editorTexto.readOnly) return;
         salvar();
         aviso('Código salvo');
     }
 });
 
-document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape') return;
-    if (typeof fecharModalEntrega === 'function') fecharModalEntrega();
+document.addEventListener('keydown', evento => {
+    if (evento.key !== 'Escape') return;
+    fecharModalEntrega();
     if (document.body.classList.contains('editor-expandido')) recolherEditor();
 });
+document.querySelectorAll('.aba').forEach(botao => botao.addEventListener('click', () => setAba(botao.dataset.aba)));
+porId('btnLimpar').onclick = () => { consoleCorpo.innerHTML = ''; };
 
-// Mensagens do iframe (console do modo web)
-window.addEventListener('message', e => {
-    if (e.source !== pv.contentWindow || !e.data || !e.data.farm) return;
-    if (e.data.t === 'error') errosConsole.push(e.data.m);
-    escreverConsole((e.data.t === 'error' ? '✖ ' : '› ') + e.data.m, e.data.t);
-});
-
-// Abas mobile
-document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => setAba(b.dataset.aba)));
-$id('btnLimpar').onclick = () => { con.innerHTML = ''; };
-
-// Botão Executar
-$id('btnRodar').addEventListener('click', () => {
-    if ($id('btnRodar').disabled) return;
-    window._usos.executar++;
-    atualizarContadores();  // de submissao.js
+porId('btnRodar').onclick = () => {
+    if (porId('btnRodar').disabled) return;
+    usosExecutar++;
+    atualizarContadores();
     executar({ focar: true });
+};
+
+// Voltar sempre leva à página do aluno
+porId('btnVoltar').onclick = () => { location.href = 'aluno'; };
+
+document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
+    const semImagem = () => imagem.parentElement.classList.add('sem-img');
+    imagem.addEventListener('error', semImagem);
+    if (imagem.complete && !imagem.naturalWidth) semImagem();
 });
 
-// Resposta ao console da Sophia
-$id('conForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const texto = $id('conInput').value.trim();
-    $id('conInput').value = '';
-    if (texto && typeof responderSophia === 'function') responderSophia(texto);
-});
-
-// Fallback de imagens sem carregamento
-document.querySelectorAll('.logo img, .sophia-avatar img').forEach(img => {
-    const semImagem = () => img.parentElement.classList.add('sem-img');
-    img.addEventListener('error', semImagem);
-    if (img.complete && !img.naturalWidth) semImagem();
-});
-
-/* ─── Mobile: editor expandido ───────────────────────────────────── */
+/* Celular: o editor ocupa a tela toda enquanto o aluno digita (X para voltar ao normal) */
 function atualizarBtnInicio() {
-    if (!btnInicio) return;
-    btnInicio.hidden = !(document.body.classList.contains('editor-expandido') && ed.scrollLeft > 24);
+    if (!botaoInicio) return;
+    botaoInicio.hidden = !(document.body.classList.contains('editor-expandido') && editorTexto.scrollLeft > 24);
 }
-
 function expandirEditor() {
-    if (!mobile() || ed.readOnly) return;
+    if (!ehCelular() || editorTexto.readOnly) return;
     document.body.classList.add('editor-expandido');
     atualizarBtnInicio();
 }
-
 function recolherEditor() {
     document.body.classList.remove('editor-expandido');
-    ed.blur();
+    editorTexto.blur();
     atualizarBtnInicio();
 }
+editorTexto.addEventListener('focus', expandirEditor);
+if (botaoFecharEditor) botaoFecharEditor.addEventListener('click', recolherEditor);
+if (botaoInicio) botaoInicio.addEventListener('click', () => editorTexto.scrollTo({ left: 0, behavior: 'smooth' }));
+window.addEventListener('resize', () => { if (!ehCelular()) recolherEditor(); });
 
-ed.addEventListener('focus', expandirEditor);
-if (btnFecharEditor) btnFecharEditor.addEventListener('click', recolherEditor);
-if (btnInicio) btnInicio.addEventListener('click', () => ed.scrollTo({ left: 0, behavior: 'smooth' }));
-window.addEventListener('resize', () => { if (!mobile()) recolherEditor(); });
-
-/* ─── Inicialização ───────────────────────────────────────────────── */
-atualizarBotoes();
-trocar(atual);
-if (!A.vazia)
-    setTimeout(() => {
-        if (typeof sophiaFala === 'function')
-            sophiaFala('Oi, sou a Sophia! Estou aqui para ajudar a ver se o seu código está dentro do que a atividade pede. Se precisar, é só clicar em mim.', 6000);
-    }, 600);
+function iniciarPagina() {
+    atualizarBotoes();
+    setInterval(atualizarEntrega, 30000);
+    trocar(arquivoAtual);
+    if (!atividadeAtual.vazia) {
+        setTimeout(() => sophiaFala('Oi, sou a Sophia! Estou aqui para ajudar. Se precisar, é só clicar em mim.', 6000), 600);
+    }
+}

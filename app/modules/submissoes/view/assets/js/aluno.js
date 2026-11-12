@@ -1,255 +1,144 @@
-/**
- * aluno.js — Página do aluno
- *
- * Responsabilidades:
- *   - Renderizar os dados da atividade no HTML (via window.FarmAtividade)
- *   - Exibir status de entrega, prazo e texto do botão Começar/Revisar/Visualizar
- *   - Modal de pontuação da IA (disponível só após o prazo)
- *   - Menus do cabeçalho (Iconi e Usuário)
- *
- * Depende de: atividade.js → window.FarmAtividade
- */
+const atividadeAtual = window.FarmAtividade;
 
-'use strict';
-
-/* ─── Renderizar dados da atividade ──────────────────────────────── */
-(function renderizarAtividade() {
-    const A = window.FarmAtividade;
-    if (!A) return;
-
-    if (A.vazia) {
-        document.querySelectorAll('.atv-sub, .atv-meta').forEach(e => e.style.display = 'none');
+function renderizarAtividade() {
+    if (!atividadeAtual) return;
+    if (atividadeAtual.vazia) {
+        document.querySelectorAll('.atv-sub, .atv-meta').forEach(elemento => elemento.style.display = 'none');
         return;
     }
-
-    const escrever = (id, valor) => {
-        const e = document.getElementById(id);
-        if (e) e.textContent = valor;
+    const obterElemento = id => document.getElementById(id);
+    const escreverTexto = (id, valor) => {
+        const elemento = obterElemento(id);
+        if (elemento) elemento.textContent = valor;
     };
 
-    escrever('atvTitulo',    A.titulo);
-    escrever('atvDescricao', A.descricao);
-    escrever('atvLinguagem', A.linguagem.nome);
-    escrever('atvNota',      `de 0 a ${A.notaMax} (mínima para aprovação: ${A.notaMin})`);
+    escreverTexto('atvTitulo', atividadeAtual.titulo);
+    escreverTexto('atvDescricao', atividadeAtual.descricao);
+    escreverTexto('atvLinguagem', atividadeAtual.linguagem.nome);
+    escreverTexto('atvNota', `de 0 a ${atividadeAtual.notaMax} (mínima para aprovação: ${atividadeAtual.notaMin})`);
 
-    const lista = document.getElementById('atvRequisitos');
-    if (lista) {
-        lista.innerHTML = '';
-        A.requisitos.forEach(r => {
-            const li = document.createElement('li');
-            li.textContent = r;
-            lista.appendChild(li);
+    const listaRequisitos = obterElemento('atvRequisitos');
+    if (listaRequisitos) {
+        listaRequisitos.innerHTML = '';
+        atividadeAtual.requisitos.forEach(requisito => {
+            const item = document.createElement('li');
+            item.textContent = requisito;
+            listaRequisitos.appendChild(item);
         });
     }
 
-    const inputId = document.getElementById('atvInputId');
-    if (inputId) inputId.value = A.id;
+    // Leva o id da atividade para a página de execução ("Começar")
+    const campoIdAtividade = obterElemento('atvInputId');
+    if (campoIdAtividade) campoIdAtividade.value = atividadeAtual.id;
+}
+renderizarAtividade();
 
-    const box = document.getElementById('atvBadges');
-    if (box) {
-        const cores = { HTML5: 'badge-html', CSS3: 'badge-css', JS: 'badge-js' };
-        box.innerHTML = '';
-        A.linguagem.badges.forEach(b => {
-            const sp = document.createElement('span');
-            sp.className = 'badge-padrao ' + (cores[b] || 'badge-outra');
-            sp.textContent = b;
-            box.appendChild(sp);
-        });
-    }
-})();
+/* Status da entrega */
+const CHAVE_ENTREGA = 'farmedu:entrega:' + atividadeAtual.chave;
+const elementoStatus = document.querySelector('.status');
+const textoOrientacao = document.getElementById('texto');
+const botaoComecar = document.getElementById('comecar');
+const elementoPrazo = document.getElementById('atvPrazo');
 
-/* ─── Chaves do localStorage ─────────────────────────────────────── */
-const A              = window.FarmAtividade;
-const CHAVE_ENTREGA  = 'farmedu:entrega:'   + A.chave;
-const CHAVE_AVALIACAO = 'farmedu:avaliacao:' + A.chave;
-
-const statusEl      = document.querySelector('.status');
-const textoEl       = document.getElementById('texto');
-const botaoComecar  = document.getElementById('comecar');
-const prazoEl       = document.getElementById('atvPrazo');
-const btnNota       = document.getElementById('btnNota');
-const notaAviso     = document.getElementById('notaAviso');
-const modalNota     = document.getElementById('modalNota');
-const notaConteudo  = document.getElementById('notaConteudo');
-
-/* ─── Leitura do localStorage ────────────────────────────────────── */
 function lerEntrega() {
-    try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) { return null; }
+    try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) { return null; }
 }
 
-function lerAvaliacao() {
-    try { return JSON.parse(localStorage.getItem(CHAVE_AVALIACAO)); } catch (e) { return null; }
-}
-
-/* ─── Status de entrega e prazo ──────────────────────────────────── */
 function atualizarStatus() {
-    if (A.vazia) {
-        if (statusEl)     statusEl.style.display = 'none';
-        if (prazoEl)      prazoEl.hidden = true;
-        if (textoEl)      textoEl.style.display = 'none';
-        if (botaoComecar) botaoComecar.style.display = 'none';
-        if (btnNota)      btnNota.style.display = 'none';
-        if (notaAviso)    notaAviso.style.display = 'none';
+    if (atividadeAtual.vazia) {
+        elementoStatus.style.display = 'none';
+        elementoPrazo.hidden = true;
+        textoOrientacao.style.display = 'none';
+        botaoComecar.style.display = 'none';
         return;
     }
+    const entrega = lerEntrega();
+    const dataEntrega = entrega && new Date(entrega.data);
+    const entregue = !!dataEntrega && !isNaN(dataEntrega);
+    const prazoEncerrado = atividadeAtual.prazoExcedido();
+    const pontoStatus = document.createElement('span');
+    pontoStatus.className = 'ponto';
+    elementoStatus.textContent = '';
 
-    const entrega  = lerEntrega();
-    const data     = entrega && new Date(entrega.data);
-    const entregue = !!data && !isNaN(data);
-    const encerrado = A.prazoExcedido();
-
-    // Status de entrega
-    if (statusEl) {
-        const ponto = document.createElement('span');
-        ponto.className = 'ponto';
-        statusEl.textContent = '';
-        if (entregue) {
-            const quando = data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-            statusEl.append(ponto, ' Entregue em ' + quando);
-        } else {
-            statusEl.append(ponto, ' Não entregue');
-        }
-        statusEl.classList.toggle('entregue', entregue);
-    }
-
-    // Botão e texto: Começar / Revisar / Visualizar
-    if (botaoComecar) {
-        botaoComecar.classList.toggle('visualizar', encerrado);
-        botaoComecar.textContent = encerrado ? 'Visualizar' : entregue ? 'Revisar' : 'Começar';
-    }
-    if (textoEl) {
-        textoEl.textContent = encerrado
-            ? (entregue
-                ? 'O prazo acabou. Clique em "Visualizar" para ver o código que você entregou.'
-                : 'O prazo de entrega acabou. Você pode apenas visualizar a atividade.')
-            : (entregue
-                ? 'Atividade entregue! Clique em "Revisar" para ver o seu código.'
-                : 'Escreva seu código direto na plataforma clicando em "Começar".');
-    }
-
-    // Prazo
-    if (prazoEl) {
-        if (A.limite) {
-            prazoEl.hidden = false;
-            prazoEl.classList.toggle('encerrado', encerrado);
-            prazoEl.textContent = encerrado
-                ? 'Prazo encerrado em ' + A.limiteTexto()
-                : 'Prazo de entrega até ' + A.limiteTexto();
-        } else {
-            prazoEl.hidden = true;
-        }
-    }
-
-    atualizarNota(entregue, encerrado);
-}
-
-/* ─── Modal de pontuação da IA ───────────────────────────────────── */
-function atualizarNota(entregue, encerrado) {
-    if (!btnNota) return;
-
-    let liberado = false;
-    let msg;
-    if (!encerrado) {
-        msg = A.limite
-            ? '🔒 Disponível depois do prazo de entrega (' + A.limiteTexto() + ').'
-            : '🔒 Disponível quando o prazo de entrega terminar.';
-    } else if (!entregue) {
-        msg = 'Você não entregou esta atividade, então não há pontuação.';
-    } else if (!lerAvaliacao()) {
-        msg = 'Sua entrega ainda não foi avaliada pela IA.';
+    if (entregue) {
+        elementoStatus.append(pontoStatus, ' Entregue em ' + atividadeAtual.formatarDataHora(entrega.data));
     } else {
-        liberado = true;
-        msg = 'O prazo acabou. Sua pontuação já está disponível.';
+        elementoStatus.append(pontoStatus, ' Não entregue');
+    }
+    elementoStatus.classList.toggle('entregue', entregue);
+
+    // Botão: Começar, Revisar, Visualizar
+    botaoComecar.classList.toggle('visualizar', prazoEncerrado);
+    if (prazoEncerrado) {
+        botaoComecar.textContent = 'Visualizar';
+        textoOrientacao.textContent = entregue
+            ? 'O prazo acabou. Clique em "Visualizar" para ver o código que você entregou.'
+            : 'O prazo de entrega acabou. Você pode apenas visualizar a atividade.';
+    } else if (entregue) {
+        botaoComecar.textContent = 'Revisar';
+        textoOrientacao.textContent = 'Atividade entregue! Clique em "Revisar" para ver o seu código.';
+    } else {
+        botaoComecar.textContent = 'Começar';
+        textoOrientacao.textContent = 'Escreva seu código direto na plataforma clicando em "Começar".';
     }
 
-    btnNota.disabled    = !liberado;
-    btnNota.textContent = liberado ? 'Ver pontuação da IA' : '🔒 Pontuação da IA';
-    if (notaAviso) notaAviso.textContent = msg;
+    // Limite de entrega
+    if (atividadeAtual.limite) {
+        elementoPrazo.hidden = false;
+        elementoPrazo.classList.toggle('encerrado', prazoEncerrado);
+        elementoPrazo.textContent = prazoEncerrado
+            ? 'Prazo encerrado em ' + atividadeAtual.limiteTexto()
+            : 'Prazo de entrega até ' + atividadeAtual.limiteTexto();
+    } else {
+        elementoPrazo.hidden = true;
+    }
 }
 
-function abrirNota() {
-    const aval = lerAvaliacao();
-    if (!modalNota || !notaConteudo || !aval || !A.prazoExcedido()) return;
-
-    // Cria elementos com textContent (nunca innerHTML com dados da IA)
-    const novo = (tag, classe, texto) => {
-        const e = document.createElement(tag);
-        if (classe) e.className = classe;
-        if (texto !== undefined) e.textContent = texto;
-        return e;
-    };
-    const lista = (titulo, itens) => {
-        if (!itens || !itens.length) return;
-        notaConteudo.appendChild(novo('h4', '', titulo));
-        const ul = novo('ul');
-        itens.forEach(t => ul.appendChild(novo('li', '', String(t))));
-        notaConteudo.appendChild(ul);
-    };
-
-    notaConteudo.innerHTML = '';
-    const nota     = aval.nota != null ? aval.nota : '—';
-    const aprovado = aval.status
-        ? /^aprovado$/i.test(String(aval.status).trim())
-        : Number(aval.nota) >= A.notaMin;
-
-    const valor = novo('p', 'nota-valor', `Nota atribuída: ${nota} / ${A.notaMax}`);
-    valor.appendChild(novo('span', 'nota-selo ' + (aprovado ? 'aprovado' : 'reprovado'), aprovado ? 'Aprovado' : 'Reprovado'));
-    notaConteudo.appendChild(valor);
-    notaConteudo.appendChild(novo('p', 'nota-pequeno', `Nota mínima para aprovação: ${A.notaMin}`));
-
-    if (aval.compilador) {
-        const p = novo('p');
-        p.append(novo('strong', '', 'Status do compilador: '), String(aval.compilador));
-        notaConteudo.appendChild(p);
-    }
-    if (aval.saida && String(aval.saida).trim()) {
-        notaConteudo.appendChild(novo('h4', '', 'Terminal'));
-        notaConteudo.appendChild(novo('pre', '', String(aval.saida).trim()));
-    }
-    if (aval.feedback) {
-        notaConteudo.appendChild(novo('h4', '', 'Feedback do Professor IA'));
-        notaConteudo.appendChild(novo('p', '', String(aval.feedback)));
-    }
-    lista('✔ O que você fez', aval.feitos);
-    lista('✖ O que ficou faltando', aval.faltando);
-    lista('Missões de correção (pontos de melhoria)', aval.melhorias);
-    if (!(aval.faltando || []).length && !(aval.melhorias || []).length) {
-        notaConteudo.appendChild(novo('p', 'nota-pequeno', 'Lógica perfeita! Nenhuma correção necessária.'));
-    }
-    if (aval.exemplo) {
-        notaConteudo.appendChild(novo('p', 'nota-pequeno', '(Resposta de exemplo: a IA não respondeu na hora da entrega.)'));
-    }
-    if (aval.data) {
-        const quando = new Date(aval.data);
-        if (!isNaN(quando)) {
-            notaConteudo.appendChild(novo('p', 'nota-pequeno', 'Avaliado em ' + quando.toLocaleString('pt-BR', {
-                day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-            })));
-        }
-    }
-    modalNota.classList.add('active');
-}
-
-function fecharNota() {
-    if (modalNota) modalNota.classList.remove('active');
-}
-
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') fecharNota();
-});
-
-/* ─── Botão Voltar ───────────────────────────────────────────────── */
-const btnVoltar = document.getElementById('btnVoltar');
-if (btnVoltar) btnVoltar.addEventListener('click', () => history.back());
-
-/* ─── Eventos do modal de nota ───────────────────────────────────── */
-if (btnNota)   btnNota.addEventListener('click', abrirNota);
-const notaFechar = document.getElementById('notaFechar');
-if (notaFechar) notaFechar.addEventListener('click', fecharNota);
-if (modalNota)  modalNota.addEventListener('click', e => { if (e.target === modalNota) fecharNota(); });
-
-/* ─── Inicialização e polling ────────────────────────────────────── */
 atualizarStatus();
 window.addEventListener('pageshow', atualizarStatus);
-window.addEventListener('storage',  atualizarStatus);
-setInterval(atualizarStatus, 30_000); // Atualiza para "Visualizar" quando o prazo vencer
+window.addEventListener('storage', atualizarStatus);
+setInterval(atualizarStatus, 30000);
+
+document.getElementById('btnVoltar').addEventListener('click', () => history.back());
+
+/* Menus do cabeçalho */
+const botaoIconi = document.getElementById('botaoIconi');
+const botaoUsuario = document.getElementById('botaoUsuario');
+const menuIconi = document.getElementById('menuIconi');
+const menuUsuario = document.getElementById('menuUsuario');
+
+function fecharMenus() {
+    [menuIconi, menuUsuario].forEach(menu => {
+        menu.classList.remove('active');
+        menu.setAttribute('aria-hidden', 'true');
+    });
+    botaoIconi.setAttribute('aria-expanded', 'false');
+    botaoUsuario.setAttribute('aria-expanded', 'false');
+}
+
+function alternarMenu(menu, botao) {
+    const vaiAbrir = !menu.classList.contains('active');
+    fecharMenus();
+    if (vaiAbrir) {
+        menu.classList.add('active');
+        menu.setAttribute('aria-hidden', 'false');
+        botao.setAttribute('aria-expanded', 'true');
+    }
+}
+
+botaoIconi.addEventListener('click', evento => {
+    evento.stopPropagation();
+    alternarMenu(menuIconi, botaoIconi);
+});
+
+botaoUsuario.addEventListener('click', evento => {
+    evento.stopPropagation();
+    alternarMenu(menuUsuario, botaoUsuario);
+});
+
+[menuIconi, menuUsuario].forEach(menu => menu.addEventListener('click', evento => evento.stopPropagation()));
+
+document.addEventListener('click', fecharMenus);
+document.addEventListener('keydown', evento => {
+    if (evento.key === 'Escape') fecharMenus();
+});

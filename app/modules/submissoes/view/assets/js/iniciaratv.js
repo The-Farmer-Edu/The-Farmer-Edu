@@ -1,12 +1,18 @@
 /**
  * iniciaratv.js — IDE: editor de código, execução e navegação
  *
- * Responsabilidades:
- *   - Editor com syntax highlight e gutter de linhas
- *   - Execução web (iframe) e terminal (Judge0 via servidor)
- *   - Console de saída
- *   - Abas de arquivos
- *   - Comportamento mobile (editor expandido)
+ * Este arquivo é o coração do ambiente de desenvolvimento do aluno. Ele monta o
+ * editor visual, aplica destaque de sintaxe, salva o código em localStorage,
+ * executa o programa em ambiente web ou em terminal e controla as abas de
+ * arquivos e o console de saída.
+ *
+ * O algoritmo principal funciona assim:
+ *   1. lê a atividade e a linguagem ativa;
+ *   2. inicializa os arquivos do projeto;
+ *   3. aplica o código atual no textarea e no highlight;
+ *   4. executa o programa quando o usuário clica em "Executar";
+ *   5. mostra resultado em iframe ou terminal;
+ *   6. preserva o código entre recarregamentos via localStorage.
  *
  * Depende de: atividade.js  → window.FarmAtividade, window.FarmLinguagens
  *             submissao.js  → avaliarNoServidor, FEEDBACK, lerJson, erroDoPHP,
@@ -38,6 +44,9 @@ const btnFecharEditor = $id('fecharEditor');
 const CHAVE = `farmedu:codigo:${A.chave}:${L.id}`;
 
 /* ─── Estado do editor ───────────────────────────────────────────── */
+// O código do aluno é salvo em localStorage usando uma chave específica para
+// cada atividade e linguagem. Isso permite restaurar o progresso mesmo quando
+// a página for recarregada ou o usuário voltar para a tela inicial.
 let dados = {};
 try { dados = { ...L.inicial, ...JSON.parse(localStorage.getItem(CHAVE)) }; }
 catch (e) { dados = { ...L.inicial }; }
@@ -111,6 +120,9 @@ window.assinaturaDoCodigo = assinaturaDoCodigo;
 
 /* ─── Editor: syntax highlight ───────────────────────────────────── */
 function colorir(codigo, regras) {
+    // O destaque de sintaxe funciona com uma expressão regular que separa
+    // padrões como comentários, strings, palavras-chave, números e identificadores.
+    // Cada trecho reconhecido recebe uma classe CSS para colorir a tela.
     const re = new RegExp(regras.map(r => '(' + r[1] + ')').join('|'), 'g');
     let saida = '', ultimo = 0, m;
     while ((m = re.exec(codigo))) {
@@ -237,6 +249,9 @@ const PONTE = '<script>(function(){' +
 
 /* ─── Execução web (iframe) ───────────────────────────────────────── */
 function rodarWeb() {
+    // Modo web: o navegador renderiza o HTML/JS/CSS em um iframe isolado.
+    // O código da página é montado em um documento completo, com a tag <style>
+    // injetada no <head> e o script de console no final do body.
     pv.hidden  = false;
     pvPy.hidden = true;
     const css = `<style>${dados.css}</style>`;

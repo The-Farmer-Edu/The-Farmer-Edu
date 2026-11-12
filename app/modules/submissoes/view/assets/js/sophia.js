@@ -1,9 +1,17 @@
 /**
  * sophia.js — Assistente IA "Sophia"
  *
- * Gerencia o balão de ajuda, as interações via console e as consultas à IA.
- * Depende de: atividade.js (window.FarmAtividade), iniciaratv.js (escreverConsole,
- *             contextoEntrega, errosAtuais, executadoAtual)
+ * Esse módulo cria a experiência de mentor virtual para o aluno. A Sophia
+ * audita o código do estudante, detecta erros de execução ou problemas de
+ * lógica, organiza o feedback em blocos e, quando necessário, pergunta se o
+ * usuário deseja ajuda no console.
+ *
+ * O comportamento é orientado por:
+ *   - análise do código atual;
+ *   - checagem de erros de execução;
+ *   - comparação do código com a assinatura anterior para evitar respostas
+ *     obsoletas;
+ *   - feedback em balão e console, com opção de ajuda detalhada.
  */
 
 /* ─── Estado interno ─────────────────────────────────────────────── */
@@ -121,6 +129,9 @@ const _normalizar = t =>
     t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?,]/g, '').trim();
 
 function responderSophia(texto) {
+    // Esta função recebe o texto digitado pelo usuário no console e avalia se a
+    // resposta faz sentido para a conversa com a Sophia. Ela também valida se o
+    // código ainda está igual ao momento em que a pergunta foi feita.
     if (typeof escreverConsole === 'function') escreverConsole('› ' + texto, 'voce');
     if (!ajuda.aguardando) return;
 
@@ -155,6 +166,11 @@ function responderSophia(texto) {
 
 /* ─── Verificação de problema no feedback ───────────────────────── */
 function temProblema(f) {
+    // A Sophia considera que há problema quando:
+    // - o código não foi aceito pela compilação;
+    // - o status da avaliação indica reprovação;
+    // - houve erros no console durante a execução;
+    // - há itens pendentes na checklist do exercicio.
     const modo = window.FarmAtividade ? window.FarmAtividade.linguagem.modo : 'web';
     const aceito = modo === 'web' || !f.compilador || /accepted|aceito/i.test(f.compilador);
     const aprovado = !f.status || /^aprovado$/i.test(String(f.status).trim());
@@ -168,6 +184,9 @@ function iniciarSophia() {
     if (!btn) return;
 
     btn.addEventListener('click', async () => {
+        // O clique no avatar da Sophia é o gatilho principal do fluxo de análise.
+        // Primeiro ele evita ações duplicadas, depois verifica se há código para
+        // analisar e, por fim, chama a IA ou usa o fallback de exemplo.
         if (btn.disabled) return;
 
         if (ajuda.analisando) {

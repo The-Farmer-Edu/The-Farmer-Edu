@@ -37,7 +37,15 @@
         }
     };
 
-    /* DADOS DA ATIVIDADE */
+    /*
+     * DADOS DA ATIVIDADE
+     *
+     * Este objeto representa o estado mínimo de uma tarefa no frontend. Ele é
+     * preenchido tanto com dados vindos do banco quanto com dados de teste
+     * locais (?teste=...). É o núcleo do sistema: todas as outras telas consultam
+     * este objeto para saber qual atividade está ativa, qual linguagem deve ser
+     * usada e quais limites de execução/entrega existem.
+     */
     const base = {
         id: 1, titulo: 'Atividade', descricao: '', requisitos: [], objetivo: '',
         idLinguagem: 'web', notaMax: 10, notaMin: 6, entrada: '', codigoInicial: {},
@@ -55,6 +63,10 @@
     }
 
     // TESTE Atividades
+    // O sistema permite testar o comportamento da UI sem depender do banco de
+    // dados. Quando a URL inclui ?teste=web, ?teste=python ou ?teste=php, os
+    // atributos da atividade são sobrescritos por este objeto. Isso é útil para
+    // validar a interface e os limites de execução em ambiente de desenvolvimento.
     const TESTES = {
         web: {
             id: 1,
@@ -110,8 +122,14 @@
             const url = new URLSearchParams(location.search);
             const existe = n => Object.prototype.hasOwnProperty.call(TESTES, n);
             const memoria = 'farmedu:teste:atual';
-            const paginaDeCodigo = !!document.getElementById('ed');  
+            const paginaDeCodigo = !!document.getElementById('ed');
 
+            // O fluxo de teste funciona assim:
+            // - ?teste=web ativa um cenário específico;
+            // - o limite pode ser informado com ?limite=... ou pode ser deixado em
+            //   "hoje às 23:59" quando não for passado;
+            // - se a página for de código, o último teste usado fica salvo em
+            //   sessionStorage para que o estado continue ao voltar para o aluno.
             let nome = url.get('teste');
             let pedido = url.get('limite');
             if (existe(nome)) {
@@ -127,7 +145,9 @@
             if (!nome) return;
             const teste = TESTES[nome];
 
-            // Prazo:por padrão, hoje 23:59
+            // Prazo: por padrão, hoje às 23:59. Isso impede que um teste de
+            // validação fique sem limite de entrega e facilita a demonstração do
+            // comportamento após o prazo.
             let limiteEntrega = null;
             if (pedido !== 'off') {
                 let d = pedido ? new Date(pedido) : null;
@@ -135,17 +155,20 @@
                 limiteEntrega = d.toISOString();
             }
 
-            // &limpar=1: recomeça o teste do zero (adicionar na url ex: ?teste=web&limpar=1)
+            // &limpar=1: recomeça o teste do zero, apagando os dados persistidos em
+            // localStorage para essa atividade em particular.
             if (url.get('limpar')) {
                 const re = new RegExp('^farmedu:(codigo|entrega|cancelamentos|avaliacao):' + teste.chave + '(:|$)');
                 Object.keys(localStorage).filter(k => re.test(k)).forEach(k => localStorage.removeItem(k));
             }
 
-            // queryAluno: o botão Voltar da página de código usa para voltar ao aluno com o mesmo teste
+            // queryAluno: quando a página volta para a tela do aluno, ela precisa
+            // manter a referência ao teste original para não perder o contexto.
             const queryAluno = '?teste=' + nome + (pedido ? '&limite=' + encodeURIComponent(pedido) : '');
             lido = Object.assign({}, lido, teste, { limiteEntrega, queryAluno });
 
-            //?teste= e &limite=  clica em "Começar" 
+            // Quando o aluno clica em "Começar", o formulário envia os parâmetros do
+            // teste para a rota /iniciarAtv, preservando a atividade atual.
             const form = document.querySelector('form[action="iniciarAtv"]');
             if (form) {
                 [['teste', nome], ['limite', pedido]].forEach(([campo, valor]) => {
@@ -163,15 +186,21 @@
     })();
 
 
-    /* MONTAGEM FINAL*/
+    /* MONTAGEM FINAL */
+    // A atividade final é o merge entre os dados padrão, os dados vindos do
+    // banco e os dados de teste, caso exista. Isso evita repetições e garante
+    // que o frontend sempre possua um objeto consistente para renderizar o UI.
     const Assignments = Object.assign({}, base, lido);
     const L = LINGUAGENS[Assignments.idLinguagem] || LINGUAGENS.web;
     Assignments.linguagem = Object.assign({}, L, { inicial: Object.assign({}, L.inicial, Assignments.codigoInicial) });
 
-    // Atividade vinda do banco: usa o próprio id.
+    // A chave de persistência é usada para separar dados de diferentes atividades
+    // no localStorage. Mesmo quando a entidade vier do banco, ela precisa de um
+    // identificador único para salvar código, entrega e avaliação.
     Assignments.chave = String(Assignments.chave || Assignments.id);
 
-    // Limite de entrega: vem do bloco #dadosAtividade (banco) ou do teste; não hardcode aqui.
+    // Limite de entrega: vem do bloco #dadosAtividade (banco) ou do teste;
+    // não hardcode aqui.
     const _lim = Assignments.limiteEntrega ? new Date(Assignments.limiteEntrega) : null;
     Assignments.limite = _lim && !isNaN(_lim) ? _lim : null;
     Assignments.prazoExcedido = () => !!Assignments.limite && Date.now() > Assignments.limite.getTime();
@@ -179,7 +208,7 @@
         ? Assignments.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : '';
 
-    // Sem dados de atividade (nem do banco, nem de teste)
+    // Sem dados de atividade (nem do banco, nem de teste) -> tela vazia.
     Assignments.vazia = !lido.titulo;
 
     window.FarmAtividade = Assignments;

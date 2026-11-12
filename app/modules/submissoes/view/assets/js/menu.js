@@ -1,7 +1,10 @@
 /**
- * menu.js — Gerenciamento dos menus toggle do cabeçalho (Iconi e Usuário)
+ * menu.js — Gerenciamento dos menus toggle do cabeçalho.
  *
- * Funciona de maneira uniforme e padronizada em aluno.html e iniciarAtv.html.
+ * O módulo controla os dois botões do topo da interface: o menu do ícone da
+ * plataforma e o menu do usuário. Ambos seguem o mesmo padrão: ao clicar,
+ * alternam a classe active, ajustam aria-expanded e fecham qualquer outro menu
+ * aberto para manter a navegação limpa e acessível.
  */
 (function () {
     'use strict';

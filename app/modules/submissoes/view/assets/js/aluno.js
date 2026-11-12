@@ -1,11 +1,17 @@
 /**
  * aluno.js — Página do aluno
  *
- * Responsabilidades:
- *   - Renderizar os dados da atividade no HTML (via window.FarmAtividade)
- *   - Exibir status de entrega, prazo e texto do botão Começar/Revisar/Visualizar
- *   - Modal de pontuação da IA (disponível só após o prazo)
- *   - Menus do cabeçalho (Iconi e Usuário)
+ * Este arquivo é responsável pelo comportamento da tela inicial de atividades.
+ * Ele toma os dados carregados em window.FarmAtividade, monta o conteúdo
+ * dinâmico da página, atualiza a situação da entrega e controla a interação com
+ * a IA e o prazo da atividade.
+ *
+ * Fluxo principal:
+ *   1. lê a atividade atual;
+ *   2. preenche título, descrição, linguagem e requisitos;
+ *   3. verifica o localStorage para saber se a entrega foi feita;
+ *   4. decide se o botão deve exibir "Começar", "Revisar" ou "Visualizar";
+ *   5. habilita ou bloqueia a modal de pontuação da IA após o prazo.
  *
  * Depende de: atividade.js → window.FarmAtividade
  */

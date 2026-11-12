@@ -1,17 +1,18 @@
 /**
  * main.js — Ponto de entrada único do módulo submissoes
  *
- * Detecta em qual página estamos e injeta dinamicamente apenas os scripts
- * necessários para aquela página, na ordem correta de dependência.
+ * Este arquivo atua como carregador de módulos. Em vez de incluir múltiplos
+ * scripts diretamente no HTML, ele identifica a página atual e carrega apenas
+ * os arquivos necessários para aquela tela.
+ *
+ * Essa estratégia reduz duplicação, facilita manutenção e garante que as
+ * dependências sejam carregadas na ordem correta. Por exemplo, a tela do aluno
+ * precisa de atividade.js + menu.js + aluno.js, enquanto o editor precisa de
+ * atividade.js + menu.js + submissao.js + sophia.js + iniciaratv.js.
  *
  * Uso (substitui todas as tags <script src="..."> individuais):
  *
  *   <script src="submissoes/file?type=js&file=main.js"></script>
- *
- * Mapa de módulos:
- *   Todas as páginas  → atividade.js
- *   /aluno            → aluno.js
- *   /iniciarAtv       → iniciaratv.js → submissao.js → sophia.js
  */
 
 (function () {

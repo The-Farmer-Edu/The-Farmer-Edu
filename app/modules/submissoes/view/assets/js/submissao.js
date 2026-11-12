@@ -1,12 +1,16 @@
 /**
  * submissao.js — Entrega e avaliação pela IA
  *
- * Gerencia o fluxo completo de entrega: modal de confirmação, cancelamento,
- * chamadas à IA (Judge0 + Gemini/Ollama), armazenamento do feedback em
- * localStorage e exibição dos contadores de limite.
+ * Este arquivo é o núcleo do ciclo de envio de tarefas. Ele é responsável por:
+ *   - montar o payload com o código do aluno;
+ *   - chamar a API de avaliação;
+ *   - interpretar a resposta da IA;
+ *   - salvar o resultado no localStorage;
+ *   - controlar o modal de confirmação/cancelamento de entrega;
+ *   - aplicar limites de uso e bloqueios de prazo.
  *
- * Depende de: atividade.js (window.FarmAtividade), iniciaratv.js (escreverConsole,
- *             contextoEntrega, executar, aviso, mostrarResultado)
+ * Em outras palavras, ele conecta a interface do aluno ao backend de avaliação e
+ * à lógica de controle de submissões.
  */
 
 /* ─── Configuração do endpoint de feedback ───────────────────────── */
@@ -91,8 +95,9 @@ const FEEDBACK = {
 /**
  * Lê a resposta como JSON, tolerando avisos PHP antes do JSON.
  */
-function lerJson(texto) {
-    try { return JSON.parse(texto); } catch (e) {}
+function lerJson(texto) {    // A API de avaliação nem sempre responde com JSON puro. Em alguns casos, a
+    // aplicação PHP injeta avisos, tags HTML ou texto de warning antes do objeto
+    // real. Por isso esta função tenta parsing em várias etapas.    try { return JSON.parse(texto); } catch (e) {}
     // Remove avisos PHP no formato <br /><b>Warning</b>: ...
     const limpo = texto.replace(/<br\s*\/?\s*>\s*<b>[^<]*<\/b>:[\s\S]*?<br\s*\/?>/gi, '').trim();
     try { return JSON.parse(limpo); } catch (e) {}
@@ -117,6 +122,9 @@ const erroDoPHP = texto =>
  * Tenta cada endpoint em ordem; lança erro se todos falharem.
  */
 async function avaliarNoServidor(extra = {}) {
+    // Monta um payload completo com o código atual da atividade e envia para cada
+    // endpoint de avaliação disponível. A estratégia de tentar múltiplos endpoints
+    // torna o sistema resiliente quando um caminho falha durante o uso.
     const corpo = JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra });
     let ultimoErro = null;
 
@@ -335,6 +343,10 @@ async function iniciarEntrega() {
 }
 
 function confirmarEntrega() {
+    // A confirmação final registra a submissão no armazenamento local e dispara a
+    // avaliação em segundo plano. Essa etapa não bloqueia a navegação nem exige
+    // que o aluno espere a IA terminar; a nota aparece depois quando o prazo
+    // encerrar ou quando o backend responder.
     if (FarmAtividade.prazoExcedido()) { fecharModalEntrega(); return aviso('O prazo de entrega acabou'); }
     if (typeof salvar === 'function') salvar();
     const dados    = window._dadosCodigo ? window._dadosCodigo() : {};
@@ -349,6 +361,9 @@ function confirmarEntrega() {
 }
 
 function cancelarEntrega() {
+    // Cancelar entrega não apaga o código do aluno; ele apenas limpa o registro
+    // de entrega atual e incrementa o contador de cancelamentos. Essa regra evita
+    // abuso do sistema e mantém um histórico controlado das tentativas.
     if (FarmAtividade.prazoExcedido()) return aviso('O prazo acabou: a entrega não pode mais ser cancelada');
     if (cancelamentos >= LIMITE_CANCELAMENTOS) return aviso('Você já usou os 3 cancelamentos. A entrega é final.');
     cancelamentos++;

@@ -1,4 +1,15 @@
 <?php
+/**
+ * Modelo do módulo de submissões.
+ *
+ * Este arquivo encapsula todas as operações de persistência relacionadas a
+ * atividades e entregas. Ele trabalha com a tabela de atividades, matrículas,
+ * submissoes, feedback_ia e notas.
+ *
+ * O objetivo principal é garantir que cada entrega do aluno tenha seu próprio
+ * histórico de tentativas e que a avaliação da IA e a nota final possam ser
+ * registradas corretamente no banco.
+ */
 
 require_once __DIR__ . '/../../core/database.php';
 
@@ -11,6 +22,12 @@ class SubmissoesModel
         $this->pdo = $pdo ?? iniciarPDO();
     }
 
+    /**
+     * Busca uma atividade pelo identificador.
+     *
+     * Retorna todos os dados principais da tarefa para que a view tenha acesso
+     * ao título, descrição, linguagem, critérios e prazo de entrega.
+     */
     public function buscarAtividade(int $idAtividade): ?array
     {
         $st = $this->pdo->prepare(
@@ -22,7 +39,12 @@ class SubmissoesModel
         return $st->fetch() ?: null;
     }
 
-    // #22 — só aluno matriculado na turma da atividade
+    /**
+     * Verifica se o aluno está realmente matriculado na turma da atividade.
+     *
+     * Essa validação garante que o aluno só possa entregar trabalhos vinculados
+     * à turma em que está cadastrado.
+     */
     public function alunoMatriculado(int $idAluno, int $idTurma): bool
     {
         $st = $this->pdo->prepare('SELECT 1 FROM matriculas WHERE id_aluno = ? AND id_turma = ? LIMIT 1');
@@ -30,7 +52,13 @@ class SubmissoesModel
         return (bool) $st->fetchColumn();
     }
 
-    // #20 / #24 — cada envio vira uma nova tentativa (histórico)
+    /**
+     * Cria uma nova tentativa de entrega.
+     *
+     * O sistema calcula a próxima tentativa com base no maior número já usado
+     * para a mesma atividade e aluno. Isso permite manter o histórico de
+     * entregas e não sobrescrever a submissão anterior.
+     */
     public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array
     {
         $this->pdo->beginTransaction();
@@ -57,13 +85,26 @@ class SubmissoesModel
         }
     }
 
+    /**
+     * Atualiza o status final da entrega e o resultado da execução.
+     *
+     * Essa etapa é usada quando uma submissão sai da fila de processamento e
+     * recebe a resposta do avaliador: aprovado, reprovado, erro de compilação,
+     * etc.
+     */
     public function atualizarResultado(int $idSubmissao, string $status, ?string $resultadoExecucao): void
     {
         $st = $this->pdo->prepare('UPDATE submissoes SET status = ?, resultado_execucao = ? WHERE id_submissao = ?');
         $st->execute([$status, $resultadoExecucao, $idSubmissao]);
     }
 
-    // #25 — a coluna sugestao_resposta guarda o feedback_geral da IA
+    /**
+     * Salva o feedback gerado pela IA sobre a entrega.
+     *
+     * A tabela feedback_ia armazena os pontos positivos, pontos negativos e a
+     * sugestão geral. Em caso de repetição da mesma submissão, o comando usa
+     * ON DUPLICATE KEY UPDATE para manter um único registro por entrega.
+     */
     public function salvarFeedback(int $idSubmissao, string $positivos, string $negativos, string $geral): void
     {
         $st = $this->pdo->prepare(
@@ -76,7 +117,13 @@ class SubmissoesModel
         $st->execute([$idSubmissao, $positivos, $negativos, $geral]);
     }
 
-    // nota sugerida pela IA (origem 'ia'); o instrutor sobrescreve depois
+    /**
+     * Salva a nota sugerida pela IA para a submissão.
+     *
+     * A nota é limitada entre 0 e 10 para manter consistência do sistema.
+     * Posteriormente, o instrutor pode sobrescrever esse valor com uma nota
+     * manual caso seja necessário.
+     */
     public function salvarNotaIA(int $idSubmissao, float $valor): void
     {
         $valor = max(0.0, min(10.0, $valor));

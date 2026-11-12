@@ -1,19 +1,57 @@
 <?php
+/**
+ * Controller do módulo de submissões.
+ *
+ * Este arquivo organiza a parte de navegação e entrega de recursos do módulo.
+ * Ele centraliza três responsabilidades principais:
+ *
+ * 1. Renderizar as páginas HTML que o aluno acessa:
+ *    - lista de atividades,
+ *    - editor de código,
+ *    - processamento da submissão.
+ * 2. Servir arquivos estáticos do frontend (CSS, JS, imagens e outros assets)
+ *    com o MIME correto, evitando acesso arbitrário fora da pasta pública do módulo.
+ * 3. Delegar o processamento da avaliação para o AvaliadorController quando o
+ *    cliente envia uma entrega via POST.
+ *
+ * O módulo de submissões é o ponto de entrada entre a interface do aluno e a
+ * lógica de avaliação dos exercícios do sistema educacional.
+ */
 
 class atividadesSub
 {
     // ─── Views ────────────────────────────────────────────────────────────────
 
+    /**
+     * Exibe a página inicial do aluno, onde são apresentadas as atividades e o
+     * status das entregas.
+     *
+     * Normalmente esta tela lista a atividade selecionada, informa o prazo,
+     * mostra se o trabalho já foi entregue e controla o acesso ao editor.
+     */
     public function showaluno(): void
     {
         require_once __DIR__ . '/view/aluno.html';
     }
 
+    /**
+     * Abre a tela de resolução da atividade.
+     *
+     * Aqui o aluno entra no ambiente de programação, pode escrever código,
+     * executar, usar a Sophia, entregar a resposta e acompanhar o resultado.
+     */
     public function showiniciarAtv(): void
     {
         require_once __DIR__ . '/view/iniciaratv.html';
     }
 
+    /**
+     * Processa a requisição de submissão em formato JSON.
+     *
+     * Este método não avalia diretamente o código. Ele apenas encaminha a
+     * requisição para o AvaliadorController, que faz a validação e retorna
+     * o resultado da análise para o cliente.
+     */
     public function processarSubmissao(): void
     {
         require_once __DIR__ . '/view/processar_submissao.php';
@@ -22,8 +60,14 @@ class atividadesSub
     // ─── Arquivos estáticos ────────────────────────────────────────────────────
 
     /**
-     * Serve arquivos da pasta view/assets com o Content-Type correto.
-     * URL: /submissoes/file?type=css&file=aluno.css
+     * Serviço de arquivos estáticos do módulo.
+     *
+     * A rota /submissoes/file recebe parâmetros como type=css&file=base.css
+     * ou type=js&file=iniciaratv.js e devolve o conteúdo correto do arquivo,
+     * definindo o Content-Type apropriado para o navegador interpretar.
+     *
+     * Também bloqueia tentativa de path traversal e outros acessos fora do
+     * diretório permitido, reforçando segurança.
      */
     public function sendFile(): void
     {

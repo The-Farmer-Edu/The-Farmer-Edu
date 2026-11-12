@@ -1,4 +1,11 @@
 <?php
+/**
+ * Rotas do módulo de submissões.
+ *
+ * Este arquivo registra as URLs do módulo na aplicação e conecta cada rota a um
+ * método do Controller. Assim o framework mantém uma camada organizada entre a
+ * URL acessada pelo navegador e a lógica correspondente.
+ */
 
 require_once __DIR__ . '/../../core/router.php';
 require_once __DIR__ . '/Controller.php';

@@ -105,7 +105,6 @@ if ($idAtividade === 0) {
         header('Content-Type: application/octet-stream');
         header("Content-Disposition: attachment; filename*=UTF-8''" . rawurlencode($arquivo['descricao_arquivo']));
         header('X-Content-Type-Options: nosniff');
-        header('Content-Length: ' . filesize($caminho));
 
         readfile($caminho);
     }

@@ -558,6 +558,11 @@ function iniciar() {
 }
 
 iniciar();
+setInterval(() => {
+    if (!document.hidden) {
+        window.location.reload();
+    }
+}, 5000);
 </script>
 
 </body>

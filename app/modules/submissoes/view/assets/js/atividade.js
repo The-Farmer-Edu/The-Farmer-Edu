@@ -164,24 +164,24 @@
 
 
     /* MONTAGEM FINAL*/
-    const A = Object.assign({}, base, lido);
-    const L = LINGUAGENS[A.idLinguagem] || LINGUAGENS.web;
-    A.linguagem = Object.assign({}, L, { inicial: Object.assign({}, L.inicial, A.codigoInicial) });
+    const Assignments = Object.assign({}, base, lido);
+    const L = LINGUAGENS[Assignments.idLinguagem] || LINGUAGENS.web;
+    Assignments.linguagem = Object.assign({}, L, { inicial: Object.assign({}, L.inicial, Assignments.codigoInicial) });
 
     // Atividade vinda do banco: usa o próprio id.
-    A.chave = String(A.chave || A.id);
+    Assignments.chave = String(Assignments.chave || Assignments.id);
 
     // Limite de entrega: vem do bloco #dadosAtividade (banco) ou do teste; não hardcode aqui.
-    const _lim = A.limiteEntrega ? new Date(A.limiteEntrega) : null;
-    A.limite = _lim && !isNaN(_lim) ? _lim : null;
-    A.prazoExcedido = () => !!A.limite && Date.now() > A.limite.getTime();
-    A.limiteTexto = () => A.limite
-        ? A.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+    const _lim = Assignments.limiteEntrega ? new Date(Assignments.limiteEntrega) : null;
+    Assignments.limite = _lim && !isNaN(_lim) ? _lim : null;
+    Assignments.prazoExcedido = () => !!Assignments.limite && Date.now() > Assignments.limite.getTime();
+    Assignments.limiteTexto = () => Assignments.limite
+        ? Assignments.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : '';
 
     // Sem dados de atividade (nem do banco, nem de teste)
-    A.vazia = !lido.titulo;
+    Assignments.vazia = !lido.titulo;
 
-    window.FarmAtividade = A;
+    window.FarmAtividade = Assignments;
     window.FarmLinguagens = LINGUAGENS;
 })();

@@ -187,8 +187,8 @@ function iniciarSophia() {
             habilitarConsole(false);
         }
 
-        const A = window.FarmAtividade;
-        const arquivos = A ? A.linguagem.arquivos : [];
+        const FarmAtividade = window.FarmAtividade;
+        const arquivos = FarmAtividade ? FarmAtividade.linguagem.arquivos : [];
         const dados = window._dadosCodigo ? window._dadosCodigo() : {};
         if (arquivos.every(a => !dados[a.lang] || !dados[a.lang].trim())) {
             sophiaFala('Escreva um pouco de código e clique em mim de novo!', 4000);

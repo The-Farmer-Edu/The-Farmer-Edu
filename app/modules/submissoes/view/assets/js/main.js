@@ -36,8 +36,11 @@
     }
 
     /* ─── Detectar página atual ─────────────────────────────────── */
+    const params = new URLSearchParams(window.location.search);                                                                                                                                                                                                                                                                                                                                 
+    const rotaParam = params.get('rota');
     const caminho = window.location.pathname.replace(/\/$/, '');
-    const pagina  = caminho.split('/').pop(); // ex: "aluno", "iniciarAtv"
+    const paginaRaw = rotaParam || caminho.split('/').pop() || '';
+    const pagina = paginaRaw.replace(/\.php$/, ''); // ex: "aluno", "iniciarAtv", "index"
 
     /* ─── Mapa de módulos por página ────────────────────────────── */
     const modulos = {

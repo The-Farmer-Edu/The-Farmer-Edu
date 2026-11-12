@@ -15,16 +15,16 @@ const FEEDBACK = {
     usarExemploSeFalhar: true,
 
     montarPayload(ctx) {
-        const A = window.FarmAtividade;
+        const FarmAtividade = window.FarmAtividade;
         return {
             linguagem:          ctx.linguagem,
             codigo_aluno:       ctx.codigo,
             id_linguagem:       ctx.idLinguagem,
-            objetivo_atividade: A.objetivo,
-            nota_max:           String(A.notaMax),
-            nota_min:           String(A.notaMin),
-            dados_entrada:      A.entrada,
-            atividadeId:        A.id
+            objetivo_atividade: FarmAtividade.objetivo,
+            nota_max:           String(FarmAtividade.notaMax),
+            nota_min:           String(FarmAtividade.notaMin),
+            dados_entrada:      FarmAtividade.entrada,
+            atividadeId:        FarmAtividade.id
         };
     },
 
@@ -45,22 +45,22 @@ const FEEDBACK = {
 
     /** Resposta de exemplo usada quando a IA falha */
     exemplo() {
-        const A    = window.FarmAtividade;
-        const modo = A.linguagem.modo;
-        const req  = A.requisitos || [];
+        const FarmAtividade = window.FarmAtividade;
+        const modo = FarmAtividade.linguagem.modo;
+        const req  = FarmAtividade.requisitos || [];
         const erros = window._errosConsole ? window._errosConsole() : [];
         const exec  = window._executadoAtual || false;
 
         const saidaOk = modo === 'terminal'
-            && typeof A.saidaEsperada === 'string'
+            && typeof FarmAtividade.saidaEsperada === 'string'
             && exec && erros.length === 0;
 
         if (saidaOk) {
             return {
                 sucesso: true,
-                compilacao: { status: 'Accepted', saida_terminal: A.saidaEsperada },
+                compilacao: { status: 'Accepted', saida_terminal: FarmAtividade.saidaEsperada },
                 avaliacao: {
-                    nota_atribuida:   A.notaMax,
+                    nota_atribuida:   FarmAtividade.notaMax,
                     status_avaliacao: 'aprovado',
                     feedback_geral:   'A saída do seu código confere com o esperado.',
                     pontos_positivos: req.map(r => 'Você cumpriu: ' + r),
@@ -195,11 +195,11 @@ window.consultarIAcomFallback = consultarIAcomFallback;
 const LIMITE_CLICKS       = 10;
 const LIMITE_CANCELAMENTOS = 3;
 
-const A = window.FarmAtividade;
+const FarmAtividade = window.FarmAtividade;
 
-const CHAVE_ENTREGA      = `farmedu:entrega:${A.chave}`;
-const CHAVE_CANCELAMENTOS_KEY = `farmedu:cancelamentos:${A.chave}`;
-const CHAVE_AVALIACAO    = `farmedu:avaliacao:${A.chave}`;
+const CHAVE_ENTREGA      = `farmedu:entrega:${FarmAtividade.chave}`;
+const CHAVE_CANCELAMENTOS_KEY = `farmedu:cancelamentos:${FarmAtividade.chave}`;
+const CHAVE_AVALIACAO    = `farmedu:avaliacao:${FarmAtividade.chave}`;
 
 let entrega      = null;
 let cancelamentos = 0;
@@ -232,13 +232,13 @@ function atualizarContadores() {
 /* ─── Atualizar estado do botão de entrega ───────────────────────── */
 function atualizarEntrega() {
     const entregue  = !!entrega;
-    const encerrado = A.prazoExcedido();
+    const encerrado = FarmAtividade.prazoExcedido();
     const bloqueado = entregue && cancelamentos >= LIMITE_CANCELAMENTOS;
     const $id       = id => document.getElementById(id);
 
     // Editor: somente leitura quando entregue ou encerrado
     const ed = $id('ed');
-    if (ed) ed.readOnly = entregue || encerrado || A.vazia;
+    if (ed) ed.readOnly = entregue || encerrado || FarmAtividade.vazia;
 
     // Chip de entrega
     const chipEntrega = $id('chipEntrega');
@@ -251,18 +251,18 @@ function atualizarEntrega() {
     // Chip de prazo
     const chipPrazo = $id('chipPrazo');
     if (chipPrazo) {
-        chipPrazo.hidden = !A.limite;
+        chipPrazo.hidden = !FarmAtividade.limite;
         chipPrazo.classList.toggle('encerrado', encerrado);
         chipPrazo.textContent = encerrado
-            ? 'Prazo encerrado em ' + A.limiteTexto()
-            : 'Prazo para entregar até ' + A.limiteTexto();
+            ? 'Prazo encerrado em ' + FarmAtividade.limiteTexto()
+            : 'Prazo para entregar até ' + FarmAtividade.limiteTexto();
     }
 
     // Botão de entrega
     const btn = $id('btnEntregar');
     if (btn) {
         const executando = window._executando || false;
-        btn.disabled = A.vazia || bloqueado || encerrado || (!entregue && executando);
+        btn.disabled = FarmAtividade.vazia || bloqueado || encerrado || (!entregue && executando);
         btn.textContent = encerrado   ? 'Prazo encerrado'
             : bloqueado               ? 'Entrega final'
             : entregue                ? 'Cancelar entrega'
@@ -281,7 +281,7 @@ const modalEntrega = document.getElementById('modalEntrega');
 function abrirModalEntrega() {
     const $id    = id => document.getElementById(id);
     const dados  = window._dadosCodigo ? window._dadosCodigo() : {};
-    const arquivos = A.linguagem.arquivos;
+    const arquivos = FarmAtividade.linguagem.arquivos;
 
     const resumo = $id('resumoEntrega');
     if (resumo) {
@@ -313,9 +313,9 @@ const fecharModalEntrega = () => modalEntrega && modalEntrega.classList.remove('
 
 /** Antes de confirmar, o aluno sempre vê o resultado (executa à força se ainda não viu) */
 async function iniciarEntrega() {
-    if (A.prazoExcedido()) return aviso('O prazo de entrega acabou');
+    if (FarmAtividade.prazoExcedido()) return aviso('O prazo de entrega acabou');
     const dados   = window._dadosCodigo ? window._dadosCodigo() : {};
-    const arquivos = A.linguagem.arquivos;
+    const arquivos = FarmAtividade.linguagem.arquivos;
     if (arquivos.every(a => !dados[a.lang] || !dados[a.lang].trim()))
         return aviso('Escreva algum código antes de entregar');
 
@@ -335,11 +335,11 @@ async function iniciarEntrega() {
 }
 
 function confirmarEntrega() {
-    if (A.prazoExcedido()) { fecharModalEntrega(); return aviso('O prazo de entrega acabou'); }
+    if (FarmAtividade.prazoExcedido()) { fecharModalEntrega(); return aviso('O prazo de entrega acabou'); }
     if (typeof salvar === 'function') salvar();
     const dados    = window._dadosCodigo ? window._dadosCodigo() : {};
-    const L        = A.linguagem;
-    entrega = { data: new Date().toISOString(), atividadeId: A.id, linguagem: L.id, arquivos: { ...dados } };
+    const L        = FarmAtividade.linguagem;
+    entrega = { data: new Date().toISOString(), atividadeId: FarmAtividade.id, linguagem: L.id, arquivos: { ...dados } };
     try { localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega)); } catch (e) {}
     fecharModalEntrega();
     atualizarEntrega();
@@ -349,7 +349,7 @@ function confirmarEntrega() {
 }
 
 function cancelarEntrega() {
-    if (A.prazoExcedido()) return aviso('O prazo acabou: a entrega não pode mais ser cancelada');
+    if (FarmAtividade.prazoExcedido()) return aviso('O prazo acabou: a entrega não pode mais ser cancelada');
     if (cancelamentos >= LIMITE_CANCELAMENTOS) return aviso('Você já usou os 3 cancelamentos. A entrega é final.');
     cancelamentos++;
     try { localStorage.setItem(CHAVE_CANCELAMENTOS_KEY, String(cancelamentos)); } catch (e) {}
@@ -431,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnVoltar.addEventListener('click', () => {
             if (enviando && !confirm('A IA ainda está avaliando a sua entrega. Se sair agora, a pontuação pode não ser gerada. Sair mesmo assim?')) return;
             saindo = true;
-            location.href = 'aluno' + (A.queryAluno || '');
+            location.href = 'aluno' + (FarmAtividade.queryAluno || '');
         });
     }
 

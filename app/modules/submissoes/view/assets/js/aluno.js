@@ -14,10 +14,10 @@
 
 /* ─── Renderizar dados da atividade ──────────────────────────────── */
 (function renderizarAtividade() {
-    const A = window.FarmAtividade;
-    if (!A) return;
+    const FarmAtividade = window.FarmAtividade;
+    if (!FarmAtividade) return;
 
-    if (A.vazia) {
+    if (FarmAtividade.vazia) {
         document.querySelectorAll('.atv-sub, .atv-meta').forEach(e => e.style.display = 'none');
         return;
     }
@@ -27,15 +27,15 @@
         if (e) e.textContent = valor;
     };
 
-    escrever('atvTitulo',    A.titulo);
-    escrever('atvDescricao', A.descricao);
-    escrever('atvLinguagem', A.linguagem.nome);
-    escrever('atvNota',      `de 0 a ${A.notaMax} (mínima para aprovação: ${A.notaMin})`);
+    escrever('atvTitulo',    FarmAtividade.titulo);
+    escrever('atvDescricao', FarmAtividade.descricao);
+    escrever('atvLinguagem', FarmAtividade.linguagem.nome);
+    escrever('atvNota',      `de 0 a ${FarmAtividade.notaMax} (mínima para aprovação: ${FarmAtividade.notaMin})`);
 
     const lista = document.getElementById('atvRequisitos');
     if (lista) {
         lista.innerHTML = '';
-        A.requisitos.forEach(r => {
+        FarmAtividade.requisitos.forEach(r => {
             const li = document.createElement('li');
             li.textContent = r;
             lista.appendChild(li);
@@ -43,13 +43,13 @@
     }
 
     const inputId = document.getElementById('atvInputId');
-    if (inputId) inputId.value = A.id;
+    if (inputId) inputId.value = FarmAtividade.id;
 
     const box = document.getElementById('atvBadges');
     if (box) {
         const cores = { HTML5: 'badge-html', CSS3: 'badge-css', JS: 'badge-js' };
         box.innerHTML = '';
-        A.linguagem.badges.forEach(b => {
+        FarmAtividade.linguagem.badges.forEach(b => {
             const sp = document.createElement('span');
             sp.className = 'badge-padrao ' + (cores[b] || 'badge-outra');
             sp.textContent = b;
@@ -59,9 +59,9 @@
 })();
 
 /* ─── Chaves do localStorage ─────────────────────────────────────── */
-const A              = window.FarmAtividade;
-const CHAVE_ENTREGA  = 'farmedu:entrega:'   + A.chave;
-const CHAVE_AVALIACAO = 'farmedu:avaliacao:' + A.chave;
+const FarmAtividade = window.FarmAtividade;
+const CHAVE_ENTREGA  = 'farmedu:entrega:'   + FarmAtividade.chave;
+const CHAVE_AVALIACAO = 'farmedu:avaliacao:' + FarmAtividade.chave;
 
 const statusEl      = document.querySelector('.status');
 const textoEl       = document.getElementById('texto');
@@ -83,7 +83,7 @@ function lerAvaliacao() {
 
 /* ─── Status de entrega e prazo ──────────────────────────────────── */
 function atualizarStatus() {
-    if (A.vazia) {
+    if (FarmAtividade.vazia) {
         if (statusEl)     statusEl.style.display = 'none';
         if (prazoEl)      prazoEl.hidden = true;
         if (textoEl)      textoEl.style.display = 'none';
@@ -96,7 +96,7 @@ function atualizarStatus() {
     const entrega  = lerEntrega();
     const data     = entrega && new Date(entrega.data);
     const entregue = !!data && !isNaN(data);
-    const encerrado = A.prazoExcedido();
+    const encerrado = FarmAtividade.prazoExcedido();
 
     // Status de entrega
     if (statusEl) {
@@ -129,12 +129,12 @@ function atualizarStatus() {
 
     // Prazo
     if (prazoEl) {
-        if (A.limite) {
+        if (FarmAtividade.limite) {
             prazoEl.hidden = false;
             prazoEl.classList.toggle('encerrado', encerrado);
             prazoEl.textContent = encerrado
-                ? 'Prazo encerrado em ' + A.limiteTexto()
-                : 'Prazo de entrega até ' + A.limiteTexto();
+                ? 'Prazo encerrado em ' + FarmAtividade.limiteTexto()
+                : 'Prazo de entrega até ' + FarmAtividade.limiteTexto();
         } else {
             prazoEl.hidden = true;
         }
@@ -150,8 +150,8 @@ function atualizarNota(entregue, encerrado) {
     let liberado = false;
     let msg;
     if (!encerrado) {
-        msg = A.limite
-            ? '🔒 Disponível depois do prazo de entrega (' + A.limiteTexto() + ').'
+        msg = FarmAtividade.limite
+            ? '🔒 Disponível depois do prazo de entrega (' + FarmAtividade.limiteTexto() + ').'
             : '🔒 Disponível quando o prazo de entrega terminar.';
     } else if (!entregue) {
         msg = 'Você não entregou esta atividade, então não há pontuação.';
@@ -169,7 +169,7 @@ function atualizarNota(entregue, encerrado) {
 
 function abrirNota() {
     const aval = lerAvaliacao();
-    if (!modalNota || !notaConteudo || !aval || !A.prazoExcedido()) return;
+    if (!modalNota || !notaConteudo || !aval || !FarmAtividade.prazoExcedido()) return;
 
     // Cria elementos com textContent (nunca innerHTML com dados da IA)
     const novo = (tag, classe, texto) => {
@@ -190,12 +190,12 @@ function abrirNota() {
     const nota     = aval.nota != null ? aval.nota : '—';
     const aprovado = aval.status
         ? /^aprovado$/i.test(String(aval.status).trim())
-        : Number(aval.nota) >= A.notaMin;
+        : Number(aval.nota) >= FarmAtividade.notaMin;
 
-    const valor = novo('p', 'nota-valor', `Nota atribuída: ${nota} / ${A.notaMax}`);
+    const valor = novo('p', 'nota-valor', `Nota atribuída: ${nota} / ${FarmAtividade.notaMax}`);
     valor.appendChild(novo('span', 'nota-selo ' + (aprovado ? 'aprovado' : 'reprovado'), aprovado ? 'Aprovado' : 'Reprovado'));
     notaConteudo.appendChild(valor);
-    notaConteudo.appendChild(novo('p', 'nota-pequeno', `Nota mínima para aprovação: ${A.notaMin}`));
+    notaConteudo.appendChild(novo('p', 'nota-pequeno', `Nota mínima para aprovação: ${FarmAtividade.notaMin}`));
 
     if (aval.compilador) {
         const p = novo('p');

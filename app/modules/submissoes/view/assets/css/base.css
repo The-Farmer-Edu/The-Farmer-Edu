@@ -102,11 +102,12 @@ button {
 }
 
 /* ─── Cabeçalho Padrão ─────────────────────────────────────────────── */
-header, .topbar {
+header {
     background-color: var(--verde-claro);
     color: var(--verde-primario);
     padding: 10px 16px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 16px;
     position: relative;

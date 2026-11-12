@@ -1,9 +1,20 @@
 <?php
 
+/**
+ * Modelo de dados da área de submissões.
+ *
+ * Centraliza as consultas relacionadas a atividades, matrícula e criação de tentativas.
+ * A ideia é manter o fluxo de avaliação em um ponto único, com regras de integridade
+ * e garantia de que cada envio gere uma tentativa consistente.
+ */
 require_once __DIR__ . '/../../core/database.php';
 
 class SubmissoesModel
 {
+    /**
+     * Conexão PDO compartilhada pela aplicação.
+     * Se nenhuma conexão for passada, usa a função global de inicialização do projeto.
+     */
     private PDO $pdo;
 
     public function __construct(?PDO $pdo = null)
@@ -11,6 +22,11 @@ class SubmissoesModel
         $this->pdo = $pdo ?? iniciarPDO();
     }
 
+    /**
+     * Busca a atividade pelo identificador.
+     * Em outras palavras: antes de gerar a página de submissão, o sistema precisa saber
+     * qual atividade foi escolhida e quais campos do banco devem ser exibidos ao aluno.
+     */
     public function buscarAtividade(int $idAtividade): ?array
     {
         $st = $this->pdo->prepare(
@@ -22,7 +38,12 @@ class SubmissoesModel
         return $st->fetch() ?: null;
     }
 
-    // #22 — só aluno matriculado na turma da atividade
+    /**
+     * Valida se o aluno está realmente matriculado na turma da atividade.
+     *
+     * Regra de segurança: não basta só receber o id da atividade; o aluno precisa pertencer
+     * ao contexto daquela turma para poder submeter resposta.
+     */
     public function alunoMatriculado(int $idAluno, int $idTurma): bool
     {
         $st = $this->pdo->prepare('SELECT 1 FROM matriculas WHERE id_aluno = ? AND id_turma = ? LIMIT 1');
@@ -30,7 +51,12 @@ class SubmissoesModel
         return (bool) $st->fetchColumn();
     }
 
-    // #20 / #24 — cada envio vira uma nova tentativa (histórico)
+    /**
+     * Cria uma nova submissão e calcula a tentativa numérica correta.
+     *
+     * A lógica usa MAX(tentativa_num) + 1 para garantir que cada nova tentativa seja sequencial,
+     * e o FOR UPDATE impede concorrência em situações em que dois envios acontecem ao mesmo tempo.
+     */
     public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array
     {
         $this->pdo->beginTransaction();
@@ -57,6 +83,10 @@ class SubmissoesModel
         }
     }
 
+    /**
+     * Atualiza o resultado final da submissão depois do processamento.
+     * Isso permite manter um histórico de status e execução da resposta enviada.
+     */
     public function atualizarResultado(int $idSubmissao, string $status, ?string $resultadoExecucao): void
     {
         $st = $this->pdo->prepare('UPDATE submissoes SET status = ?, resultado_execucao = ? WHERE id_submissao = ?');

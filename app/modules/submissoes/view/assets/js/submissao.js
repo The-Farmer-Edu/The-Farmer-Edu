@@ -1,4 +1,6 @@
 // Entrega da atividade: modal, cancelamento, contadores de limite e localStorage.
+// Este módulo coordena a última etapa do fluxo: o aluno valida o código, confirma a entrega e o sistema
+// grava um snapshot no navegador para representar a entrega concluída.
 const modalEntrega = porId('modalEntrega');
 
 function atualizarContadores() {
@@ -19,7 +21,7 @@ function atualizarEntrega() {
     porId('chipEntrega').hidden = !entregue;
     if (entregue) porId('chipEntrega').textContent = '✔ Entregue em ' + atividadeAtual.formatarDataHora(entrega.data);
 
-    // Limite de entrega
+    // Limite de entrega: a interface usa o mesmo critério do backend para bloquear entrega após o prazo.
     porId('chipPrazo').hidden = !atividadeAtual.limite;
     porId('chipPrazo').classList.toggle('encerrado', prazoEncerrado);
     porId('chipPrazo').textContent = prazoEncerrado

@@ -1,4 +1,5 @@
-// IDE: editor, destaque de sintaxe, abas de arquivos, execução e modo celular.
+﻿// IDE: editor, destaque de sintaxe, abas de arquivos, execução e modo celular.
+// Este arquivo é o núcleo funcional da experiência de desenvolvimento dentro da atividade.
 const atividadeAtual = window.FarmAtividade;
 const linguagemAtual = atividadeAtual.linguagem;
 const modoExecucao = linguagemAtual.modo;
@@ -8,18 +9,25 @@ const LIMITE_CANCELAMENTOS = 3;
 const ID_LINGUAGEM_PYTHON = 71;
 const CONSULTA_CELULAR = '(max-width: 780px)';
 
+/**
+ * Regras de destaque por linguagem.
+ *
+ * Cada valor é um array de pares [classeCss, expressãoRegex].
+ * O algoritmo percorre o texto e aplica classes de cor conforme o tipo do token identificado.
+ * Isso permite que o editor tenha uma experiência de syntax highlighting sem bibliotecas externas.
+ */
 const REGRAS_DESTAQUE = {
     html: [['c', '<!--[\\s\\S]*?-->'], ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'], ['s', '"[^"]*"|\'[^\']*\''], ['a', '[\\w-]+(?==)']],
-    css: [['c', '\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
+    css: [['c', '\\/\\*[\\s\\S]*?\\*\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
           ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
-    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/'],
-         ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\/'],
+         ['s', '`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\''],
          ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
     py: [['c', '#.*'], ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
          ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']],
-    php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+    php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
           ['a', '\\$[a-zA-Z_]\\w*'],
           ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
           ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']]
@@ -42,7 +50,12 @@ const CHAVE_CODIGO = `farmedu:codigo:${atividadeAtual.chave}:${linguagemAtual.id
 const CHAVE_ENTREGA = `farmedu:entrega:${atividadeAtual.chave}`;
 const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${atividadeAtual.chave}`;
 
-/* Estado da página (também usado por submissao.js e sophia.js) */
+/*
+ * Estado da página.
+ *
+ * O sistema guarda código, entrega e cancelamentos por atividade em localStorage para não misturar
+ * uma atividade da outra enquanto o aluno navega entre telas.
+ */
 let dadosDosArquivos;
 try {
     dadosDosArquivos = { ...linguagemAtual.inicial, ...JSON.parse(localStorage.getItem(CHAVE_CODIGO)) };
@@ -101,7 +114,12 @@ if (atividadeAtual.vazia) {
     });
 }
 
-/* Editor */
+/*
+ * Editor e destaque de sintaxe.
+ *
+ * A função `colorir` percorre o código com regex e cria spans para cada token detectado.
+ * Isso torna possível preservar a sintaxe original e apenas “decorar” o texto em tela.
+ */
 function colorir(codigo, regras) {
     const expressao = new RegExp(regras.map(regra => '(' + regra[1] + ')').join('|'), 'g');
     let saida = '', ultimoIndice = 0, correspondencia;
@@ -180,7 +198,8 @@ function escreverConsole(mensagem, tipo = 'log') {
     consoleCorpo.scrollTop = consoleCorpo.scrollHeight;
 }
 
-// Ponte que envia console.log/erros da página executada para o console da IDE
+// Ponte que envia console.log/erros da página executada para o console da IDE.
+// O iframe preview usa postMessage para reportar erros e logs sem quebrar a segurança do navegador.
 const PONTE_CONSOLE = '<script>(function(){' +
     'var enviar=function(tipo,args){parent.postMessage({farm:1,t:tipo,m:[].map.call(args,function(x){' +
     'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")},"*")};' +
@@ -191,6 +210,8 @@ const PONTE_CONSOLE = '<script>(function(){' +
 function rodarWeb() {
     quadroPreview.hidden = false;
     saidaTerminal.hidden = true;
+
+    // Em HTML/CSS/JS, o código é transformado em um documento completo em um iframe.
     const estilo = `<style>${dadosDosArquivos.css}</style>`;
     const script = PONTE_CONSOLE + `<script>${dadosDosArquivos.js}<\/script>`;
     let documentoHtml = dadosDosArquivos.html;
@@ -205,7 +226,7 @@ window.addEventListener('message', evento => {
     escreverConsole((evento.data.t === 'error' ? '✖ ' : '› ') + evento.data.m, evento.data.t);
 });
 
-// Python, PHP e Node: a execução no servidor (Judge0) será integrada depois
+// Python, PHP e Node: o sistema ainda marca a execução como “em breve” e não liga ao Judge0 de verdade.
 function rodarTerminal() {
     quadroPreview.hidden = true;
     saidaTerminal.hidden = false;
@@ -279,7 +300,7 @@ porId('btnRodar').onclick = () => {
     executar({ focar: true });
 };
 
-// Voltar sempre leva à página do aluno
+// Voltar sempre leva à página do aluno.
 porId('btnVoltar').onclick = () => { location.href = 'aluno'; };
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {

@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Farm Edu - Execução da Resposta</title>
+
+    <!-- Fontes do projeto: padronizam a leitura e a identidade visual da experiência de coding. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- CSS do editor/IDE, servido pelo controller de assets do módulo. -->
     <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
 </head>
 <body data-pagina="iniciaratv">
+    <!-- Topbar do editor: em uma só linha, o aluno vê o fluxo de navegação, status e ações. -->
     <header class="topbar">
         <div class="brand">
             <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
@@ -20,6 +25,7 @@
             <span class="modulo">Escrever código</span>
         </div>
 
+        <!-- Chips de estado: entregou ou prazo encerrado. O JS decide se aparecem e qual texto exibem. -->
         <span class="chip-entrega" id="chipEntrega" hidden></span>
         <span class="chip-prazo" id="chipPrazo" hidden></span>
 
@@ -29,7 +35,7 @@
         </div>
     </header>
 
-    <!-- Informações da atividade: preenchidas pelo JS (iniciaratv.js) -->
+    <!-- Bloco resumo da atividade; os dados são preenchidos pelo JS com base na atividade carregada. -->
     <section class="atividade" id="atividade" aria-label="Informações da atividade">
         <div class="atv-linha">
             <span class="atv-tag" id="atvId"></span>
@@ -43,11 +49,13 @@
         </details>
     </section>
 
+    <!-- Abas de navegação do mobile; no celular, o layout se transforma para exibir código e resultado alternadamente. -->
     <nav class="abas-mobile" id="abasMobile" aria-label="Alternar painel">
         <button class="aba on" type="button" data-aba="codigo">Código</button>
         <button class="aba" type="button" data-aba="resultado" id="abaResultado" disabled>Resultado</button>
     </nav>
 
+    <!-- IDE principal: painel de arquivos + editor + preview de saída. -->
     <main class="ide" id="ide" data-aba="codigo">
 
         <aside class="explorer">
@@ -62,7 +70,7 @@
         </aside>
 
         <section class="card editor" id="painelCodigo">
-            <!-- Celular: X para sair do editor expandido -->
+            <!-- No celular, o editor pode expandir para ocupar a tela. Este botão fecha a visão expandida. -->
             <button type="button" class="btn-fechar-editor" id="fecharEditor" aria-label="Fechar editor expandido">✕</button>
             <div class="editor-wrap">
                 <pre class="gutter" id="gutter" aria-hidden="true"></pre>
@@ -71,7 +79,8 @@
                     <textarea id="ed" spellcheck="false" wrap="off" aria-label="Editor de código"></textarea>
                 </div>
             </div>
-            <!-- Celular: volta ao início da linha quando o texto rolou para o lado -->
+
+            <!-- Permite voltar ao início da linha quando o texto for rolado para lateral. -->
             <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤ Início</button>
             <div class="status">
                 <span id="stLang">HTML</span>
@@ -102,6 +111,7 @@
 
     </main>
 
+    <!-- Mascote da IA com balão de conversa. A lógica de falas fica em sophia.js. -->
     <div class="sophia">
         <div class="balao" id="balao"></div>
         <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
@@ -109,6 +119,7 @@
         </button>
     </div>
 
+    <!-- Modal de confirmação de entrega. O usuário vê resumo dos arquivos e decide confirmar ou cancelar. -->
     <div class="modal-overlay" id="modalEntrega" role="dialog" aria-modal="true" aria-labelledby="tituloEntrega">
         <div class="modal-card">
             <h3 id="tituloEntrega">Entregar atividade?</h3>
@@ -123,7 +134,7 @@
     </div>
     <div class="toast" id="toast" role="status"></div>
 
-    <!-- Dados da atividade vindos do banco  -->
+    <!-- A mesma estratégia de JSON em bloco permite ao JS montar a atividade sem nova chamada de API. -->
     <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null) ?></script>
     <script src="submissoes/file?type=js&file=main.js"></script>
 </body>

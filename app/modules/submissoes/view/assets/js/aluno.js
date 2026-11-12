@@ -1,11 +1,20 @@
+/**
+ * Renderização da página do aluno.
+ *
+ * Esse módulo recebe o objeto global `FarmAtividade` montado por `atividade.js` e o usa para
+ * preencher os campos da tela com título, descrição, linguagem e requisitos.
+ */
 const atividadeAtual = window.FarmAtividade;
 
 function renderizarAtividade() {
     if (!atividadeAtual) return;
+
+    // Se a página chegou vazia, o aluno vê uma mensagem genérica em vez de estrutura quebrada.
     if (atividadeAtual.vazia) {
         document.querySelectorAll('.atv-sub, .atv-meta').forEach(elemento => elemento.style.display = 'none');
         return;
     }
+
     const obterElemento = id => document.getElementById(id);
     const escreverTexto = (id, valor) => {
         const elemento = obterElemento(id);
@@ -27,13 +36,17 @@ function renderizarAtividade() {
         });
     }
 
-    // Leva o id da atividade para a página de execução ("Começar")
+    // O id da atividade é repassado ao formulário da próxima tela para que o editor carregue a atividade correta.
     const campoIdAtividade = obterElemento('atvInputId');
     if (campoIdAtividade) campoIdAtividade.value = atividadeAtual.id;
 }
 renderizarAtividade();
 
-/* Status da entrega */
+/*
+ * Status da entrega:
+ * a ideia é guardar no localStorage a última entrega do aluno por atividade.
+ * Isso evita que a tela precise consultar o backend a cada refresh da página.
+ */
 const CHAVE_ENTREGA = 'farmedu:entrega:' + atividadeAtual.chave;
 const elementoStatus = document.querySelector('.status');
 const textoOrientacao = document.getElementById('texto');
@@ -52,10 +65,12 @@ function atualizarStatus() {
         botaoComecar.style.display = 'none';
         return;
     }
+
     const entrega = lerEntrega();
     const dataEntrega = entrega && new Date(entrega.data);
     const entregue = !!dataEntrega && !isNaN(dataEntrega);
     const prazoEncerrado = atividadeAtual.prazoExcedido();
+
     const pontoStatus = document.createElement('span');
     pontoStatus.className = 'ponto';
     elementoStatus.textContent = '';
@@ -67,7 +82,7 @@ function atualizarStatus() {
     }
     elementoStatus.classList.toggle('entregue', entregue);
 
-    // Botão: Começar, Revisar, Visualizar
+    // A mesma CTA é reutilizada para três estados: começar, revisar e visualizar.
     botaoComecar.classList.toggle('visualizar', prazoEncerrado);
     if (prazoEncerrado) {
         botaoComecar.textContent = 'Visualizar';
@@ -82,7 +97,7 @@ function atualizarStatus() {
         textoOrientacao.textContent = 'Escreva seu código direto na plataforma clicando em "Começar".';
     }
 
-    // Limite de entrega
+    // Exibe o prazo da atividade, se existir, com estilo diferente quando acabou.
     if (atividadeAtual.limite) {
         elementoPrazo.hidden = false;
         elementoPrazo.classList.toggle('encerrado', prazoEncerrado);
@@ -101,44 +116,3 @@ setInterval(atualizarStatus, 30000);
 
 document.getElementById('btnVoltar').addEventListener('click', () => history.back());
 
-/* Menus do cabeçalho */
-const botaoIconi = document.getElementById('botaoIconi');
-const botaoUsuario = document.getElementById('botaoUsuario');
-const menuIconi = document.getElementById('menuIconi');
-const menuUsuario = document.getElementById('menuUsuario');
-
-function fecharMenus() {
-    [menuIconi, menuUsuario].forEach(menu => {
-        menu.classList.remove('active');
-        menu.setAttribute('aria-hidden', 'true');
-    });
-    botaoIconi.setAttribute('aria-expanded', 'false');
-    botaoUsuario.setAttribute('aria-expanded', 'false');
-}
-
-function alternarMenu(menu, botao) {
-    const vaiAbrir = !menu.classList.contains('active');
-    fecharMenus();
-    if (vaiAbrir) {
-        menu.classList.add('active');
-        menu.setAttribute('aria-hidden', 'false');
-        botao.setAttribute('aria-expanded', 'true');
-    }
-}
-
-botaoIconi.addEventListener('click', evento => {
-    evento.stopPropagation();
-    alternarMenu(menuIconi, botaoIconi);
-});
-
-botaoUsuario.addEventListener('click', evento => {
-    evento.stopPropagation();
-    alternarMenu(menuUsuario, botaoUsuario);
-});
-
-[menuIconi, menuUsuario].forEach(menu => menu.addEventListener('click', evento => evento.stopPropagation()));
-
-document.addEventListener('click', fecharMenus);
-document.addEventListener('keydown', evento => {
-    if (evento.key === 'Escape') fecharMenus();
-});

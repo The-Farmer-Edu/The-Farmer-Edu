@@ -5,38 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Critérios da IA</title>
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-
-        #criteria-container {
-            margin-top: 5px;
-        }
-
-        .criterio {
-            padding: 10px;
-            margin: 5px 0;
-            border: 1px solid #ccc;
-            cursor: pointer;
-        }
-
-        .criterio.selected {
-            background-color: #ddd;
-        }
-
-        button {
-            margin-top: 10px;
-            padding: 8px 12px;
-            cursor: pointer;
-        }
-
-        input {
-            padding: 8px;
-            width: 250px;
-        }
-    </style>
+    <base href="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>/">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap">
+    <link rel="stylesheet" href="atividades/file?type=css&file=criterios.css">
 </head>
 
 <body>

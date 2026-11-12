@@ -1,0 +1,10 @@
+body.tema-aluno {
+    --cor-primaria: #1B5E20;
+    --cor-escura: #089C2F;
+    --cor-clara: #A0FDA3;
+    --menu-fundo: #A0FDA3;
+}
+
+body.tema-aluno main > section:last-of-type {
+    margin-top: 24px;
+}

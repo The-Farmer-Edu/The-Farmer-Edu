@@ -460,7 +460,7 @@ function cancelarEntrega() {
 /*FEEDBACK — PONTO DE INTEGRAÇÃO COM O GRUPO feedback_ia*/
 const FEEDBACK = {
     // Tenta nesta ordem; só passa para o próximo se o endereço não existir (404/405) ou não responder.
-    endpoints: ['enviarSubmissao', 'sendAvaliacao', 'api/sendAvaliacao'],
+    endpoints: ['feedback_ia/sendAvaliacao'],
     usarExemploSeFalhar: true,
 
     montarPayload(ctx) {

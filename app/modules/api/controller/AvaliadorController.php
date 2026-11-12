@@ -32,8 +32,8 @@ class AvaliadorController {
             $statusJudge0 = $respostaJudge0['status'];
             $saidaJudge0 = $respostaJudge0['saida'];
 
-            $ollamaModel = new Ollama();
-            $feedbackIA_String = $ollamaModel->obterResultadoOllama(
+            $ollamaModel = new Sophia();
+            $feedbackIA_String = $ollamaModel->obterResultadoSophia(
                 $linguagem,
                 $objetivoAtividade,
                 $notaMax,

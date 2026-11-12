@@ -424,6 +424,21 @@ window.confirmarEntrega     = confirmarEntrega;
 window.cancelarEntrega      = cancelarEntrega;
 window.enviarParaAvaliacao  = enviarParaAvaliacao;
 
+// Botão de voltar: garante que o clique sempre execute a navegação mesmo quando
+// a página é carregada dinamicamente via main.js e a ordem de execução dos
+// scripts não é a mesma da ordem do HTML.
+let saindo = false;
+const btnVoltar = document.getElementById('btnVoltar');
+if (btnVoltar) {
+    btnVoltar.type = 'button';
+    btnVoltar.addEventListener('click', () => {
+        if (enviando && !confirm('A IA ainda está avaliando a sua entrega. Se sair agora, a pontuação pode não ser gerada. Sair mesmo assim?')) return;
+        saindo = true;
+        const destino = 'aluno' + (FarmAtividade.queryAluno || '');
+        window.location.assign(destino);
+    });
+}
+
 /* ─── Eventos dos botões de entrega ─────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     const $id = id => document.getElementById(id);
@@ -440,16 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modalEntrega.addEventListener('click', e => { if (e.target === modalEntrega) fecharModalEntrega(); });
 
     // Encerramento de prazo: avisa o usuário se estiver avaliando
-    let saindo = false;
-    const btnVoltar = $id('btnVoltar');
-    if (btnVoltar) {
-        btnVoltar.addEventListener('click', () => {
-            if (enviando && !confirm('A IA ainda está avaliando a sua entrega. Se sair agora, a pontuação pode não ser gerada. Sair mesmo assim?')) return;
-            saindo = true;
-            location.href = 'aluno' + (FarmAtividade.queryAluno || '');
-        });
-    }
-
     window.addEventListener('beforeunload', e => {
         if (enviando && !saindo) { e.preventDefault(); e.returnValue = ''; }
     });

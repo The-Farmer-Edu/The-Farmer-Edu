@@ -413,8 +413,11 @@
       '25-mobs.js',
       '26-invasoes.js',
       '27-recursos-lavoura-e-animais.js',
+      '27b-inventario.js',                     // inventário geral (só lê estado.recursos e estado.pocoes)
       '28-mineracao.js',
+      '28b-guardiao-e-pocoes.js',              // Guardião da Mina: minérios → poções → XP (substitui a antiga troca de minérios)
       '29-trabalhadores.js',
+      '29b-lenhador.js',
       '30a-monstros-noturnos.js',
       '30b-integracao-e-paineis.js',
       '31-loop-principal.js',                 [93, 'Montando a interface...'],

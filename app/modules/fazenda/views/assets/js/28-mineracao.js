@@ -19,8 +19,8 @@
       const concluirCicloDaMina = function concluirCicloDaMina() {
         const nivel = estado.niveis.mina, minerios = MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1], xp = MINERACAO_CONFIG.xpPorCicloPorNivel[nivel - 1];
         estado.recursos.minerios += minerios; estado.mina.ciclos++;
-        const xpCreditado = creditarXP(xp);                                         // salva (respeita o limite diário da Fazenda)
-        mostrarAviso('⛏ O carrinho voltou da mina com ' + minerios + ' minérios! ' + textoDoXPDaFazenda(xpCreditado, xp));
+        const xpCreditado = creditarXP(xp, 'fazenda', true, 'mina');                                      // salva (respeita o limite diário da Fazenda)
+        mostrarAviso('⛏ O carrinho voltou da mina com ' + minerios + ' minérios! ' + textoDoXPDaFazenda(xpCreditado, xp, 'mina'));
       };
       // Texto curto do estado da mina (cartão, painel e clique no cartão).
       const textoDoEstadoDaMina = function textoDoEstadoDaMina() {

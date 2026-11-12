@@ -143,7 +143,27 @@
       const xpDaFazendaSalvo = estado.xpDaFazendaHoje && typeof estado.xpDaFazendaHoje === 'object' ? estado.xpDaFazendaHoje : {};
       estado.xpDaFazendaHoje = Number.isInteger(xpDaFazendaSalvo.dia) && Number.isFinite(xpDaFazendaSalvo.total) && xpDaFazendaSalvo.total >= 0 ? { dia: xpDaFazendaSalvo.dia, total: xpDaFazendaSalvo.total } : { dia: null, total: 0 };
       estado.recursos = estado.recursos && typeof estado.recursos === 'object' ? estado.recursos : {};
-      for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
+      for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios', 'madeira']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
+      // Campo opcional e compatível com saves antigos: cada entrada guarda o instante em que uma árvore volta a ficar disponível.
+      const arvoresColetaveisSalvas = estado.arvoresColetaveis && typeof estado.arvoresColetaveis === 'object' ? estado.arvoresColetaveis : {};
+      estado.arvoresColetaveis = Object.fromEntries(Object.entries(arvoresColetaveisSalvas)
+        .filter(([id, instante]) => /^arvore-\d+$/.test(id) && Number.isFinite(instante) && instante >= 0)
+        .map(([id, instante]) => [id, Math.floor(instante)]));
+      // Economia integrada (campos opcionais; saves antigos começam zerados, sem perder nada):
+      //   pocoes       → quantas poções de cada tipo o jogador guarda (POCOES_DO_GUARDIAO, seção 01)
+      //   madeiraHoje  → madeira já coletada HOJE pelo lenhador (limite diário, mesmo formato de xpDaFazendaHoje)
+      const pocoesSalvas = estado.pocoes && typeof estado.pocoes === 'object' ? estado.pocoes : {};
+      estado.pocoes = Object.fromEntries(Object.keys(POCOES_DO_GUARDIAO).map(tipo => [tipo, Math.floor(numeroValido(pocoesSalvas[tipo]))]));
+      const madeiraHojeSalva = estado.madeiraHoje && typeof estado.madeiraHoje === 'object' ? estado.madeiraHoje : {};
+      estado.madeiraHoje = Number.isInteger(madeiraHojeSalva.dia) && Number.isFinite(madeiraHojeSalva.total) && madeiraHojeSalva.total >= 0 ? { dia: madeiraHojeSalva.dia, total: madeiraHojeSalva.total } : { dia: null, total: 0 };
+      // Rebalanceamento (campos opcionais; saves antigos começam zerados):
+      //   cotasDoDia → XP já usado HOJE em cada atividade (COTAS_DIARIAS_DE_XP) e a reserva guardada de dias anteriores (seção 27).
+      //                xpDaFazendaHoje continua existindo como o TOTAL do dia (somado pela seção 27), para quem já o lia.
+      //   recompensasRecebidas → ids das recompensas externas já creditadas por window.adicionarXP (impede crédito duplicado).
+      const cotasSalvas = estado.cotasDoDia && typeof estado.cotasDoDia === 'object' ? estado.cotasDoDia : {};
+      const numerosPorAtividade = objeto => Object.fromEntries(Object.keys(COTAS_DIARIAS_DE_XP).map(atividade => [atividade, numeroValido(objeto && objeto[atividade])]));
+      estado.cotasDoDia = { dia: Number.isInteger(cotasSalvas.dia) ? cotasSalvas.dia : null, usado: numerosPorAtividade(cotasSalvas.usado), reserva: numerosPorAtividade(cotasSalvas.reserva) };
+      estado.recompensasRecebidas = Array.isArray(estado.recompensasRecebidas) ? estado.recompensasRecebidas.filter(id => typeof id === 'string' && id.length <= 120).slice(-500) : [];
       // Plantações: cada uma tem a PRÓPRIA lista de canteiros (estado.lavouras[id].canteiros). A lista antiga (estado.lavoura, só da
       // Nova plantação) é migrada para a Nova plantação, com o progresso preservado.
       const normalizarCanteiros = lista => Array.from({ length: LAVOURA_CONFIG.maximoDeCanteiros }, (_, indice) => {
@@ -158,7 +178,8 @@
       for (const idDaArea in ANIMAIS_DAS_AREAS) {
         const salvo = estado.animais[idDaArea] || {}, limite = ANIMAIS_DAS_AREAS[idDaArea].porNivel[NIVEL_MAXIMO - 1];
         estado.animais[idDaArea] = { comida: Math.min(100, numeroValido(salvo.comida, 100)), saude: Math.min(100, numeroValido(salvo.saude, 100)), mortos: Math.min(limite, Math.floor(numeroValido(salvo.mortos))),
-          atualizadoEm: Math.min(numeroValido(salvo.atualizadoEm, agoraNoJogo()), agoraNoJogo()), avisouFome: !!salvo.avisouFome };
+          atualizadoEm: Math.min(numeroValido(salvo.atualizadoEm, agoraNoJogo()), agoraNoJogo()), avisouFome: !!salvo.avisouFome,
+          produtos: Math.min(limite * PRODUCAO_DOS_ANIMAIS.maximoPorAnimal, numeroValido(salvo.produtos)) };   // rebalanceamento: produção guardada (saves antigos: 0)
       }
       const FASES_DA_MINA = ['parado', 'indo', 'minerando', 'voltando', 'descarregando'];
       const minaSalva = estado.mina || {};

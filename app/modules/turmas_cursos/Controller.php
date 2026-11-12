@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Model.php';
+require_once __DIR__ . '/../auth/Model.php';
 require_once __DIR__ . '/../../core/session.php';
 
 class CursosController
@@ -288,7 +289,7 @@ class CursosController
     public function conta(): void
     {
         $this->exigirQualquerPerfil();
-        $this->view('conta', ['erro' => $_GET['erro'] ?? '']);
+        $this->view('conta', ['erro' => $_GET['erro'] ?? '', 'msg' => $_GET['msg'] ?? '']);
     }
 
     public function desativarConta(): void
@@ -302,6 +303,31 @@ class CursosController
         ContaModel::definirAtivo((int) $u['idUsuario'], 0);
         logout();
         $this->ir('auth/login' . ucfirst($u['perfilAcesso']));
+    }
+
+    public function contaAtualizar(): void {
+        $u = $this->exigirQualquerPerfil();
+        $this->validarCsrf();
+        try {
+            $pdo = iniciarPDO();
+            $usuario = Usuario::buscarPorId($pdo, (int) $u['idUsuario']);
+            if (!$usuario->verificarSenha((string) ($_POST['senha_atual'] ?? ''))) {
+                throw new InvalidArgumentException('senha atual incorreta.');
+            }
+            $usuario->atualizarDados(
+                $pdo,
+                (string) ($_POST['nome'] ?? ''),
+                (string) ($_POST['email'] ?? ''),
+                (string) ($_POST['nova_senha'] ?? '')
+            );
+
+            // mantém a sessão igual ao banco
+            $_SESSION['usuario']['nome'] = $usuario->nome;
+            $_SESSION['usuario']['email'] = $usuario->email;
+            $this->ir('turmas_cursos/minhaConta?msg=' . urlencode('Dados atualizados com sucesso!'));
+        } catch (InvalidArgumentException | RuntimeException $e) {
+            $this->ir('turmas_cursos/minhaConta?erro=' . urlencode($e->getMessage()));
+        }
     }
 
     // Qualquer perfil logado (aluno ou instrutor); sem login, vai para o login do aluno

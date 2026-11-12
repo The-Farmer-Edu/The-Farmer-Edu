@@ -300,3 +300,4 @@ CREATE TABLE arquivos (
   FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
   INDEX id_arquivo_atividade (id_atividade)
 )
+

@@ -25,3 +25,4 @@ Router::post('/turmas_cursos/alunoDesativar', [CursosController::class, 'desativ
 Router::post('/turmas_cursos/alunoReativar', [CursosController::class, 'reativarAluno']);
 Router::get('/turmas_cursos/minhaConta', [CursosController::class, 'conta']);
 Router::post('/turmas_cursos/contaDesativar', [CursosController::class, 'desativarConta']);
+Router::post('/turmas_cursos/contaAtualizar', [CursosController::class,  'contaAtualizar']);

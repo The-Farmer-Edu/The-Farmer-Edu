@@ -587,8 +587,11 @@ class UsuarioController
             ]);
 
             registrarAtividadeSessao();
-            $mensagem = 'Login realizado com sucesso!';
-            $sucesso = true;
+            // $base = rtrim(dirname($SERVER['SCRIPT_NAME']), '/\\');
+            // header('location: ' . $base . '/public/turmas_cursos/' . $usuario->tipo);
+            header('Location: ?rota=turmas_cursos/' . $usuario->tipo);
+            exit;
+
             } catch (InvalidArgumentException $e) {
             $mensagem = $e->getMessage();
             } catch (Throwable $e) {

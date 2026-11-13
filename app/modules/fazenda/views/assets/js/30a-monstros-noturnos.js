@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 30a-monstros-noturnos.js (Fase 3B da refatoração: seção 30 — monstros noturnos e combate)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA); não é aberto sozinho. É um trecho do
       // antigo corpo de iniciarFarmEdu(), copiado sem alterações, exceto que cada função de nível superior foi escrita como
@@ -68,6 +68,7 @@
           const [posicaoX, posicaoZ] = ponto;
           const tipos = Object.keys(MONSTROS_NOTURNOS_CONFIG.tipos), tipo = tipos[Math.floor(Math.random() * tipos.length)], atributos = MONSTROS_NOTURNOS_CONFIG.tipos[tipo];
           const modelo = criarMob(tipo); cena.add(modelo.raiz);
+          tocarEfeito(tipo + 'Aparecer', [posicaoX, posicaoZ]);
           const monstro = { modelo, tipo, x: posicaoX, z: posicaoZ, rot: Math.random() * 6.28, vel: 0, velAlvo: 0, velMax: atributos.velocidade, caminho: null, indice: 0, parado: 0, ux: posicaoX, uz: posicaoZ,
             passo: 0, fase: Math.random() * 6, vida: atributos.vida, vidaMaxima: atributos.vida, morto: false, tempoMorto: 0, decisao: 0, recarga: 0.6, alvo: null, estado: 'entrando', tempoFugindo: 0, barra: criarBarraDeVida(0xe74c3c) };
           animarMob(monstro, 0, 0, false);
@@ -80,7 +81,7 @@
       // Golpe de um trabalhador num monstro. Monstro derrotado deixa de agir imediatamente e dá um pouco de XP.
       const ferirMonstro = function ferirMonstro(monstro, dano, atacante) {
         if (monstro.morto) return;
-        monstro.vida -= dano; tocarEfeito('golpe', [monstro.x, monstro.z]);   // 8.4.1: efeito sonoro
+        monstro.vida -= dano; tocarEfeito(monstro.tipo + 'Dano', [monstro.x, monstro.z]);   // 8.4.1: efeito sonoro
         // defesa (8.4.1): a criatura da invasão atingida revida contra quem a atacou (os monstros noturnos já perseguem a equipe)
         if (monstro.daInvasao && !monstro.alvo && atacante && trabalhadorDisponivel(atacante) && invasaoComCombate()) monstro.alvo = atacante;
         if (monstro.vida > 0) return;
@@ -148,7 +149,7 @@
             if (distancia <= configuracao.alcanceDoAtaque) {                         // só ataca quem está ao alcance
               atacando = true; monstro.velAlvo = 0; monstro.rot += normalizarAngulo(Math.atan2(alvo.x - monstro.x, alvo.z - monstro.z) - monstro.rot) * Math.min(1, segundosDesdeUltimoFrame * 8);
               monstro.recarga -= segundosDesdeUltimoFrame;
-              if (monstro.recarga <= 0) { monstro.recarga = configuracao.segundosEntreAtaques; if (Math.random() < atributos.precisao) ferirTrabalhador(alvo, Math.round(sortearReal(...atributos.dano)), monstro); }
+              if (monstro.recarga <= 0) { monstro.recarga = configuracao.segundosEntreAtaques; tocarEfeito(monstro.tipo + 'Ataque', [monstro.x, monstro.z]); if (Math.random() < atributos.precisao) ferirTrabalhador(alvo, Math.round(sortearReal(...atributos.dano)), monstro); }
             } else andarMob(monstro, segundosDesdeUltimoFrame, grade);
           } else if (andarMob(monstro, segundosDesdeUltimoFrame, grade) && monstro.estado === 'fugindo') { removerMonstro(indice); continue; }
           if (monstro.estado === 'fugindo' && (monstro.tempoFugindo += segundosDesdeUltimoFrame) > 30) { removerMonstro(indice); continue; }

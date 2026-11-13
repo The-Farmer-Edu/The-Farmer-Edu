@@ -53,12 +53,3 @@ Só adicione arquivos de origem e licença conhecidas e registre cada um aqui an
 | Arquivo | Autor / fonte | Licença | Observações |
 |---|---|---|---|
 | — | — | — | Nenhum arquivo adicionado ainda. |
-
-## Etapa 2 — músicas dos eventos especiais (pontos de integração)
-
-Coloque arquivos de autoria própria (ou com licença de uso) nestes caminhos. Sem eles, os eventos rodam em silêncio.
-
-| Arquivo | Quando toca | Configuração |
-|---|---|---|
-| `SFX/eventos/misterio.mp3` | começa quando a criatura da poção misteriosa aparece no céu; abaixa no fim da cena | `AUDIO_CONFIG.segredos.misterio` |
-| `SFX/eventos/disco-voador.mp3` | chegada do disco voador (abdução) | `AUDIO_CONFIG.segredos.discoVoador` |

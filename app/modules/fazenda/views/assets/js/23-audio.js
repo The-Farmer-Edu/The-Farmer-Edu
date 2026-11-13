@@ -90,7 +90,12 @@ for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {
     .filter(Boolean)
     .map(caminho => criarFonteDeSom(caminho, false));
 }
-for (const nome of TIPOS_DE_EFEITO) FONTES_DE_SOM.efeitos[nome] = criarFonteDeSom(AUDIO_CONFIG.efeitos[nome].arquivo, false);
+for (const nome of TIPOS_DE_EFEITO) {
+  const configuracao = AUDIO_CONFIG.efeitos[nome];
+  FONTES_DE_SOM.efeitos[nome] = configuracao.arquivos
+    ? configuracao.arquivos.filter(Boolean).map(caminho => criarFonteDeSom(caminho, false))
+    : criarFonteDeSom(configuracao.arquivo, false);
+}
 for (const nome of Object.keys(AUDIO_CONFIG.segredos)) FONTES_DE_SOM.segredos[nome] = criarFonteDeSom(AUDIO_CONFIG.segredos[nome].arquivo, false);
 FONTES_DE_SOM.pedraSecreta = FONTES_DE_SOM.segredos.pedraSecreta;   // nome antigo, mesmo objeto (todasAsFontesDeSom não o repete)
 
@@ -158,21 +163,40 @@ const sincronizarMusica = function sincronizarMusica() {
   else if (deveEstarTocando) fonteDeSom.el.volume = volumeDaMusica();
   aoMudarOAudio();
 };
+// Alterna a faixa de fundo entre a música normal e a música de invasão sem quebrar o estado do painel.
+const trocarMusicaDeFundo = function trocarMusicaDeFundo(tipo) {
+  const cfg = tipo === 'invasao' ? AUDIO_CONFIG.invasao : AUDIO_CONFIG.musica;
+  if (!cfg || !cfg.arquivo) return;
+  const novoEndereco = enderecoDoAudio(cfg.arquivo);
+  if (FONTES_DE_SOM.musica.arquivo === novoEndereco) return;
+
+  reiniciarFonteDeSom(FONTES_DE_SOM.musica);
+  FONTES_DE_SOM.musica.caminho = cfg.arquivo;
+  FONTES_DE_SOM.musica.arquivo = novoEndereco;
+  sincronizarMusica();
+};
 // Igual a sincronizarMusica, mas para os sons contínuos (cachoeira e fonte), com volume dependente da
-// distância.
+// distância e transição suave para evitar estalos ao mover a câmera.
 const sincronizarAmbiente = function sincronizarAmbiente(nome) {
   const fonteDeSom = FONTES_DE_SOM[nome], deveEstarTocando = ESTADO_DO_AUDIO.liberado && ESTADO_DO_AUDIO[nome].ligado && ESTADO_DO_AUDIO[nome].volume > 0.001 && fonteDeSom.estado !== 'erro' && AMBIENTE_PRESENTE[nome]();
-  if (deveEstarTocando && fonteDeSom.el.paused) tocarSom(fonteDeSom, volumeDoAmbiente(nome));
-  else if (!deveEstarTocando && !fonteDeSom.el.paused) pararSom(fonteDeSom);
-  else if (deveEstarTocando) fonteDeSom.el.volume = volumeDoAmbiente(nome);
+  if (deveEstarTocando && fonteDeSom.el.paused) {
+    tocarSom(fonteDeSom, volumeDoAmbiente(nome));
+  } else if (!deveEstarTocando && !fonteDeSom.el.paused) {
+    pararSom(fonteDeSom);
+  } else if (deveEstarTocando) {
+    const alvoVol = volumeDoAmbiente(nome);
+    if (Math.abs(fonteDeSom.el.volume - alvoVol) > 0.005) {
+      fonteDeSom.el.volume += (alvoVol - fonteDeSom.el.volume) * 0.35;
+    }
+  }
 };
 // Chamada dentro de um clique do jogador (exigência de autoplay dos navegadores): libera o áudio, inicia
 // música e ambientes e "destrava" os demais sons, tocando-os mudos por um instante (necessário no iOS).
 const liberarAudio = function liberarAudio() { // chamado dentro de um clique do jogador: é o que permite o navegador tocar
-  if (ESTADO_DO_AUDIO.liberado) return;                                    // 8.4.1: vários caminhos chamam (gesto, botão 🔊, painel); só a primeira vale
+  if (ESTADO_DO_AUDIO.liberado) return;                                     // 8.4.1: vários caminhos chamam (gesto, botão 🔊, painel); só a primeira vale
   ESTADO_DO_AUDIO.liberado = true;
   sincronizarMusica(); sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte'); sincronizarAmbiente('trator');
-  const fontesDeSom = [...Object.values(FONTES_DE_SOM.efeitos), ...Object.values(FONTES_DE_SOM.segredos)];
+  const fontesDeSom = [...Object.values(FONTES_DE_SOM.efeitos).flat()];
   [...Object.values(FONTES_DE_SOM.animais)].forEach(tipo => {
     tipo.forEach(fonteDeSom => {
       fontesDeSom.push(fonteDeSom);
@@ -201,7 +225,7 @@ const alternarMusica = function alternarMusica() {
 const definirCategoriaDeAudio = function definirCategoriaDeAudio(categoria, ligado) {
   ESTADO_DO_AUDIO[categoria].ligado = ligado;
   if (ligado) { // religar tenta de novo arquivos que falharam
-    if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (CATEGORIAS_EM_GRUPO.includes(categoria)) Object.values(FONTES_DE_SOM[categoria]).forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
+    if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (CATEGORIAS_EM_GRUPO.includes(categoria)) Object.values(FONTES_DE_SOM[categoria]).flat().forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
   }
   if (categoria === 'musica') sincronizarMusica(); else if (!CATEGORIAS_EM_GRUPO.includes(categoria)) sincronizarAmbiente(categoria);
   aoMudarOAudio(); salvarPreferenciasDeAudio();
@@ -262,12 +286,20 @@ const atualizarAudio = function atualizarAudio(segundosDesdeUltimoFrame, tempo) 
 // Não toca antes da liberação, com a categoria desligada ou sem arquivo; "posicao" ([x, z]) baixa o volume com a distância.
 const ultimoMomentoDoEfeito = {};
 const tocarEfeito = function tocarEfeito(nome, posicao) {
-  const configuracao = AUDIO_CONFIG.efeitos[nome], fonteDeSom = FONTES_DE_SOM.efeitos[nome], global = AUDIO_CONFIG.efeitos.global;
-  if (!configuracao || !fonteDeSom || !ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.efeitos.ligado || ESTADO_DO_AUDIO.efeitos.volume <= 0.001 || fonteDeSom.estado === 'erro') return false;
+  const configuracao = AUDIO_CONFIG.efeitos[nome], entrada = FONTES_DE_SOM.efeitos[nome], global = AUDIO_CONFIG.efeitos.global;
+  if (!configuracao || !entrada || !ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.efeitos.ligado || ESTADO_DO_AUDIO.efeitos.volume <= 0.001) return false;
+  let fonteDeSom = entrada;
+  if (Array.isArray(entrada)) {
+    const disponiveis = entrada.filter(f => f.estado !== 'erro');
+    if (!disponiveis.length) return false;
+    fonteDeSom = disponiveis[Math.floor(Math.random() * disponiveis.length)];
+  } else if (fonteDeSom.estado === 'erro') return false;
+  const distMax = configuracao.distanciaMaxima ?? global.distanciaMaxima;
+  if (posicao && configuracao.distanciaMaxima && Math.hypot(alvoAtualDaCamera.x - posicao[0], alvoAtualDaCamera.z - posicao[1]) > distMax) return false;
   const agora = performance.now();
   if (agora - (ultimoMomentoDoEfeito[nome] ?? -Infinity) < (configuracao.intervaloMinimo ?? global.intervaloMinimo) * 1000) return false;
   ultimoMomentoDoEfeito[nome] = agora;
-  const fator = posicao ? Math.max(0.15, 1 - Math.hypot(alvoAtualDaCamera.x - posicao[0], alvoAtualDaCamera.z - posicao[1]) / global.distanciaMaxima) : 1;
+  const fator = posicao ? Math.max(0.15, 1 - Math.hypot(alvoAtualDaCamera.x - posicao[0], alvoAtualDaCamera.z - posicao[1]) / distMax) : 1;
   try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
   tocarSom(fonteDeSom, ESTADO_DO_AUDIO.efeitos.volume * configuracao.volume * fator);
   return true;
@@ -277,6 +309,7 @@ const tocarSegredo = function tocarSegredo(nome) {
   const fonteDeSom = FONTES_DE_SOM.segredos[nome], configuracao = AUDIO_CONFIG.segredos[nome];
   if (!fonteDeSom || tocando(fonteDeSom)) return false;
   if (fonteDeSom.estado === 'erro') { console.info('[áudio] segredo "' + nome + '": arquivo ausente (' + fonteDeSom.arquivo + ')'); return false; }
+  fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
   try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
   tocarSom(fonteDeSom, configuracao.volume);
   return true;

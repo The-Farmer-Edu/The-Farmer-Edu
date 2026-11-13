@@ -151,5 +151,3 @@
 
 
       arquivoDaMontagemConcluido('24-paineis-de-tempo-e-audio.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
-
-      

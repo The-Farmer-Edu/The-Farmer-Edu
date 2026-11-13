@@ -105,7 +105,7 @@
         // 100 XP) saía no 5º dia; o curral (120 XP + 30 madeiras), no 6º. A madeira não era o problema (80 por dia). Com 100 XP
         // iniciais, o primeiro dia rende 121: dá para UMA construção (ponte 100, ou curral e as demais instalações de animais 120
         // depois de colher a cota do dia), nunca duas (220). Nenhum preço mudou; 100 XP são 0,5% dos ~20.900 XP do ano.
-        xpInicial: 100,                    // antes 0 (Etapa 1); antes da 8.4.1 final: 200. A 1ª plantação continua grátis (seção 32)
+        xpInicial: 0,                    // antes 0 (Etapa 1); antes da 8.4.1 final: 200. A 1ª plantação continua grátis (seção 32)
         // Total do dia = soma das cotas das atividades AGORA (cresce com as construções e a equipe). Era um número fixo (100);
         // virou um getter para quem lê o "limite diário" (tutorial, painéis) mostrar sempre o valor real. Calculado na seção 27.
         get limiteDiarioDeXPDaFazenda() { return typeof somaDasCotasDiarias === 'function' ? somaDasCotasDiarias() : 0; },

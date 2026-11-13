@@ -16,13 +16,28 @@
       // trabalhadores com atributos completos e melhorias, fazendeiro inicial único). A chave do localStorage não muda.
       const VERSAO_DO_SALVAMENTO = 5;
       const nivelInicialDaArea = () => 0;   // todas as áreas começam no nível 0 (a casa no nível 0 é a "base", que já existe)
+      // Backend: quando a fazenda é aberta pela aplicação PHP, o Controller injeta window.FARMEDU_SERVIDOR (save do banco, revisão e XP
+      // pendente das atividades). Nesse caso o BANCO é a fonte do save e o localStorage do navegador NÃO é lido nem gravado (em
+      // computadores compartilhados ele misturaria a fazenda de alunos diferentes). Aberto direto pelo arquivo (file://), sem
+      // o objeto, tudo continua como antes: só localStorage. A gravação no banco fica em 34-sincronizacao-com-servidor.js.
+      const SERVIDOR_DA_FAZENDA = window.FARMEDU_SERVIDOR || null;
       let estado = { versao: VERSAO_DO_SALVAMENTO, xp: 0, niveis: Object.fromEntries(AREAS.map(area => [area.id, 0])) };
       const avisosDaMigracao = [];   // mensagens mostradas uma vez ao abrir (seção 33)
       let existiaSalvamento = false; // false = fazenda nova (a seção 32 pergunta o nome da fazenda)
       try {
-        const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
+        const salvo = SERVIDOR_DA_FAZENDA ? SERVIDOR_DA_FAZENDA.estado : JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));   // Backend: save do banco quando existe
         if (salvo && salvo.niveis) { estado = salvo; existiaSalvamento = true; }
       } catch (erro) { }
+      // Backend: uma versão anterior do PHP regravava objetos vazios {} como listas vazias [] (json_decode associativo). Uma lista
+      // não guarda propriedades por nome e o JSON.stringify as descarta, então tudo o que o jogo gravava nessas chaves depois
+      // (instalações destruídas em "danos", estado das invasões, melhorias da equipe...) "voltava ao normal" ao recarregar. O
+      // servidor já preserva o formato; este trecho só conserta saves que JÁ foram gravados assim.
+      for (const campo of ['niveis', 'danos', 'invasao', 'calendarioDasInvasoes', 'xpPorOrigem', 'xpDaFazendaHoje', 'recursos', 'lavouras', 'animais', 'mina', 'atividade']) {
+        if (Array.isArray(estado[campo])) estado[campo] = {};
+      }
+      for (const lista of [estado.trabalhadores, estado.candidatos]) {
+        if (Array.isArray(lista)) for (const pessoa of lista) if (pessoa && Array.isArray(pessoa.melhorias)) pessoa.melhorias = {};
+      }
       if (!estado.niveis || typeof estado.niveis !== 'object') estado.niveis = {};
       if (!Number.isFinite(estado.xp)) estado.xp = 0;
       const versaoCarregada = Number.isFinite(estado.versao) ? estado.versao : 0;
@@ -312,9 +327,10 @@
       // (seção 30e) só se inscreve como ouvinte. Sem ouvinte (ou se um ouvinte falhar), a ação original continua igual.
       const ouvintesDosObjetivos = [];
       const avisarObjetivos = function avisarObjetivos(tipo, detalhe) { for (const ouvir of ouvintesDosObjetivos) { try { ouvir(tipo, detalhe || {}); } catch (erro) { console.error("[FarmEdu] Quadro de objetivos:", erro); } } };
+      // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
       const salvarProgresso = function salvarProgresso() {
-        try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); return true; }
-        catch (erro) { console.error('[FarmEdu] Não foi possível salvar o progresso:', erro); return false; }
+        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { }
+        if (window.FarmEduSincronia) window.FarmEduSincronia.agendar();
       };
       salvarProgresso();   // grava os campos novos de saves antigos uma única vez
 

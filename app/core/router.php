@@ -50,7 +50,7 @@ class Router {
         }
 
         $method = $_SERVER['REQUEST_METHOD'];
-
+        if ($uri === "/") $uri = "/home"; 
         // Procura a rota e executa o Controller
         if (isset(self::$routes[$method][$uri])) {
             [$controllerClass, $action] = self::$routes[$method][$uri];

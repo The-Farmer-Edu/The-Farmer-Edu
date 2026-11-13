@@ -49,7 +49,7 @@ class NotasController
     public function verNotasAluno(): void
     {
         // Garante que o usuario esta logado
-        solicitarPerfilDeAcesso('instrutor');
+        solicitarPerfilDeAcesso();
 
         // Obtém os dados do usuário atualmente autenticado
         $usuario = usuarioLogado();
@@ -124,7 +124,7 @@ class NotasController
     public function verTurma(): void
     {
         // Garante autenticação
-        solicitarPerfilDeAcesso();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 

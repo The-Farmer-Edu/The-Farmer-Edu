@@ -26,12 +26,23 @@
       // Sobe a área um nível se há XP suficiente e ela não está destruída; reconstrói o modelo, foca a câmera e
       // salva. Contagem como atividade do jogador.
       // Mark 8.2: no nível 0 o mesmo botão CONSTRÓI a área (nível 1). Sem XP suficiente, explica quanto falta.
+    // Sobe a área um nível se há XP suficiente e ela não está destruída; reconstrói o modelo, foca a câmera e
+      // salva. Contagem como atividade do jogador.
+      // Mark 8.2: no nível 0 o mesmo botão CONSTRÓI a área (nível 1). Sem XP suficiente, explica quanto falta.
       const evoluirArea = function evoluirArea(idDaArea) {
-        if (instalacaoDestruida(idDaArea)) { mostrarAviso('Repare ' + nomeDaArea(idDaArea) + ' antes de evoluir.'); return; }
+        if (instalacaoDestruida(idDaArea)) {
+          tocarEfeito('erro');                         // <--- SOM DE ERRO (instalação destruída)
+          mostrarAviso('Repare ' + nomeDaArea(idDaArea) + ' antes de evoluir.');
+          return;
+        }
         const nivel = estado.niveis[idDaArea], gratuita = plantacaoGratuitaDisponivel(idDaArea, nivel), custo = custoAtualDaEvolucao(idDaArea), nome = nomeDaArea(idDaArea);
         if (nivel >= NIVEL_MAXIMO) { mostrarAviso(nome + ' já está no nível máximo.'); return; }
         const construindo = nivel === 0 && !AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(idDaArea);
-        if (estado.xp < custo) { mostrarAviso('XP insuficiente para ' + (construindo ? 'construir ' : 'evoluir ') + nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
+        if (estado.xp < custo) {
+          tocarEfeito('erro');                         // <--- SOM DE ERRO (XP insuficiente)
+          mostrarAviso('XP insuficiente para ' + (construindo ? 'construir ' : 'evoluir ') + nome + ': faltam ' + (custo - estado.xp) + ' XP.');
+          return;
+        }
         estado.xp -= custo;
         estado.niveis[idDaArea]++;
         // Gratuidade consumida no MESMO passo da construção (nada roda entre a checagem e a marcação): um segundo clique ou a outra

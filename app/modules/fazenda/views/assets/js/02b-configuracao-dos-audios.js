@@ -118,7 +118,12 @@ fazendeiroDano: { arquivo: 'assets/audio/SFX/mobs/porradanosmobs.mp3', volume: 1
   },
 
   segredos: {
-    pedraSecreta: { arquivo: 'assets/audio/SFX/sons-do-jogo/pedra-secreta.mp3', volume: 0.9 }
+    pedraSecreta: { arquivo: 'assets/audio/SFX/sons-do-jogo/pedra-secreta.mp3', volume: 0.9 },
+    // Etapa 2 (seção 30c): pontos de integração das músicas dos eventos. Os arquivos AINDA NÃO EXISTEM: coloque o seu arquivo
+    // (MP3 ou OGG, de autoria própria ou com licença de uso) neste caminho e ele passa a tocar sozinho, sincronizado com a cena.
+    // Sem o arquivo, o evento roda em silêncio (o sistema de áudio só marca o som como indisponível). Nome neutro de propósito.
+    misterio: { arquivo: 'assets/audio/SFX/eventos/misterio.mp3', volume: 0.85 },      // começa quando o unicórnio aparece no céu
+    discoVoador: { arquivo: 'assets/audio/SFX/eventos/disco-voador.mp3', volume: 0.8 } // opcional: chegada do disco voador
   },
 
   volumesIniciais: { musica: 0.5, animais: 0.7, cachoeira: 0.6, fonte: 0.6, trator: 0.5, riacho: 0.5, efeitos: 0.7 }

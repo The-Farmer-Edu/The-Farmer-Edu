@@ -56,6 +56,7 @@
         mostrarAviso(construindo ? nome + ' construído! 🏗️' + (gratuita ? ' Sua primeira plantação saiu de graça 🎁.' : '') : nivel === 0 && idDaArea === 'ponte' ? nome + ' reparada! 🛠️ A travessia está inteira de novo.' : nome + ' evoluiu para o nível ' + (nivel + 1) + '! 🎉' + (idDaArea === 'casa' ? ' Agora cabem ' + CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel + 1] + ' trabalhadores.' : ''));
         atualizarPaineisDaMark82(true);
         aoEvoluirArea(idDaArea, nivel);   // Fazenda 8.4.1: a primeira evolução do nível 1 para o 2 libera as invasões (seção 26)
+        avisarObjetivos('construcao', { idDaArea, nivel: nivel + 1 });   // Etapa 2: quadro de objetivos (seção 30e)
       };
       // Clique em um cartão de área: conta como atividade do jogador e foca a câmera na área.
       // Ajuste de interface: o cartão (ou o botão dele) não evolui direto. A gaveta se fecha, a câmera vai até a estrutura e o
@@ -171,6 +172,20 @@
         atualizarResumoDeRecursos(); desenharCards(); atualizarPaineisDaMark82(true);
         mostrarAviso('🪵 +5000 de madeira (teste).');
       };
+      // Etapa 2 — Modo desenvolvedor: +100 minérios (mesmo padrão do botão de madeira). Soma no MESMO estoque (estado.recursos.minerios)
+      // que a mina, o Guardião e o inventário usam, e salva na hora. Não mexe em XP nem em limites. Cada clique soma 100; a trava
+      // curta só impede que um clique duplo acidental conte duas vezes.
+      let mineriosDeTesteTravadosAte = 0;
+      selecionar('#botao-teste-minerios').onclick = () => {
+        if (!modoDesenvolvedorAtivo || Date.now() < mineriosDeTesteTravadosAte) return;
+        mineriosDeTesteTravadosAte = Date.now() + 250;
+        estado.recursos.minerios += 100;
+        tocarEfeito('xp'); registrarAtividade();   // registrarAtividade também salva
+        atualizarResumoDeRecursos(); desenharCards(); atualizarPaineisDaMark82(true);
+        if (typeof atualizarPainelDoGuardiao === 'function') atualizarPainelDoGuardiao();
+        if (typeof atualizarInventario === 'function') atualizarInventario();
+        mostrarAviso('🪨 +100 minérios (teste). Agora: ' + estado.recursos.minerios + '.');
+      };
       // Os cartões usam onclick="evoluirArea(...)" etc. no HTML; como o jogo roda dentro de iniciarFarmEdu(), essas funções
       // são publicadas em window com os mesmos nomes de antes.
       // ---- Painel específico da estrutura (ajuste de interface) ----
@@ -189,13 +204,14 @@
       const efeitoDaConstrucao = function efeitoDaConstrucao(idDaArea, nivel) {
         const cotas = COTAS_DIARIAS_DE_XP, funcoes = FUNCOES_DAS_CONSTRUCOES;
         if (PLANTACOES_COM_CANTEIROS.includes(idDaArea)) return quantidadeDeCanteirosNoNivel(nivel).total + ' canteiros · +' + cotas.lavoura.porNivelDePlantacao * nivel + ' na cota diária de Lavoura';
-        if (idDaArea === 'mina') return nivel ? MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1] + ' minérios por viagem · cota de Mina e alquimia ' + (cotas.mina.base + cotas.mina.porNivelDaMina * nivel) + ' XP/dia' : 'sem mina, sem minérios';
+        // Etapa da alquimia: a mina só traz minérios; o nível libera as receitas de cada faixa (Comuns, Avançadas, Especiais).
+        if (idDaArea === 'mina') return nivel ? MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1] + ' minérios por viagem (sem XP) · libera as poções ' + Object.values(CATEGORIAS_DE_POCOES).filter(categoria => categoria.nivelDaMina <= nivel).map(categoria => categoria.plural).join(', ') : 'sem mina, sem minérios';
         if (ANIMAIS_DAS_AREAS[idDaArea]) { const produto = PRODUCAO_DOS_ANIMAIS.produtos[idDaArea]; return (nivel ? ANIMAIS_DAS_AREAS[idDaArea].porNivel[nivel - 1] : 0) + ' animal(is) produzindo ' + produto.icone + ' ' + produto.nome + ' · +' + cotas.criacao.porNivelDeInstalacao * nivel + ' na cota de Criação'; }
         if (idDaArea === 'casa') return CAPACIDADE_DE_TRABALHADORES_POR_NIVEL_DA_CASA[nivel] + ' vaga(s) na equipe (cada trabalhador soma na cota da sua especialidade)';
         if (idDaArea === 'celeiro') return 'cocho cheio dura ' + (ALIMENTACAO_CONFIG.horasParaAComidaAcabar * (1 + funcoes.celeiro.duracaoDoCochoPorNivel * nivel)).toLocaleString('pt-BR') + ' h';
         if (idDaArea === 'moinho') return 'trigo e milho rendem +' + Math.round(funcoes.moinho.alimentoDosGraosPorNivel * nivel * 100) + '% de comida no cocho';
         if (idDaArea === 'maquinario') return '+' + funcoes.maquinario.colheitaExtraPorNivel * nivel + ' unidade(s) por canteiro colhido';
-        if (idDaArea === 'ponte') return 'lenhador entrega até ' + (funcoes.ponte.madeiraDiariaBase + funcoes.ponte.madeiraDiariaPorNivel * nivel) + ' madeiras por dia';
+        if (idDaArea === 'ponte') return 'lenhador entrega até ' + (funcoes.ponte.madeiraDiariaBase + funcoes.ponte.madeiraDiariaPorNivel * nivel) + ' madeiras por dia, ' + LENHADOR_CONFIG.madeiraPorArvorePorNivelDaPonte[Math.min(NIVEL_MAXIMO, nivel)] + ' por árvore';
         return '';
       };
       const desenharPainelDaEstrutura = function desenharPainelDaEstrutura(forcar = false) {
@@ -287,7 +303,7 @@
       // campos de texto), sem janela de senha. O botão do menu só aparece com o modo ligado e serve para desligá-lo. É só uma
       // conveniência da interface: quem lê este código vê a palavra.
       const PALAVRA_DO_MODO_DESENVOLVEDOR = 'pitufo';
-      const CONTROLES_DE_TESTE = '#botao-teste-xp, #botao-teste-madeira, #painel-tempo [data-modo], #teste-invasao, #teste-dia-elegivel, #teste-reparar, #teste-monstros, #teste-avancar';
+      const CONTROLES_DE_TESTE = '#botao-teste-xp, #botao-teste-madeira, #botao-teste-minerios, #botao-teste-abducao, #painel-tempo [data-modo], #teste-invasao, #teste-dia-elegivel, #teste-reparar, #teste-monstros, #teste-avancar';
       let modoDesenvolvedorAtivo = false;
       const botaoDoModoDesenvolvedor = selecionar('#botao-modo-desenvolvedor');
       const definirModoDesenvolvedor = function definirModoDesenvolvedor(ativo) {
@@ -298,6 +314,7 @@
         botaoDoModoDesenvolvedor.hidden = !ativo;
         botaoDoModoDesenvolvedor.setAttribute('aria-pressed', String(ativo));
         botaoDoModoDesenvolvedor.querySelector('.estado-modo-desenvolvedor').textContent = ativo ? 'ligado' : 'desligado';
+        atualizarBotaoDoModoLeve();   // Etapa 1: o FPS do seletor de qualidade aparece/some na hora (só no Modo Desenvolvedor)
       };
       botaoDoModoDesenvolvedor.onclick = () => {
         if (!modoDesenvolvedorAtivo) return;

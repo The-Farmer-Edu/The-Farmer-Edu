@@ -5,8 +5,11 @@
 //  • O Guardião é um NPC independente, parado FORA da caverna, ao lado da entrada (POSTO_DO_GUARDIAO, seção 09), com uma
 //    bancada de alquimia. Ele não faz parte da equipe, não luta e não é alvo de monstros nem de invasões.
 //  • Clicar nele abre um painel de TELA CHEIA (#painel-do-guardiao) com as poções de POCOES_DO_GUARDIAO (seção 01).
-//  • PREPARAR uma poção gasta minérios e guarda a poção (estado.pocoes). USAR uma poção concede o XP dela, dentro do limite
-//    diário da Fazenda (creditarXP, origem 'fazenda'). Se a cota de hoje não comporta todo o XP, a poção NÃO é usada.
+//  • PREPARAR uma poção gasta minérios e guarda a poção (estado.pocoes). Preparar NUNCA depende do limite de XP.
+//  • Etapa da alquimia: são 9 poções. Só a POÇÃO DE EXPERIÊNCIA concede XP (+20) e só ela usa o LIMITE DA ALQUIMIA
+//    (creditarXP, origem 'fazenda', atividade 'mina' — o id antigo foi mantido por causa dos saves). Se o limite de hoje não
+//    comporta os 20 XP inteiros, ela NÃO é usada e continua guardada. As outras 8 aplicam efeitos (seção 28c) e podem ser usadas
+//    com o limite cheio. A mina não dá XP e não mexe no limite (seção 28).
 //  • Todas as operações são transações: validam antes, aplicam, salvam e, se o salvamento falhar, restauram os saldos.
 //    Uma trava (operacaoDoGuardiaoEmAndamento) impede cliques repetidos de executar a mesma operação duas vezes.
 // Também define o sistema de CLIQUE DOS NPCS no mapa (registrarCliqueDeNpc), reaproveitado pelo lenhador (seção 29b).
@@ -88,11 +91,13 @@
       for (const [x, z] of [[-0.7, -0.28], [0.7, -0.28], [-0.7, 0.28], [0.7, 0.28]]) criarCaixa(0.08, 0.8, 0.08, 0x5e3b1c, x, 0.4, z, bancadaDoGuardiao);
       criarCaixa(1.5, 0.05, 0.6, 0x6b4a2e, 0, 0.25, 0, bancadaDoGuardiao);                                  // prateleira de baixo
       const materialDoVidro = cor => new THREE.MeshLambertMaterial({ color: cor, emissive: new THREE.Color(cor).multiplyScalar(0.25), transparent: true, opacity: 0.85 });
+      // Um frasco por poção do catálogo (9), em 3 fileiras de 3 sobre o tampo, ao lado do almofariz.
+      const geometriaDoFrasco = new THREE.SphereGeometry(0.07, 10, 8);
       Object.values(POCOES_DO_GUARDIAO).forEach((pocao, indice) => {
-        const x = -0.5 + indice * 0.45, cor = new THREE.Color(pocao.cor).getHex();
-        const frasco = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), materialDoVidro(cor)); frasco.position.set(x, 0.97, 0.05); bancadaDoGuardiao.add(frasco);
-        criarCilindro(0.035, 0.04, 0.12, 0xdfe8ee, x, 1.12, 0.05, bancadaDoGuardiao, 8);                    // gargalo
-        criarCilindro(0.03, 0.03, 0.04, 0x8a5a2e, x, 1.2, 0.05, bancadaDoGuardiao, 6);                       // rolha
+        const x = -0.66 + (indice % 3) * 0.2, z = -0.18 + Math.floor(indice / 3) * 0.17, cor = new THREE.Color(pocao.cor).getHex();
+        const frasco = new THREE.Mesh(geometriaDoFrasco, materialDoVidro(cor)); frasco.position.set(x, 0.93, z); bancadaDoGuardiao.add(frasco);
+        criarCilindro(0.022, 0.026, 0.08, 0xdfe8ee, x, 1.03, z, bancadaDoGuardiao, 8);                     // gargalo
+        criarCilindro(0.02, 0.02, 0.03, 0x8a5a2e, x, 1.085, z, bancadaDoGuardiao, 6);                      // rolha
       });
       criarCaixa(0.3, 0.16, 0.22, 0x6f7680, 0.55, 0.94, -0.18, bancadaDoGuardiao);                            // almofariz de pedra
       const caldeirao = new THREE.Group(); caldeirao.position.set(-1.25, 0, 0.55); bancadaDoGuardiao.add(caldeirao);
@@ -119,102 +124,182 @@
       // ---- Regras das poções (funções puras sobre o estado; usadas pelo painel e pelas transações) ----
       const TIPOS_DE_POCAO = Object.keys(POCOES_DO_GUARDIAO);
       const pocaoLiberada = tipo => (estado.niveis.mina | 0) >= POCOES_DO_GUARDIAO[tipo].nivelMinimoDaMina;
+      // ---- Etapa 2: a POÇÃO MISTERIOSA ----
+      // Enquanto não for usada, a interface mostra "???" em tudo (nome, raridade, efeito, duração, condição, quantidade, uso,
+      // mensagens), exceto o CUSTO. Depois do único uso ela fica "descoberta": o nome aparece, mas ela não pode mais ser preparada
+      // nem usada (estado.eventosEspeciais.misterio.usadoEm, salvo). vistaDaPocao é o ÚNICO lugar que decide o que mostrar.
+      const SEGREDO = '???';
+      const pocaoMisteriosa = tipo => !!POCOES_DO_GUARDIAO[tipo].misteriosa;
+      const misterioDescoberto = () => !!estado.eventosEspeciais.misterio.usadoEm;
+      const vistaDaPocao = function vistaDaPocao(tipo) {
+        const pocao = POCOES_DO_GUARDIAO[tipo];
+        if (!pocao.misteriosa) return { ...pocao, oculta: false };
+        if (misterioDescoberto()) return { ...pocao, oculta: false, duracao: 'Já usada: só podia ser usada uma vez' };
+        return { ...pocao, oculta: true, nome: SEGREDO, icone: '❔', cor: '#b9b0d6', efeito: SEGREDO, duracao: SEGREDO, descricao: SEGREDO };
+      };
+      const quantidadeVisivel = tipo => vistaDaPocao(tipo).oculta ? SEGREDO : String(estado.pocoes[tipo]);
+      // ---- Etapa 1: SELO DE LENDA DESCOBERTA (só depois do uso registrado em estado.eventosEspeciais.misterio) ----
+      const TEXTO_DA_LENDA = 'Uma criatura impossível cruzou os céus desta Fazenda. Dizem que um arco-íris ainda guarda a lembrança de sua passagem.';
+      const dataDaLenda = () => { const quando = estado.eventosEspeciais.misterio.usadoEm; return quando ? new Date(quando).toLocaleDateString('pt-BR') : ''; };
+      const htmlDoSeloDaLenda = selecionado => `<button type="button" class="selo-da-lenda${selecionado ? ' selecionada' : ''}" data-pocao="misteriosa" data-foco="pocao-misteriosa"
+          aria-pressed="${selecionado}" title="Lenda descoberta — ${TEXTO_DA_LENDA}" aria-label="Lenda descoberta. ${TEXTO_DA_LENDA}">
+          <span class="brilhos-da-lenda" aria-hidden="true"></span>
+          <span class="medalhao-da-lenda" aria-hidden="true"><span>🦄</span></span>
+          <span class="titulo-da-lenda">Lenda descoberta</span>
+          <span class="texto-da-lenda">Uma criatura impossível cruzou os céus desta Fazenda…</span>
+        </button>`;
+      const htmlDoBalcaoDaLenda = () => `<div class="balcao-da-lenda">
+          <span class="medalhao-da-lenda grande" aria-hidden="true"><span>🦄</span></span>
+          <h3>✨ Lenda descoberta</h3>
+          <p class="citacao-da-lenda">“${TEXTO_DA_LENDA}”</p>
+          ${dataDaLenda() ? `<p class="data-da-lenda">🌈 Registrada nesta Fazenda em ${dataDaLenda()}</p>` : ''}
+          <p class="dica-do-guardiao">Este selo é uma lembrança da Poção Misteriosa do Unicórnio, que só podia ser usada uma vez. Não é uma poção: não se prepara, não se usa e não custa nada.</p>
+        </div>`;
       // Devolve o motivo (texto) que impede preparar, ou '' se pode.
       const motivoParaNaoPreparar = function motivoParaNaoPreparar(tipo) {
         const pocao = POCOES_DO_GUARDIAO[tipo];
+        if (pocao.misteriosa) {
+          if (misterioDescoberto()) return 'Esta poção já foi descoberta. Ela só podia ser usada uma vez.';
+          if (!pocaoLiberada(tipo)) return '❔ ' + SEGREDO;
+          if (estado.pocoes[tipo] >= 1) return '❔ ' + SEGREDO + ' (o Guardião só prepara um frasco deste mistério)';
+        }
         if (!estado.niveis.mina) return 'Construa a mina para começar a extrair minérios.';
         if (!pocaoLiberada(tipo)) return 'Receita liberada com a mina no nível ' + pocao.nivelMinimoDaMina + '.';
         if (estado.recursos.minerios < pocao.minerios) return 'Faltam ' + (pocao.minerios - estado.recursos.minerios) + ' minério(s) para preparar.';
         return '';
       };
-      // Devolve o motivo que impede usar, ou '' se pode. A cota precisa comportar TODO o XP da poção.
+      // Só a Poção de Experiência concede XP (e só ela usa o Limite da alquimia).
+      const pocaoDeExperiencia = tipo => POCOES_DO_GUARDIAO[tipo].xp > 0;
+      // Devolve o motivo que impede usar, ou '' se pode. A de experiência precisa que o LIMITE comporte TODO o XP dela; as de
+      // efeito não olham o limite (seção 28c decide: efeito já ativo, ninguém ferido, nada plantado...).
       const motivoParaNaoUsar = function motivoParaNaoUsar(tipo) {
-        const pocao = POCOES_DO_GUARDIAO[tipo], restante = xpRestanteDaCota('mina');
-        if (estado.pocoes[tipo] < 1) return 'Você não tem esta poção guardada.';
-        if (restante < pocao.xp) return textoDaCotaQueFalta(tipo);
-        return '';
+        const pocao = POCOES_DO_GUARDIAO[tipo];
+        if (!pocao) return 'Poção desconhecida.';
+        if (pocao.misteriosa && misterioDescoberto()) return 'Esta poção já foi usada. Ela só podia ser usada uma vez.';
+        if (!(estado.pocoes[tipo] >= 1)) return 'Você não tem esta poção guardada.';
+        if (pocao.misteriosa) return eventoEspecialEmAndamento() ? '❔ ' + SEGREDO : '';
+        if (pocaoDeExperiencia(tipo)) return xpRestanteDaCota('mina') < pocao.xp ? textoDoLimiteQueFalta(tipo) : '';
+        return motivoParaNaoUsarEfeito(tipo);
       };
-      // Quanto XP de cota falta para a poção caber inteira hoje (0 = cabe). Usado para mostrar só as ações realmente possíveis.
-      const cotaQueFaltaParaPocao = tipo => Math.max(0, POCOES_DO_GUARDIAO[tipo].xp - xpRestanteDaCota('mina'));
-      const textoDaCotaQueFalta = function textoDaCotaQueFalta(tipo) {
+      // Quanto falta no Limite da alquimia para a Poção de Experiência caber inteira hoje (0 = cabe; sempre 0 nas poções de efeito).
+      const limiteQueFaltaParaPocao = tipo => pocaoDeExperiencia(tipo) ? Math.max(0, POCOES_DO_GUARDIAO[tipo].xp - xpRestanteDaCota('mina')) : 0;
+      const textoDoLimiteQueFalta = function textoDoLimiteQueFalta(tipo) {
         const pocao = POCOES_DO_GUARDIAO[tipo], restante = xpRestanteDaCota('mina');
-        return 'Faltam ' + cotaQueFaltaParaPocao(tipo) + ' XP de cota hoje para usar esta poção: ela dá +' + pocao.xp + ' XP e a cota de Mina e alquimia tem '
-          + (restante ? 'só ' + restante + ' XP livres' : '0 XP livres') + '. A poção continua guardada e pode ser usada quando a cota renovar (amanhã).';
+        return 'Limite da alquimia de hoje atingido: a poção dá +' + pocao.xp + ' XP e restam ' + restante + ' XP de limite (faltam ' + limiteQueFaltaParaPocao(tipo)
+          + '). Ela continua guardada para quando o limite renovar, amanhã. As poções de efeito continuam liberadas.';
       };
+      const duracaoCurta = pocao => !pocao.minutos ? 'na hora' : pocao.minutos >= 60 ? (pocao.minutos / 60).toLocaleString('pt-BR') + ' h' : pocao.minutos + ' min';
 
       // ---- Painel de tela cheia ----
       const painelDoGuardiao = selecionar('#painel-do-guardiao');
-      let pocaoSelecionada = 'tonico', confirmandoPreparo = false, operacaoDoGuardiaoEmAndamento = false;
+      let pocaoSelecionada = 'experiencia', confirmandoPreparo = false, operacaoDoGuardiaoEmAndamento = false;
       // Aba do painel: 'preparar' (receitas e balcão) ou 'minhas' (Minhas Poções: só as que o jogador possui, com o botão de usar).
       // As duas abas e o inventário geral (seção 27b) leem o MESMO estado.pocoes: não existe estoque separado.
       let abaDoGuardiao = 'preparar';
       let mensagemDoGuardiao = { texto: '', tipo: '' }, assinaturaDoPainelDoGuardiao = '';
       const definirMensagemDoGuardiao = (texto, tipo = 'erro') => { mensagemDoGuardiao = { texto, tipo }; };
-      const frascoHtml = (pocao, grande = false) => `<span class="frasco-de-pocao${grande ? ' grande' : ''}" style="--cor-da-pocao:${pocao.cor}" aria-hidden="true"><i></i></span>`;
+      // Recebe a VISTA da poção (vistaDaPocao): a cor do frasco misterioso também é neutra.
+      const frascoHtml = (vista, grande = false) => `<span class="frasco-de-pocao${grande ? ' grande' : ''}${vista.oculta ? ' misteriosa' : ''}" style="--cor-da-pocao:${vista.cor}" aria-hidden="true"><i></i></span>`;
+      // Explicação fixa do painel (HTML): os números saem da configuração, para o texto nunca ficar diferente do jogo.
+      for (const elemento of document.querySelectorAll('.valor-do-limite-da-alquimia')) elemento.textContent = String(COTAS_DIARIAS_DE_XP.mina.base);
+      for (const elemento of document.querySelectorAll('.xp-da-pocao-de-experiencia')) elemento.textContent = String(POCOES_DO_GUARDIAO.experiencia.xp);
+      // Texto curto do que a poção entrega, usado no cartão: "⭐ +20 XP" ou "🌾 6 h" / "❤️ na hora" (misteriosa: "???").
+      const resultadoDaPocao = vista => vista.oculta ? SEGREDO : vista.misteriosa ? vista.icone + ' usada' : vista.xp > 0 ? '⭐ +' + vista.xp + ' XP' : vista.icone + ' ' + duracaoCurta(vista);
+      const seloDaCategoria = vista => {
+        if (vista.oculta) return `<span class="categoria-da-pocao misteriosa">❔ ${SEGREDO}</span>`;
+        const categoria = CATEGORIAS_DE_POCOES[vista.categoria]; return `<span class="categoria-da-pocao ${vista.categoria}">${categoria.icone} ${categoria.nome}</span>`;
+      };
+      const listaDosEfeitosAtivos = () => {
+        const ativos = efeitosAtivosAgora();
+        return ativos.length ? `<ul class="efeitos-ativos-do-guardiao">${ativos.map(tipo => { const pocao = POCOES_DO_GUARDIAO[tipo];
+          return `<li>${pocao.icone} <b>${pocao.nome}</b> · faltam ${formatarTempoDoEfeito(msRestantesDoEfeito(tipo))}</li>`; }).join('')}</ul>` : '<p class="dica-do-guardiao">Nenhum efeito ativo agora.</p>';
+      };
+      // Total exibido de poções: a misteriosa não entra na conta enquanto é segredo (a quantidade dela também é "???").
+      const totalVisivelDePocoes = () => TIPOS_DE_POCAO.filter(tipo => !vistaDaPocao(tipo).oculta).reduce((soma, tipo) => soma + estado.pocoes[tipo], 0);
       const desenharPainelDoGuardiao = function desenharPainelDoGuardiao(forcar = false) {
-        const restante = xpRestanteDaCota('mina'), limite = cotaDaAtividade('mina'), usadoHoje = estado.cotasDoDia.usado.mina, reservaDaMina = estado.cotasDoDia.reserva.mina;
-        const assinatura = JSON.stringify([estado.recursos.minerios, estado.pocoes, estado.xp, restante, estado.niveis.mina, pocaoSelecionada, confirmandoPreparo, operacaoDoGuardiaoEmAndamento, mensagemDoGuardiao, abaDoGuardiao]);
+        const restante = xpRestanteDaCota('mina'), limite = cotaDaAtividade('mina'), usadoHoje = estado.cotasDoDia.usado.mina, reservaDoLimite = estado.cotasDoDia.reserva.mina;
+        // A assinatura inclui os motivos de cada poção e os segundos restantes dos efeitos: o painel acompanha o relógio dos efeitos
+        // e as condições (alguém se feriu, uma árvore caiu, um canteiro foi plantado) sem redesenhar a cada quadro.
+        const assinatura = JSON.stringify([estado.recursos.minerios, estado.pocoes, estado.xp, restante, estado.niveis.mina, pocaoSelecionada, confirmandoPreparo, operacaoDoGuardiaoEmAndamento,
+          mensagemDoGuardiao, abaDoGuardiao, misterioDescoberto(), TIPOS_DE_POCAO.map(motivoParaNaoUsar), efeitosAtivosAgora().map(tipo => tipo + Math.ceil(msRestantesDoEfeito(tipo) / 1000))]);
         if (!forcar && assinatura === assinaturaDoPainelDoGuardiao) return;
         assinaturaDoPainelDoGuardiao = assinatura;
         const focado = document.activeElement && painelDoGuardiao.contains(document.activeElement) ? document.activeElement.dataset.foco : null;
-        const totalDePocoes = TIPOS_DE_POCAO.reduce((soma, tipo) => soma + estado.pocoes[tipo], 0);
+        const totalDePocoes = totalVisivelDePocoes();
         selecionar('#saldos-do-guardiao').innerHTML = `
           <div class="saldo-do-guardiao"><span>🪨 Minérios</span><b>${estado.recursos.minerios}</b></div>
           <div class="saldo-do-guardiao"><span>🧪 Poções guardadas</span><b>${totalDePocoes}</b></div>
           <div class="saldo-do-guardiao"><span>⭐ XP total</span><b>${estado.xp}</b></div>
-          <div class="saldo-do-guardiao cota"><span>⛏️ Cota de Mina e alquimia hoje</span><b>${usadoHoje} / ${limite}</b>
-            <span class="barra-da-cota" role="progressbar" aria-label="Cota diária de XP usada" aria-valuemin="0" aria-valuemax="${limite}" aria-valuenow="${usadoHoje}"><i style="width:${limite ? Math.min(100, usadoHoje / limite * 100) : 0}%"></i></span>
-            <small>Restam ${restante} XP (${reservaDaMina ? "inclui " + Math.round(reservaDaMina) + " guardados de ontem; " : ""}viagens do carrinho e poções). Sobe com o nível da mina.</small></div>`;
+          <div class="saldo-do-guardiao cota"><span>⚗️ Limite da alquimia hoje</span><b>${usadoHoje} / ${limite}</b>
+            <span class="barra-da-cota" role="progressbar" aria-label="Limite diário de XP da alquimia usado" aria-valuemin="0" aria-valuemax="${limite}" aria-valuenow="${usadoHoje}"><i style="width:${limite ? Math.min(100, usadoHoje / limite * 100) : 0}%"></i></span>
+            <small>${limite ? 'Restam ' + restante + ' XP' + (reservaDoLimite ? ' (inclui ' + Math.round(reservaDoLimite) + ' guardados de ontem)' : '') + '. Só a ⭐ Poção de Experiência usa o limite.' : 'Construa a mina para liberar a alquimia.'}</small></div>`;
         selecionar('#abas-do-guardiao').innerHTML = [['preparar', '⚗️ Preparar poções'], ['minhas', '🧪 Minhas Poções (' + totalDePocoes + ')']]
           .map(([aba, rotulo]) => `<button type="button" role="tab" class="aba-do-guardiao${aba === abaDoGuardiao ? ' ativa' : ''}" data-aba-guardiao="${aba}" data-foco="aba-${aba}" aria-selected="${aba === abaDoGuardiao}">${rotulo}</button>`).join('');
         painelDoGuardiao.querySelector('.corpo-do-guardiao').classList.toggle('aba-minhas', abaDoGuardiao === 'minhas');
         if (abaDoGuardiao === 'minhas') {
-          // MINHAS POÇÕES: só as poções que o jogador possui. O botão de usar só existe quando a cota comporta o XP inteiro;
-          // senão aparece o quanto falta (a validação também continua em usarPocao).
+          // MINHAS POÇÕES: só as poções que o jogador possui. O botão de usar só existe quando a poção pode ser usada agora;
+          // senão aparece o motivo (a validação também continua em usarPocao).
           const possuidas = TIPOS_DE_POCAO.filter(tipo => estado.pocoes[tipo] > 0);
           selecionar('#prateleira-de-pocoes').innerHTML = possuidas.length ? `<ul class="minhas-pocoes">${possuidas.map(tipo => {
-            const pocao = POCOES_DO_GUARDIAO[tipo], falta = cotaQueFaltaParaPocao(tipo);
-            return `<li class="minha-pocao">${frascoHtml(pocao)}
-              <div class="dados-da-minha-pocao"><b>${pocao.nome}</b><span>Quantidade: <b>${estado.pocoes[tipo]}</b> · concede <b>+${pocao.xp} XP</b></span></div>
-              ${falta === 0 && !operacaoDoGuardiaoEmAndamento
-                ? `<button type="button" class="botao-do-guardiao uso" data-usar-pocao="${tipo}" data-foco="usar-${tipo}">🥤 Usar · +${pocao.xp} XP</button>`
-                : `<p class="aviso-da-cota" role="note">⏳ Faltam <b>${falta} XP</b> de cota hoje para usar.</p>`}</li>`;
+            const vista = vistaDaPocao(tipo), motivo = motivoParaNaoUsar(tipo);
+            return `<li class="minha-pocao">${frascoHtml(vista)}
+              <div class="dados-da-minha-pocao"><b>${vista.icone} ${vista.nome}</b> ${seloDaCategoria(vista)}<span>Quantidade: <b>${quantidadeVisivel(tipo)}</b> · ${vista.efeito} <small>(${vista.duracao})</small></span></div>
+              ${!motivo && !operacaoDoGuardiaoEmAndamento
+                ? `<button type="button" class="botao-do-guardiao uso" data-usar-pocao="${tipo}" data-foco="usar-${tipo}">🥤 Usar · ${resultadoDaPocao(vista)}</button>`
+                : `<p class="aviso-da-cota" role="note">⏳ ${motivo || 'Aguarde…'}</p>`}</li>`;
           }).join('')}</ul>`
             : `<div class="sem-pocoes"><span aria-hidden="true">🧪</span><p>Você ainda não tem poções guardadas.</p><button type="button" class="botao-do-guardiao" data-aba-guardiao="preparar">⚗️ Preparar uma poção</button></div>`;
-          selecionar('#balcao-do-guardiao').innerHTML = `<h3>⛏️ Cota de Mina e alquimia</h3>
-            <p class="cota-em-destaque"><b>${restante}</b> XP livres hoje (cota ${limite}${reservaDaMina ? " + reserva " + Math.round(reservaDaMina) : ""})</p>
-            <p>Cada poção só pode ser usada se a cota de hoje comportar <b>todo</b> o XP dela. Quando não comporta, o botão não aparece e a poção continua guardada.</p>
-            <p>Esta cota é dividida entre as viagens do carrinho e as poções, cresce com o nível da mina e renova a cada dia. O que você não usar hoje fica guardado por mais um dia.</p>
+          selecionar('#balcao-do-guardiao').innerHTML = `<h3>⚗️ Limite da alquimia</h3>
+            <p class="cota-em-destaque"><b>${restante}</b> XP livres hoje (limite ${limite}${reservaDoLimite ? " + " + Math.round(reservaDoLimite) + " guardados" : ""})</p>
+            <p>Só a <b>⭐ Poção de Experiência</b> usa o limite, e só se ele comportar os <b>${POCOES_DO_GUARDIAO.experiencia.xp} XP</b> inteiros. As poções de efeito podem ser usadas a qualquer hora, mesmo com o limite cheio.</p>
+            <h3>✨ Efeitos ativos</h3>${listaDosEfeitosAtivos()}
+            <p class="dica-do-guardiao">O mesmo efeito não acumula: espere terminar para usar outra poção igual.</p>
             <p class="mensagem-do-guardiao ${mensagemDoGuardiao.tipo}" role="status">${mensagemDoGuardiao.texto}</p>`;
           if (focado) { const elemento = painelDoGuardiao.querySelector(`[data-foco="${focado}"]`); if (elemento && !elemento.disabled) elemento.focus({ preventScroll: true }); }
           return;
         }
+        // PREPARAR: as 9 receitas em três fileiras, na ordem do catálogo.
         selecionar('#prateleira-de-pocoes').innerHTML = TIPOS_DE_POCAO.map(tipo => {
-          const pocao = POCOES_DO_GUARDIAO[tipo], liberada = pocaoLiberada(tipo);
-          return `<button type="button" class="cartao-de-pocao${tipo === pocaoSelecionada ? ' selecionada' : ''}${liberada ? '' : ' bloqueada'}" data-pocao="${tipo}" data-foco="pocao-${tipo}" aria-pressed="${tipo === pocaoSelecionada}">
-            ${frascoHtml(pocao)}
-            <span class="nome-da-pocao">${pocao.nome}</span>
-            <span class="troca-da-pocao"><span>🪨 ${pocao.minerios}</span><span class="seta">→</span><span>⭐ +${pocao.xp} XP</span></span>
-            <span class="estado-da-pocao">${liberada ? 'Na bolsa: <b>' + estado.pocoes[tipo] + '</b>' : '🔒 Mina nível ' + pocao.nivelMinimoDaMina}</span>
+          // Etapa 1: depois da descoberta, o lugar da poção misteriosa (centro da grade) vira o SELO DE LENDA: decorativo, sem preparo,
+          // sem uso e sem custo. Clicar nele só mostra a lenda no balcão; passar o mouse mostra o texto (title).
+          if (pocaoMisteriosa(tipo) && misterioDescoberto()) return htmlDoSeloDaLenda(tipo === pocaoSelecionada);
+          const vista = vistaDaPocao(tipo), liberada = pocaoLiberada(tipo), ativo = vista.minutos && efeitoAtivo(tipo);
+          // a misteriosa nunca mostra "bloqueada" nem a condição (só o custo é revelado)
+          const estadoDoCartao = vista.oculta ? SEGREDO : liberada ? 'Na bolsa: <b>' + estado.pocoes[tipo] + '</b>' + (ativo ? ' · ✨ ativo ' + formatarTempoDoEfeito(msRestantesDoEfeito(tipo)) : '') : '🔒 Mina nível ' + vista.nivelMinimoDaMina;
+          return `<button type="button" class="cartao-de-pocao${tipo === pocaoSelecionada ? ' selecionada' : ''}${liberada || vista.oculta ? '' : ' bloqueada'}${vista.oculta ? ' misteriosa' : ''}" data-pocao="${tipo}" data-foco="pocao-${tipo}" aria-pressed="${tipo === pocaoSelecionada}">
+            ${seloDaCategoria(vista)}
+            ${frascoHtml(vista)}
+            <span class="nome-da-pocao">${vista.nome}</span>
+            <span class="troca-da-pocao"><span>🪨 ${vista.minerios}</span><span class="seta">→</span><span>${resultadoDaPocao(vista)}</span></span>
+            <span class="estado-da-pocao">${estadoDoCartao}</span>
           </button>`;
         }).join('');
-        const pocao = POCOES_DO_GUARDIAO[pocaoSelecionada], motivoPreparo = motivoParaNaoPreparar(pocaoSelecionada), motivoUso = motivoParaNaoUsar(pocaoSelecionada);
+        if (pocaoMisteriosa(pocaoSelecionada) && misterioDescoberto()) {   // Etapa 1: balcão da lenda (nada para preparar nem usar)
+          selecionar('#balcao-do-guardiao').innerHTML = htmlDoBalcaoDaLenda() + `<p class="mensagem-do-guardiao ${mensagemDoGuardiao.tipo}" role="status">${mensagemDoGuardiao.texto}</p>`;
+          if (focado) { const elemento = painelDoGuardiao.querySelector(`[data-foco="${focado}"]`); if (elemento && !elemento.disabled) elemento.focus({ preventScroll: true }); }
+          return;
+        }
+        const vista = vistaDaPocao(pocaoSelecionada), motivoPreparo = motivoParaNaoPreparar(pocaoSelecionada), motivoUso = motivoParaNaoUsar(pocaoSelecionada);
         const bloqueado = operacaoDoGuardiaoEmAndamento;
+        const usaLimite = vista.oculta ? SEGREDO : pocaoDeExperiencia(pocaoSelecionada) ? '⚗️ Sim (' + vista.xp + ' XP)' : '✅ Não: pode usar com o limite cheio';
+        const condicao = vista.oculta ? SEGREDO : `${pocaoLiberada(pocaoSelecionada) ? '✅' : '🔒'} Mina no nível ${vista.nivelMinimoDaMina} ou mais <small>(sua mina: nível ${estado.niveis.mina})</small>`;
         selecionar('#balcao-do-guardiao').innerHTML = `
-          <div class="cabeca-do-balcao">${frascoHtml(pocao, true)}<div><h3>${pocao.icone} ${pocao.nome}</h3><p>${pocao.descricao}</p></div></div>
+          <div class="cabeca-do-balcao">${frascoHtml(vista, true)}<div><h3>${vista.icone} ${vista.nome}</h3>${seloDaCategoria(vista)}<p>${vista.descricao}</p></div></div>
           <dl class="ficha-da-pocao">
-            <dt>Custo para preparar</dt><dd>🪨 ${pocao.minerios} minérios <small>(você tem ${estado.recursos.minerios})</small></dd>
-            <dt>XP ao usar</dt><dd>⭐ +${pocao.xp} XP <small>(${(pocao.xp / pocao.minerios).toFixed(1).replace('.', ',')} XP por minério)</small></dd>
-            <dt>Condição</dt><dd>${pocaoLiberada(pocaoSelecionada) ? '✅' : '🔒'} Mina no nível ${pocao.nivelMinimoDaMina} ou mais <small>(sua mina: nível ${estado.niveis.mina})</small></dd>
-            <dt>Guardadas</dt><dd>🧪 ${estado.pocoes[pocaoSelecionada]}</dd>
+            <dt>Custo para preparar</dt><dd>🪨 ${vista.minerios} minérios <small>(você tem ${estado.recursos.minerios})</small></dd>
+            <dt>Efeito</dt><dd>${vista.efeito}</dd>
+            <dt>Duração</dt><dd>${vista.duracao}</dd>
+            <dt>Usa o Limite da alquimia?</dt><dd>${usaLimite}</dd>
+            <dt>Condição</dt><dd>${condicao}</dd>
+            <dt>Guardadas</dt><dd>🧪 ${quantidadeVisivel(pocaoSelecionada)}</dd>
           </dl>
           ${confirmandoPreparo ? `<div class="confirmacao-do-guardiao" role="group" aria-label="Confirmar preparo">
-              <p>Entregar <b>${pocao.minerios} minérios</b> ao Guardião para preparar <b>1 ${pocao.nome}</b>?</p>
+              <p>Entregar <b>${vista.minerios} minérios</b> ao Guardião para preparar <b>1 ${vista.nome}</b>?</p>
               <div class="acoes-do-guardiao"><button type="button" class="botao-do-guardiao secundario" data-acao-guardiao="voltar" data-foco="voltar" ${bloqueado ? 'disabled' : ''}>Voltar</button>
               <button type="button" class="botao-do-guardiao" data-acao-guardiao="confirmar-preparo" data-foco="confirmar" ${bloqueado || motivoPreparo ? 'disabled' : ''}>✔ Confirmar preparo</button></div></div>`
           : `<div class="acoes-do-guardiao">
-              <button type="button" class="botao-do-guardiao" data-acao-guardiao="preparar" data-foco="preparar" ${bloqueado || motivoPreparo ? 'disabled' : ''}>⚗️ Preparar · −${pocao.minerios} 🪨</button>
-              ${motivoUso ? '' : `<button type="button" class="botao-do-guardiao uso" data-acao-guardiao="usar" data-foco="usar" ${bloqueado ? 'disabled' : ''}>🥤 Usar · +${pocao.xp} XP</button>`}</div>
+              <button type="button" class="botao-do-guardiao" data-acao-guardiao="preparar" data-foco="preparar" ${bloqueado || motivoPreparo ? 'disabled' : ''}>⚗️ Preparar · −${vista.minerios} 🪨</button>
+              ${motivoUso ? '' : `<button type="button" class="botao-do-guardiao uso" data-acao-guardiao="usar" data-foco="usar" ${bloqueado ? 'disabled' : ''}>🥤 Usar · ${resultadoDaPocao(vista)}</button>`}</div>
             <ul class="motivos-do-guardiao">${motivoPreparo ? `<li>⚗️ ${motivoPreparo}</li>` : ''}${motivoUso && estado.pocoes[pocaoSelecionada] > 0 ? `<li class="aviso-da-cota">⏳ ${motivoUso}</li>` : ''}</ul>`}
           <p class="mensagem-do-guardiao ${mensagemDoGuardiao.tipo}" role="status">${mensagemDoGuardiao.texto}</p>`;
         if (focado) { const elemento = painelDoGuardiao.querySelector(`[data-foco="${focado}"]`); if (elemento && !elemento.disabled) elemento.focus({ preventScroll: true }); }
@@ -246,34 +331,81 @@
         if (!sucesso) { estado.recursos.minerios = mineriosAntes; estado.pocoes[tipo] = pocoesAntes; definirMensagemDoGuardiao('Não foi possível salvar. Nenhum minério foi gasto.'); }
         else {
           registrarAtividade(); atualizarResumoDeRecursos(); tocarEfeito('levelUp');
-          definirMensagemDoGuardiao('⚗️ ' + pocao.nome + ' preparado! −' + pocao.minerios + ' minérios. Use quando quiser receber +' + pocao.xp + ' XP.', 'sucesso');
+          avisarObjetivos('pocao-preparada', { tipo });   // Etapa 2: quadro de objetivos (seção 30e)
+          // Etapa 2: o nome vem da VISTA (a misteriosa continua "???"); a dica de uso não fala em XP para as poções de efeito.
+          const vista = vistaDaPocao(tipo);
+          definirMensagemDoGuardiao('⚗️ ' + vista.nome + ' preparado! −' + pocao.minerios + ' minérios. '
+            + (vista.oculta ? SEGREDO : pocao.xp > 0 ? 'Use quando quiser receber +' + pocao.xp + ' XP.' : 'Use em 🧪 Minhas Poções quando precisar.'), 'sucesso');
         }
         confirmandoPreparo = false; operacaoDoGuardiaoEmAndamento = false;
         return sucesso;
       };
-      // USAR: valida (poção guardada e cota suficiente) → tira a poção e credita o XP → confere se o XP entrou INTEIRO → salva.
-      // Qualquer falha desfaz a poção, o XP, a cota do dia e o contador de origem.
+      // USAR: valida (motivoParaNaoUsar) → trava → aplica → salva. Qualquer falha desfaz tudo e a poção continua guardada.
+      // A trava (operacaoDoGuardiaoEmAndamento) impede que cliques rápidos consumam duas poções de uma vez.
       const usarPocao = function usarPocao(tipo) {
-        if (operacaoDoGuardiaoEmAndamento) return false;
+        if (operacaoDoGuardiaoEmAndamento || !POCOES_DO_GUARDIAO[tipo]) return false;
         const motivo = motivoParaNaoUsar(tipo);
         if (motivo) { definirMensagemDoGuardiao(motivo); return false; }
         operacaoDoGuardiaoEmAndamento = true;
+        let sucesso = false;
+        try { sucesso = pocaoMisteriosa(tipo) ? usarPocaoMisteriosa(tipo) : pocaoDeExperiencia(tipo) ? usarPocaoDeExperiencia(tipo) : usarPocaoDeEfeito(tipo); }
+        finally { operacaoDoGuardiaoEmAndamento = false; }
+        if (sucesso) avisarObjetivos('pocao-usada', { tipo });   // Etapa 2: quadro de objetivos (seção 30e)
+        return sucesso;
+      };
+      // Etapa 2 — POÇÃO MISTERIOSA (uso único). Ordem segura: tira o frasco e marca o uso (usadoEm, concluido = false) → SALVA → só
+      // então começa a cena (seção 30c). Se o salvamento falhar, nada muda (o frasco volta e o uso não é marcado). Se a página
+      // fechar no meio da cena, "concluido" continua false e a cena é mostrada de novo ao abrir: o frasco nunca some sem o evento,
+      // e um segundo uso é impossível porque usadoEm já está salvo.
+      const usarPocaoMisteriosa = function usarPocaoMisteriosa(tipo) {
+        const registro = estado.eventosEspeciais.misterio, antes = { pocoes: estado.pocoes[tipo], usadoEm: registro.usadoEm, concluido: registro.concluido };
+        estado.pocoes[tipo] -= 1; registro.usadoEm = Date.now(); registro.concluido = false;
+        if (!salvarProgresso()) {
+          estado.pocoes[tipo] = antes.pocoes; registro.usadoEm = antes.usadoEm; registro.concluido = antes.concluido;
+          definirMensagemDoGuardiao('Não foi possível salvar. A poção continua guardada.'); return false;
+        }
+        registrarAtividade(); definirMensagemDoGuardiao('', '');
+        fecharPainelDoGuardiao();
+        iniciarEventoDoUnicornio();
+        return true;
+      };
+      // Poção de Experiência: tira a poção e credita o XP no Limite da alquimia → confere se o XP entrou INTEIRO → salva.
+      // Qualquer falha desfaz a poção, o XP, o limite do dia e o contador de origem.
+      const usarPocaoDeExperiencia = function usarPocaoDeExperiencia(tipo) {
         const pocao = POCOES_DO_GUARDIAO[tipo];
         const antes = { xp: estado.xp, cota: { ...estado.xpDaFazendaHoje }, cotas: JSON.parse(JSON.stringify(estado.cotasDoDia)), origem: estado.xpPorOrigem.fazenda, pocoes: estado.pocoes[tipo] };
         const restaurar = () => { estado.xp = antes.xp; estado.xpDaFazendaHoje = antes.cota; estado.cotasDoDia = antes.cotas; estado.xpPorOrigem.fazenda = antes.origem; estado.pocoes[tipo] = antes.pocoes; desenharCards(); };
         estado.pocoes[tipo] -= 1;
-        const xpCreditado = creditarXP(pocao.xp, 'fazenda', false, 'mina');   // cota de Mina e alquimia (a mesma dos ciclos)
-        let sucesso = true;
-        if (xpCreditado !== pocao.xp) { restaurar(); sucesso = false; definirMensagemDoGuardiao('A cota de XP de hoje mudou. A poção continua guardada.'); }
-        else if (!salvarProgresso()) { restaurar(); sucesso = false; definirMensagemDoGuardiao('Não foi possível salvar. A poção e o XP foram restaurados.'); }
-        else {
-          registrarAtividade(); tocarEfeito('xp');
-          definirMensagemDoGuardiao('🥤 Você usou ' + pocao.nome + ': +' + xpCreditado + ' XP!', 'sucesso');
-          mostrarAviso('🥤 ' + pocao.nome + ': +' + xpCreditado + ' XP');
-          atualizarPaineisDaMark82(true);
-        }
-        operacaoDoGuardiaoEmAndamento = false;
-        return sucesso;
+        const xpCreditado = creditarXP(pocao.xp, 'fazenda', false, 'mina');   // Limite da alquimia (id 'mina' mantido nos saves)
+        if (xpCreditado !== pocao.xp) { restaurar(); definirMensagemDoGuardiao('O Limite da alquimia de hoje mudou. A poção continua guardada.'); return false; }
+        if (!salvarProgresso()) { restaurar(); definirMensagemDoGuardiao('Não foi possível salvar. A poção e o XP foram restaurados.'); return false; }
+        registrarAtividade(); tocarEfeito('xp');
+        definirMensagemDoGuardiao('🥤 Você usou ' + pocao.nome + ': +' + xpCreditado + ' XP!', 'sucesso');
+        mostrarAviso('🥤 ' + pocao.nome + ': +' + xpCreditado + ' XP');
+        atualizarPaineisDaMark82(true);
+        return true;
+      };
+      // Poções de EFEITO: não dão XP e não tocam no Limite da alquimia. Guarda o que o efeito pode mudar (poções, efeitos ativos,
+      // árvores do acampamento e vida da equipe), aplica (seção 28c), salva e, só depois do salvamento, mexe na cena.
+      const usarPocaoDeEfeito = function usarPocaoDeEfeito(tipo) {
+        const pocao = POCOES_DO_GUARDIAO[tipo];
+        const antes = JSON.stringify({ pocoes: estado.pocoes, efeitos: estado.efeitosDasPocoes, arvores: estado.arvoresColetaveis, vidas: estado.trabalhadores.map(dados => dados.vida) });
+        const restaurar = () => {
+          const copia = JSON.parse(antes);
+          estado.pocoes = copia.pocoes; estado.efeitosDasPocoes = copia.efeitos; estado.arvoresColetaveis = copia.arvores;
+          estado.trabalhadores.forEach((dados, indice) => { dados.vida = copia.vidas[indice]; });
+        };
+        estado.pocoes[tipo] -= 1;
+        let depoisDeSalvar = null;
+        try { depoisDeSalvar = aplicarEfeitoDaPocao(tipo); }
+        catch (erro) { console.error('[FarmEdu] Falha ao aplicar a poção:', erro); restaurar(); definirMensagemDoGuardiao('Não foi possível aplicar a poção. Ela continua guardada.'); return false; }
+        if (!salvarProgresso()) { restaurar(); definirMensagemDoGuardiao('Não foi possível salvar. A poção continua guardada.'); return false; }
+        if (depoisDeSalvar) depoisDeSalvar();
+        registrarAtividade(); tocarEfeito('levelUp');
+        const texto = pocao.icone + ' ' + pocao.nome + ': ' + pocao.efeito + (pocao.minutos ? ' Dura ' + duracaoCurta(pocao) + '.' : '');
+        definirMensagemDoGuardiao('🥤 ' + texto, 'sucesso'); mostrarAviso('🥤 ' + texto);
+        atualizarEfeitosDasPocoes(); atualizarPaineisDaMark82(true);
+        return true;
       };
 
       // ---- Eventos do painel (delegação: o conteúdo é redesenhado) ----

@@ -61,6 +61,7 @@
         return null;
       };
       const surgirMonstro = function surgirMonstro() {
+        if (monstrosNoturnosAfastados()) return null;   // Poção da Noite Serena (seção 28c): nenhum monstro NOVO enquanto dura
         const grade = obterGradeDosMobs();
         for (let tentativa = 0; tentativa < 1; tentativa++) {
           const ponto = pontoDeSurgimento(grade); if (!ponto) return null;

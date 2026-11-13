@@ -57,6 +57,10 @@
   <div id="barra-topo" inert><b>⭐ <span id="valor-xp">0</span> XP</b><span id="recursos-resumo" title="Recursos: trigo, milho, cenoura, abóbora, minérios e madeira"></span><button id="botao-som-global" aria-pressed="false" aria-label="Silenciar todos os sons" title="Silenciar ou religar todos os sons (os ajustes do painel Áudio são mantidos)"><span class="icone-do-som" aria-hidden="true">🔊</span> <span class="rotulo-do-som">Som ligado</span></button><button id="botao-menu" aria-expanded="false" aria-controls="menu-principal" aria-label="Abrir menu">☰ <span class="rotulo-do-menu">Menu</span></button>
     <!-- Inventário geral (SEÇÃO 27b): fica logo abaixo do indicador de XP -->
     <button id="botao-inventario" aria-expanded="false" aria-controls="janela-inventario" title="Ver tudo o que você possui">🎒 Inventário</button>
+    <!-- Etapa 2 (SEÇÃO 30e): quadro de objetivos, logo abaixo do inventário. No computador mostra o próximo objetivo principal. -->
+    <button id="botao-objetivos" aria-expanded="false" aria-controls="janela-objetivos" title="Objetivos da fazenda">🎯 <span class="rotulo-dos-objetivos">Objetivos</span><span class="proximo-objetivo" id="proximo-objetivo"></span><span class="novidade-dos-objetivos" id="novidade-dos-objetivos" hidden aria-label="Objetivo novo concluído"></span></button>
+    <!-- Efeitos das poções ativos (SEÇÃO 28c): ícone e tempo restante, ao lado do inventário; some quando não há nenhum -->
+    <div id="efeitos-das-pocoes" role="status" aria-label="Efeitos de poções ativos" hidden></div>
   </div>
   <!-- Fazenda 8.4 (C3): gaveta de construções. O cabeçalho abre/fecha e resume o estado; os cartões (seção 32) vão no conteúdo -->
   <section id="lista-cards" class="gaveta-de-construcoes" aria-label="Construções" inert>
@@ -64,6 +68,8 @@
     <div id="conteudo-da-gaveta" hidden></div>
   </section>
   <div id="aviso"></div>
+  <!-- Etapa 2 (SEÇÃO 30c): camada das cenas especiais. Faixas de cinema, brilho suave e bloqueio de cliques no mapa durante a cena. -->
+  <div id="camada-do-evento" hidden aria-hidden="true"><div class="faixa-do-evento topo"></div><div class="faixa-do-evento base"></div><div class="brilho-do-evento"></div></div>
   <div id="faixa-invasao" hidden role="alert" inert><b id="faixa-titulo"></b><span id="faixa-texto"></span></div>
   <div id="barra-ferramentas" inert>
     <!-- Menu compacto: abrir um painel esconde o menu; "‹ Menu" volta a ele e "✕" fecha tudo (Esc volta um nível) -->
@@ -75,15 +81,28 @@
       <!-- Mark 8.2: lavoura, animais e mina (SEÇÃO 27/28) e contratação de trabalhadores (SEÇÃO 29) -->
       <button class="botao-ferramenta" id="botao-painel-fazenda" aria-expanded="false" aria-controls="painel-fazenda">🌾 Fazenda</button>
       <button class="botao-ferramenta" id="botao-painel-equipe" aria-expanded="false" aria-controls="painel-equipe">👷 Equipe</button>
-      <!-- Modo Leve (SEÇÃO 21): menos custo gráfico para computadores fracos; a escolha fica salva no navegador -->
-      <button class="botao-ferramenta" id="botao-modo-leve" aria-pressed="false" title="Modo Leve: desliga sombras e luzes dinâmicas e reduz a resolução de renderização">⚡ Modo Leve <span class="estado-modo-leve">desligado</span></button>
+      <!-- Etapa 0 / 0b (SEÇÃO 21): qualidade gráfica em cartões (grupo de rádio acessível: setas, Home/End). Baixa = antigo Modo Leve;
+           Automática mede o desempenho e ajusta sozinha. A escolha fica salva no navegador -->
+      <section class="seletor-de-qualidade" id="seletor-de-qualidade" aria-labelledby="titulo-da-qualidade">
+        <header class="cabeca-da-qualidade">
+          <h4 id="titulo-da-qualidade">🎨 Qualidade</h4>
+          <span class="selo-da-qualidade" id="qualidade-atual" aria-live="polite"></span>
+        </header>
+        <div class="opcoes-de-qualidade" role="radiogroup" aria-labelledby="titulo-da-qualidade">
+          <button type="button" class="opcao-de-qualidade" role="radio" aria-checked="false" data-qualidade="auto" tabindex="-1"><span class="icone-da-opcao" aria-hidden="true">🪄</span><b>Auto</b><span class="barras-da-opcao" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="opcao-de-qualidade" role="radio" aria-checked="false" data-qualidade="baixo" tabindex="-1"><span class="icone-da-opcao" aria-hidden="true">🌱</span><b>Baixa</b><span class="barras-da-opcao nivel-1" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="opcao-de-qualidade" role="radio" aria-checked="false" data-qualidade="medio" tabindex="-1"><span class="icone-da-opcao" aria-hidden="true">🌿</span><b>Média</b><span class="barras-da-opcao nivel-2" aria-hidden="true"><i></i><i></i><i></i></span></button>
+          <button type="button" class="opcao-de-qualidade" role="radio" aria-checked="false" data-qualidade="alto" tabindex="-1"><span class="icone-da-opcao" aria-hidden="true">🌳</span><b>Alta</b><span class="barras-da-opcao nivel-3" aria-hidden="true"><i></i><i></i><i></i></span></button>
+        </div>
+        <p class="descricao-da-qualidade" id="descricao-da-qualidade"></p>
+      </section>
       <!-- Fazenda 8.4.1: tutorial e ajuda (SEÇÃO 32b) -->
       <button class="botao-ferramenta" id="botao-ajuda" aria-haspopup="dialog" aria-controls="janela-ajuda">❓ Ajuda e tutorial</button>
       <p class="dica-dos-controles">🎮 WASD andam · Espaço sobe · <b>C</b> ou Ctrl desce · Shift acelera. Para descer e avançar ao mesmo tempo, use <b>C + W</b>: o navegador reserva Ctrl+W para fechar a aba.</p>
       <!-- Fazenda 8.4 (D2): ferramentas de teste só aparecem com o Modo desenvolvedor (começa desligado a cada carregamento).
            Fazenda 8.4.1: o botão só aparece com o modo ligado e serve para desligá-lo (o desbloqueio fica na seção 32). -->
       <button class="botao-ferramenta" id="botao-modo-desenvolvedor" hidden aria-pressed="false" aria-controls="ferramentas-de-desenvolvedor" title="Desligar as ferramentas de teste">🛠️ Modo desenvolvedor <span class="estado-modo-desenvolvedor">desligado</span></button>
-      <div class="testes-do-menu" id="ferramentas-de-desenvolvedor" hidden><h4>🧪 Testes</h4><button id="botao-teste-xp">+5000 XP (teste)</button><button id="botao-teste-madeira">+5000 de madeira (teste)</button></div>
+      <div class="testes-do-menu" id="ferramentas-de-desenvolvedor" hidden><h4>🧪 Testes</h4><button id="botao-teste-xp">+5000 XP (teste)</button><button id="botao-teste-madeira">+5000 de madeira (teste)</button><button id="botao-teste-minerios">+100 MINÉRIOS (teste)</button><button id="botao-teste-abducao">🛸 Abdução agora (teste)</button></div>
     </nav>
     <div class="navegacao-do-painel" id="navegacao-do-painel" hidden><button class="botao-ferramenta" id="voltar-ao-menu" aria-label="Voltar ao menu">‹ Menu</button><button class="botao-fechar" id="fechar-painel" aria-label="Fechar painel">✕</button></div>
     <section class="painel" id="painel-tempo" hidden>
@@ -158,19 +177,42 @@
       <header class="cabecalho-do-guardiao">
         <span class="retrato-do-guardiao" aria-hidden="true">🧙</span>
         <div class="fala-do-guardiao"><h2 id="titulo-do-guardiao">Alquimia do Guardião da Mina</h2>
-          <p>“Traga os minérios que o carrinho tira da caverna. Eu preparo poções, e cada poção vira experiência para a sua fazenda.”</p></div>
+          <p>“Traga os minérios que o carrinho tira da caverna. Eu preparo poções: uma de experiência e outras com efeitos para a sua fazenda.”</p></div>
         <button type="button" class="botao-fechar" id="fechar-guardiao" aria-label="Fechar a alquimia">✕</button>
       </header>
+      <!-- Etapa da alquimia: explicação curta das regras (os números são preenchidos pela seção 28b a partir da configuração) -->
+      <details class="explicacao-da-alquimia" open>
+        <summary>📜 Como funciona a alquimia</summary>
+        <ol class="passos-da-alquimia">
+          <li><span aria-hidden="true">⛏️</span><span><b>A mina traz minérios.</b> Ela não dá XP.</span></li>
+          <li><span aria-hidden="true">🪨</span><span><b>Os minérios viram poções.</b> Escolha uma receita e prepare.</span></li>
+          <li><span aria-hidden="true">⭐</span><span><b>Poção de Experiência:</b> +<span class="xp-da-pocao-de-experiencia">20</span> XP. É a única que dá XP.</span></li>
+          <li><span aria-hidden="true">✨</span><span><b>As outras dão efeitos</b> por um tempo. Ex.: plantas crescendo mais rápido. E uma delas é um mistério ❔</span></li>
+        </ol>
+        <ul class="regras-da-alquimia">
+          <li>⚗️ <b>Limite:</b> só a Poção de Experiência usa o limite: <b class="valor-do-limite-da-alquimia">20</b> XP por dia (uma poção).</li>
+          <li>✅ <b>Limite cheio?</b> Continue minerando, preparando poções e usando as de efeito.</li>
+          <li>🔄 <b>Renova todo dia.</b> O que você não usar hoje fica guardado por mais um dia.</li>
+          <li>⏳ O mesmo efeito não acumula: espere terminar para usar de novo.</li>
+        </ul>
+      </details>
       <div class="saldos-do-guardiao" id="saldos-do-guardiao"></div>
       <div class="abas-do-guardiao" id="abas-do-guardiao" role="tablist" aria-label="Seções da alquimia"></div>
       <div class="corpo-do-guardiao">
         <section class="prateleira-de-pocoes" id="prateleira-de-pocoes" aria-label="Poções disponíveis"></section>
         <section class="balcao-do-guardiao" id="balcao-do-guardiao" aria-label="Poção selecionada"></section>
       </div>
-      <p class="rodape-do-guardiao">Como funciona: <b>preparar</b> gasta minérios e guarda a poção · <b>usar</b> concede o XP, dentro da cota diária de Mina e alquimia (a mesma das viagens do carrinho). Se a cota de hoje não comporta o XP inteiro, a poção continua guardada.</p>
+      <p class="rodape-do-guardiao"><b>Preparar</b> gasta minérios e guarda a poção (nunca depende do limite) · <b>usar</b> aplica a poção. A Poção de Experiência só é usada se o Limite da alquimia de hoje comportar o XP inteiro; senão, continua guardada.</p>
     </div>
   </div>
   <!-- Inventário geral (SEÇÃO 27b): o conteúdo é desenhado pelo JavaScript a partir de estado.recursos e estado.pocoes. -->
+  <!-- Etapa 2 (SEÇÃO 30e): quadro de objetivos. Poucos em destaque ("Agora") e a lista completa sob demanda. -->
+  <div id="janela-objetivos" class="janela-npc" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-objetivos">
+    <section class="cartao-npc cartao-dos-objetivos">
+      <header class="cabecalho-npc"><h2 id="titulo-objetivos">🎯 Objetivos da Fazenda</h2><button type="button" class="botao-fechar" id="fechar-objetivos" aria-label="Fechar os objetivos">✕</button></header>
+      <div id="conteudo-dos-objetivos"></div>
+    </section>
+  </div>
   <div id="janela-inventario" class="janela-npc" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-inventario">
     <section class="cartao-npc cartao-do-inventario">
       <header class="cabecalho-npc"><h2 id="titulo-inventario">🎒 Inventário</h2><button type="button" class="botao-fechar" id="fechar-inventario" aria-label="Fechar o inventário">✕</button></header>

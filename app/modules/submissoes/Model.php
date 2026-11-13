@@ -6,7 +6,7 @@ class SubmissoesModel
     private PDO $pdo;
 
     /** Linguagem do banco -> chave usada em atividade.js (LINGUAGENS). */
-    private const MAPA_LINGUAGEM = [
+     private const MAPA_LINGUAGEM = [
         'web' => 'web', 'html' => 'web', 'css' => 'web',
         'javascript' => 63, 'js' => 63,
         'python' => 71,
@@ -17,6 +17,7 @@ class SubmissoesModel
     public function __construct(?PDO $pdo = null)
     {
         $this->pdo = $pdo ?? iniciarPDO();
+        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 
     public function buscarAtividade(int $idAtividade): ?array

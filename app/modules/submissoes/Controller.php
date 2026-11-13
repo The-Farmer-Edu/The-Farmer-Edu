@@ -48,7 +48,6 @@ class atividadesSub {
 /**
  * Lê ?id= da URL e busca a atividade no banco.
  * Sem id válido ou sem registro, devolve null (a tela fica vazia e bloqueada).
- * Use ?debug=1 na URL para ver o erro real em vez de uma tela vazia.
  */
 private function carregarAtividade(): ?array {
     $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
@@ -58,14 +57,9 @@ private function carregarAtividade(): ?array {
         return (new SubmissoesModel())->dadosParaView($id);
     } catch (Throwable $e) {
         error_log('[submissoes] ' . $e->getMessage());
-        if (isset($_GET['debug'])) {
-            header('Content-Type: text/plain; charset=UTF-8');
-            exit('ERRO: ' . $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine());
-        }
         return null;
     }
 }
-
 public function showaluno() {
     $dadosAtividade = $this->carregarAtividade();
     require_once __DIR__ . '/view/aluno.html';

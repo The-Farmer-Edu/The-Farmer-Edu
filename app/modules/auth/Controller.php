@@ -553,25 +553,25 @@ class UsuarioController
         $sucesso = false;
         
         try {
-        $pdo = iniciarPDO();
-        $usuario = Usuario::buscarPorEmail($pdo, $email);
+            $pdo = iniciarPDO();
+            $usuario = Usuario::buscarPorEmail($pdo, $email);
 
-        if ($usuario === null || $usuario->tipo !== $tipo) {
-        throw new InvalidArgumentException('E-mail ou senha incorretos.');
-        }
-
-        $usuario->liberarSeBloqueioExpirou($pdo);
-        $segundos = $usuario->segundosDeBloqueio($pdo);
-        if ($segundos > 0) {
-        throw new InvalidArgumentException($this->mensagemBloqueio($segundos));
-        }
-
-        if (!$usuario->verificarSenha($senha)) {
-            $restantes = $usuario->registrarFalhaLogin($pdo);
-            if ($restantes === 0) {
-            throw new InvalidArgumentException($this->mensagemBloqueio(Usuario::MINUTOS_BLOQUEIO * 60));
+            if ($usuario === null || $usuario->tipo !== $tipo) {
+                throw new InvalidArgumentException('E-mail ou senha incorretos.');
             }
-            throw new InvalidArgumentException('E-mail ou senha incorretos. Você ainda tem ' . $restantes . ' ' . ($restantes === 1 ? 'tentativa' : 'tentativas') . '.');
+
+            $usuario->liberarSeBloqueioExpirou($pdo);
+            $segundos = $usuario->segundosDeBloqueio($pdo);
+            if ($segundos > 0) {
+                throw new InvalidArgumentException($this->mensagemBloqueio($segundos));
+            }
+
+            if (!$usuario->verificarSenha($senha)) {
+                $restantes = $usuario->registrarFalhaLogin($pdo);
+                if ($restantes === 0) {
+                    throw new InvalidArgumentException($this->mensagemBloqueio(Usuario::MINUTOS_BLOQUEIO * 60));
+                }
+                throw new InvalidArgumentException('E-mail ou senha incorretos. Você ainda tem ' . $restantes . ' ' . ($restantes === 1 ? 'tentativa' : 'tentativas') . '.');
             }
 
             if (!$usuario->ativo) {
@@ -580,32 +580,42 @@ class UsuarioController
 
             $usuario->zerarTentativasLogin($pdo);
             login([
-            'idUsuario' => $usuario->id,
-            'nome' => $usuario->nome,
-            'email' => $usuario->email,
-            'perfilAcesso' => $usuario->tipo,
+                'idUsuario' => $usuario->id,
+                'nome' => $usuario->nome,
+                'email' => $usuario->email,
+                'perfilAcesso' => $usuario->tipo,
             ]);
 
             registrarAtividadeSessao();
-            // $base = rtrim(dirname($SERVER['SCRIPT_NAME']), '/\\');
-            // header('location: ' . $base . '/public/turmas_cursos/' . $usuario->tipo);
-            header('Location: ?rota=turmas_cursos/' . $usuario->tipo);
+
+            $uri = $_SERVER['REQUEST_URI'];
+            if(!$_GET['redirect']){
+                $rota = '/turmas_cursos/' . $usuario->tipo;
+                if (str_contains($uri, "public")){
+                    $uri = explode('/public/', $uri)[0] . '/public' . $rota;
+                } else {
+                    $uri = $rota;
+                }
+            } else {
+                $uri = $_GET['redirect'];
+            }
+            header("Location: $uri");
             exit;
 
-            } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             $mensagem = $e->getMessage();
-            } catch (Throwable $e) {
+        } catch (Throwable $e) {
             error_log($e->getMessage());
             $mensagem = 'Erro real: ' . $e->getMessage();
         }
 
-            $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
-            }
+        $this->view($view, ['mensagem' => $mensagem, 'sucesso' => $sucesso]);
+    }
 
-            private function mensagemBloqueio(int $segundos): string {
-            $minutos = max(1, (int) ceil($segundos / 60));
-            return 'Muitas tentativas incorretas. Tente novamente em ' . $minutos . ' ' . ($minutos === 1 ? 'minuto' : 'minutos') . '.';
-            }
+    private function mensagemBloqueio(int $segundos): string {
+        $minutos = max(1, (int) ceil($segundos / 60));
+        return 'Muitas tentativas incorretas. Tente novamente em ' . $minutos . ' ' . ($minutos === 1 ? 'minuto' : 'minutos') . '.';
+    }
 
     private function lerMaterias(): array
     {

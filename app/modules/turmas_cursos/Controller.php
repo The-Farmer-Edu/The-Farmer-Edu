@@ -577,15 +577,16 @@ class CursosController
     private function exigir(string $perfil): array
     {
         $u = usuarioLogado();
-        if (!$u) $this->ir('auth/login' . ucfirst($perfil));
-        if (!ContaModel::estaAtiva((int) $u['idUsuario'])) {
-            logout();
-            $this->ir('auth/login' . ucfirst($perfil));
-        }
-        if (($u['perfilAcesso'] ?? '') !== $perfil) {
-            http_response_code(403);
-            exit('Você não tem acesso a essa página.');
-        }
+        solicitarPerfilDeAcesso($perfil);
+        // if (!$u) $this->ir('auth/login' . ucfirst($perfil));
+        // if (!ContaModel::estaAtiva((int) $u['idUsuario'])) {
+        //     logout();
+        //     $this->ir('auth/login' . ucfirst($perfil));
+        // }
+        // if (($u['perfilAcesso'] ?? '') !== $perfil) {
+        //     http_response_code(403);
+        //     exit('Você não tem acesso a essa página.');
+        // }
         return $u;
     }
 

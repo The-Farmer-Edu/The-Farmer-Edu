@@ -105,7 +105,6 @@ CREATE TABLE turmas (
   turno          ENUM('manha', 'tarde', 'noite') NOT NULL,
   id_curso       INT UNSIGNED                    NOT NULL,
   id_instrutor   INT UNSIGNED                    NOT NULL,
-  image_turma    VARCHAR(255)                    NULL, 
   ativo          TINYINT(1)                      NOT NULL     DEFAULT 1,
   CONSTRAINT fk_turmas_curso
     FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)

@@ -1,35 +1,20 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>The Farmer Edu - <?= $curso ? 'Editar curso' : 'Novo curso' ?></title>
-</head>
-<body>
-    <?php require __DIR__ . '/partials/cabecalho.php'; ?>
-
-    <main>
-        <h1><?= $curso ? 'Editar curso' : 'Novo curso' ?></h1>
-        <p><a href="<?= $base ?>/turmas_cursos/cursos">Voltar para Cursos</a></p>
-        <?php if ($erro): ?><p><strong><?= e($erro) ?></strong></p><?php endif; ?>
-
-        <form method="POST" action="<?= $base ?>/turmas_cursos/<?= $curso ? 'cursoAtualizar' : 'cursoSalvar' ?>">
-            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-            <?php if ($curso): ?>
-                <input type="hidden" name="id_curso" value="<?= (int) $curso['id_curso'] ?>">
-            <?php endif; ?>
-            <p>
-                <label>Nome do curso:
-                    <input name="nome" maxlength="150" value="<?= e($curso['nome_curso'] ?? '') ?>" required>
-                </label>
-            </p>
-            <p>
-                <label>Descrição (opcional):<br>
-                    <textarea name="descricao" rows="4" cols="50" maxlength="1000"><?= e($curso['descricao'] ?? '') ?></textarea>
-                </label>
-            </p>
-            <button type="submit"><?= $curso ? 'Salvar alterações' : 'Criar curso' ?></button>
-            <a href="<?= $base ?>/turmas_cursos/cursos">Cancelar</a>
-        </form>
-    </main>
-</body>
-</html>
+<?php
+$tituloPagina = 'Editar curso';
+require __DIR__ . '/partials/head.php';
+?>
+<main class="course-form-page">
+    <section class="page-panel">
+        <div class="course-form-page__header"><h1>Editar Curso</h1></div>
+        <div class="course-form-page__body">
+            <a href="<?= $base ?>/turmas_cursos/cursos" class="small d-inline-block mb-4"><i class="bi bi-arrow-left me-1"></i>Voltar para cursos</a>
+            <?php if (!empty($erro)): ?><div class="alert alert-danger"><?= e($erro) ?></div><?php endif; ?>
+            <form method="post" action="<?= $base ?>/turmas_cursos/cursoAtualizar">
+                <input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="id_curso" value="<?= (int) $curso['id_curso'] ?>">
+                <div class="mb-3"><label class="form-label" for="nomeCurso">Nome do curso</label><input class="form-control" id="nomeCurso" name="nome" maxlength="150" value="<?= e($curso['nome_curso']) ?>" required></div>
+                <div class="mb-4"><label class="form-label" for="descricaoCurso">Descrição</label><textarea class="form-control" id="descricaoCurso" name="descricao" maxlength="1000" rows="5"><?= e($curso['descricao'] ?? '') ?></textarea></div>
+                <div class="course-form-actions"><button class="btn btn-theme" type="submit">Salvar alterações</button><a class="btn btn-muted" href="<?= $base ?>/turmas_cursos/cursos">Cancelar</a></div>
+            </form>
+        </div>
+    </section>
+</main>
+<?php require __DIR__ . '/partials/rodape.php'; ?>

@@ -130,7 +130,7 @@ function montarAbas() {
     $('stLang').textContent = ARQUIVOS.find(a => a.lang === atual).rotulo;
 }
 
-function trocar(lang) {
+function trocar(lang) { 
     atual = lang;
     ed.value = dados[atual];
     montarAbas();

@@ -5,6 +5,7 @@
       // "const nome = function nome(...) {...};": as declarações deste arquivo ficam no escopo global compartilhado entre os
       // arquivos da fazenda, e const, let e class não criam propriedades em window (o recuo original foi mantido).
       // ====================================================================================================
+      
       // ====================================================================================================
       // SEÇÃO 24 — PAINÉIS FLUTUANTES DE TEMPO E ÁUDIO (E LISTA DOS PAINÉIS DA BARRA)
       // Botões e painéis "Tempo" (modos do ciclo e testes de invasão) e "Áudio" (volumes e ativação de cada categoria).
@@ -28,25 +29,30 @@
       // cobriria o outro): abrir um fecha o outro. O estado aberto/fechado vive só na interface (não vai para o salvamento).
       const conteudoDaGaveta = selecionar('#conteudo-da-gaveta'), botaoDaGaveta = selecionar('#botao-gaveta-construcoes');
       const definirGavetaAberta = function definirGavetaAberta(aberta) {
+        if (aberta) fecharPainelDaEstrutura(false);   // a gaveta e o painel de uma estrutura (seção 32) não ficam abertos juntos
         conteudoDaGaveta.hidden = !aberta; botaoDaGaveta.setAttribute('aria-expanded', String(aberta));
         selecionar('#lista-cards').classList.toggle('aberta', aberta);
       };
       const fecharPaineisDaBarra = function fecharPaineisDaBarra() { for (const [painel, botao] of PAINEIS_DA_BARRA) { painel.hidden = true; botao.setAttribute('aria-expanded', 'false'); } };
-      const abrirMenu = function abrirMenu() { fecharPaineisDaBarra(); definirGavetaAberta(false); menuPrincipal.hidden = false; atualizarBotaoDoMenu(); };
-      const fecharMenuEPaineis = function fecharMenuEPaineis() { fecharPaineisDaBarra(); menuPrincipal.hidden = true; atualizarBotaoDoMenu(); };
+      const abrirMenu = function abrirMenu() { tocarEfeito('Enter'); fecharPaineisDaBarra(); definirGavetaAberta(false); menuPrincipal.hidden = false; atualizarBotaoDoMenu(); };
+      const fecharMenuEPaineis = function fecharMenuEPaineis() { tocarEfeito('Fecha'); fecharPaineisDaBarra(); menuPrincipal.hidden = true; atualizarBotaoDoMenu(); };
       const alternarPainel = function alternarPainel(painel, botao) {
         const abrir = painel.hidden;
+        tocarEfeito(abrir ? 'Enter' : 'Fecha');
         fecharPaineisDaBarra();
         if (abrir) { painel.hidden = false; botao.setAttribute('aria-expanded', 'true'); menuPrincipal.hidden = true; definirGavetaAberta(false); }
         atualizarBotaoDoMenu();
       };
-      botaoDaGaveta.onclick = () => { const abrir = conteudoDaGaveta.hidden; if (abrir) fecharMenuEPaineis(); definirGavetaAberta(abrir); };
+      botaoDaGaveta.onclick = () => { const abrir = conteudoDaGaveta.hidden; tocarEfeito(abrir ? 'Enter' : 'Fecha'); if (abrir) fecharMenuEPaineis(); definirGavetaAberta(abrir); };
       botaoDoTempo.onclick = () => alternarPainel(painelDoTempo, botaoDoTempo);
       botaoDoAudio.onclick = () => alternarPainel(painelDoAudio, botaoDoAudio);
       botaoDoMenu.onclick = () => { if (!menuPrincipal.hidden || algumPainelAberto()) fecharMenuEPaineis(); else abrirMenu(); };
       selecionar('#fechar-menu').onclick = fecharMenuEPaineis;
       selecionar('#fechar-painel').onclick = fecharMenuEPaineis;
-      selecionar('#voltar-ao-menu').onclick = abrirMenu;
+      selecionar('#voltar-ao-menu').onclick = () => {
+        tocarEfeito('fecha');
+        abrirMenu();
+      };
       // A janela do nome da fazenda é aberta pelo menu (seção 32): o menu fecha para a janela ficar sozinha na tela.
       selecionar('#botao-nome-da-fazenda').addEventListener('click', fecharMenuEPaineis);
       canvas.addEventListener('pointerdown', () => { if (!menuPrincipal.hidden) { menuPrincipal.hidden = true; atualizarBotaoDoMenu(); } });   // tocar no jogo fecha o menu (os painéis continuam abertos, como antes)
@@ -60,7 +66,7 @@
       // ---- painel do ciclo de dia e noite ----
       // Fazenda 8.4.1: os botões do modo do ciclo (pausar, dia fixo, noite fixa) são do Modo desenvolvedor (seção 32). O relógio fica visível.
       const botoesDeModo = [...painelDoTempo.querySelectorAll('[data-modo]')];
-      botoesDeModo.forEach(botao => { botao.onclick = () => { if (!modoDesenvolvedorAtivo) return; definirModoDoCiclo(botao.dataset.modo); atualizarPainelDeTempo(true); }; });
+      botoesDeModo.forEach(botao => { botao.onclick = () => { tocarEfeito('desenvolvedor'); if (!modoDesenvolvedorAtivo) return;  definirModoDoCiclo(botao.dataset.modo); atualizarPainelDeTempo(true); }; });
       // Nome do período (Madrugada, Amanhecer, Manhã, Tarde, Entardecer, Noite) para a hora informada.
       const periodoDoDia = hora => hora < 5 ? 'Madrugada' : hora < 7 ? 'Amanhecer' : hora < 12 ? 'Manhã' : hora < 17 ? 'Tarde' : hora < 19 ? 'Entardecer' : 'Noite';
       let ultimoMinutoMostrado = -1;
@@ -135,6 +141,7 @@
       });
       painelDoAudio.addEventListener('change', evento => {
         const elemento = evento.target, linha = elemento.closest('[data-cat]');
+        tocarEfeito(elemento.checked ? 'ativar' : 'desativar');
         if (elemento.dataset.animal) { ESTADO_DO_AUDIO.animais.individuais[elemento.dataset.animal] = elemento.checked; salvarPreferenciasDeAudio(); }
         else if (linha && elemento.dataset.acao === 'ligar') { if (elemento.checked && !ESTADO_DO_AUDIO.liberado) liberarAudio(); definirCategoriaDeAudio(linha.dataset.cat, elemento.checked); }
       });
@@ -144,3 +151,5 @@
 
 
       arquivoDaMontagemConcluido('24-paineis-de-tempo-e-audio.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
+
+      

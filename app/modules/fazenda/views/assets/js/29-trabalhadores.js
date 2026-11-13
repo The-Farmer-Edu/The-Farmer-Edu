@@ -71,14 +71,18 @@
         const indice = estado.candidatos.findIndex(candidato => candidato.id === idDoCandidato);
         if (indice < 0) return;
         const candidato = estado.candidatos[indice], custo = CLASSES_DE_TRABALHADORES[candidato.classe].custo;
-        if (vagasOcupadas() >= capacidadeDaCasa()) { mostrarAviso('A casa está cheia (' + vagasOcupadas() + '/' + capacidadeDaCasa() + ' vagas). Evolua a casa ou dispense alguém.'); return; }
-        if (estado.xp < custo) { mostrarAviso('XP insuficiente para contratar ' + candidato.nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
+        if (vagasOcupadas() >= capacidadeDaCasa()) { tocarEfeito('erro'); mostrarAviso('A casa está cheia (' + vagasOcupadas() + '/' + capacidadeDaCasa() + ' vagas). Evolua a casa ou dispense alguém.'); return; }
+        if (estado.xp < custo) { tocarEfeito('erro'); mostrarAviso('XP insuficiente para contratar ' + candidato.nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
         estado.candidatos.splice(indice, 1); estado.xp -= custo;                  // retira o candidato ANTES: um segundo clique não acha mais ninguém
         const dados = { ...candidato, vida: atributosDoTrabalhador(candidato).vidaMaxima, estado: 'ativo', xpInvestido: custo, emCasa: false };
         estado.trabalhadores.push(dados); garantirCandidatos();
+        avisarObjetivos('equipe', {});   // Etapa 2: quadro de objetivos (seção 30e)
         registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards(); tocarEfeito('contratar');   // 8.4.1: efeito sonoro
         mostrarAviso(CLASSES_DE_TRABALHADORES[dados.classe].icone + ' ' + dados.nome + ' foi contratado(a) e está saindo da casa!');
       };
+
+       
+
       const recuperarTrabalhador = function recuperarTrabalhador(idDoTrabalhador) {
         const dados = estado.trabalhadores.find(trabalhador => trabalhador.id === idDoTrabalhador);
         if (!dados || dados.estado !== 'morto') return;
@@ -108,9 +112,12 @@
         estado.trabalhadores.splice(indice, 1);                                     // sai dos dados ANTES de creditar: não há XP duplicado
         const entidade = trabalhadoresNaCena.get(dados.id); if (entidade) cancelarTarefa(entidade);
         removerEntidadeDoTrabalhador(dados.id);
+        tocarEfeito('demitir');
         estado.xp += recompensa; registrarOrigemDoXP('devolucoes', recompensa); registrarAtividade(); desenharCards();   // conta só o creditado (0 sem investimento)
         mostrarAviso('👋 ' + dados.nome + ' foi dispensado(a)' + (recompensa > 0 ? ': +' + recompensa + ' XP' : ' (sem devolução de XP)') + '. Vagas: ' + vagasOcupadas() + '/' + capacidadeDaCasa() + '.');
       };
+
+      registrarAtividade
 
       // ---- modelo 3D: o mesmo fazendeiro da seção 22, com roupa e equipamento da classe ----
       const aparenciaDoTrabalhador = function aparenciaDoTrabalhador(dados) {
@@ -307,6 +314,7 @@
       // ---- dano recebido ----
       const ferirTrabalhador = function ferirTrabalhador(entidade, dano, atacante) {
         if (entidade.estado === 'caido' || entidade.removido) return;
+        if (dano > 0) dano = Math.max(1, Math.round(dano * multiplicadorDoDanoRecebidoPelaEquipe()));   // Poção da Bravura: metade (seção 28c)
         entidade.dados.vida = Math.max(0, entidade.dados.vida - dano); marcarParaSalvar(); tocarEfeito('golpe', [entidade.x, entidade.z]);   // 8.4.1: efeito sonoro
         if (!entidade.alvo && atacante && !atacante.morto) { entidade.alvo = atacante; entidade.estado = 'combatendo'; }   // reage a quem o atacou
         if (entidade.dados.vida > 0) return;
@@ -379,7 +387,8 @@
         }
         for (const entidade of [...trabalhadoresNaCena.values()]) {
           const dados = entidade.dados, classe = CLASSES_DE_TRABALHADORES[dados.classe], atributos = atributosDoTrabalhador(dados);
-          entidade.velMax = atributos.velocidade;                                     // melhorias de velocidade valem na hora
+          // melhorias de velocidade valem na hora; a Poção da Aceleração (seção 28c) multiplica por 2 enquanto dura (nunca acumula)
+          entidade.velMax = atributos.velocidade * multiplicadorDaCaminhadaDosTrabalhadores();
           if (entidade.estado === 'caido') {                                           // cai, fica alguns segundos e some (continua no menu como morto)
             entidade.tempoCaido += segundosDesdeUltimoFrame;
             entidade.corpo.rotation.x = -Math.min(1, entidade.tempoCaido * 2) * Math.PI / 2; entidade.corpo.position.y = 0.15;
@@ -416,11 +425,11 @@
             if (distancia <= classe.alcance) {                                          // ao alcance: para, encara e golpeia (a precisão decide o acerto)
               entidade.velAlvo = 0; virarPara(entidade, alvo.x, alvo.z, segundosDesdeUltimoFrame);
               golpeando = true; entidade.recarga -= segundosDesdeUltimoFrame;
-              if (entidade.recarga <= 0) { entidade.recarga = classe.segundosEntreAtaques; if (Math.random() * 100 < atributos.precisao) ferirMonstro(alvo, Math.round(atributos.dano * sortearReal(0.85, 1.15)), entidade); }
+              if (entidade.recarga <= 0) { entidade.recarga = classe.segundosEntreAtaques; if (Math.random() * 100 < atributos.precisao) ferirMonstro(alvo, Math.round(atributos.dano * sortearReal(0.85, 1.15) * multiplicadorDoDanoDaEquipe()), entidade); }   // Poção da Bravura: 2× (28c)
             } else andarMob(entidade, segundosDesdeUltimoFrame, grade);
           } else if (entidade.tarefa && entidade.tarefa.fase === 'colhendo') {          // colhendo: o tempo depende da velocidade de tarefa e da classe
             entidade.velAlvo = 0; colhendo = true; virarPara(entidade, entidade.tarefa.alvoX, entidade.tarefa.alvoZ, segundosDesdeUltimoFrame);
-            entidade.tarefa.restante -= segundosDesdeUltimoFrame;
+            entidade.tarefa.restante -= segundosDesdeUltimoFrame * multiplicadorDaColheitaDosTrabalhadores();   // Poção da Aceleração: 8× (seção 28c)
             if (entidade.tarefa.restante <= 0) {                                         // fim da colheita: UMA colheita deste canteiro
               const { area, indice } = entidade.tarefa, ordem = entidade.ordem;
               cancelarTarefa(entidade);                                                 // libera a reserva antes de colher
@@ -449,3 +458,4 @@
       const criarTrabalhadoresSalvos = function criarTrabalhadoresSalvos() { garantirCandidatos(); for (const dados of estado.trabalhadores) if (dados.estado === 'ativo' && !dados.emCasa) criarEntidadeDoTrabalhador(dados, false); };   // quem está em casa fica em casa
 
       arquivoDaMontagemConcluido('29-trabalhadores.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
+

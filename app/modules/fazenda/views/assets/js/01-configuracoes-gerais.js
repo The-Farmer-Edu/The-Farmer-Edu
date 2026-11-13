@@ -100,12 +100,10 @@
       const BONUS_DA_EQUIPE_NA_COTA = { porTrabalhador: 3, niveisDeMelhoriaPorPonto: 5, maximoPorTrabalhador: 8, especialidade: { fazendeiro: 'lavoura', guarda: 'defesa' } };
       const RESERVA_DE_COTA_EM_DIAS = 1;
       const ECONOMIA_CONFIG = {
-        // Só em fazendas NOVAS (saves existentes não mudam). Etapa 1 — primeira construção no primeiro dia: com 0 XP, o aluno só
-        // ganhava a cota do dia (Lavoura 12 + 6 da plantação grátis + 3 do fazendeiro Juca = 21 XP) e a construção mais barata (ponte,
-        // 100 XP) saía no 5º dia; o curral (120 XP + 30 madeiras), no 6º. A madeira não era o problema (80 por dia). Com 100 XP
-        // iniciais, o primeiro dia rende 121: dá para UMA construção (ponte 100, ou curral e as demais instalações de animais 120
-        // depois de colher a cota do dia), nunca duas (220). Nenhum preço mudou; 100 XP são 0,5% dos ~20.900 XP do ano.
-        xpInicial: 0,                    // antes 0 (Etapa 1); antes da 8.4.1 final: 200. A 1ª plantação continua grátis (seção 32)
+        // Só em fazendas NOVAS: aplicado uma única vez, quando ainda não existe save (seção 05). Saves existentes nunca perdem XP.
+        // Etapa 3 — correção autorizada: o jogo volta a começar com 0 XP. (Na Etapa 1 tinha passado para 100 para permitir uma
+        // construção no 1º dia; com 0, a 1ª construção paga sai pela cota diária: ponte ~5º dia, curral ~6º.) Nenhum preço mudou.
+        xpInicial: 0,                      // Etapa 3: 0 (Etapa 1: 100; antes da 8.4.1 final: 200). A 1ª plantação continua grátis (seção 32)
         // Total do dia = soma das cotas das atividades AGORA (cresce com as construções e a equipe). Era um número fixo (100);
         // virou um getter para quem lê o "limite diário" (tutorial, painéis) mostrar sempre o valor real. Calculado na seção 27.
         get limiteDiarioDeXPDaFazenda() { return typeof somaDasCotasDiarias === 'function' ? somaDasCotasDiarias() : 0; },

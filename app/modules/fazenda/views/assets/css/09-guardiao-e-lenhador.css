@@ -432,3 +432,120 @@ body.em-evento-especial :is(#barra-topo, #lista-cards, #barra-ferramentas, #tuto
   .objetivo { grid-template-columns: 38px 1fr; gap: 10px; padding: 10px }
   .medalhao-do-objetivo { width: 38px; height: 38px; font-size: 19px }
 }
+
+/* ===== Etapa 3: CONQUISTAS E DIÁRIO DA FAZENDA (seção 30f) ===== */
+/* Botão do Diário: logo abaixo dos objetivos (mesmo estilo) */
+#barra-topo > #botao-diario {
+  position: absolute; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 138px); display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 16px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer
+}
+#barra-topo > #botao-diario[aria-expanded="true"] { background: var(--gaveta-madeira); color: #fff6e2 }
+#barra-topo > #botao-diario:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.novidade-do-diario { width: 9px; height: 9px; border-radius: 50%; background: #e74c3c; box-shadow: 0 0 0 2px var(--gaveta-papel) }
+.novidade-do-diario[hidden] { display: none }
+/* o cartão do tutorial desce para não cobrir os três botões (inventário, objetivos, diário) */
+#tutorial { top: calc(env(safe-area-inset-top, 0px) + 176px) }
+@media (max-width: 520px) {
+  #barra-topo > #botao-diario { left: 8px; top: calc(env(safe-area-inset-top, 0px) + 158px); font-size: 12px }
+  #tutorial { top: auto }
+  #tutorial.no-alto { top: calc(env(safe-area-inset-top, 0px) + 196px) }
+}
+
+/* ---- O livro ---- */
+.janela-do-diario { padding: 12px }
+.livro-do-diario { --couro: #6b3f1d; --couro-escuro: #4a2a12; --pagina: #fbf3df; --pagina-linha: #e9dcbc; --tinta: #3b2a1a; --tinta-suave: #6e5638;
+  display: flex; flex-direction: column; width: min(780px, 100%); max-height: min(90vh, 720px); box-sizing: border-box; padding: 0 10px 10px; border-radius: 16px;
+  background: linear-gradient(180deg, #7a4822, var(--couro)); border: 2px solid var(--couro-escuro); box-shadow: 0 10px 28px #0007, inset 0 0 0 4px #8a5a2e; color: var(--tinta) }
+.capa-do-diario { display: flex; align-items: center; gap: 10px; padding: 10px 6px 8px; color: #fbe7b8 }
+.capa-do-diario h2 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 21px; letter-spacing: .3px; text-shadow: 0 1px 0 #0008 }
+.nome-no-diario { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: Georgia, serif; font-style: italic; color: #e8c98c }
+.capa-do-diario .botao-fechar { background: #0003; color: #fbe7b8; box-shadow: none }
+.fitas-do-diario { display: flex; flex-shrink: 0; gap: 6px; padding: 4px 6px 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none }
+.capa-do-diario { flex-shrink: 0 }
+.fitas-do-diario button { flex: 0 0 auto; position: relative; padding: 8px 12px 10px; border: 0; border-radius: 10px 10px 0 0; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer;
+  background: #c79a5c; color: #3b2410; box-shadow: inset 0 -3px 0 #0002; transform: translateY(4px); transition: transform .12s, background .12s }
+.fitas-do-diario button:nth-child(1) { background: #d8a657 } .fitas-do-diario button:nth-child(2) { background: #b9a0e0 }
+.fitas-do-diario button:nth-child(3) { background: #e7c45a } .fitas-do-diario button:nth-child(4) { background: #9fc58a }
+.fitas-do-diario button.ativa { transform: translateY(0); box-shadow: none; z-index: 1 }
+.fitas-do-diario button:focus-visible { outline: 3px solid #fff3c4; outline-offset: -3px }
+.paginas-do-diario { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 20px 20px; border-radius: 4px 12px 12px 12px; color: var(--tinta);
+  background: repeating-linear-gradient(180deg, transparent 0 27px, var(--pagina-linha) 27px 28px), linear-gradient(90deg, #efe2c2 0, var(--pagina) 18px);
+  background-color: var(--pagina); box-shadow: inset 0 0 0 1px #d8c79c; overscroll-behavior: contain }
+.paginas-do-diario:focus-visible { outline: 3px solid #f2c94c; outline-offset: -3px }
+.titulo-da-pagina { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 22px; color: #6b3f1d }
+.subtitulo-da-pagina { margin: 2px 0 14px; font-family: Georgia, serif; font-style: italic; color: var(--tinta-suave) }
+.pagina-vazia { margin: 18px 0; padding: 14px; border: 1px dashed #c9b27e; border-radius: 10px; font-family: Georgia, serif; font-style: italic; color: var(--tinta-suave); text-align: center }
+.registros-do-diario { margin: 0; padding: 0; list-style: none }
+.registro-do-diario { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 10px 0; border-bottom: 1px dotted #c9b27e }
+.registro-do-diario:last-child { border-bottom: 0 }
+.icone-do-registro { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; font-size: 18px; background: #f3e4bf; border: 2px solid #d4b57a }
+.registro-do-diario b { display: block; font-family: Georgia, serif; font-size: 16px; color: #4a2a12 }
+.registro-do-diario p { margin: 3px 0 0; font-size: 14px; line-height: 1.45; color: var(--tinta) }
+.data-do-registro { display: block; font-size: 11.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: #9a6a2e }
+.vezes-do-registro { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 800; background: #ead7ff; color: #4b2d7f }
+.registros-do-diario.historias p { font-family: Georgia, serif; font-style: italic; font-size: 15px }
+.registros-do-diario.compactos .registro-do-diario { padding: 6px 0 }
+.registros-do-diario.compactos p { display: none }
+.titulo-dos-marcos { margin: 18px 0 4px; font-family: Georgia, serif; color: #6b3f1d }
+/* ---- Coleção: medalhas ---- */
+.grupo-de-medalhas h4 { margin: 14px 0 8px; font-family: Georgia, serif; font-size: 16px; color: #6b3f1d; border-bottom: 1px solid #d8c79c; padding-bottom: 3px }
+.medalhas { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none }
+.cartao-da-medalha { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 8px; border-radius: 12px; text-align: center; background: #fffaf0cc; border: 1px solid #dcc79c }
+.cartao-da-medalha b { font-family: Georgia, serif; font-size: 14px; line-height: 1.2; color: #4a2a12 }
+.cartao-da-medalha small { font-size: 11.5px; line-height: 1.3; color: var(--tinta-suave) }
+.tipo-da-medalha { font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #9a6a2e }
+.data-da-medalha { margin-top: 2px; font-size: 11px; font-weight: 800; color: #4f7a2f }
+.progresso-da-medalha { display: block; width: 100%; height: 6px; margin-top: 4px; border-radius: 999px; overflow: hidden; background: #e7dcc2 }
+.progresso-da-medalha i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #c9853f, #e7c45a) }
+.cartao-da-medalha.bloqueada { background: #f3ead6aa }
+.cartao-da-medalha.bloqueada b { color: #7d6a50 }
+.cartao-da-medalha.oculta { background: #ece3f7aa; border-style: dashed; border-color: #b9a0e0 }
+/* medalhão com fita: a fita é o ::before; o metal é a face */
+.medalha { --metal-claro: #e9b27a; --metal: #c98a4b; --metal-escuro: #8a5427; --fita-a: #4f9a3d; --fita-b: #3b7a2c;
+  position: relative; display: inline-grid; place-items: center; width: 58px; height: 66px; flex: 0 0 auto }
+.medalha::before { content: ""; position: absolute; top: 0; left: 50%; width: 26px; height: 22px; transform: translateX(-50%);
+  background: linear-gradient(90deg, var(--fita-a) 0 50%, var(--fita-b) 50%); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%) }
+.face-da-medalha { position: relative; margin-top: 12px; display: grid; place-items: center; width: 50px; height: 50px; border-radius: 50%; font-size: 24px;
+  background: radial-gradient(circle at 35% 30%, var(--metal-claro), var(--metal) 55%, var(--metal-escuro)); box-shadow: inset 0 0 0 3px #ffffff55, inset 0 -3px 0 #0002, 0 2px 0 #0003 }
+.medalha-comum { --metal-claro: #f0c08a; --metal: #c98a4b; --metal-escuro: #8a5427; --fita-a: #4f9a3d; --fita-b: #3b7a2c }
+.medalha-bronze { --metal-claro: #f1b37a; --metal: #b8733a; --metal-escuro: #7a4419; --fita-a: #c0392b; --fita-b: #962d22 }
+.medalha-prata { --metal-claro: #ffffff; --metal: #c3cbd3; --metal-escuro: #7f8a95; --fita-a: #3a78c2; --fita-b: #2c5c96 }
+.medalha-ouro { --metal-claro: #fff4b8; --metal: #e6b422; --metal-escuro: #9a7210; --fita-a: #c0392b; --fita-b: #f2c94c }
+.medalha-especial { --metal-claro: #fff1a8; --metal: #e0b23a; --metal-escuro: #8c6a14; --fita-a: #7d4fc4; --fita-b: #5b3496 }
+.medalha-especial .face-da-medalha { box-shadow: inset 0 0 0 3px #b48cff, inset 0 -3px 0 #0002, 0 2px 0 #0003 }
+.medalha-secreta { --metal-claro: #d9c7ff; --metal: #7d5bc4; --metal-escuro: #3d2770; --fita-a: #2b1b55; --fita-b: #ffd86b }
+.medalha-secreta .face-da-medalha { background: radial-gradient(1.5px 1.5px at 30% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 60%, #fff, transparent), radial-gradient(circle at 35% 30%, var(--metal-claro), var(--metal) 55%, var(--metal-escuro)) }
+.medalha.bloqueada { filter: grayscale(1); opacity: .45 }
+.medalha.oculta { filter: none; opacity: .8 }
+.medalha.oculta .face-da-medalha { color: #f3ecff; font-weight: 900; font-family: Georgia, serif; background: radial-gradient(circle at 35% 30%, #6d55a3, #3d2770 60%, #24164a) }
+.medalha.media { width: 50px; height: 58px }
+.medalha.media .face-da-medalha { width: 44px; height: 44px; font-size: 21px }
+/* ---- Aviso de conquista desbloqueada ---- */
+.aviso-de-conquista { position: fixed; z-index: 90; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 64px); display: flex; align-items: center; gap: 10px;
+  width: min(420px, calc(100vw - 24px)); box-sizing: border-box; padding: 10px 14px; border-radius: 14px; transform: translateX(-50%);
+  background: linear-gradient(180deg, #fffaf0, #f6ecd4); color: #3b2a1a; border: 2px solid #d4a62a; box-shadow: 0 6px 18px #0004; pointer-events: none }
+.aviso-de-conquista[hidden] { display: none }
+.aviso-de-conquista.entrando { animation: conquista-entra .26s ease-out both }
+.aviso-de-conquista.saindo { animation: conquista-sai .26s ease-in both }
+@keyframes conquista-entra { from { opacity: 0; transform: translate(-50%, -14px) scale(.96) } to { opacity: 1; transform: translate(-50%, 0) scale(1) } }
+@keyframes conquista-sai { from { opacity: 1; transform: translate(-50%, 0) } to { opacity: 0; transform: translate(-50%, -10px) } }
+@media (prefers-reduced-motion: reduce) { .aviso-de-conquista.entrando, .aviso-de-conquista.saindo { animation: none } }
+.texto-do-aviso-de-conquista { display: flex; flex-direction: column; min-width: 0 }
+.texto-do-aviso-de-conquista small { font-size: 11.5px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; color: #9a6a2e }
+.texto-do-aviso-de-conquista b { font-family: Georgia, serif; font-size: 17px; color: #4a2a12 }
+.texto-do-aviso-de-conquista span { font-size: 13px; color: #6e5638 }
+/* ---- Quadro de objetivos: ligação com as conquistas ---- */
+.conquista-do-objetivo { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; background: #f6dc7a; color: #5a3d0a }
+.abrir-colecao { display: block; width: 100%; margin: 10px 0 0; padding: 9px 12px; border: 2px solid #8a5a2e; border-radius: 12px; font: inherit; font-weight: 800; cursor: pointer;
+  background: linear-gradient(180deg, #a5703d, #8a5a2e); color: #fff6e2; box-shadow: 0 2px 0 #5e3b1c }
+.abrir-colecao:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+@media (max-width: 520px) {
+  .janela-do-diario { padding: 6px }
+  .livro-do-diario { max-height: 94vh; padding: 0 6px 6px }
+  .capa-do-diario h2 { font-size: 18px }
+  .fitas-do-diario button { padding: 7px 9px 9px; font-size: 12px }
+  .fitas-do-diario button span { display: none }
+  .fitas-do-diario button.ativa span { display: inline }
+  .paginas-do-diario { padding: 12px 12px 16px }
+  .medalhas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px }
+}

@@ -417,6 +417,8 @@ Testes (coleta real, o lenhador anda e corta):
 |---|---|---|---|
 | `ECONOMIA_CONFIG.xpInicial` (só saves NOVOS) | 0 | **100** | 100 + 21 do dia = 121 ≥ 120 (curral). Dá para **uma** construção no 1º dia (ponte 100, ou uma instalação de animais 120 depois de colher a cota), **nunca duas** (220). |
 
+> **Revertido na Etapa 3 (correção autorizada):** `xpInicial` voltou a **0**. Um save novo começa com 0 XP; saves existentes mantêm o XP que têm. A simulação abaixo descreve o comportamento da Etapa 1 e fica como histórico.
+
 * **Nenhum preço mudou.** Os saves existentes não mudam.
 * **Impacto no ano:** 100 XP são 0,5% dos ~20.900 XP de construções e evoluções.
 * **A partir do dia 2**, a cota é de 23–28 XP/dia (Lavoura 21 + Criação 2, + Defesa 5 à noite). A 2ª construção leva de 4 a 6 dias, como antes.
@@ -439,7 +441,7 @@ Testes (coleta real, o lenhador anda e corta):
 
 **Implementado: nenhuma alteração na economia.**
 * Os 27 objetivos dão só **reconhecimento**: selo no quadro, data da conquista e aviso.
-* O easter egg do ET é só visual. Não tira, não move e não muda a vaca; não gasta nem dá XP, madeira ou minério.
+* O easter egg do ET não gasta nem dá XP, madeira ou minério. (Na correção do ET, ele passou a levar a vaca de verdade por 20 s; a mesma vaca volta.)
 * Custos, limites, cotas e receitas não mudaram.
 
 ### Proposta (AGUARDANDO AUTORIZAÇÃO — não implementada)
@@ -453,3 +455,12 @@ Médias de XP por dia tiradas da simulação acima (XP total ÷ dias até a faze
 | C | só os principais, 10 XP cada (11) | 110 | ≈ −1 a −2 dias (≈ −0,6%) | ~50 XP no começo ≈ 2 dias a menos até a mina |
 
 **Recomendação: manter a A.** Se for desejado algum XP, a C é a única que não desequilibra o começo. Mesmo ela precisa de autorização e de entrar fora das cotas diárias, como as atividades escolares.
+
+## Etapa 3 — Conquistas e Diário da Fazenda (impacto econômico)
+
+**Única mudança na economia: `ECONOMIA_CONFIG.xpInicial` voltou de 100 para 0** (correção autorizada na seção 9 da Etapa 3).
+* Vale só para saves **novos** (aplicado quando não existe save). Saves existentes mantêm o XP; o save de referência continua com 4.598 XP depois de carregar.
+* Preços, cotas, limites e recompensas das atividades escolares não mudaram (a suíte de regressão da Etapa 2 deu os mesmos números).
+* As 21 conquistas dão só **reconhecimento**: medalha, data e registro no Diário. Não dão XP, madeira nem minério, e não existe moeda nova.
+* As conquistas são avaliadas só depois das ações do jogo (o mesmo aviso único do quadro de objetivos, com espera de 300 ms). Não há verificação por quadro.
+* Saves antigos: na primeira abertura, as conquistas que já tinham sido cumpridas são desbloqueadas **sem aviso** e registradas como "antes do Diário".

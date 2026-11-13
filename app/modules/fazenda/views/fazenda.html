@@ -59,6 +59,8 @@
     <button id="botao-inventario" aria-expanded="false" aria-controls="janela-inventario" title="Ver tudo o que você possui">🎒 Inventário</button>
     <!-- Etapa 2 (SEÇÃO 30e): quadro de objetivos, logo abaixo do inventário. No computador mostra o próximo objetivo principal. -->
     <button id="botao-objetivos" aria-expanded="false" aria-controls="janela-objetivos" title="Objetivos da fazenda">🎯 <span class="rotulo-dos-objetivos">Objetivos</span><span class="proximo-objetivo" id="proximo-objetivo"></span><span class="novidade-dos-objetivos" id="novidade-dos-objetivos" hidden aria-label="Objetivo novo concluído"></span></button>
+    <!-- Etapa 3 (SEÇÃO 30f): Diário da Fazenda (Minha Fazenda, Descobertas, Coleção de conquistas e Histórias), abaixo dos objetivos -->
+    <button id="botao-diario" aria-expanded="false" aria-controls="janela-diario" title="Diário da Fazenda: história, descobertas e conquistas">📖 <span class="rotulo-do-diario">Diário</span><span class="novidade-do-diario" id="novidade-do-diario" hidden aria-label="Registro novo no Diário"></span></button>
     <!-- Efeitos das poções ativos (SEÇÃO 28c): ícone e tempo restante, ao lado do inventário; some quando não há nenhum -->
     <div id="efeitos-das-pocoes" role="status" aria-label="Efeitos de poções ativos" hidden></div>
   </div>
@@ -207,6 +209,16 @@
     </div>
   </div>
   <!-- Inventário geral (SEÇÃO 27b): o conteúdo é desenhado pelo JavaScript a partir de estado.recursos e estado.pocoes. -->
+  <!-- Etapa 3 (SEÇÃO 30f): Diário da Fazenda, em forma de livro. As medalhas das conquistas ficam na aba "Coleção". -->
+  <div id="janela-diario" class="janela-npc janela-do-diario" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-diario">
+    <section class="livro-do-diario">
+      <header class="capa-do-diario"><h2 id="titulo-diario">📖 Diário da Fazenda</h2><span class="nome-no-diario" id="nome-no-diario"></span><button type="button" class="botao-fechar" id="fechar-diario" aria-label="Fechar o Diário">✕</button></header>
+      <nav class="fitas-do-diario" role="tablist" aria-label="Partes do Diário"><button type="button" role="tab" data-aba-diario="fazenda" aria-controls="paginas-do-diario">🏡 <span>Minha Fazenda</span></button><button type="button" role="tab" data-aba-diario="descobertas" aria-controls="paginas-do-diario">✨ <span>Descobertas</span></button><button type="button" role="tab" data-aba-diario="colecao" aria-controls="paginas-do-diario">🏅 <span>Coleção</span></button><button type="button" role="tab" data-aba-diario="historias" aria-controls="paginas-do-diario">📜 <span>Histórias</span></button></nav>
+      <div class="paginas-do-diario" id="paginas-do-diario" role="tabpanel" tabindex="0"></div>
+    </section>
+  </div>
+  <!-- Etapa 3: aviso de conquista desbloqueada (um único elemento, reaproveitado; animação curta) -->
+  <div id="aviso-de-conquista" class="aviso-de-conquista" hidden role="status" aria-live="polite"></div>
   <!-- Etapa 2 (SEÇÃO 30e): quadro de objetivos. Poucos em destaque ("Agora") e a lista completa sob demanda. -->
   <div id="janela-objetivos" class="janela-npc" hidden role="dialog" aria-modal="true" aria-labelledby="titulo-objetivos">
     <section class="cartao-npc cartao-dos-objetivos">

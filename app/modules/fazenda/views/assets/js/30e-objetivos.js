@@ -158,6 +158,8 @@
         const descoberta = abertos.find(item => item.objetivo.categoria === 'descoberta');
         return [principal, atividade, descoberta].filter(Boolean);
       };
+      // Etapa 3: conquista ligada ao objetivo (seção 30f), mostrada quando o objetivo e a conquista estão concluídos.
+      const conquistaDoObjetivo = (idDoObjetivo, situacao) => { const conquista = situacao === 'concluido' && window.farmEduConquistas ? window.farmEduConquistas.relacionadaAoObjetivo(idDoObjetivo) : null; return conquista && conquista.desbloqueada ? `<span class="conquista-do-objetivo">🏆 Conquista: ${conquista.icone} ${conquista.nome}</span>` : ''; };
       const htmlDoObjetivo = function htmlDoObjetivo(item, compacto = false) {
         const { objetivo, estado: situacao, atual } = item, categoria = CATEGORIAS_DOS_OBJETIVOS[objetivo.categoria];
         const oculto = objetivo.secreto && situacao !== 'concluido';
@@ -171,12 +173,12 @@
             <b class="nome-do-objetivo">${nome}</b>
             <p class="descricao-do-objetivo">${descricao}</p>
             ${oculto ? '' : `<div class="progresso-do-objetivo"><span class="barra-do-objetivo" role="progressbar" aria-label="Progresso: ${nome}" aria-valuemin="0" aria-valuemax="${objetivo.meta}" aria-valuenow="${atual}"><i style="width:${porcento}%"></i></span><span class="contagem-do-objetivo">${atual} / ${objetivo.meta}</span></div>`}
-            <span class="recompensa-do-objetivo">${situacao === 'concluido' ? '🏅 Selo conquistado em ' + dataCurta(estado.objetivos.concluidos[objetivo.id]) : '🏅 Recompensa: selo de reconhecimento'}</span>
+            <span class="recompensa-do-objetivo">${situacao === 'concluido' ? '🏅 Selo conquistado em ' + dataCurta(estado.objetivos.concluidos[objetivo.id]) : '🏅 Recompensa: selo de reconhecimento'}</span>${conquistaDoObjetivo(objetivo.id, situacao)}
           </div></article>`;
       };
       const desenharQuadroDeObjetivos = function desenharQuadroDeObjetivos() {
         const itens = OBJETIVOS_DA_FAZENDA.map(objetivo => ({ objetivo, ...situacaoDoObjetivo(objetivo) }));
-        const assinatura = JSON.stringify([listaCompletaAberta, itens.map(item => item.estado[0] + item.atual)]);
+        const assinatura = JSON.stringify([listaCompletaAberta, itens.map(item => item.estado[0] + item.atual), window.farmEduConquistas ? window.farmEduConquistas.resumo().desbloqueadas : 0]);   // Etapa 3: conquistas novas também redesenham
         if (assinatura === assinaturaDoQuadro) return;
         assinaturaDoQuadro = assinatura;
         const visiveis = itens.filter(item => item.estado !== 'bloqueado'), concluidos = itens.filter(item => item.estado === 'concluido').length;
@@ -194,6 +196,7 @@
           <button type="button" class="ver-todos-os-objetivos" id="ver-todos-os-objetivos" aria-expanded="${listaCompletaAberta}" aria-controls="todos-os-objetivos">${listaCompletaAberta ? '▲ Esconder a lista completa' : '📜 Ver todos os objetivos (' + visiveis.length + ')'}</button>
           <div class="todos-os-objetivos" id="todos-os-objetivos"${listaCompletaAberta ? '' : ' hidden'}>${grupos}
             ${aindaVirao ? `<p class="objetivos-futuros">🔒 Mais ${aindaVirao} ${aindaVirao === 1 ? 'objetivo aparece' : 'objetivos aparecem'} conforme sua fazenda cresce.</p>` : ''}</div>
+          ${window.farmEduConquistas ? `<button type="button" class="abrir-colecao" id="abrir-colecao-dos-objetivos">📖 Ver conquistas no Diário (${window.farmEduConquistas.resumo().desbloqueadas} de ${window.farmEduConquistas.resumo().total})</button>` : ''}
           <p class="dica-dos-objetivos">Os objetivos dão <b>selos de reconhecimento</b>. Eles não dão XP nem recursos: são para você acompanhar a sua fazenda.</p>`;
       };
       const atualizarBotaoDosObjetivos = function atualizarBotaoDosObjetivos() {
@@ -217,6 +220,7 @@
       janelaDosObjetivos.addEventListener('click', evento => {
         if (evento.target === janelaDosObjetivos) { fecharQuadroDeObjetivos(); return; }
         if (evento.target.closest('#ver-todos-os-objetivos')) { listaCompletaAberta = !listaCompletaAberta; desenharQuadroDeObjetivos(); selecionar('#ver-todos-os-objetivos').focus(); }
+        if (evento.target.closest('#abrir-colecao-dos-objetivos') && window.farmEduConquistas) window.farmEduConquistas.abrirDiario('colecao');   // Etapa 3
       });
       addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDosObjetivos.hidden) fecharQuadroDeObjetivos(); });
 

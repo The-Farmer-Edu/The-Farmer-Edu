@@ -30,7 +30,7 @@ Baseado na documentação real (Requisitos, Regras de Negócio e Modelagem — V
 | Nº | Issue | Relacionado | Prioridade | Status |
 |---|---|---|---|---|
 | 10 | Criar tabelas `cursos`, `turmas`, `matriculas` | — | Must | 🟢 |
-| 11 | CRUD de cursos | — | Should | 🔴 depende de #10 |
+| 11 | CRUD de cursos | — | Should | 🟢 depende de #10 |
 | 12 | Instrutor cria turma associada a um curso | RF02 | Must | 🟢 depende de #10, #7 |
 | 13 | Instrutor visualiza turmas e alunos matriculados | RF03 | Must | 🟢 depende de #12 |
 | 14 | Matricular aluno em turma | pré-requisito de RN01/RN02 | Must | 🟢 depende de #10, #8 |

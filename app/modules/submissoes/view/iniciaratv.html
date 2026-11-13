@@ -135,7 +135,7 @@
     <div class="toast" id="toast" role="status"></div>
 
     <!-- A mesma estratégia de JSON em bloco permite ao JS montar a atividade sem nova chamada de API. -->
-   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="submissoes/file?type=js&file=main.js"></script>
 
 </html>

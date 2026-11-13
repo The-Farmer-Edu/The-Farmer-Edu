@@ -45,30 +45,30 @@ class atividadesSub {
         require_once __DIR__ . '/view/processar_submissao.php';
     }
 
-/**
- * Lê ?id= da URL e busca a atividade no banco.
- * Sem id válido ou sem registro, devolve null (a tela fica vazia e bloqueada).
- */
-private function carregarAtividade(): ?array {
-    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
-    if (!$id || $id < 1) return null;
+    /**
+     * Lê ?id= da URL e busca a atividade no banco.
+     * Sem id válido ou sem registro, devolve null (a tela fica vazia e bloqueada).
+     */
+    private function carregarAtividade(): ?array {
+        $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+        if (!$id || $id < 1) return null;
 
-    try {
-        return (new SubmissoesModel())->dadosParaView($id);
-    } catch (Throwable $e) {
-        error_log('[submissoes] ' . $e->getMessage());
-        return null;
+        try {
+            return (new SubmissoesModel())->dadosParaView($id);
+        } catch (Throwable $e) {
+            error_log('[submissoes] ' . $e->getMessage());
+            return null;
+        }
     }
-}
-public function showaluno() {
-    $dadosAtividade = $this->carregarAtividade();
-    require_once __DIR__ . '/view/aluno.html';
-}
+    public function showaluno() {
+        $dadosAtividade = $this->carregarAtividade();
+        require_once __DIR__ . '/view/aluno.html';
+    }
 
-public function showiniciarAtv() {
-    $dadosAtividade = $this->carregarAtividade();
-    require_once __DIR__ . '/view/iniciaratv.html';
-}
+    public function showiniciarAtv() {
+        $dadosAtividade = $this->carregarAtividade();
+        require_once __DIR__ . '/view/iniciaratv.html';
+    }
 
     /**
      * Serve arquivos estáticos internos da pasta view/assets.

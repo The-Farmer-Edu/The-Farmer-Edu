@@ -197,6 +197,22 @@ CREATE TABLE feedback_ia (
   UNIQUE KEY uq_feedback_submissao (id_submissao)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE analise_ia_codigo(
+  id_analise         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_aluno       INT UNSIGNED  NOT NULL,
+  id_atividade       INT UNSIGNED  NOT NULL,
+  percentual_ia     DECIMAL(5,2)  NOT NULL,
+  motivo_ia          TEXT          NULL,
+  criado_em          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_analise_aluno
+    FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_analise_atividade
+    FOREIGN KEY (id_atividade) REFERENCES atividades(id_atividade)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------------------------------------------------------------------
 -- 10. NOTAS  [Nota]  — 1:0..1 com Submissão
 -- origem='ia' até que um instrutor valide (RF06/RN04); nesse momento

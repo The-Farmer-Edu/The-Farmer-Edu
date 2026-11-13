@@ -28,6 +28,43 @@
 #botao-modo-leve .estado-modo-leve { font-size: 11px; opacity: .75; margin-left: 2px }
 #botao-modo-leve[aria-pressed="true"] { background: #ffd23f; color: #3b2a1a; outline: 2px solid #c99a00 }
 #botao-modo-leve[aria-pressed="true"] .estado-modo-leve { opacity: 1; font-weight: 700 }
+/* Etapa 0b: seletor de qualidade gráfica — cartão de papel com 4 opções (grupo de rádio). Baixa = antigo Modo Leve.
+   Usa as cores da gaveta (claro/escuro): escolhido em dourado como os itens ativos do menu; barras verdes = peso do nível;
+   o ponto verde marca o nível que a Automática está usando agora. */
+#menu-principal .seletor-de-qualidade { background: var(--gaveta-cartao); color: var(--gaveta-texto); border: 1px solid var(--gaveta-borda); border-radius: 14px; box-shadow: 0 2px 0 var(--gaveta-borda); padding: 9px 9px 8px; box-sizing: border-box }
+.seletor-de-qualidade .cabeca-da-qualidade { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 8px }
+.seletor-de-qualidade h4 { margin: 0; font-size: 13.5px; font-weight: 800; color: var(--gaveta-titulo); white-space: nowrap }
+.seletor-de-qualidade .selo-da-qualidade { font-size: 10.5px; font-weight: 800; line-height: 1.2; padding: 3px 7px; border-radius: 999px; background: color-mix(in srgb, var(--destaque) 14%, transparent); color: var(--destaque); border: 1px solid color-mix(in srgb, var(--destaque) 40%, transparent); white-space: nowrap; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
+.seletor-de-qualidade .selo-da-qualidade:empty { display: none }
+.seletor-de-qualidade .opcoes-de-qualidade { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 12px; background: var(--gaveta-cartao-vazio) }
+.seletor-de-qualidade .opcao-de-qualidade { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; padding: 7px 2px 6px; border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--gaveta-texto-suave); font: inherit; cursor: pointer; transition: background-color .15s, transform .15s, box-shadow .15s, color .15s }
+.seletor-de-qualidade .opcao-de-qualidade:hover { background: var(--gaveta-cartao); color: var(--gaveta-texto); transform: translateY(-1px) }
+.seletor-de-qualidade .opcao-de-qualidade:focus-visible { outline: 2px solid var(--destaque); outline-offset: 1px }
+.seletor-de-qualidade .icone-da-opcao { font-size: 19px; line-height: 1; filter: grayscale(.45) opacity(.85); transition: transform .2s, filter .2s }
+.seletor-de-qualidade .opcao-de-qualidade b { font-size: 11px; font-weight: 800; letter-spacing: .1px }
+.seletor-de-qualidade .barras-da-opcao { display: flex; align-items: flex-end; gap: 2px; height: 9px }
+.seletor-de-qualidade .barras-da-opcao i { width: 4px; border-radius: 2px; background: var(--gaveta-borda) }
+.seletor-de-qualidade .barras-da-opcao i:nth-child(1) { height: 4px }
+.seletor-de-qualidade .barras-da-opcao i:nth-child(2) { height: 6.5px }
+.seletor-de-qualidade .barras-da-opcao i:nth-child(3) { height: 9px }
+.seletor-de-qualidade .nivel-1 i:nth-child(-n+1), .seletor-de-qualidade .nivel-2 i:nth-child(-n+2), .seletor-de-qualidade .nivel-3 i:nth-child(-n+3) { background: var(--destaque) }
+/* Automática: as barras "procuram" o nível (animação suave; parada para quem prefere menos movimento) */
+.seletor-de-qualidade [data-qualidade="auto"] .barras-da-opcao i { background: var(--destaque); animation: barras-da-qualidade-auto 1.8s ease-in-out infinite }
+.seletor-de-qualidade [data-qualidade="auto"] .barras-da-opcao i:nth-child(2) { animation-delay: .2s }
+.seletor-de-qualidade [data-qualidade="auto"] .barras-da-opcao i:nth-child(3) { animation-delay: .4s }
+@keyframes barras-da-qualidade-auto { 0%, 100% { opacity: .35 } 50% { opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .seletor-de-qualidade [data-qualidade="auto"] .barras-da-opcao i { animation: none; opacity: .8 } }
+/* escolhida: dourado, como os itens ativos do menu */
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"] { background: linear-gradient(#f6dc7a, #e0b04a); color: #3b2a1a; border-color: #b7892a; box-shadow: 0 2px 0 #b7892a, inset 0 1px 0 #fff9 }
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"] .icone-da-opcao { filter: none; transform: scale(1.1) }
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"] .barras-da-opcao i { background: #3b2a1a33 }
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"] .nivel-1 i:nth-child(-n+1),
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"] .nivel-2 i:nth-child(-n+2),
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"] .nivel-3 i:nth-child(-n+3),
+.seletor-de-qualidade .opcao-de-qualidade[aria-checked="true"][data-qualidade="auto"] .barras-da-opcao i { background: #2f6b25 }
+/* nível em uso pela Automática: ponto verde no canto */
+.seletor-de-qualidade .opcao-de-qualidade.em-uso::after { content: ""; position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--destaque); box-shadow: 0 0 0 2px var(--gaveta-cartao-vazio) }
+.seletor-de-qualidade .descricao-da-qualidade { margin: 7px 2px 0; font-size: 11.5px; line-height: 1.35; color: var(--gaveta-texto-suave); min-height: 2.7em }
 .painel { background: var(--fundo-card); color: var(--texto); border-radius: 16px; padding: 12px; box-shadow: 0 4px 14px #0004; width: min(300px, calc(100vw - 24px)); max-height: calc(100vh - 190px); overflow-y: auto; font-size: 13px; box-sizing: border-box }
 .painel[hidden] { display: none }
 .painel h3 { margin: 0 0 8px; font-size: 15px }
@@ -51,6 +88,26 @@ input[type=range], input[type=checkbox] { accent-color: var(--destaque) }
 .animal-audio { display: block; padding: 3px 0 }
 .animal-audio span { font-size: 11px; color: #c0392b }
 .dica-audio { margin: 8px 0 0; font-size: 11px; opacity: .7 }
+
+/* NPCs da mina e da floresta: mantêm a moldura de madeira e o papel dos painéis do jogo. */
+.janela-npc { position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center; padding: 16px; background: #0008 }
+.janela-npc[hidden] { display: none }
+.cartao-npc { width: min(420px, 100%); max-height: min(90vh, 640px); overflow-y: auto; box-sizing: border-box; padding: 0 16px 16px; border: 3px solid var(--gaveta-madeira); border-radius: 18px; color: var(--gaveta-texto); background: var(--gaveta-papel) radial-gradient(#7a4e2612 1px, transparent 1px) 0 0 / 12px 12px; box-shadow: 0 4px 0 var(--gaveta-madeira-escura), 0 10px 24px #0007 }
+.cabecalho-npc { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 -16px 12px; padding: 10px 14px; color: #fff6e2; background: linear-gradient(180deg, #a5703d, var(--gaveta-madeira) 55%, var(--gaveta-madeira-escura)) }
+.cabecalho-npc h2 { margin: 0; font-size: 18px }
+.cabecalho-npc .botao-fechar { border: 0; border-radius: 8px; padding: 6px 9px; color: inherit; background: #ffffff20; cursor: pointer }
+.resumo-npc { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; padding: 12px; border: 1px solid var(--gaveta-borda); border-radius: 12px; background: var(--gaveta-cartao) }
+.resumo-npc b { text-align: right }
+.cartao-npc label { display: block; margin: 14px 0 6px; font-weight: 700 }
+.cartao-npc input { width: 100%; box-sizing: border-box; border: 2px solid var(--gaveta-madeira); border-radius: 9px; padding: 9px; color: var(--gaveta-texto); background: var(--gaveta-cartao); font: inherit }
+.quantidades-npc { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px }
+.quantidades-npc button { border: 1px solid var(--gaveta-borda); border-radius: 8px; padding: 6px 10px; color: var(--gaveta-texto); background: var(--gaveta-cartao); cursor: pointer }
+.previa-npc, .resumo-confirmacao-npc { padding: 10px; border-radius: 10px; background: var(--gaveta-cartao); font-weight: 700 }
+.erro-npc { min-height: 1.2em; color: #a92f25; font-size: 13px }
+.acoes-npc { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px }
+.acoes-npc .botao-pequeno { min-height: 40px }
+.acoes-npc button:disabled { opacity: .55; cursor: not-allowed }
+.cartao-npc [hidden] { display: none }
 
 /* ===== Fazenda 8.4 (D2): a identidade da gaveta de construções (madeira, papel, botões com volume; tokens --gaveta-* em
    01-base.css) aplicada à barra superior, ao menu, aos painéis Tempo, Áudio, Fazenda e Equipe e às janelas. As regras ficam

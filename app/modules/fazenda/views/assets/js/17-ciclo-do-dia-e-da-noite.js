@@ -76,7 +76,7 @@
         const acesas = 1 - suavizar(-0.1, 0.14, elevacaoDoSol); ESTADO_DO_CEU.noite = acesas; CICLO_DE_DIA_E_NOITE.acesas = acesas;
         materialDaLanterna.color.copy(COR_APAGADA_DA_LANTERNA).lerp(COR_ACESA_DA_LANTERNA, acesas);
         materialDaChama.color.copy(COR_APAGADA_DA_CHAMA).lerp(COR_ACESA_DA_CHAMA, acesas);
-        const reforcoDosBrilhos = MODO_LEVE.ativo ? MODO_LEVE.reforcoDosBrilhos : 1;   // Modo Leve compensa a falta das luzes reais
+        const reforcoDosBrilhos = perfilDaQualidade().luzesDosPostes ? 1 : MODO_LEVE.reforcoDosBrilhos;   // reforço só se o nível não tiver luzes reais (Etapa 0b: todos têm)
         materialDoBrilhoNoChao.opacity = Math.min(1, acesas * 0.6 * reforcoDosBrilhos); materialDoHalo.opacity = Math.min(1, acesas * 0.85 * reforcoDosBrilhos);
         materialDoBrilhoNoChao.visible = materialDoHalo.visible = acesas > 0.01;
       };

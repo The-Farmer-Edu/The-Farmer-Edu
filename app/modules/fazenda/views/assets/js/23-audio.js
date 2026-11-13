@@ -249,7 +249,7 @@ const atualizarSonsDosAnimais = function atualizarSonsDosAnimais(segundosDesdeUl
   const limitesGlobais = AUDIO_CONFIG.animais.global;
   for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {
     const configuracao = AUDIO_CONFIG.animais[tipo], variacoes = FONTES_DE_SOM.animais[tipo];   // AQUI: variacoes (lista) no lugar de fonteDeSom
-    const disponiveis = variacoes.filter(f => f.estado !== 'erro');                               // AQUI: só as variações cujo arquivo existe
+    const disponiveis = variacoes.filter(f => f.estado !== 'erro');                              // AQUI: só as variações cujo arquivo existe
     if (agendaDosAnimais.proximo[tipo] === undefined) agendaDosAnimais.proximo[tipo] = 4 + Math.random() * configuracao.intervaloMax * 0.6;
     if ((agendaDosAnimais.proximo[tipo] -= segundosDesdeUltimoFrame) > 0) continue;
     agendaDosAnimais.proximo[tipo] = sortearIntervalo(configuracao);
@@ -349,6 +349,7 @@ canvas.addEventListener('pointerup', evento => {
 const ativarPedraSecreta = function ativarPedraSecreta() {
   pedraSecreta.pulso = 1;
   tocarSegredo('pedraSecreta');
+  avisarObjetivos('pedra-secreta', {});   // Etapa 2: descoberta do quadro de objetivos (seção 30e)
 };
 
 arquivoDaMontagemConcluido('23-audio.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

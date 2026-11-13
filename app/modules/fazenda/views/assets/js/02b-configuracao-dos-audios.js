@@ -68,8 +68,8 @@ const AUDIO_CONFIG = {
 
   // Sons ambientes contínuos (loop). O volume diminui com a distância entre a câmera e a fonte do som.
   ambiente: {
-    cachoeira: { arquivo: 'assets/audio/SFX/areas-do-jogo/cachoeira.wav', volume: 0.2, distanciaMaxima: 60, volumeMinimoDeLonge: 0.03 },
-    fonte: { arquivo: 'assets/audio/SFX/areas-do-jogo/fonte.wav', volume: 0.2, distanciaMaxima: 60, volumeMinimoDeLonge: 0.05 },
+    cachoeira: { arquivo: 'assets/audio/SFX/areas-do-jogo/cachoeira.mp3', volume: 0.2, distanciaMaxima: 60, volumeMinimoDeLonge: 0.03 },
+    fonte: { arquivo: 'assets/audio/SFX/areas-do-jogo/fonte.mp3', volume: 0.2, distanciaMaxima: 60, volumeMinimoDeLonge: 0.05 },
     trator: { arquivo: 'assets/audio/SFX/areas-do-jogo/trator.mp3', volume: 1, distanciaMaxima: 45, volumeMinimoDeLonge: 0 },
     riacho: { arquivo: 'assets/audio/SFX/areas-do-jogo/riacho.mp3', volume: 1, distanciaMaxima: 50, volumeMinimoDeLonge: 0.04 },
     mina: { arquivo: 'assets/audio/SFX/areas-do-jogo/carrinho.mp3', volume: 0.7 },

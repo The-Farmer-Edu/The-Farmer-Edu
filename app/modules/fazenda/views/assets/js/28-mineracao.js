@@ -6,9 +6,9 @@
       // arquivos da fazenda, e const, let e class não criam propriedades em window (o recuo original foi mantido).
       // ====================================================================================================
       // ====================================================================================================
-      // SEÇÃO 28 — MINERAÇÃO: CICLO DO CARRINHO, MINÉRIOS E XP (MARK 8.2)
+      // SEÇÃO 28 — MINERAÇÃO: CICLO DO CARRINHO E MINÉRIOS (MARK 8.2; sem XP desde a etapa da alquimia)
       // Máquina de estados salva em estado.mina: parado → indo (vazio, nos trilhos) → minerando (dentro do escuro por
-      // MINERACAO_CONFIG.minutosMinerando) → voltando (carregado) → descarregando (minérios e XP creditados UMA vez) → indo...
+      // MINERACAO_CONFIG.minutosMinerando) → voltando (carregado) → descarregando (minérios creditados UMA vez) → indo...
       // Os tempos usam o relógio real (agoraNoJogo), então recarregar a página não repete nem pula recompensas. Tempo com a página
       // fechada conclui no máximo o ciclo em andamento (o próximo começa quando o jogo é aberto).
       // ====================================================================================================
@@ -17,10 +17,13 @@
       const segundosDeViagemDoCarrinho = () => MINA_GEOMETRIA.comprimento / MINERACAO_CONFIG.velocidadeDoCarrinhoPorNivel[Math.max(1, estado.niveis.mina) - 1];
       const mudarFaseDaMina = function mudarFaseDaMina(fase, inicioDaFase) { estado.mina.fase = fase; estado.mina.inicioDaFase = inicioDaFase; salvarProgresso(); };
       const concluirCicloDaMina = function concluirCicloDaMina() {
-        const nivel = estado.niveis.mina, minerios = MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1], xp = MINERACAO_CONFIG.xpPorCicloPorNivel[nivel - 1];
+        // Etapa da alquimia: a viagem entrega SOMENTE minérios. Não credita XP e não toca no Limite da alquimia (estado.cotasDoDia):
+        // o XP vem depois, se o jogador transformar os minérios em Poção de Experiência no Guardião (seção 28b).
+        const nivel = estado.niveis.mina, minerios = MINERACAO_CONFIG.mineriosPorCicloPorNivel[nivel - 1];
         estado.recursos.minerios += minerios; estado.mina.ciclos++;
-        const xpCreditado = creditarXP(xp);                                         // salva (respeita o limite diário da Fazenda)
-        mostrarAviso('⛏ O carrinho voltou da mina com ' + minerios + ' minérios! ' + textoDoXPDaFazenda(xpCreditado, xp));
+        salvarProgresso(); atualizarResumoDeRecursos();
+        mostrarAviso('⛏ O carrinho voltou da mina com ' + minerios + ' minérios! Leve-os ao 🧙 Guardião para preparar poções.');
+        avisarObjetivos('mina', { minerios });   // Etapa 2: quadro de objetivos (seção 30e; as viagens já ficam em estado.mina.ciclos)
       };
       // Texto curto do estado da mina (cartão, painel e clique no cartão).
       const textoDoEstadoDaMina = function textoDoEstadoDaMina() {

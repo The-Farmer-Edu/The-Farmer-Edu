@@ -35,6 +35,16 @@ CREATE TABLE usuarios (
   UNIQUE KEY uq_usuarios_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE recuperacao_senha (
+    id_recuperacao INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_usuario     INT UNSIGNED NOT NULL,
+    codigo_hash    VARCHAR(255) NOT NULL,
+    expira_em      DATETIME NOT NULL,
+    tentativas     INT NOT NULL DEFAULT 0,
+    criado_em      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ---------------------------------------------------------------------
 -- 2. INSTRUTORES  [Instrutor]
 -- ---------------------------------------------------------------------
@@ -217,6 +227,12 @@ CREATE TABLE fazendas (
   id_aluno        INT UNSIGNED  NOT NULL,
   nivel           INT UNSIGNED  NOT NULL DEFAULT 1,
   estado_visual   VARCHAR(50)   NOT NULL DEFAULT 'inicial',
+  -- [Fazenda/backend] save do jogo no banco (ver sql/fazenda_alteracoes.sql)
+  nome_fazenda    VARCHAR(60)   NOT NULL DEFAULT 'FarmEdu',
+  estado          LONGTEXT      NULL,
+  versao_estado   INT UNSIGNED  NOT NULL DEFAULT 0,
+  revisao         INT UNSIGNED  NOT NULL DEFAULT 0,
+  sessao_ativa    VARCHAR(40)   NULL,       -- [Fazenda/backend] código da página aberta por último (só ela salva)
   atualizado_em   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                   ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_fazendas_aluno
@@ -234,13 +250,15 @@ CREATE TABLE fazendas (
 CREATE TABLE elementos_fazenda (
   id_elemento    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_fazenda     INT UNSIGNED  NOT NULL,
+  codigo         VARCHAR(40)   NOT NULL,   -- [Fazenda/backend] id da área no jogo (casa, celeiro, curral, mina...)
   tipo           ENUM('construcao', 'plantacao', 'animal') NOT NULL,
   nivel          INT UNSIGNED  NOT NULL DEFAULT 1,
   criado_em      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_elementos_fazenda
     FOREIGN KEY (id_fazenda) REFERENCES fazendas(id_fazenda)
     ON DELETE CASCADE ON UPDATE CASCADE,
-  INDEX idx_elementos_fazenda (id_fazenda)
+  INDEX idx_elementos_fazenda (id_fazenda),
+  UNIQUE KEY uq_elementos_fazenda_codigo (id_fazenda, codigo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -255,13 +273,15 @@ CREATE TABLE xp_logs (
   motivo         VARCHAR(255)  NOT NULL,
   id_nota        INT UNSIGNED  NULL,
   data           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  entregue_em    DATETIME      NULL,       -- [Fazenda/backend] NULL = ainda não aplicado no jogo do aluno
   CONSTRAINT fk_xplogs_aluno
     FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT fk_xplogs_nota
     FOREIGN KEY (id_nota) REFERENCES notas(id_nota)
     ON DELETE SET NULL ON UPDATE CASCADE,
-  INDEX idx_xplogs_aluno (id_aluno)
+  INDEX idx_xplogs_aluno (id_aluno),
+  INDEX idx_xplogs_pendentes (id_aluno, entregue_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

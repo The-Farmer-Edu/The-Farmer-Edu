@@ -5,10 +5,13 @@ const modalEntrega = porId('modalEntrega');
 
 function atualizarContadores() {
     const execucoesRestantes = Math.max(0, LIMITE_EXECUCOES - usosExecutar);
+    const sophiaRestantes = Math.max(0, LIMITE_SOPHIA - usosSophia);
     const cancelamentosRestantes = Math.max(0, LIMITE_CANCELAMENTOS - cancelamentos);
     porId('contadorExecutar').textContent = `${execucoesRestantes}/${LIMITE_EXECUCOES}`;
+    porId('contadorSophia').textContent = `${sophiaRestantes}/${LIMITE_SOPHIA}`;
     porId('contadorCancelar').textContent = `${cancelamentosRestantes}/${LIMITE_CANCELAMENTOS}`;
-    porId('contadorLimite').classList.toggle('is-limitado', execucoesRestantes === 0 || cancelamentosRestantes === 0);
+    porId('contadorLimite').classList.toggle('is-limitado',
+        execucoesRestantes === 0 || sophiaRestantes === 0 || cancelamentosRestantes === 0);
 }
 
 function atualizarEntrega() {

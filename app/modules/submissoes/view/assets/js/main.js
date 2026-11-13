@@ -7,7 +7,7 @@
      */
     const PASTA_JS = 'submissoes/file?type=js&file=';
     const MODULOS_POR_PAGINA = {
-        aluno: ['atividade.js', 'aluno.js'],
+        aluno: ['atividade.js', 'aluno.js', 'menu.js'],
         iniciaratv: ['atividade.js', 'iniciaratv.js', 'submissao.js', 'sophia.js']
     };
     const modulos = MODULOS_POR_PAGINA[document.body.dataset.pagina] || [];

@@ -119,7 +119,7 @@
     </footer>
 
     <!-- JSON serializado no HTML: o JavaScript usa esse bloco para montar a tela sem outra requisição. -->
-    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null) ?></script>
+   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="submissoes/file?type=js&file=main.js"></script>
 </body>
 

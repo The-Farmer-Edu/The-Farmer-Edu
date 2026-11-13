@@ -17,5 +17,10 @@ function sophiaFala(mensagem, duracaoMs = 5000) {
 
 botaoSophia.onclick = () => {
     if (botaoSophia.disabled) return;
+    if (usosSophia >= LIMITE_SOPHIA) {
+        return sophiaFala('Você usou todas as ajudas da Sophia nesta atividade.', 4000);
+    }
+    // TODO (integração da IA): chamar o backend e, ao receber a resposta, fazer:
+    // usosSophia++; atualizarContadores();
     sophiaFala('A ajuda da Sophia será integrada em breve.', 4000);
 };

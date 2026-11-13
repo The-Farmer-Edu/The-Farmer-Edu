@@ -8,6 +8,8 @@ const LIMITE_EXECUCOES = 10;
 const LIMITE_CANCELAMENTOS = 3;
 const ID_LINGUAGEM_PYTHON = 71;
 const CONSULTA_CELULAR = '(max-width: 780px)';
+const LIMITE_SOPHIA = 10;
+let usosSophia = 0;
 
 /**
  * Regras de destaque por linguagem.
@@ -30,8 +32,11 @@ const REGRAS_DESTAQUE = {
     php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
           ['a', '\\$[a-zA-Z_]\\w*'],
           ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
-          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']]
-};
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']],
+    sql: [['c', '--.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '\'(?:[^\'\\\\]|\\\\.)*\''],
+          ['k', '\\b(?:SELECT|FROM|WHERE|CREATE|TABLE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|PRIMARY|KEY|NOT|NULL|AUTO_INCREMENT|INT|VARCHAR|DECIMAL|TEXT|DEFAULT|AND|OR)\\b'],
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b']],
+        };
 
 /* Elementos da página */
 const porId = id => document.getElementById(id);
@@ -145,7 +150,6 @@ function atualizarEditor() {
     numeracaoLinhas.textContent = Array.from({ length: editorTexto.value.split('\n').length }, (_, indice) => indice + 1).join('\n');
     sincronizar();
 }
-
 function posicao() {
     const linhasAntes = editorTexto.value.slice(0, editorTexto.selectionStart).split('\n');
     porId('stPos').textContent = `Ln ${linhasAntes.length}, Col ${linhasAntes[linhasAntes.length - 1].length + 1}`;
@@ -153,6 +157,13 @@ function posicao() {
 
 function montarAbas() {
     porId('arquivos').innerHTML = '';
+
+    // Sem atividade: seção de arquivos vazia
+    if (atividadeAtual.vazia) {
+        porId('stLang').textContent = '—';
+        return;
+    }
+
     ARQUIVOS.forEach(arquivo => {
         const item = document.createElement('li');
         if (arquivo.lang === arquivoAtual) item.className = 'on';
@@ -164,8 +175,19 @@ function montarAbas() {
     });
     porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
 }
-
 function trocar(lang) {
+    // Sem atividade: editor vazio, desativado e sem arquivos
+    if (atividadeAtual.vazia) {
+        editorTexto.value = '';
+        editorTexto.disabled = true;
+        editorTexto.placeholder = 'Abra uma atividade na página do aluno para escrever código.';
+        porId('painelCodigo').classList.add('sem-atividade');
+        montarAbas();
+        atualizarEditor();
+        porId('stPos').textContent = '—';
+        return;
+    }
+
     arquivoAtual = lang;
     editorTexto.value = dadosDosArquivos[arquivoAtual];
     montarAbas();

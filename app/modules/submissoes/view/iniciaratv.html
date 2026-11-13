@@ -64,7 +64,7 @@
             <div class="contador-limite" id="contadorLimite">
                 <span class="contador-limite__titulo">Limites</span>
                 <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong></div>
-                <!-- <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div> -->
+                <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div>
                 <div class="contador-limite__linha"><span>Cancelar entrega</span><strong id="contadorCancelar">3/3</strong></div>
             </div>
         </aside>
@@ -135,7 +135,7 @@
     <div class="toast" id="toast" role="status"></div>
 
     <!-- A mesma estratégia de JSON em bloco permite ao JS montar a atividade sem nova chamada de API. -->
-    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null) ?></script>
+   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="submissoes/file?type=js&file=main.js"></script>
-</body>
+
 </html>

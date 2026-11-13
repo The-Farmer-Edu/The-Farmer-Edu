@@ -38,7 +38,12 @@
             id: 68, nome: 'PHP', rotulo: 'PHP', modo: 'terminal', judge0: 68,
             arquivos: [{ nome: 'main.php', lang: 'php', rotulo: 'PHP' }],
             inicial: { php: PHP_ABRE }
-        }
+        },
+        sql: {
+             id: 'sql', nome: 'SQL', rotulo: 'SQL', modo: 'terminal', judge0: 82,
+             arquivos: [{ nome: 'main.sql', lang: 'sql', rotulo: 'SQL' }],
+             inicial: { sql: '-- Escreva seu comando SQL abaixo\n' }
+        },
     };
 
     // Valores padrão para qualquer atividade que não tenha dados completos.

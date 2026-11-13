@@ -1,5 +1,5 @@
 <?php
-
+require_once __DIR__ . '/Model.php';
 /**
  * Controlador do módulo de submissões.
  *
@@ -35,14 +35,6 @@ class atividadesSub {
         'ico'  => 'image/vnd.microsoft.icon',
     ];
 
-    /**
-     * Página de listagem do aluno.
-     * A variável $dadosAtividade pode vir vazia quando não existe atividade em contexto.
-     */
-    public function showaluno() {
-        $dadosAtividade = null;
-        require_once __DIR__ . '/view/aluno.html';
-    }
 
     /**
      * Método que dispara o processamento da submissão.
@@ -53,14 +45,36 @@ class atividadesSub {
         require_once __DIR__ . '/view/processar_submissao.php';
     }
 
-    /**
-     * Página do editor/IDE para desenvolver a resposta da atividade.
-     * Também recebe $dadosAtividade em JSON, que o JavaScript transforma em UI.
-     */
-    public function showiniciarAtv() {
-        $dadosAtividade = null;
-        require_once __DIR__ . '/view/iniciaratv.html';
+/**
+ * Lê ?id= da URL e busca a atividade no banco.
+ * Sem id válido ou sem registro, devolve null (a tela fica vazia e bloqueada).
+ * Use ?debug=1 na URL para ver o erro real em vez de uma tela vazia.
+ */
+private function carregarAtividade(): ?array {
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || $id < 1) return null;
+
+    try {
+        return (new SubmissoesModel())->dadosParaView($id);
+    } catch (Throwable $e) {
+        error_log('[submissoes] ' . $e->getMessage());
+        if (isset($_GET['debug'])) {
+            header('Content-Type: text/plain; charset=UTF-8');
+            exit('ERRO: ' . $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine());
+        }
+        return null;
     }
+}
+
+public function showaluno() {
+    $dadosAtividade = $this->carregarAtividade();
+    require_once __DIR__ . '/view/aluno.html';
+}
+
+public function showiniciarAtv() {
+    $dadosAtividade = $this->carregarAtividade();
+    require_once __DIR__ . '/view/iniciaratv.html';
+}
 
     /**
      * Serve arquivos estáticos internos da pasta view/assets.
@@ -94,117 +108,13 @@ class atividadesSub {
         readfile($caminhoArquivo);
     }
 
-    /**
-     * Resolve o MIME type de um arquivo com fallback para detectores mais genéricos.
-     *
-     * Note que a implementação abaixo tem trechos aparentemente “copiados/espalhados” e
-     * referências a variáveis indefinidas ($handle, $url, $url_live, $content). Isso indica
-     * um código legado/experimental, mas a execução prática do módulo usa primeiro o mapa
-     * estático de MIME_TYPES e só entra no fallback em extensões não reconhecidas.
+     /**
+     * Resolve o MIME type de um arquivo pela extensão.
+     * Extensões fora do mapa caem em application/octet-stream.
      */
     private function resolverMimeType(string $caminhoArquivo): string {
         $extensao = strtolower(pathinfo($caminhoArquivo, PATHINFO_EXTENSION));
-        if (isset(self::MIME_TYPES[$extensao])) {
-            return self::MIME_TYPES[$extensao];
-        }
-
-        // Trecho legado do fallback: tenta inferir tipos a partir de uma lista de MIME.
-        // Não é o caminho principal do sistema, mas serve como segunda linha de defesa.
-        curl_close($handle);
-        $mimes = array();
-        if ($url_live)
-        {
-            $mimes_file = file_get_contents($url);
-            preg_match_all('#^([^\s]{2,}?)\s+(.+?)$#ism', $mimes_file, $matches, PREG_SET_ORDER);
-            foreach ($matches as $match)
-            {
-                $exts = explode(" ", $match[2]);
-                foreach ($exts as $ext)
-                {
-                    $mimes[$ext] = $match[1];
-                }
-            }
-        }
-        else
-        {
-            $mimes = array(
-                'txt' => 'text/plain',
-                'htm' => 'text/html',
-                'html' => 'text/html',
-                'php' => 'text/html',
-                'css' => 'text/css',
-                'js' => 'application/javascript',
-                'json' => 'application/json',
-                'xml' => 'application/xml',
-                'swf' => 'application/x-shockwave-flash',
-                'flv' => 'video/x-flv',
-                'png' => 'image/png',
-                'jpe' => 'image/jpeg',
-                'jpeg' => 'image/jpeg',
-                'jpg' => 'image/jpeg',
-                'gif' => 'image/gif',
-                'bmp' => 'image/bmp',
-                'ico' => 'image/vnd.microsoft.icon',
-                'tiff' => 'image/tiff',
-                'tif' => 'image/tiff',
-                'svg' => 'image/svg+xml',
-                'svgz' => 'image/svg+xml',
-                'zip' => 'application/zip',
-                'rar' => 'application/x-rar-compressed',
-                'exe' => 'application/x-msdownload',
-                'msi' => 'application/x-msdownload',
-                'cab' => 'application/vnd.ms-cab-compressed',
-                'mp3' => 'audio/mpeg',
-                'qt' => 'video/quicktime',
-                'mov' => 'video/quicktime',
-                'pdf' => 'application/pdf',
-                'psd' => 'image/vnd.adobe.photoshop',
-                'ai' => 'application/postscript',
-                'eps' => 'application/postscript',
-                'ps' => 'application/postscript',
-                'doc' => 'application/msword',
-                'rtf' => 'application/rtf',
-                'xls' => 'application/vnd.ms-excel',
-                'ppt' => 'application/vnd.ms-powerpoint',
-                'docx' => 'application/msword',
-                'xlsx' => 'application/vnd.ms-excel',
-                'pptx' => 'application/vnd.ms-powerpoint',
-                'odt' => 'application/vnd.oasis.opendocument.text',
-                'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-            );
-        }
-
-        // Fallback final: tenta usar finfo para detectar MIME de arquivo real ou cai em octet-stream.
-        $content_mime = 'unknown';
-        if (is_file($content))
-        {
-            if (isset(pathinfo($content)['extension']))
-            {
-                $content_ext = pathinfo($content)['extension'];
-                if (isset($mimes[$content_ext]))
-                {
-                    $content_mime = $mimes[$content_ext];
-                }
-                else
-                {
-                    if (is_readable($content) && is_executable($content))
-                    {
-                        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-                        $content_mime = finfo_file($finfo, $content);
-                        if ($content_mime === null || $content_mime === "")
-                        {
-                            $content_mime = "application/octet-stream";
-                        }
-                        finfo_close($finfo);
-                    }
-                    else
-                    {
-                        $content_mime = "application/octet-stream";
-                    }
-                }
-            }
-        }
-
-        return $content_mime;
+        return self::MIME_TYPES[$extensao] ?? 'application/octet-stream';
     }
 }
+

@@ -70,6 +70,7 @@ button { font-family: var(--fonte-ui); cursor: pointer; }
 .nome { font-weight: 700; font-size: 1.05rem; }
 .nome b { color: var(--verde-escuro); }
 .modulo { font-weight: 500; font-size: 0.85rem; padding-left: 12px; border-left: 2px solid var(--titulo); }
+.dot-sql { background: #f29111; }
 
 .btn-voltar {
     flex: none;
@@ -223,6 +224,7 @@ button:disabled { cursor: not-allowed; opacity: 0.55; filter: grayscale(1); }
 }
 #ed:read-only { cursor: not-allowed; }
 #ed::selection { background: rgba(52, 199, 89, 0.35); }
+
 
 /* Botões do editor expandido: só aparecem no celular (veja o bloco "Mobile: editor expandido") */
 .btn-fechar-editor { display: none; }

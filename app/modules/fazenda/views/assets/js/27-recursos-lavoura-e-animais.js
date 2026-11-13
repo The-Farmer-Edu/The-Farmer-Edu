@@ -20,7 +20,7 @@
       // A origem vai para os contadores da seção 05 (padrão 'fazenda'; monstro chamado pelo botão de teste → 'teste'). Este é o
       // ÚNICO ponto que conta colheita, mina e monstro: quem chama não conta de novo.
       // ---- COTAS DIÁRIAS POR ATIVIDADE (rebalanceamento; regras em COTAS_DIARIAS_DE_XP, seção 01) ----
-      // A origem 'fazenda' passa por UMA cota por atividade: lavoura (colheitas), mina (ciclos e poções), criacao (produção dos
+      // A origem 'fazenda' passa por UMA cota por atividade: lavoura (colheitas), mina (= Limite da alquimia: só a Poção de Experiência; a mina não dá XP), criacao (produção dos
       // animais) e defesa (monstros). O que passar da cota da atividade não vira XP, mas os recursos da atividade continuam
       // entrando no estoque. Cada cota cresce com o nível das construções ligadas a ela e com a equipe (bônus por trabalhador).
       // estado.cotasDoDia = { dia, usado: {atividade: XP usado da cota de hoje}, reserva: {atividade: XP guardado de dias anteriores} }.
@@ -87,6 +87,7 @@
       // Texto do XP de uma recompensa da Fazenda para os avisos: "+4 XP", "+1 XP (cota de Lavoura de hoje)" ou "sem XP: ...".
       const textoDoXPDaFazenda = (creditado, previsto, atividade = 'lavoura') => {
         const nome = COTAS_DIARIAS_DE_XP[atividade] ? COTAS_DIARIAS_DE_XP[atividade].nome : 'Fazenda';
+        if (atividade === 'mina') return creditado >= previsto ? '+' + creditado + ' XP' : creditado > 0 ? '+' + creditado + ' XP (' + nome + ')' : 'sem XP: ' + nome + ' de hoje atingido';   // "Limite", não "cota"
         return creditado >= previsto ? '+' + creditado + ' XP' : creditado > 0 ? '+' + creditado + ' XP (cota de ' + nome + ' de hoje)' : 'sem XP: cota de ' + nome + ' de hoje atingida';
       };
       // Quadro das cotas de hoje (painel 🌾 Fazenda): usado/cota, a reserva e de onde vem cada uma. Só leitura.
@@ -142,6 +143,7 @@
         canteiro.cultura = cultura; canteiro.plantadoEm = agoraNoJogo();
         marcarParaSalvar(); atualizarVisualDaLavoura();
         tocarEfeito('plantar', posicaoDoCanteiroNoMundo(idDaArea, indice));   // 8.4.1: efeito sonoro (seção 23)
+        avisarObjetivos('plantio', { idDaArea, cultura });   // Etapa 2: quadro de objetivos (seção 30e)
         return true;
       };
       // Colhe só o que está maduro. O canteiro é esvaziado ANTES de creditar e a reserva é liberada: não há colheita dupla.
@@ -156,6 +158,7 @@
         const xpCreditado = creditarXP(cultura.xp, 'fazenda', true, 'lavoura');   // também salva (cota diária de Lavoura)
         tocarEfeito('colher', posicaoDoCanteiroNoMundo(idDaArea, indice));     // 8.4.1: efeito sonoro (seção 23)
         atualizarVisualDaLavoura();
+        avisarObjetivos('colheita', { idDaArea, cultura: recurso });   // Etapa 2: quadro de objetivos (seção 30e)
         if (!silencioso) mostrarAviso('Colheita em ' + nomeDaPlantacao(idDaArea) + ': +' + unidades + ' ' + cultura.icone + ' · ' + textoDoXPDaFazenda(xpCreditado, cultura.xp, 'lavoura'));
         return true;
       };
@@ -264,11 +267,14 @@
           situacao.atualizadoEm = agora;
           if (!total || vivos <= 0 || horas <= 0 || instalacaoDestruida(idDaArea)) continue;   // em ruínas (regra dos 5 dias): sem animais para alimentar
           horas = Math.min(horas, configuracao.limiteDeTempoAusenteHoras);
-          const consumoPorHora = 100 / horasDoCochoCheio() * (vivos / total), horasComComida = Math.min(horas, situacao.comida / consumoPorHora);
+          // Poções (seção 28c): a Ração Encantada reduz o consumo SÓ na parte deste
+          // intervalo em que o efeito estava ativo (o intervalo pode ser longo quando a página ficou fechada).
+          const inicioDoIntervalo = agora - horas * 3600000;
+          const consumoPorHora = 100 / horasDoCochoCheio() * (vivos / total) * consumoDoCochoNoIntervalo(inicioDoIntervalo, agora), horasComComida = Math.min(horas, situacao.comida / consumoPorHora);
           situacao.comida = Math.max(0, situacao.comida - consumoPorHora * horas);
           // Produção (rebalanceamento): só nas horas em que havia comida, 1 item por animal vivo a cada horasPorProduto, até o
           // máximo guardado por animal. O tempo com a página fechada já vem limitado por limiteDeTempoAusenteHoras.
-          situacao.produtos = Math.min(vivos * PRODUCAO_DOS_ANIMAIS.maximoPorAnimal, (situacao.produtos || 0) + vivos * horasComComida / PRODUCAO_DOS_ANIMAIS.horasPorProduto);
+          situacao.produtos = Math.min(vivos * PRODUCAO_DOS_ANIMAIS.maximoPorAnimal, (situacao.produtos || 0) + vivos * horasComComida / PRODUCAO_DOS_ANIMAIS.horasPorProduto);   // Etapa 2: sem o Elixir da Fertilidade (saiu do catálogo)
           situacao.saude = Math.min(100, situacao.saude + configuracao.recuperacaoDeSaudePorHora * horasComComida);
           situacao.saude -= configuracao.perdaDeSaudePorHoraSemComida * (horas - horasComComida);
           let mortes = 0;
@@ -294,6 +300,7 @@
         if (!cabem) { mostrarAviso('🐄 A cota de Criação de hoje está cheia. Os ' + inteiros + ' item(ns) de ' + produto.nome + ' continuam guardados.'); return 0; }
         situacao.produtos -= cabem;
         const creditado = creditarXP(cabem * PRODUCAO_DOS_ANIMAIS.xpPorProduto, 'fazenda', true, 'criacao');
+        avisarObjetivos('producao', { idDaArea, quantidade: cabem });   // Etapa 2: quadro de objetivos (seção 30e)
         registrarAtividade(); tocarEfeito('colher');
         mostrarAviso(produto.icone + ' Coletado em ' + nomeDaArea(idDaArea) + ': ' + cabem + ' ' + produto.nome + ' · +' + creditado + ' XP' + (inteiros > cabem ? ' (o resto fica guardado: cota de Criação cheia)' : ''));
         return creditado;
@@ -310,13 +317,15 @@
         if (!Object.keys(usados).length) { mostrarAviso('Sem alimento para ' + informacao.nome + 's! Colha ' + informacao.come.map(recurso => CULTURAS[recurso].icone + ' ' + CULTURAS[recurso].nome).join(', ') + ' na Nova plantação.'); return; }
         situacao.avisouFome = situacao.comida < ALIMENTACAO_CONFIG.avisoDeFomeAbaixoDe;
         registrarAtividade(); desenharCards();
+        avisarObjetivos('alimentacao', { idDaArea });   // Etapa 2: quadro de objetivos (seção 30e)
         mostrarAviso(informacao.icone + ' Animais alimentados (' + Object.entries(usados).map(([recurso, quantidade]) => quantidade + ' ' + CULTURAS[recurso].icone).join(' ') + '). Cocho: ' + Math.floor(situacao.comida) + '%');
       };
       const reporAnimal = function reporAnimal(idDaArea) {
         const situacao = estado.animais[idDaArea], custo = ALIMENTACAO_CONFIG.custoParaReporAnimal;
-        if (!situacao || situacao.mortos <= 0 || animaisVivosDaArea(idDaArea) >= totalDeAnimais(idDaArea)) return;
+        if (!situacao || (situacao.mortos | 0) <= 0 || animaisVivosDaArea(idDaArea) >= totalDeAnimais(idDaArea)) return;   // Etapa 1: só mortos (a vaca abduzida volta sozinha, sem custo)
         if (estado.xp < custo) { mostrarAviso('XP insuficiente para repor o animal: faltam ' + (custo - estado.xp) + ' XP.'); return; }
-        estado.xp -= custo; situacao.mortos--; situacao.saude = Math.max(situacao.saude, 70);
+        estado.xp -= custo; situacao.mortos--;
+        situacao.saude = Math.max(situacao.saude, 70);
         registrarAtividade(); reconstruirArea(idDaArea); desenharCards();
         mostrarAviso(ANIMAIS_DAS_AREAS[idDaArea].icone + ' Animal reposto em ' + nomeDaArea(idDaArea) + '.');
       };

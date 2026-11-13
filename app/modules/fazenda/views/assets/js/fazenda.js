@@ -415,11 +415,15 @@
       '27-recursos-lavoura-e-animais.js',
       '27b-inventario.js',                     // inventário geral (só lê estado.recursos e estado.pocoes)
       '28-mineracao.js',
-      '28b-guardiao-e-pocoes.js',              // Guardião da Mina: minérios → poções → XP (substitui a antiga troca de minérios)
+      '28b-guardiao-e-pocoes.js',              // Guardião da Mina: minérios → poções (a de experiência dá XP; as outras, efeitos)
+      '28c-efeitos-das-pocoes.js',             // efeitos das poções: duração, fim e ganchos usados pela lavoura, animais, equipe e monstros
       '29-trabalhadores.js',
       '29b-lenhador.js',
       '30a-monstros-noturnos.js',
       '30b-integracao-e-paineis.js',
+      '30c-eventos-especiais.js',              // Etapa 2: cena do céu da poção misteriosa e abdução alienígena
+      '30d-desempenho.js',                     // Etapa 0 (desempenho): mesclagem vigiada das malhas, qualidade automática e medições
+      '30e-objetivos.js',                      // Etapa 2: quadro de objetivos (principais, atividades e descobertas)
       '31-loop-principal.js',                 [93, 'Montando a interface...'],
       '32-interface.js',
       '32b-tutorial.js',                      // Fazenda 8.4.1: tutorial interativo e janela de ajuda (seção 32b)

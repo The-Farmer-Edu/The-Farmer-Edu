@@ -9,7 +9,9 @@
       let temporizadorDeUmSegundo = 0, temporizadorDoSalvamento = 5, ultimaAssinaturaDosCards = '';
       const atualizarSistemasDaMark82 = function atualizarSistemasDaMark82(segundosDesdeUltimoFrame, tempo) {
         atualizarMineracao(segundosDesdeUltimoFrame);
-        atualizarPainelDoGuardiao();                         // seção 28b: painel de poções aberto acompanha minérios e cota
+        atualizarEfeitosDasPocoes();                         // seção 28c: aplica o crescimento acelerado e encerra os efeitos vencidos
+        atualizarEventosEspeciais(segundosDesdeUltimoFrame);  // seção 30c: cena do céu, abdução alienígena e o sorteio dela
+        atualizarPainelDoGuardiao();                         // seção 28b: painel de poções aberto acompanha minérios, limite e efeitos
         atualizarInventario();                               // seção 27b: inventário aberto acompanha coletas, gastos e poções
         atualizarPainelDaEstrutura();                        // seção 32: painel da estrutura aberto acompanha XP, madeira e nível
         atualizarGuardiao(tempo); atualizarLetreirosDosNpcs();  // seção 28b: animação do Guardião e letreiros dos NPCs
@@ -31,7 +33,7 @@
         if (!estado.niveis[idDaArea]) return '';
         if (ANIMAIS_DAS_AREAS[idDaArea]) {
           const situacao = estado.animais[idDaArea], alerta = situacao.comida < ALIMENTACAO_CONFIG.avisoDeFomeAbaixoDe || situacao.saude < 50;
-          return `<div class="info-extra${alerta ? ' alerta' : ''}">🍽 ${Math.floor(situacao.comida)}% · ❤ ${Math.floor(situacao.saude)}%${situacao.mortos ? ' · 💀 ' + Math.min(situacao.mortos, totalDeAnimais(idDaArea)) : ''}</div>`;
+          return `<div class="info-extra${alerta ? ' alerta' : ''}">🍽 ${Math.floor(situacao.comida)}% · ❤ ${Math.floor(situacao.saude)}%${situacao.mortos ? ' · 💀 ' + Math.min(situacao.mortos, totalDeAnimais(idDaArea)) : ''}${situacao.abduzidos ? ' · 🛸 volta em ' + segundosParaAVacaVoltar() + ' s' : ''}</div>`;
         }
         if (idDaArea === 'mina') return `<div class="info-extra">${textoDoEstadoDaMina()}</div>`;
         if (PLANTACOES_COM_CANTEIROS.includes(idDaArea)) {
@@ -143,9 +145,9 @@
           const vivos = animaisVivosDaArea(idDaAreaAnimal), total = totalDeAnimais(idDaAreaAnimal), alerta = situacao.comida < ALIMENTACAO_CONFIG.avisoDeFomeAbaixoDe || situacao.saude < 50;
           partes.push(`<div class="linha-painel${alerta ? ' alerta' : ''}"><span>${informacao.icone} ${vivos}/${total}<br><small>come ${informacao.come.map(recurso => CULTURAS[recurso].icone).join('')}</small></span>
             <span>🍽 ${barrinha(situacao.comida, '#e67e22')}<br>❤ ${barrinha(situacao.saude, '#e74c3c')}</span>
-            <span><button class="botao-pequeno" data-acao="alimentar" data-area="${idDaAreaAnimal}">Alimentar</button>${Math.floor(situacao.produtos || 0) ? `<br><button class="botao-pequeno" data-acao="coletar-producao" data-area="${idDaAreaAnimal}">Coletar ${PRODUCAO_DOS_ANIMAIS.produtos[idDaAreaAnimal].icone} ${Math.floor(situacao.produtos)}</button>` : `<br><small>${PRODUCAO_DOS_ANIMAIS.produtos[idDaAreaAnimal].icone} produzindo…</small>`}${vivos < total ? `<br><button class="botao-pequeno secundario" data-acao="repor" data-area="${idDaAreaAnimal}">Repor · ${ALIMENTACAO_CONFIG.custoParaReporAnimal} XP</button>` : ''}</span></div>`);
+            <span><button class="botao-pequeno" data-acao="alimentar" data-area="${idDaAreaAnimal}">Alimentar</button>${Math.floor(situacao.produtos || 0) ? `<br><button class="botao-pequeno" data-acao="coletar-producao" data-area="${idDaAreaAnimal}">Coletar ${PRODUCAO_DOS_ANIMAIS.produtos[idDaAreaAnimal].icone} ${Math.floor(situacao.produtos)}</button>` : `<br><small>${PRODUCAO_DOS_ANIMAIS.produtos[idDaAreaAnimal].icone} produzindo…</small>`}${(situacao.mortos | 0) > 0 && vivos < total ? `<br><button class="botao-pequeno secundario" data-acao="repor" data-area="${idDaAreaAnimal}">Repor · ${ALIMENTACAO_CONFIG.custoParaReporAnimal} XP</button>` : situacao.abduzidos ? `<br><small>🛸 volta em ${segundosParaAVacaVoltar()} s</small>` : ''}</span></div>`);
         }
-        partes.push('<h4>⛏ Mina</h4>', estado.niveis.mina ? `<p class="dica">${textoDoEstadoDaMina()}<br>Nível ${estado.niveis.mina}: +${MINERACAO_CONFIG.mineriosPorCicloPorNivel[estado.niveis.mina - 1]} 🪨 e +${MINERACAO_CONFIG.xpPorCicloPorNivel[estado.niveis.mina - 1]} XP a cada ${MINERACAO_CONFIG.minutosMinerando} min · ciclos concluídos: ${estado.mina.ciclos}<br>🧙 Leve os minérios ao <b>Guardião da Mina</b>, ao lado da caverna, para preparar poções de XP.</p>` : '<p class="dica">Construa a <b>Mina</b> (cartão ⛏️) para o carrinho começar a trazer minérios da caverna.</p>');
+        partes.push('<h4>⛏ Mina</h4>', estado.niveis.mina ? `<p class="dica">${textoDoEstadoDaMina()}<br>Nível ${estado.niveis.mina}: +${MINERACAO_CONFIG.mineriosPorCicloPorNivel[estado.niveis.mina - 1]} 🪨 a cada ${MINERACAO_CONFIG.minutosMinerando} min (a mina não dá XP) · ciclos concluídos: ${estado.mina.ciclos}<br>🧙 Leve os minérios ao <b>Guardião da Mina</b>, ao lado da caverna: ele prepara a Poção de Experiência e poções de efeitos.</p>` : '<p class="dica">Construa a <b>Mina</b> (cartão ⛏️) para o carrinho começar a trazer minérios da caverna.</p>');
         trocarConteudoDoPainel(painelDaFazenda, partes.join(''));
       };
       // Fazenda 8.4.1: só a apresentação mudou (resumo em selos, fichas com medalhão, atributos em linhas maiores, candidatos com os

@@ -8,7 +8,7 @@
 //   parado → indo (até a árvore escolhida) → cortando (golpes de machado) → derrubando (a árvore tomba; a madeira é creditada
 //   UMA vez e a árvore vira toco) → voltando (com uma tora no ombro) → parado no posto.
 // Cada árvore guarda em estado.arvoresColetaveis[id] o instante (relógio do jogo) em que rebrota: recarregar a página mantém
-// os tocos e os tempos. A madeira coletada respeita LENHADOR_CONFIG.limiteDiarioDeMadeira (estado.madeiraHoje).
+// os tocos e os tempos. A madeira coletada respeita LENHADOR_CONFIG.limiteDiarioDeMadeira mais a reserva de 1 dia (estado.madeiraHoje).
 // Leve de propósito: só QUATRO árvores do acampamento são interativas; a floresta continua instanciada (seção 11b).
 // ====================================================================================================
       const dialogoDoLenhador = selecionar('#janela-lenhador');
@@ -19,7 +19,12 @@
       cena.add(grupoDoAcampamento);
       // Coordenadas LOCAIS do acampamento (o grupo não é girado: +z = sul, para onde ficam as árvores de corte).
       const POSTO_DO_LENHADOR = { x: 1.0, z: -1.0, giro: 0 };
-      const POSICOES_DAS_ARVORES_DE_CORTE = [[-3.6, 2.9, 0.95], [-0.9, 4.7, 1.05], [2.3, 4.5, 0.9], [4.5, 2.1, 1.0]];
+      // Correção do lenhador: 10 árvores (antes 4). As 4 primeiras continuam no mesmo lugar e com os mesmos ids (arvore-1..4), então
+      // os tempos de rebrota salvos valem como antes; as 6 novas (arvore-5..10) formam um segundo arco na beira da clareira.
+      // Posições escolhidas por medição: dentro da clareira (raio 7,2), ≥ 1,6 dos troncos da floresta, ≥ 2,4 das outras árvores de
+      // corte e com o caminho reto do posto até cada uma passando a ≥ 1,2 de qualquer outro tronco (o lenhador anda em linha reta).
+      const POSICOES_DAS_ARVORES_DE_CORTE = [[-3.6, 2.9, 0.95], [-0.9, 4.7, 1.05], [2.3, 4.5, 0.9], [4.5, 2.1, 1.0],
+        [-6.7, 1.4, 1.0], [6.3, -2.8, 0.95], [6.9, 0.5, 1.05], [-3.4, 6.0, 0.9], [0.2, 6.9, 1.0], [4.8, 4.7, 0.95]];
 
       // ---- Cenário do acampamento: chão batido, trilha, posto de trabalho, toras, telheiro, tocos e placa ----
       const materialDoChaoBatido = new THREE.MeshLambertMaterial({ color: 0xb48c5c, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
@@ -104,12 +109,42 @@
       selecionar('#madeira-por-arvore').textContent = String(LENHADOR_CONFIG.madeiraPorArvore);
 
       // ---- Regras ----
+      // Etapa 1.1 — RESERVA DE MADEIRA (mesma regra das cotas de XP, RESERVA_DE_COTA_EM_DIAS): na virada do dia, o que sobrou do
+      // limite do último dia jogado (e o limite inteiro dos dias sem jogar) fica guardado, até 1 limite. Quem joga todo dia e
+      // coleta tudo não ganha nada a mais; quem joga em dias alternados não perde a madeira do dia em que não entrou.
+      // Capacidade de hoje = limite do dia + reserva; a coleta gasta primeiro o limite e depois a reserva.
+      const renovarMadeiraDoDia = function renovarMadeiraDoDia() {
+        const hoje = diaDoCalendario(Date.now()), registro = estado.madeiraHoje, limite = LENHADOR_CONFIG.limiteDiarioDeMadeira;
+        if (registro.dia === hoje) return registro;
+        let reserva = 0;
+        if (Number.isInteger(registro.dia) && hoje > registro.dia) {
+          const diasSemJogar = Math.min(RESERVA_DE_COTA_EM_DIAS, hoje - registro.dia - 1);
+          const sobraDoLimite = Math.max(0, limite - registro.total), sobraDaReserva = Math.max(0, (registro.reserva || 0) - Math.max(0, registro.total - limite));
+          reserva = Math.min(limite * RESERVA_DE_COTA_EM_DIAS, sobraDaReserva + sobraDoLimite + diasSemJogar * limite);
+        }
+        registro.dia = hoje; registro.total = 0; registro.reserva = reserva;   // dia novo: o limite renova
+        return registro;
+      };
+      const capacidadeDeMadeiraHoje = () => LENHADOR_CONFIG.limiteDiarioDeMadeira + renovarMadeiraDoDia().reserva;
       const madeiraRestanteHoje = function madeiraRestanteHoje() {
-        const hoje = diaDoCalendario(Date.now()), registro = estado.madeiraHoje;
-        if (registro.dia !== hoje) { registro.dia = hoje; registro.total = 0; }   // dia novo: o limite renova
-        return Math.max(0, LENHADOR_CONFIG.limiteDiarioDeMadeira - registro.total);
+        const registro = renovarMadeiraDoDia();
+        return Math.max(0, LENHADOR_CONFIG.limiteDiarioDeMadeira + registro.reserva - registro.total);
       };
       const arvoreDisponivel = arvore => !arvore.emUso && arvore.disponivelEm <= agoraNoJogo();
+      // ---- Seiva da Floresta (poção, seção 28c): as árvores que estão rebrotando voltam na hora ----
+      // Em duas partes, para a transação da poção poder desfazer: primeiro só o ESTADO (tira o instante de rebrota salvo) e, depois
+      // que o salvamento der certo, a CENA (o laço abaixo faz a árvore crescer de novo). Árvore em corte não é tocada. O limite
+      // diário de madeira continua valendo normalmente.
+      const arvoresQueEstaoRebrotando = () => arvoresDeMadeira.filter(arvore => !arvore.emUso && arvore.disponivelEm > agoraNoJogo());
+      const arvoresDoAcampamentoRebrotando = () => arvoresQueEstaoRebrotando().length;
+      const liberarRebrotaNoEstado = function liberarRebrotaNoEstado() {
+        const ids = arvoresQueEstaoRebrotando().map(arvore => arvore.id);
+        for (const id of ids) delete estado.arvoresColetaveis[id];
+        return ids;
+      };
+      const rebrotarArvoresDoAcampamento = function rebrotarArvoresDoAcampamento(ids) {
+        for (const arvore of arvoresDeMadeira) if (ids.includes(arvore.id) && !arvore.emUso) arvore.disponivelEm = agoraNoJogo();   // o laço mostra a rebrota
+      };
       const quantidadeDeArvoresDisponiveis = () => arvoresDeMadeira.filter(arvoreDisponivel).length;
       let coletaDeMadeiraEmAndamento = false, intervaloDeAtualizacaoDoDialogo = 0, mensagemDoLenhador = '';
       const formatarTempo = milissegundos => { const segundos = Math.max(0, Math.ceil(milissegundos / 1000)); return Math.floor(segundos / 60) + ':' + String(segundos % 60).padStart(2, '0'); };
@@ -118,15 +153,19 @@
       const atualizarDialogoDoLenhador = function atualizarDialogoDoLenhador() {
         const restante = madeiraRestanteHoje(), disponiveis = quantidadeDeArvoresDisponiveis(), agora = agoraNoJogo();
         selecionar('#arvores-disponiveis').textContent = disponiveis + ' de ' + arvoresDeMadeira.length;
+        selecionar('#madeira-por-arvore').textContent = String(LENHADOR_CONFIG.madeiraPorArvore);   // sobe com o nível da ponte (8 → 10)
         selecionar('#estoque-madeira-lenhador').textContent = String(estado.recursos.madeira);
-        selecionar('#madeira-hoje-lenhador').textContent = (LENHADOR_CONFIG.limiteDiarioDeMadeira - restante) + ' / ' + LENHADOR_CONFIG.limiteDiarioDeMadeira + ' (ponte nv ' + (estado.niveis.ponte | 0) + ')';   // o limite sobe com a ponte
+        const capacidade = capacidadeDeMadeiraHoje(), reservaDeHoje = estado.madeiraHoje.reserva;
+        const campoDaMadeiraDeHoje = selecionar('#madeira-hoje-lenhador');
+        campoDaMadeiraDeHoje.textContent = (capacidade - restante) + ' / ' + capacidade + (reservaDeHoje ? ' (+' + reservaDeHoje + ' de ontem)' : '');
+        campoDaMadeiraDeHoje.title = 'Limite de hoje: ' + LENHADOR_CONFIG.limiteDiarioDeMadeira + ' (ponte nível ' + (estado.niveis.ponte | 0) + ')' + (reservaDeHoje ? ' + ' + reservaDeHoje + ' guardadas do dia anterior' : '') + '. A madeira não coletada fica guardada por mais um dia.';   // o limite sobe com a ponte
         selecionar('#arvores-do-acampamento').innerHTML = arvoresDeMadeira.map((arvore, indice) => {
           const estadoDaArvore = arvore.emUso ? ['cortando', '🪓', 'em corte'] : arvoreDisponivel(arvore) ? ['pronta', '🌲', 'pronta'] : ['toco', '🪵', 'volta em ' + formatarTempo(arvore.disponivelEm - agora)];
           return `<li class="arvore-${estadoDaArvore[0]}"><span aria-hidden="true">${estadoDaArvore[1]}</span><b>Árvore ${indice + 1}</b><small>${estadoDaArvore[2]}</small></li>`;
         }).join('');
         const textos = { indo: '🚶 Indo até a árvore…', cortando: '🪓 Cortando · ' + Math.max(0, Math.ceil(LENHADOR_CONFIG.segundosDeCorte - lenhador.tempoDaFase)) + ' s', derrubando: '🌲 Madeira caindo!', voltando: '🪵 Levando a madeira para o posto…' };
         selecionar('#estado-lenhador').textContent = textos[lenhador.fase]
-          || (restante <= 0 ? 'Já entreguei toda a madeira de hoje (' + LENHADOR_CONFIG.limiteDiarioDeMadeira + '). Volte amanhã!'
+          || (restante <= 0 ? 'Já entreguei toda a madeira de hoje (' + capacidadeDeMadeiraHoje() + '). Volte amanhã!'
             : disponiveis ? 'Pronto para trabalhar. Cada árvore rende ' + LENHADOR_CONFIG.madeiraPorArvore + ' madeiras.'
               : 'Todas as árvores estão rebrotando. Espere um pouco.');
         selecionar('#erro-lenhador').textContent = mensagemDoLenhador;
@@ -180,6 +219,7 @@
         arvore.disponivelEm = rebrotaEm; arvore.copa.visible = false; arvore.copa.quaternion.identity(); arvore.toco.visible = true;
         atualizarResumoDeRecursos(); desenharCards(); tocarEfeito('colher');
         mostrarAviso('🪵 O lenhador entregou ' + madeira + ' madeiras. A árvore rebrota em ' + LENHADOR_CONFIG.minutosParaRebrotar + ' min.');
+        avisarObjetivos('arvore', { madeira });   // Etapa 2: quadro de objetivos (seção 30e)
         return true;
       };
 

@@ -77,8 +77,10 @@
       const ORCAMENTO_DE_PIXELS_POR_QUADRO = { normal: 3840 * 2160, leve: 1920 * 1080 };
       const calcularPixelRatioDeRenderizacao = function calcularPixelRatioDeRenderizacao() {
         const densidadeAtual = window.devicePixelRatio || 1;                 // muda com o zoom do navegador e ao trocar de monitor
-        let razao = Math.min(densidadeAtual, MODO_LEVE.ativo ? MODO_LEVE.limiteDePixelRatio : LIMITE_DE_PIXEL_RATIO_NORMAL);
-        const pixelsCss = Math.max(1, innerWidth * innerHeight), orcamento = MODO_LEVE.ativo ? ORCAMENTO_DE_PIXELS_POR_QUADRO.leve : ORCAMENTO_DE_PIXELS_POR_QUADRO.normal;
+        // Etapa 0: limite, escala e orçamento vêm do nível de qualidade (seção 02); no baixo a resolução interna fica abaixo da tela.
+        const nivel = perfilDaQualidade();
+        let razao = Math.min(densidadeAtual, nivel.limiteDePixelRatio) * escalaDaResolucaoAtual();
+        const pixelsCss = Math.max(1, innerWidth * innerHeight), orcamento = nivel.orcamentoDePixels;
         if (pixelsCss * razao * razao > orcamento) razao = Math.sqrt(orcamento / pixelsCss);
         return razao;
       };

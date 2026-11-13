@@ -1,0 +1,129 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+}
+
+body {
+    background-color: #0f172a;
+    min-height: 100vh;
+}
+
+/* BALÃO DE NOTIFICAÇÃO ESTILO WINDOWS (TOAST) */
+.phone-notification {
+    position: fixed;
+    bottom: 20px;
+    right: -420px; /* Escondido fora da tela à direita */
+    width: calc(100% - 32px);
+    max-width: 360px;
+    
+    /* Visual no estilo Windows Toast */
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 14px 16px;
+    
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 
+                0 2px 8px rgba(0, 0, 0, 0.2);
+    
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    z-index: 9999;
+    
+    /* Animação deslizando da direita para a esquerda (estilo Windows) */
+    transition: right 0.3s ease-out, opacity 0.3s ease-out;
+    opacity: 0;
+    user-select: none;
+}
+
+/* Classe para exibir a notificação */
+.phone-notification.show {
+    right: 20px;
+    opacity: 1;
+}
+
+/* Ícone do App */
+.app-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #d40000, #9e0000);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+/* Conteúdo do Texto */
+.notification-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+}
+
+.app-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #a1a1aa;
+}
+
+.time-stamp {
+    font-size: 0.7rem;
+    color: #71717a;
+}
+
+.sender-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.message-text {
+    font-size: 0.825rem;
+    color: #d4d4d8;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Botão de Fechar estilo Windows (X) */
+.close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    font-size: 14px;
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-btn:hover {
+    background: rgba(255, 254, 254, 0.1);
+    color: #ffffff;
+}

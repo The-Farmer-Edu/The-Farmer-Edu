@@ -70,7 +70,6 @@ button { font-family: var(--fonte-ui); cursor: pointer; }
 .nome { font-weight: 700; font-size: 1.05rem; }
 .nome b { color: var(--verde-escuro); }
 .modulo { font-weight: 500; font-size: 0.85rem; padding-left: 12px; border-left: 2px solid var(--titulo); }
-.dot-sql { background: #f29111; }
 
 .btn-voltar {
     flex: none;

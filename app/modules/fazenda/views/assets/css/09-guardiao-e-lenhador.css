@@ -1,0 +1,434 @@
+/* Fazenda 3D — CSS 9: economia integrada. Painel de tela cheia do Guardião da Mina (poções), diálogo do lenhador e
+   requisitos de XP + madeira nos cartões da gaveta. Usa os mesmos tokens --gaveta-* (01-base.css), então segue o tema
+   claro/escuro automaticamente. Estados nunca dependem só da cor: há sempre texto ou ícone junto. */
+
+/* ===== Painel de tela cheia do Guardião ===== */
+/* Etapa 2 — correção da faixa marrom: antes o contêiner era "display: flex". Com isso a moldura (filha) era ESTICADA até a altura
+   da tela e não crescia com o conteúdo: a borda de baixo (box-shadow interno de 6 px + 9 px) ficava desenhada na altura da tela,
+   atravessando o painel, e o conteúdo que passava dela ficava sobre o fundo escuro do contêiner. Em bloco, a moldura começa com
+   a altura da tela (min-height: 100%) e cresce com o conteúdo: fundo, borda e conteúdo ficam sempre juntos. */
+.tela-do-guardiao {
+  position: fixed; inset: 0; z-index: 85; display: block; padding: 0;
+  background: #120d1c; box-sizing: border-box; overflow: auto
+}
+.tela-do-guardiao[hidden] { display: none }
+body.com-tela-do-guardiao #tutorial, body.com-tela-do-guardiao #tutorial-destaque { visibility: hidden }
+/* a moldura ocupa a TELA INTEIRA; o conteúdo fica centralizado numa largura confortável de leitura */
+.moldura-do-guardiao > :not(.cabecalho-do-guardiao) { width: 100%; max-width: 1180px; margin-inline: auto; box-sizing: border-box }
+.cabecalho-do-guardiao > * { max-width: 1180px }
+.moldura-do-guardiao .corpo-do-guardiao { flex: 1 0 auto }
+.moldura-do-guardiao {
+  display: flex; flex-direction: column; gap: 14px; width: 100%; min-height: 100%; margin: 0; padding: 0 max(18px, env(safe-area-inset-right)) 16px max(18px, env(safe-area-inset-left)); box-sizing: border-box;
+  border: 0; color: var(--gaveta-texto);
+  background: var(--gaveta-papel) radial-gradient(#7a4e2612 1px, transparent 1px) 0 0 / 12px 12px;
+  box-shadow: inset 0 0 0 6px var(--gaveta-madeira), inset 0 0 0 9px var(--gaveta-madeira-escura)
+}
+.cabecalho-do-guardiao { justify-content: center }
+.fala-do-guardiao { max-width: 1000px }
+.cabecalho-do-guardiao {
+  display: flex; align-items: center; gap: 14px; margin: 0 calc(-1 * max(18px, env(safe-area-inset-left))); padding: max(12px, env(safe-area-inset-top)) 18px 12px; color: #fff6e2;
+  background: repeating-linear-gradient(90deg, #ffffff0d 0 2px, transparent 2px 13px), linear-gradient(180deg, #a5703d, var(--gaveta-madeira) 55%, var(--gaveta-madeira-escura))
+}
+.retrato-do-guardiao { flex: 0 0 auto; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; font-size: 32px; background: radial-gradient(circle at 35% 30%, #e9dcff, #6e58a6); border: 3px solid #e0b04a; box-shadow: 0 0 0 3px #0003 }
+.fala-do-guardiao { flex: 1; min-width: 0 }
+.fala-do-guardiao h2 { margin: 0; font-size: 21px }
+.fala-do-guardiao p { margin: 3px 0 0; font-size: 13px; font-style: italic; opacity: .92 }
+.cabecalho-do-guardiao .botao-fechar { align-self: flex-start; border: 0; border-radius: 10px; padding: 8px 11px; color: inherit; background: #ffffff24; font-size: 16px; cursor: pointer }
+.cabecalho-do-guardiao .botao-fechar:focus-visible { outline: 3px solid #f2c94c }
+
+.saldos-do-guardiao { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 2fr); gap: 10px }
+.saldo-do-guardiao { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--gaveta-borda); border-radius: 12px; background: var(--gaveta-cartao); box-shadow: 0 2px 0 var(--gaveta-borda) }
+.saldo-do-guardiao span { font-size: 12px; color: var(--gaveta-texto-suave) }
+.saldo-do-guardiao b { font-size: 22px; color: var(--gaveta-titulo) }
+.saldo-do-guardiao small { font-size: 11.5px; color: var(--gaveta-texto-suave) }
+.barra-da-cota { display: block; height: 8px; margin: 3px 0 1px; border-radius: 99px; background: var(--gaveta-cartao-vazio); overflow: hidden; border: 1px solid var(--gaveta-borda) }
+.barra-da-cota i { display: block; height: 100%; background: linear-gradient(90deg, #e0b04a, #d77b2c) }
+
+.corpo-do-guardiao { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 14px; align-items: start }
+.prateleira-de-pocoes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px; border-radius: 16px; background: linear-gradient(180deg, #7a4e2618, #7a4e2630); border: 2px solid var(--gaveta-borda) }
+.cartao-de-pocao {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 12px; border: 2px solid var(--gaveta-borda); border-radius: 14px;
+  background: var(--gaveta-cartao); color: var(--gaveta-texto); font: inherit; text-align: center; cursor: pointer; box-shadow: 0 3px 0 var(--gaveta-borda); transition: transform .12s, box-shadow .12s
+}
+.cartao-de-pocao:hover { transform: translateY(-2px); box-shadow: 0 5px 0 var(--gaveta-borda), 0 8px 16px #0002 }
+.cartao-de-pocao:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.cartao-de-pocao.selecionada { border-color: #e0b04a; box-shadow: 0 3px 0 #b8862f, 0 0 0 4px #e0b04a55 }
+.cartao-de-pocao.bloqueada { opacity: .72 }
+.cartao-de-pocao.bloqueada .frasco-de-pocao { filter: grayscale(.85) }
+.nome-da-pocao { font-weight: 800; font-size: 14px; line-height: 1.2 }
+.troca-da-pocao { display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700 }
+.troca-da-pocao .seta { color: var(--gaveta-texto-suave) }
+.estado-da-pocao { font-size: 12px; color: var(--gaveta-texto-suave) }
+
+/* frasco desenhado só com CSS: bojo redondo, gargalo e rolha; o líquido usa a cor da poção */
+.frasco-de-pocao { position: relative; display: block; width: 54px; height: 66px }
+.frasco-de-pocao::before { content: ""; position: absolute; left: 20px; top: 0; width: 14px; height: 9px; border-radius: 3px; background: #8a5a2e }
+.frasco-de-pocao::after { content: ""; position: absolute; left: 18px; top: 8px; width: 18px; height: 16px; border-radius: 3px 3px 0 0; background: #dfe8eecc; border: 2px solid #ffffffaa; border-bottom: 0; box-sizing: border-box }
+.frasco-de-pocao i {
+  position: absolute; left: 3px; bottom: 0; width: 48px; height: 46px; border-radius: 50%; border: 2px solid #ffffffb3; box-sizing: border-box;
+  background: radial-gradient(circle at 35% 30%, #ffffffc0 0 12%, transparent 13%), linear-gradient(180deg, #dfe8ee66 0 34%, var(--cor-da-pocao) 35%);
+  box-shadow: 0 0 16px var(--cor-da-pocao), inset 0 -6px 0 #0002
+}
+.frasco-de-pocao.grande { flex: 0 0 auto; transform: scale(1.3); transform-origin: center bottom; margin: 18px 12px 0 6px }
+
+.balcao-do-guardiao { padding: 14px 16px; border: 2px solid var(--gaveta-madeira); border-radius: 16px; background: var(--gaveta-cartao); box-shadow: 0 3px 0 var(--gaveta-madeira-escura) }
+.cabeca-do-balcao { display: flex; align-items: center; gap: 14px }
+.cabeca-do-balcao h3 { margin: 0; color: var(--gaveta-titulo); font-size: 18px }
+.cabeca-do-balcao p { margin: 4px 0 0; font-size: 13px; color: var(--gaveta-texto-suave) }
+.ficha-da-pocao { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 14px 0; padding: 10px 12px; border-radius: 12px; background: var(--gaveta-papel); font-size: 13.5px }
+.ficha-da-pocao dt { color: var(--gaveta-texto-suave) }
+.ficha-da-pocao dd { margin: 0; font-weight: 700; text-align: right }
+.ficha-da-pocao small { font-weight: 400; color: var(--gaveta-texto-suave) }
+.acoes-do-guardiao { display: flex; flex-wrap: wrap; gap: 10px }
+.botao-do-guardiao {
+  flex: 1 1 150px; min-height: 44px; padding: 8px 14px; border: 0; border-radius: 12px; color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
+  background: linear-gradient(#64aa45, #3f7f2a); box-shadow: 0 3px 0 #2c5c1d, inset 0 1px 0 #ffffff4d; text-shadow: 0 1px 0 #0004
+}
+.botao-do-guardiao.uso { background: linear-gradient(#8e6bd0, #5d3f9a); box-shadow: 0 3px 0 #3d2868, inset 0 1px 0 #ffffff4d }
+.botao-do-guardiao.secundario { background: linear-gradient(#97a2a3, #6c7778); box-shadow: 0 3px 0 #4d5657 }
+.botao-do-guardiao:active:not(:disabled) { transform: translateY(2px) }
+.botao-do-guardiao:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.botao-do-guardiao:disabled { opacity: .5; cursor: not-allowed; filter: grayscale(.4) }
+.confirmacao-do-guardiao { padding: 10px 12px; border: 2px dashed #e0b04a; border-radius: 12px; background: #f2c94c1f }
+.confirmacao-do-guardiao p { margin: 0 0 10px }
+.motivos-do-guardiao { margin: 10px 0 0; padding: 0; list-style: none; font-size: 12.5px; color: var(--gaveta-texto-suave) }
+.motivos-do-guardiao li + li { margin-top: 3px }
+.mensagem-do-guardiao { min-height: 1.3em; margin: 10px 0 0; font-size: 13px; font-weight: 700 }
+.mensagem-do-guardiao.erro { color: #a92f25 }
+.mensagem-do-guardiao.sucesso { color: #3d7a30 }
+.rodape-do-guardiao { margin: 0; font-size: 12px; color: var(--gaveta-texto-suave) }
+
+@media (max-width: 820px) {
+  .saldos-do-guardiao { grid-template-columns: repeat(3, minmax(0, 1fr)) }
+  .saldo-do-guardiao.cota { grid-column: 1 / -1 }
+  .corpo-do-guardiao { grid-template-columns: 1fr }
+}
+@media (max-width: 520px) {
+  .prateleira-de-pocoes { grid-template-columns: 1fr; padding: 10px }
+  .cartao-de-pocao { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; text-align: left }
+  .fala-do-guardiao p { display: none }
+  .saldo-do-guardiao b { font-size: 18px }
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .mensagem-do-guardiao.erro { color: #ff8a7a }
+  :root:not([data-theme="light"]) .mensagem-do-guardiao.sucesso { color: #9fdc7f }
+}
+:root[data-theme="dark"] .mensagem-do-guardiao.erro { color: #ff8a7a }
+:root[data-theme="dark"] .mensagem-do-guardiao.sucesso { color: #9fdc7f }
+
+/* ===== Diálogo do lenhador: situação das quatro árvores ===== */
+.cartao-do-lenhador { width: min(460px, 100%) }
+.cartao-do-lenhador > p:first-of-type { font-style: italic }
+.arvores-do-acampamento { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));   /* 10 árvores: 2 fileiras de 5 */ gap: 6px; margin: 12px 0; padding: 0; list-style: none }
+.arvores-do-acampamento li { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 4px; border: 1px solid var(--gaveta-borda); border-radius: 10px; background: var(--gaveta-cartao); font-size: 11px; text-align: center }
+.arvores-do-acampamento li span { font-size: 20px }
+.arvores-do-acampamento li small { color: var(--gaveta-texto-suave) }
+.arvores-do-acampamento li.arvore-pronta { border-color: #5d9a3c; box-shadow: inset 0 -3px 0 #5d9a3c55 }
+.arvores-do-acampamento li.arvore-cortando { border-color: #e0b04a; box-shadow: inset 0 -3px 0 #e0b04a66 }
+.arvores-do-acampamento li.arvore-toco { background: var(--gaveta-cartao-vazio) }
+/* 10 árvores em telas estreitas: nome numa linha só e cartões da mesma altura */
+.arvores-do-acampamento li b { white-space: nowrap }
+@media (max-width: 480px) { .arvores-do-acampamento { gap: 4px } .arvores-do-acampamento li { padding: 6px 2px } .arvores-do-acampamento li b { font-size: 11px; letter-spacing: -.2px } .arvores-do-acampamento li small { font-size: 10px; text-align: center; line-height: 1.15 } }
+
+/* ===== Cartões da gaveta: requisitos de XP e madeira ===== */
+.card { grid-template-areas: "medalhao titulo titulo" "medalhao trilha botao" "estado estado estado" "requisitos requisitos requisitos" }
+.requisitos-do-card { grid-area: requisitos; display: flex; flex-wrap: wrap; gap: 4px 6px; margin-top: 2px }
+.requisito-do-card { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; font-size: 11px; border: 1px solid var(--gaveta-borda); background: var(--gaveta-papel); color: var(--gaveta-texto) }
+.requisito-do-card i { font-style: normal; font-weight: 800 }
+.requisito-do-card.ok i { color: #3d7a30 }
+.requisito-do-card.falta { border-color: #c9826f; background: #a92f2514 }
+.requisito-do-card.falta i { color: #a92f25 }
+
+/* ===== Ajustes de interface: inventário geral, Minhas Poções e painel da estrutura ===== */
+/* Botão do inventário: logo abaixo do indicador de XP (filho da #barra-topo, posicionado fora do fluxo da barra) */
+#barra-topo > #botao-inventario {
+  position: absolute; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 58px);
+  padding: 6px 12px; border-radius: 16px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer
+}
+#barra-topo > #botao-inventario[aria-expanded="true"] { background: var(--gaveta-madeira); color: #fff6e2 }
+#barra-topo > #botao-inventario:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+@media (max-width: 520px) { #barra-topo > #botao-inventario { left: 8px; top: calc(env(safe-area-inset-top, 0px) + 52px); font-size: 12px } }
+
+.cartao-do-inventario { width: min(560px, 100%) }
+.resumo-do-inventario { margin: 0 0 8px; font-weight: 700; color: var(--gaveta-texto-suave) }
+.grupo-do-inventario h4 { margin: 12px 0 6px; color: var(--gaveta-titulo); font-size: 13px }
+.grupo-do-inventario ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none }
+.item-do-inventario { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--gaveta-borda); border-radius: 12px; background: var(--gaveta-cartao); box-shadow: 0 2px 0 var(--gaveta-borda) }
+.item-do-inventario.vazio { opacity: .6; box-shadow: none; background: var(--gaveta-cartao-vazio) }
+.icone-do-item { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; font-size: 18px; background: radial-gradient(circle at 35% 30%, #fffdf3, #ead6a8); border: 2px solid var(--cor-do-item, #c8a46a) }
+.nome-do-item { font-size: 13px; font-weight: 700; line-height: 1.15 }
+.quantidade-do-item { min-width: 28px; padding: 2px 8px; border-radius: 999px; background: var(--gaveta-madeira); color: #fff6e2; text-align: center; font-size: 13px }
+.dica-do-inventario { margin: 12px 0 0; font-size: 12px; color: var(--gaveta-texto-suave) }
+
+/* Abas da alquimia */
+.abas-do-guardiao { display: flex; gap: 8px; flex-wrap: wrap }
+.aba-do-guardiao { padding: 9px 16px; border: 2px solid var(--gaveta-borda); border-radius: 12px 12px 4px 4px; background: var(--gaveta-cartao-vazio); color: var(--gaveta-texto); font: inherit; font-weight: 800; cursor: pointer }
+.aba-do-guardiao.ativa { border-color: #e0b04a; background: var(--gaveta-cartao); box-shadow: inset 0 -3px 0 #e0b04a }
+.aba-do-guardiao:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.minhas-pocoes { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none }
+.minha-pocao { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 10px 14px; border: 2px solid var(--gaveta-borda); border-radius: 14px; background: var(--gaveta-cartao) }
+.minha-pocao .botao-do-guardiao { flex: 0 0 auto }
+.dados-da-minha-pocao { display: flex; flex-direction: column; gap: 2px; font-size: 13px }
+.dados-da-minha-pocao > b { font-size: 15px }
+.aviso-da-cota { margin: 0; max-width: 260px; padding: 7px 10px; border-radius: 10px; background: #e0b04a26; border: 1px dashed #e0b04a; font-size: 12.5px }
+.motivos-do-guardiao .aviso-da-cota { max-width: none; list-style: none }
+.sem-pocoes { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 26px 12px; text-align: center }
+.sem-pocoes span { font-size: 40px }
+.sem-pocoes .botao-do-guardiao { flex: 0 0 auto }
+.cota-em-destaque { font-size: 15px }
+.cota-em-destaque b { font-size: 28px; color: var(--gaveta-titulo) }
+.balcao-do-guardiao h3 { margin-top: 0; color: var(--gaveta-titulo) }
+@media (max-width: 520px) { .minha-pocao { grid-template-columns: auto 1fr } .minha-pocao > :last-child { grid-column: 1 / -1 } }
+
+/* Painel específico da estrutura: à esquerda, abaixo do inventário, para não cobrir a estrutura focada no centro */
+.painel-da-estrutura {
+  position: fixed; z-index: 12; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 100px); width: min(340px, calc(100vw - 24px));
+  max-height: calc(100vh - 190px); overflow-y: auto; box-sizing: border-box; padding: 0 14px 14px; color: var(--gaveta-texto);
+  background: var(--gaveta-papel); border: 3px solid var(--gaveta-madeira); border-radius: 16px; box-shadow: 0 4px 0 var(--gaveta-madeira-escura), 0 10px 24px #0005
+}
+.painel-da-estrutura[hidden] { display: none }
+.cabecalho-da-estrutura { display: flex; align-items: center; gap: 10px; margin: 0 -14px 10px; padding: 10px 12px; color: #fff6e2; background: linear-gradient(180deg, #a5703d, var(--gaveta-madeira) 55%, var(--gaveta-madeira-escura)) }
+.cabecalho-da-estrutura > div { flex: 1; min-width: 0 }
+.cabecalho-da-estrutura h3 { margin: 0; font-size: 16px }
+.cabecalho-da-estrutura .nivel-do-card { color: #fff6e2; background: #ffffff24 }
+.cabecalho-da-estrutura .botao-fechar { border: 0; border-radius: 8px; padding: 6px 9px; color: inherit; background: #ffffff24; cursor: pointer }
+.painel-da-estrutura .trilha-de-niveis { margin: 2px 0 8px }
+.estado-da-estrutura { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-bottom: 8px; font-size: 12px; color: var(--gaveta-texto-suave) }
+.proximo-passo { margin: 4px 0 8px; font-size: 14px }
+.painel-da-estrutura .selo-estado { display: block; width: fit-content; margin: 6px 0; white-space: normal }
+.requisitos-da-estrutura { display: flex; flex-direction: column; gap: 6px; margin: 0 0 10px; padding: 0; list-style: none }
+.requisitos-da-estrutura li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; padding: 8px 10px; border: 1px solid var(--gaveta-borda); border-radius: 10px; background: var(--gaveta-cartao); font-size: 13px }
+.requisitos-da-estrutura li > span:first-child { font-weight: 800 }
+.requisitos-da-estrutura li > span:nth-child(2) { grid-column: 1; color: var(--gaveta-texto-suave); font-size: 12px }
+.requisitos-da-estrutura li > strong { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 12px }
+.requisitos-da-estrutura li.ok { box-shadow: inset 4px 0 0 #5d9a3c } .requisitos-da-estrutura li.ok strong { color: #3d7a30 }
+.requisitos-da-estrutura li.falta { box-shadow: inset 4px 0 0 #c0503f } .requisitos-da-estrutura li.falta strong { color: #a92f25 }
+.dica-da-estrutura { margin: 0 0 10px; font-size: 12px; color: var(--gaveta-texto-suave) }
+.botao-da-estrutura {
+  width: 100%; min-height: 42px; border: 0; border-radius: 12px; color: #fff; font: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
+  background: linear-gradient(#64aa45, #3f7f2a); box-shadow: 0 3px 0 #2c5c1d, inset 0 1px 0 #ffffff4d; text-shadow: 0 1px 0 #0004
+}
+.botao-da-estrutura:active:not(:disabled) { transform: translateY(2px) }
+.botao-da-estrutura:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.botao-da-estrutura:disabled { background: linear-gradient(#a89a82, #8a7d68); box-shadow: 0 3px 0 #6e6352; cursor: not-allowed }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .requisitos-da-estrutura li.ok strong { color: #9fdc7f }
+  :root:not([data-theme="light"]) .requisitos-da-estrutura li.falta strong { color: #ff8a7a }
+}
+:root[data-theme="dark"] .requisitos-da-estrutura li.ok strong { color: #9fdc7f }
+:root[data-theme="dark"] .requisitos-da-estrutura li.falta strong { color: #ff8a7a }
+@media (max-width: 520px) {
+  .painel-da-estrutura { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 66px); left: 12px; max-height: 55vh }
+}
+/* O cartão do tutorial (08-tutorial.css) desce para não cobrir os botões do inventário e dos objetivos; com o tutorial aberto, o painel da
+   estrutura fica ao lado dele (mesma coluna de 384 px que a gaveta já respeita). */
+#tutorial { top: calc(env(safe-area-inset-top, 0px) + 136px) }   /* Etapa 2: abaixo também do botão 🎯 Objetivos (era 100 px) */
+body.tutorial-aberto .painel-da-estrutura { left: 384px }
+@media (max-width: 520px) {
+  #tutorial { top: auto }
+  #tutorial.no-alto { top: calc(env(safe-area-inset-top, 0px) + 94px) }
+  body.tutorial-aberto .painel-da-estrutura { left: 12px }
+}
+/* Minhas Poções: a lista ocupa a prateleira inteira (sem a grade de 3 colunas das receitas) */
+.corpo-do-guardiao.aba-minhas .prateleira-de-pocoes { display: block }
+.minha-pocao .botao-do-guardiao { white-space: nowrap; min-width: 150px }
+
+/* ===== Rebalanceamento: cotas diárias por atividade (painel 🌾 Fazenda) e função da estrutura ===== */
+.cotas-do-dia ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 4px 0 10px; padding: 0; list-style: none }
+.cotas-do-dia li { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; padding: 6px 9px; border: 1px solid var(--gaveta-borda); border-radius: 10px; background: var(--gaveta-cartao); font-size: 12px }
+.cotas-do-dia li b { text-align: right }
+.cotas-do-dia li small { grid-column: 1 / -1; color: var(--gaveta-texto-suave); font-size: 11px }
+.cotas-do-dia li.cheia { box-shadow: inset 4px 0 0 #e0b04a }
+.cotas-do-dia li.bloqueada { opacity: .6 }
+.funcao-da-estrutura { margin: 0 0 8px; padding: 7px 10px; border-radius: 10px; background: var(--gaveta-cartao); font-size: 12.5px }
+.funcao-da-estrutura span { color: var(--gaveta-texto-suave) }
+@media (max-width: 520px) { .cotas-do-dia ul { grid-template-columns: 1fr } }
+.quantidade-do-item { white-space: nowrap }
+/* Celular: o indicador de XP quebra em duas linhas e fica mais alto; o botão do inventário desce para não sobrepô-lo */
+@media (max-width: 520px) {
+  #barra-topo > #botao-inventario { top: calc(env(safe-area-inset-top, 0px) + 86px) }
+  #tutorial.no-alto { top: calc(env(safe-area-inset-top, 0px) + 160px) }   /* Etapa 2: abaixo do botão 🎯 Objetivos (122 px) */
+  .painel-da-estrutura { max-height: calc(100vh - 220px) }
+}
+
+/* ===== Etapa da alquimia: explicação, faixas das poções e efeitos ativos ===== */
+.explicacao-da-alquimia { padding: 10px 14px; border: 2px solid var(--gaveta-borda); border-radius: 14px; background: var(--gaveta-cartao); box-shadow: 0 2px 0 var(--gaveta-borda); font-size: 13px }
+.explicacao-da-alquimia summary { cursor: pointer; font-weight: 800; color: var(--gaveta-titulo); font-size: 14px }
+.explicacao-da-alquimia summary:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px; border-radius: 6px }
+.passos-da-alquimia { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0 8px; padding: 0; list-style: none; counter-reset: passo }
+.passos-da-alquimia li { position: relative; display: flex; flex-direction: column; gap: 2px; padding: 8px 10px 8px 30px; border-radius: 10px; background: var(--gaveta-papel); line-height: 1.3; counter-increment: passo }
+.passos-da-alquimia li::before { content: counter(passo); position: absolute; left: 8px; top: 8px; display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: var(--gaveta-madeira); color: #fff6e2; font-size: 11px; font-weight: 800 }
+.passos-da-alquimia li > span:first-child { font-size: 18px }
+.regras-da-alquimia { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 14px; margin: 0; padding: 0; list-style: none; color: var(--gaveta-texto-suave) }
+.regras-da-alquimia b { color: var(--gaveta-texto) }
+.categoria-da-pocao { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 800; border: 1px solid var(--gaveta-borda); background: var(--gaveta-papel); color: var(--gaveta-texto) }
+.categoria-da-pocao.avancada { border-color: #3f8fd6 }
+.categoria-da-pocao.especial { border-color: #a35bd1 }
+.cabeca-do-balcao .categoria-da-pocao { margin-top: 4px }
+.dados-da-minha-pocao .categoria-da-pocao { align-self: flex-start; margin: 2px 0 }
+.dica-do-guardiao { margin: 4px 0; font-size: 12.5px; color: var(--gaveta-texto-suave) }
+.efeitos-ativos-do-guardiao { margin: 4px 0; padding-left: 18px; font-size: 13px }
+/* Indicador dos efeitos ativos: ao lado do botão do inventário (mesmo alinhamento), um selo por efeito com o tempo restante */
+#barra-topo > #efeitos-das-pocoes {
+  position: absolute; left: 150px; top: calc(env(safe-area-inset-top, 0px) + 58px); display: flex; flex-wrap: wrap; gap: 6px;
+  max-width: calc(100vw - 170px); padding: 0; border: 0; background: none; box-shadow: none; pointer-events: none
+}
+#barra-topo > #efeitos-das-pocoes[hidden] { display: none }
+.efeito-ativo { padding: 5px 10px; border-radius: 16px; font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; background: var(--gaveta-papel); color: var(--gaveta-texto); border: 2px solid var(--cor-da-pocao); box-shadow: 0 3px 0 var(--gaveta-madeira-escura) }
+@media (max-width: 820px) {
+  .passos-da-alquimia { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+}
+@media (max-width: 520px) {
+  .passos-da-alquimia, .regras-da-alquimia { grid-template-columns: 1fr }
+  .passos-da-alquimia { gap: 6px; margin: 8px 0 }
+  .passos-da-alquimia li { flex-direction: row; align-items: center; gap: 8px; padding: 6px 8px 6px 30px }
+  .passos-da-alquimia li::before { top: 50%; transform: translateY(-50%) }
+  .passos-da-alquimia li > span:first-child { font-size: 16px }
+  #barra-topo > #efeitos-das-pocoes { left: 128px; top: calc(env(safe-area-inset-top, 0px) + 86px); max-width: calc(100vw - 140px) }
+  .efeito-ativo { padding: 4px 8px; font-size: 12px }
+}
+
+/* ===== Etapa 2: poção misteriosa (só "???" e o custo) ===== */
+.frasco-de-pocao.misteriosa i {
+  background: radial-gradient(circle at 35% 30%, #ffffffc0 0 12%, transparent 13%), conic-gradient(from 0deg, #ff7aa8, #ffd36e, #8be38b, #7cc7ff, #b48cff, #ff7aa8);
+  animation: frasco-misterioso 6s linear infinite
+}
+.frasco-de-pocao.misteriosa i::after { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; padding-top: 6px; color: #4a3a6a; font: 900 20px/1 system-ui, sans-serif }
+@keyframes frasco-misterioso { to { filter: hue-rotate(360deg) } }
+@media (prefers-reduced-motion: reduce) { .frasco-de-pocao.misteriosa i { animation: none } }
+.categoria-da-pocao.misteriosa { border-color: #9a87c9; letter-spacing: .1em }
+.cartao-de-pocao.misteriosa .nome-da-pocao { letter-spacing: .15em }
+
+/* ===== Etapa 2: camada das cenas especiais (seção 30c) ===== */
+/* Bloqueia cliques no mapa durante a cena e mostra faixas de cinema e um brilho suave. A interface volta sozinha no fim. */
+#camada-do-evento { position: fixed; inset: 0; z-index: 80; pointer-events: auto; background: transparent }
+#camada-do-evento[hidden] { display: none }
+#camada-do-evento .faixa-do-evento { position: absolute; left: 0; right: 0; height: 0; background: #07050d; transition: height .9s ease }
+#camada-do-evento .faixa-do-evento.topo { top: 0 }
+#camada-do-evento .faixa-do-evento.base { bottom: 0 }
+#camada-do-evento .brilho-do-evento { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease;
+  background: radial-gradient(ellipse at 50% 40%, transparent 55%, #3b2a6a55 100%), linear-gradient(180deg, #ffd6f633, transparent 45%) }
+#camada-do-evento.ativa .faixa-do-evento { height: 9vh }
+#camada-do-evento.ativa .brilho-do-evento { opacity: 1 }
+body.em-evento-especial :is(#barra-topo, #lista-cards, #barra-ferramentas, #tutorial, #tutorial-destaque, #faixa-invasao, #painel-da-estrutura) {
+  opacity: 0; pointer-events: none; transition: opacity .6s ease
+}
+@media (prefers-reduced-motion: reduce) { #camada-do-evento .faixa-do-evento, #camada-do-evento .brilho-do-evento { transition: none } }
+
+/* ===== Etapa 1: SELO DE LENDA DESCOBERTA (lugar da poção misteriosa depois do uso; seção 28b) =====
+   Peça decorativa, não uma poção: céu noturno violeta, borda em arco-íris (lembra o arco-íris da cena do unicórnio), medalhão
+   com o unicórnio e brilhos. Sem frasco, sem preço e sem botão; clicar mostra a lenda no balcão. */
+.selo-da-lenda {
+  position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px 10px 12px; border: 2px solid transparent; border-radius: 14px; font: inherit; text-align: center; cursor: pointer; color: #f3ecff;
+  background: radial-gradient(120% 90% at 50% 0%, #5b3a96 0%, #34205e 55%, #22143f 100%) padding-box,
+              conic-gradient(from var(--giro-da-lenda, 0deg), #ff6b8b, #ffb35c, #ffe66d, #7fdb8a, #5cc8ff, #9b8cff, #ff6b8b) border-box;
+  box-shadow: 0 3px 0 #1c1035, 0 0 18px #b48cff40; transition: transform .15s, box-shadow .15s;
+  animation: giro-da-borda-da-lenda 8s linear infinite;
+}
+@property --giro-da-lenda { syntax: '<angle>'; inherits: false; initial-value: 0deg }
+@keyframes giro-da-borda-da-lenda { to { --giro-da-lenda: 360deg } }
+.selo-da-lenda:hover { transform: translateY(-2px); box-shadow: 0 5px 0 #1c1035, 0 0 26px #c9a8ff70 }
+.selo-da-lenda:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.selo-da-lenda.selecionada { box-shadow: 0 3px 0 #1c1035, 0 0 0 4px #f2c94c88, 0 0 26px #c9a8ff80 }
+.brilhos-da-lenda { position: absolute; inset: 0; pointer-events: none; opacity: .8;
+  background: radial-gradient(1.5px 1.5px at 18% 22%, #fff, transparent), radial-gradient(1px 1px at 78% 18%, #fff, transparent), radial-gradient(1.5px 1.5px at 85% 62%, #ffe9a8, transparent),
+              radial-gradient(1px 1px at 12% 70%, #fff, transparent), radial-gradient(1px 1px at 45% 88%, #d7c6ff, transparent), radial-gradient(1.5px 1.5px at 62% 34%, #fff, transparent);
+  animation: brilho-da-lenda 3.2s ease-in-out infinite }
+@keyframes brilho-da-lenda { 0%, 100% { opacity: .35 } 50% { opacity: .95 } }
+.medalhao-da-lenda { position: relative; display: grid; place-items: center; width: 56px; height: 56px; flex: 0 0 auto; border-radius: 50%;
+  background: radial-gradient(circle, #4a2d80 58%, transparent 59%), conic-gradient(#ff6b8b, #ffb35c, #ffe66d, #7fdb8a, #5cc8ff, #9b8cff, #ff6b8b);
+  box-shadow: 0 0 0 2px #ffffff30, 0 0 16px #ffd86b55 }
+.medalhao-da-lenda span { font-size: 28px; line-height: 1; filter: drop-shadow(0 2px 2px #0006); animation: flutuar-da-lenda 3s ease-in-out infinite }
+@keyframes flutuar-da-lenda { 0%, 100% { transform: translateY(1px) } 50% { transform: translateY(-3px) } }
+.titulo-da-lenda { position: relative; font-weight: 900; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #ffe08a; text-shadow: 0 1px 0 #0008, 0 0 10px #ffd86b55 }
+.texto-da-lenda { position: relative; font-size: 11.5px; font-style: italic; line-height: 1.3; color: #e6dcff }
+/* balcão da lenda */
+.balcao-da-lenda { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 16px 12px; border-radius: 14px; color: #f3ecff;
+  background: radial-gradient(120% 90% at 50% 0%, #5b3a96 0%, #34205e 60%, #22143f 100%); box-shadow: inset 0 0 0 2px #b48cff55 }
+.balcao-da-lenda h3 { margin: 4px 0 0; color: #ffe08a !important; font-size: 19px; text-shadow: 0 1px 0 #0008 }
+.medalhao-da-lenda.grande { width: 88px; height: 88px }
+.medalhao-da-lenda.grande span { font-size: 44px }
+.citacao-da-lenda { margin: 0; padding: 8px 12px; font-size: 14px; font-style: italic; line-height: 1.45; border-left: 4px solid; border-image: linear-gradient(#ff6b8b, #ffe66d, #5cc8ff, #9b8cff) 1; text-align: left }
+.data-da-lenda { margin: 0; font-size: 12.5px; font-weight: 700; color: #ffe08a }
+.balcao-da-lenda .dica-do-guardiao { margin: 4px 0 0; font-size: 12px; color: #d4c6f5 }
+@media (max-width: 520px) {
+  .selo-da-lenda { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; text-align: left }
+  .selo-da-lenda .texto-da-lenda { flex-basis: 100% }
+}
+@media (prefers-reduced-motion: reduce) { .selo-da-lenda, .brilhos-da-lenda, .medalhao-da-lenda span { animation: none } }
+
+/* ===== Etapa 2: QUADRO DE OBJETIVOS (seção 30e) ===== */
+/* Botão: logo abaixo do inventário, mesmo estilo; no computador mostra o próximo objetivo principal */
+#barra-topo > #botao-objetivos {
+  position: absolute; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 98px); display: flex; align-items: center; gap: 6px;
+  max-width: min(360px, calc(100vw - 24px)); padding: 6px 12px; border-radius: 16px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer
+}
+#barra-topo > #botao-objetivos[aria-expanded="true"] { background: var(--gaveta-madeira); color: #fff6e2 }
+#barra-topo > #botao-objetivos:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.proximo-objetivo { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--gaveta-texto-suave) }
+.proximo-objetivo:not(:empty)::before { content: "·"; margin-right: 6px; opacity: .7 }
+#botao-objetivos[aria-expanded="true"] .proximo-objetivo { color: #fff6e2cc }
+.novidade-dos-objetivos { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 50%; background: #e74c3c; box-shadow: 0 0 0 2px var(--gaveta-papel) }
+.novidade-dos-objetivos[hidden] { display: none }
+#botao-objetivos.comemorando { animation: objetivo-comemorado 1.1s ease-in-out 2 }
+@keyframes objetivo-comemorado { 0%, 100% { box-shadow: 0 3px 0 var(--gaveta-madeira-escura) } 50% { box-shadow: 0 3px 0 var(--gaveta-madeira-escura), 0 0 0 5px #f2c94c88, 0 0 18px #f2c94c } }
+@media (prefers-reduced-motion: reduce) { #botao-objetivos.comemorando { animation: none } }
+@media (max-width: 520px) {
+  #barra-topo > #botao-objetivos { left: 8px; top: calc(env(safe-area-inset-top, 0px) + 122px); font-size: 12px }
+  .proximo-objetivo { display: none }
+}
+/* Janela */
+.cartao-dos-objetivos { width: min(620px, 100%) }
+.resumo-dos-objetivos { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin: 0 0 4px; padding: 10px 12px; border-radius: 12px; background: var(--gaveta-cartao); border: 1px solid var(--gaveta-borda) }
+.selos-conquistados { font-weight: 800; color: var(--gaveta-titulo); white-space: nowrap }
+.resumo-dos-objetivos small { color: var(--gaveta-texto-suave); font-weight: 700; white-space: nowrap }
+.barra-do-resumo, .barra-do-objetivo { display: block; height: 8px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--gaveta-texto) 12%, transparent) }
+.barra-do-resumo i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #e0b04a, #f6dc7a) }
+.titulo-agora { margin: 14px 0 8px; color: var(--gaveta-titulo); font-size: 16px }
+.objetivos-em-destaque { display: grid; gap: 10px }
+.objetivo { --cor-da-categoria: #b7892a; position: relative; display: grid; grid-template-columns: 46px 1fr; gap: 12px; align-items: start; padding: 12px 12px 10px; border: 1px solid var(--gaveta-borda);
+  border-left: 5px solid var(--cor-da-categoria); border-radius: 12px; background: var(--gaveta-cartao); box-shadow: 0 2px 0 var(--gaveta-borda) }
+.objetivo.categoria-atividade { --cor-da-categoria: #4f9a3d }
+.objetivo.categoria-descoberta { --cor-da-categoria: #8e6bd1 }
+.medalhao-do-objetivo { position: relative; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; font-size: 23px; background: radial-gradient(circle at 35% 30%, #fffdf3, #ead6a8); border: 3px solid var(--cor-da-categoria); box-sizing: border-box; box-shadow: 0 2px 0 #0002 }
+.corpo-do-objetivo { min-width: 0 }
+.topo-do-objetivo { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; margin-bottom: 2px }
+.categoria-do-objetivo { font-size: 11px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; color: var(--cor-da-categoria) }
+.estado-do-objetivo { padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; background: color-mix(in srgb, var(--gaveta-texto) 10%, transparent); color: var(--gaveta-texto-suave) }
+.estado-andamento .estado-do-objetivo { background: #f6dc7a; color: #5a3d0a }
+.estado-concluido .estado-do-objetivo { background: #4f9a3d; color: #fff }
+.nome-do-objetivo { display: block; font-size: 15px; line-height: 1.25 }
+.descricao-do-objetivo { margin: 2px 0 8px; font-size: 13px; line-height: 1.35; color: var(--gaveta-texto-suave) }
+.progresso-do-objetivo { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; margin-bottom: 6px }
+.barra-do-objetivo i { display: block; height: 100%; border-radius: inherit; background: var(--cor-da-categoria); transition: width .4s ease }
+.contagem-do-objetivo { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--gaveta-texto) }
+.recompensa-do-objetivo { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--gaveta-titulo) }
+/* concluído: medalhão dourado com ✓ */
+.objetivo.estado-concluido { background: color-mix(in srgb, #f6dc7a 16%, var(--gaveta-cartao)) }
+.objetivo.estado-concluido .medalhao-do-objetivo { border-color: #d4a62a; background: radial-gradient(circle at 35% 30%, #fff6c9, #f0c95a); box-shadow: 0 0 0 2px #fff6c9, 0 0 12px #f2c94c88 }
+.objetivo.estado-concluido .medalhao-do-objetivo::after { content: "✓"; position: absolute; right: -6px; bottom: -4px; display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; font-size: 11px; font-weight: 900; color: #fff; background: #4f9a3d; border: 2px solid var(--gaveta-cartao) }
+/* segredo ainda não descoberto */
+.objetivo.secreto { border-style: dashed; border-left-style: solid; background: color-mix(in srgb, #8e6bd1 8%, var(--gaveta-cartao)) }
+.objetivo.secreto .medalhao-do-objetivo { background: radial-gradient(circle at 35% 30%, #efe6ff, #c9b4f0) }
+.objetivo.secreto .descricao-do-objetivo { font-style: italic }
+/* lista completa */
+.ver-todos-os-objetivos { display: block; width: 100%; margin: 12px 0 0; padding: 9px 12px; border: 1px solid var(--gaveta-borda); border-radius: 12px; background: var(--gaveta-cartao-vazio); color: var(--gaveta-texto); font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 2px 0 var(--gaveta-borda) }
+.ver-todos-os-objetivos:hover { background: var(--gaveta-cartao) }
+.ver-todos-os-objetivos:focus-visible { outline: 3px solid #f2c94c; outline-offset: 2px }
+.todos-os-objetivos[hidden] { display: none }
+.grupo-de-objetivos h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 16px 0 8px; color: var(--gaveta-titulo); font-size: 14px }
+.grupo-de-objetivos h4 small { font-weight: 600; color: var(--gaveta-texto-suave) }
+.grupo-de-objetivos .objetivo + .objetivo { margin-top: 8px }
+.objetivo.compacto { grid-template-columns: 36px 1fr; gap: 10px; padding: 8px 10px }
+.objetivo.compacto .medalhao-do-objetivo { width: 36px; height: 36px; font-size: 18px; border-width: 2px }
+.objetivo.compacto.estado-concluido .medalhao-do-objetivo::after { width: 15px; height: 15px; font-size: 9px }
+.objetivo.compacto .nome-do-objetivo { font-size: 14px }
+.objetivo.compacto .descricao-do-objetivo { margin-bottom: 6px; font-size: 12.5px }
+.objetivos-futuros, .sem-objetivos { margin: 14px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--gaveta-cartao-vazio); color: var(--gaveta-texto-suave); font-size: 13px; font-weight: 700 }
+.dica-dos-objetivos { margin: 14px 0 0; font-size: 12.5px; color: var(--gaveta-texto-suave) }
+@media (max-width: 520px) {
+  .resumo-dos-objetivos { grid-template-columns: 1fr; gap: 6px }
+  .objetivo { grid-template-columns: 38px 1fr; gap: 10px; padding: 10px }
+  .medalhao-do-objetivo { width: 38px; height: 38px; font-size: 19px }
+}

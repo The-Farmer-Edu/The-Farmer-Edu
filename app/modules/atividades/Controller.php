@@ -3,6 +3,7 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
+require_once __DIR__ . '/../notificacoes/Model.php';
 
 class AtividadesController
 {
@@ -61,6 +62,13 @@ class AtividadesController
             $remover   = Gabarito::ids($_POST['remover_arquivos'] ?? []);
 
             $atividade->gravar($pdo, $idInstrutor, $idAtividade > 0 ? $idAtividade : null, $uploads, $copiar, $remover);
+if ($idAtividade === 0) {
+    NotificacoesModel::notificarTurma(
+        $pdo,
+        (int) $_POST['id_turma'],
+        (string) $_POST['titulo']
+    );
+}
 
             return ['mensagem' => $idAtividade > 0
                 ? 'Atividade atualizada com sucesso!'

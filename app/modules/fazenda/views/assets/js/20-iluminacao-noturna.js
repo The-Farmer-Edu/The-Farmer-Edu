@@ -34,22 +34,24 @@
       // Escolhe periodicamente os pontos de luz mais próximos do foco da câmera para receberem as poucas luzes reais e faz cada
       // luz acender/apagar aos poucos (sem piscar), acompanhando o ciclo de dia e noite.
       const atualizarLuzesDosPostes = function atualizarLuzesDosPostes(segundosDesdeUltimoFrame, tempo) {
-        if (MODO_LEVE.ativo) return;   // Modo Leve: as luzes do pool ficam desligadas (seção 21); nem a escolha dos postes é feita
+        // Etapa 0b: quantas luzes do pool o nível de qualidade usa à noite (3 no baixo, 8 no médio/alto; seção 02). Com 0, nada é feito.
+        const quantidadeDoPool = perfilDaQualidade().luzesDosPostes;
+        if (!quantidadeDoPool) return;
         temporizadorDosPostes -= segundosDesdeUltimoFrame;
         if (temporizadorDosPostes <= 0) {
           temporizadorDosPostes = 0.35;
           const focoX = alvoAtualDaCamera.x, focoZ = alvoAtualDaCamera.z;
-          proximosPontosDeLuz = listarPontosDeLuzArtificial().map(ponto => [Math.hypot(ponto.x - focoX, ponto.z - focoZ), ponto]).sort((itemA, itemB) => itemA[0] - itemB[0]).slice(0, luzesDosPostes.length).map(item => item[1]);
+          proximosPontosDeLuz = listarPontosDeLuzArtificial().map(ponto => [Math.hypot(ponto.x - focoX, ponto.z - focoZ), ponto]).sort((itemA, itemB) => itemA[0] - itemB[0]).slice(0, quantidadeDoPool).map(item => item[1]);
         }
         for (const luzDoPoste of luzesDosPostes) {   // quem saiu da lista apaga aos poucos; quem entrou espera uma luz livre
-          const atualizado = luzDoPoste.ponto && proximosPontosDeLuz.find(ponto => ponto.chave === luzDoPoste.ponto.chave);
+          const atualizado = luzesDosPostes.indexOf(luzDoPoste) < quantidadeDoPool && luzDoPoste.ponto && proximosPontosDeLuz.find(ponto => ponto.chave === luzDoPoste.ponto.chave);   // acima da cota do nível: libera
           if (atualizado) { luzDoPoste.ponto = atualizado; luzDoPoste.luz.position.set(atualizado.x, atualizado.y, atualizado.z); }
           luzDoPoste.nivel = Math.min(1, Math.max(0, luzDoPoste.nivel + (atualizado ? 1 : -1) * segundosDesdeUltimoFrame * 1.6));
           if (!atualizado && luzDoPoste.nivel === 0) luzDoPoste.ponto = null;
         }
         for (const ponto of proximosPontosDeLuz) {
           if (luzesDosPostes.some(luzDoPoste => luzDoPoste.ponto && luzDoPoste.ponto.chave === ponto.chave)) continue;
-          const livre = luzesDosPostes.find(luzDoPoste => !luzDoPoste.ponto);
+          const livre = luzesDosPostes.find((luzDoPoste, indiceDaLuz) => indiceDaLuz < quantidadeDoPool && !luzDoPoste.ponto);
           if (livre) { livre.ponto = ponto; livre.luz.position.set(ponto.x, ponto.y, ponto.z); }
         }
         const acesas = CICLO_DE_DIA_E_NOITE.acesas || 0;
@@ -71,7 +73,7 @@
         // casa: janelas com luz de dentro (oscilação mínima, como uma lâmpada quente) e luz real saindo pela frente
         materialDaJanelaAcesa.emissiveIntensity = acesas * ILUMINACAO_NOTURNA.intensidadeDasJanelas * (0.96 + 0.04 * Math.sin(tempo * 1.7));
         placaDeBoasVindas.materialDoTexto.emissiveIntensity = acesas * ILUMINACAO_NOTURNA.brilhoDaPlacaANoite;   // Mark 8.3: placa legível à noite (0 de dia)
-        if (!MODO_LEVE.ativo && marcadorDaLuzDaCasa && marcadorDaLuzDaCasa.parent && acesas > 0.001) {
+        if (perfilDaQualidade().luzDaCasa && marcadorDaLuzDaCasa && marcadorDaLuzDaCasa.parent && acesas > 0.001) {   // Etapa 0b: segue o nível
           marcadorDaLuzDaCasa.getWorldPosition(luzDaCasa.position);
           luzDaCasa.intensity = acesas * ILUMINACAO_NOTURNA.luzDaCasa.intensidade;
         } else luzDaCasa.intensity = 0;
@@ -80,7 +82,7 @@
         materialDoHaloDoFarol.opacity = acesas * 0.9; materialDoFeixeNoChao.opacity = acesas * 0.8;
         materialDoHaloDoFarol.visible = materialDoFeixeNoChao.visible = acesas > 0.01;
         const trator = farolDoTrator && farolDoTrator.trator;
-        if (!MODO_LEVE.ativo && trator && trator.parent && acesas > 0.001) {
+        if (perfilDaQualidade().luzDosFarois && trator && trator.parent && acesas > 0.001) {   // Etapa 0b: segue o nível
           trator.updateWorldMatrix(true, false);
           luzDosFarois.position.copy(farolDoTrator.origem); trator.localToWorld(luzDosFarois.position);
           luzDosFarois.target.position.copy(farolDoTrator.alvo); trator.localToWorld(luzDosFarois.target.position); luzDosFarois.target.updateMatrixWorld();

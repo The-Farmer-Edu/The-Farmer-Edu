@@ -4,28 +4,39 @@ require_once __DIR__ . '/../../core/database.php';
 
 class CursoModel
 {
-    // Instrutor: todos os cursos, com a quantidade de turmas de cada um
-    public static function listar(): array
+    public static function listar(int $ativo = 1): array
     {
-        return iniciarPDO()->query(
-            'SELECT c.*, COUNT(t.id_turma) AS total_turmas
+        $stmt = iniciarPDO()->prepare(
+            'SELECT c.*,
+                    (SELECT COUNT(*) FROM turmas t
+                     WHERE t.id_curso = c.id_curso AND t.ativo = 1) AS total_turmas,
+                    (SELECT COUNT(*) FROM turmas t
+                     WHERE t.id_curso = c.id_curso) AS total_turmas_vinculadas
              FROM cursos c
-             LEFT JOIN turmas t ON t.id_curso = c.id_curso AND t.ativo = 1
-             GROUP BY c.id_curso
+             WHERE c.ativo = ?
              ORDER BY c.nome_curso'
-        )->fetchAll();
+        );
+        $stmt->execute([$ativo]);
+        return $stmt->fetchAll();
     }
 
-    // Aluno: só cursos de turmas em que está matriculado
     public static function listarDoAluno(int $idAluno): array
     {
         $stmt = iniciarPDO()->prepare(
-            'SELECT DISTINCT c.* FROM cursos c
-             JOIN turmas t ON t.id_curso = c.id_curso
-             JOIN matriculas m ON m.id_turma = t.id_turma
-             WHERE m.id_aluno = ? AND t.ativo = 1 ORDER BY c.nome_curso'
+            'SELECT c.*,
+                    (SELECT COUNT(*) FROM turmas t
+                     WHERE t.id_curso = c.id_curso AND t.ativo = 1
+                       AND EXISTS (SELECT 1 FROM matriculas m
+                                   WHERE m.id_turma = t.id_turma AND m.id_aluno = ?)) AS total_turmas
+             FROM cursos c
+             WHERE EXISTS (
+                 SELECT 1 FROM turmas t
+                 JOIN matriculas m ON m.id_turma = t.id_turma
+                 WHERE t.id_curso = c.id_curso AND t.ativo = 1 AND m.id_aluno = ?
+             )
+             ORDER BY c.nome_curso'
         );
-        $stmt->execute([$idAluno]);
+        $stmt->execute([$idAluno, $idAluno]);
         return $stmt->fetchAll();
     }
 
@@ -36,7 +47,19 @@ class CursoModel
         return $stmt->fetch() ?: null;
     }
 
-    // Já existe um curso com esse nome? ($ignorarId evita comparar o curso consigo mesmo ao editar)
+    public static function buscarDoAluno(int $idCurso, int $idAluno): ?array
+    {
+        $stmt = iniciarPDO()->prepare(
+            'SELECT DISTINCT c.*
+             FROM cursos c
+             JOIN turmas t ON t.id_curso = c.id_curso AND t.ativo = 1
+             JOIN matriculas m ON m.id_turma = t.id_turma
+             WHERE c.id_curso = ? AND m.id_aluno = ?'
+        );
+        $stmt->execute([$idCurso, $idAluno]);
+        return $stmt->fetch() ?: null;
+    }
+
     public static function nomeExiste(string $nome, int $ignorarId = 0): bool
     {
         $stmt = iniciarPDO()->prepare('SELECT 1 FROM cursos WHERE nome_curso = ? AND id_curso <> ?');
@@ -56,7 +79,6 @@ class CursoModel
             ->execute([$nome, $descricao, $id]);
     }
 
-    // Quantas turmas (ativas ou arquivadas, de qualquer instrutor) o curso tem
     public static function totalTurmas(int $id): int
     {
         $stmt = iniciarPDO()->prepare('SELECT COUNT(*) FROM turmas WHERE id_curso = ?');
@@ -64,13 +86,18 @@ class CursoModel
         return (int) $stmt->fetchColumn();
     }
 
-    // Só exclui curso sem nenhuma turma (o banco também impede, via ON DELETE RESTRICT).
-    // Devolve false se o curso tem turmas ou não existe.
+    public static function definirAtivo(int $id, int $ativo): bool
+    {
+        $stmt = iniciarPDO()->prepare('UPDATE cursos SET ativo = ? WHERE id_curso = ?');
+        $stmt->execute([$ativo, $id]);
+        return $stmt->rowCount() > 0;
+    }
+
     public static function excluir(int $id): bool
     {
-        if (self::totalTurmas($id) > 0) {
-            return false;
-        }
+        // A chave estrangeira de turmas -> cursos usa RESTRICT. Mantemos
+        // também esta validação explícita para preservar o histórico.
+        if (self::totalTurmas($id) > 0) return false;
         $stmt = iniciarPDO()->prepare('DELETE FROM cursos WHERE id_curso = ?');
         $stmt->execute([$id]);
         return $stmt->rowCount() > 0;
@@ -81,58 +108,132 @@ class TurmaModel
 {
     public const TURNOS = ['manha' => 'Manhã', 'tarde' => 'Tarde', 'noite' => 'Noite'];
 
-    // Turmas de um curso criadas pelo instrutor ($ativo = 1: ativas | 0: arquivadas)
     public static function listarDoCurso(int $idCurso, int $idInstrutor, int $ativo = 1): array
     {
         $stmt = iniciarPDO()->prepare(
-            'SELECT t.*, COUNT(m.id_matricula) AS total_alunos
+            'SELECT t.*,
+                    (SELECT COUNT(*) FROM matriculas m WHERE m.id_turma = t.id_turma) AS total_alunos
              FROM turmas t
-             LEFT JOIN matriculas m ON m.id_turma = t.id_turma
              WHERE t.id_curso = ? AND t.id_instrutor = ? AND t.ativo = ?
-             GROUP BY t.id_turma
              ORDER BY t.nome_turma'
         );
         $stmt->execute([$idCurso, $idInstrutor, $ativo]);
         return $stmt->fetchAll();
     }
 
-    // Turma + dados do curso, só se pertencer ao instrutor informado (null caso contrário)
+    public static function listarDoInstrutor(int $idInstrutor, int $ativo = 1): array
+    {
+        $stmt = iniciarPDO()->prepare(
+            'SELECT t.*, c.nome_curso,
+                    (SELECT COUNT(*) FROM matriculas m WHERE m.id_turma = t.id_turma) AS total_alunos
+             FROM turmas t
+             JOIN cursos c ON c.id_curso = t.id_curso
+             WHERE t.id_instrutor = ? AND t.ativo = ?
+             ORDER BY c.nome_curso, t.nome_turma'
+        );
+        $stmt->execute([$idInstrutor, $ativo]);
+        return $stmt->fetchAll();
+    }
+
     public static function buscarDoInstrutor(int $idTurma, int $idInstrutor): ?array
     {
         $stmt = iniciarPDO()->prepare(
-            'SELECT t.*, c.nome_curso
+            'SELECT t.*, c.nome_curso, u.nome AS nome_instrutor
              FROM turmas t
              JOIN cursos c ON c.id_curso = t.id_curso
+             JOIN usuarios u ON u.id_usuario = t.id_instrutor
              WHERE t.id_turma = ? AND t.id_instrutor = ?'
         );
         $stmt->execute([$idTurma, $idInstrutor]);
         return $stmt->fetch() ?: null;
     }
 
-    public static function criar(string $nome, string $turno, int $idCurso, int $idInstrutor): void
+    public static function buscarDoAluno(int $idTurma, int $idAluno): ?array
     {
-        iniciarPDO()->prepare(
-            'INSERT INTO turmas (nome_turma, turno, id_curso, id_instrutor) VALUES (?, ?, ?, ?)'
-        )->execute([$nome, $turno, $idCurso, $idInstrutor]);
+        $stmt = iniciarPDO()->prepare(
+            'SELECT t.*, c.nome_curso, u.nome AS nome_instrutor
+             FROM turmas t
+             JOIN cursos c ON c.id_curso = t.id_curso
+             JOIN usuarios u ON u.id_usuario = t.id_instrutor
+             JOIN matriculas m ON m.id_turma = t.id_turma
+             WHERE t.id_turma = ? AND m.id_aluno = ?'
+        );
+        $stmt->execute([$idTurma, $idAluno]);
+        return $stmt->fetch() ?: null;
     }
 
-    // Atualiza nome e turno (o curso e o instrutor não mudam)
-    public static function atualizar(int $idTurma, int $idInstrutor, string $nome, string $turno): void
+    public static function listarDoAluno(int $idAluno): array
     {
-        iniciarPDO()->prepare(
-            'UPDATE turmas SET nome_turma = ?, turno = ? WHERE id_turma = ? AND id_instrutor = ?'
-        )->execute([$nome, $turno, $idTurma, $idInstrutor]);
+        $stmt = iniciarPDO()->prepare(
+            'SELECT t.id_turma, t.nome_turma, t.turno, t.ativo, t.id_curso, t.image_turma,
+                    c.nome_curso, u.nome AS nome_instrutor, m.data_matricula
+             FROM matriculas m
+             JOIN turmas t ON t.id_turma = m.id_turma
+             JOIN cursos c ON c.id_curso = t.id_curso
+             JOIN usuarios u ON u.id_usuario = t.id_instrutor
+             WHERE m.id_aluno = ?
+             ORDER BY t.ativo DESC, c.nome_curso, t.nome_turma'
+        );
+        $stmt->execute([$idAluno]);
+        return $stmt->fetchAll();
     }
 
-    // Arquivar (ativo = 0) ou restaurar (ativo = 1) uma turma. Nada é apagado:
-    // matrículas, atividades e histórico continuam no banco.
+    public static function listarDoAlunoPorCurso(int $idAluno, int $idCurso): array
+    {
+        $stmt = iniciarPDO()->prepare(
+            'SELECT t.*, c.nome_curso, u.nome AS nome_instrutor
+             FROM matriculas m
+             JOIN turmas t ON t.id_turma = m.id_turma
+             JOIN cursos c ON c.id_curso = t.id_curso
+             JOIN usuarios u ON u.id_usuario = t.id_instrutor
+             WHERE m.id_aluno = ? AND t.id_curso = ? AND t.ativo = 1
+             ORDER BY t.nome_turma'
+        );
+        $stmt->execute([$idAluno, $idCurso]);
+        return $stmt->fetchAll();
+    }
+
+    public static function criar(string $nome, string $turno, int $idCurso, int $idInstrutor, ?string $imagem = null): void
+    {
+        iniciarPDO()->prepare(
+            'INSERT INTO turmas (nome_turma, turno, id_curso, id_instrutor, image_turma)
+             VALUES (?, ?, ?, ?, ?)'
+        )->execute([$nome, $turno, $idCurso, $idInstrutor, $imagem]);
+    }
+
+    public static function atualizar(int $idTurma, int $idInstrutor, string $nome, string $turno, ?string $imagem): bool
+    {
+        $pdo = iniciarPDO();
+        $pdo->prepare(
+            'UPDATE turmas SET nome_turma = ?, turno = ?, image_turma = ?
+             WHERE id_turma = ? AND id_instrutor = ?'
+        )->execute([$nome, $turno, $imagem, $idTurma, $idInstrutor]);
+
+        // Confirma o estado persistido, inclusive quando o UPDATE não altera
+        // linhas por os dados já serem iguais (rowCount() pode retornar zero).
+        $verificar = $pdo->prepare(
+            'SELECT image_turma FROM turmas WHERE id_turma = ? AND id_instrutor = ?'
+        );
+        $verificar->execute([$idTurma, $idInstrutor]);
+        $imagemSalva = $verificar->fetchColumn();
+
+        return $imagemSalva !== false && $imagemSalva === $imagem;
+    }
+
+    /** Informa se outro registro de turma ainda utiliza o mesmo arquivo. */
+    public static function imagemEstaEmUso(string $nomeArquivo): bool
+    {
+        $stmt = iniciarPDO()->prepare('SELECT 1 FROM turmas WHERE image_turma = ? LIMIT 1');
+        $stmt->execute([$nomeArquivo]);
+        return (bool) $stmt->fetchColumn();
+    }
+
     public static function definirAtivo(int $idTurma, int $idInstrutor, int $ativo): void
     {
         iniciarPDO()->prepare('UPDATE turmas SET ativo = ? WHERE id_turma = ? AND id_instrutor = ?')
             ->execute([$ativo, $idTurma, $idInstrutor]);
     }
 
-    // Alunos matriculados em uma turma
     public static function alunosDaTurma(int $idTurma): array
     {
         $stmt = iniciarPDO()->prepare(
@@ -147,38 +248,17 @@ class TurmaModel
         return $stmt->fetchAll();
     }
 
-    // Aluno: turmas em que está matriculado, com curso e instrutor
-    public static function listarDoAluno(int $idAluno): array
-    {
-        $stmt = iniciarPDO()->prepare(
-            'SELECT t.id_turma, t.nome_turma, t.turno, t.ativo, t.id_curso, c.nome_curso,
-                    u.nome AS nome_instrutor, m.data_matricula
-             FROM matriculas m
-             JOIN turmas t ON t.id_turma = m.id_turma
-             JOIN cursos c ON c.id_curso = t.id_curso
-             JOIN usuarios u ON u.id_usuario = t.id_instrutor
-             WHERE m.id_aluno = ?
-             ORDER BY t.ativo DESC, c.nome_curso, t.nome_turma'
-        );
-        $stmt->execute([$idAluno]);
-        return $stmt->fetchAll();
-    }
+
 }
 
 class MatriculaModel
 {
-    // Matricula o aluno na turma. Devolve false se ele já estava matriculado.
     public static function matricular(int $idTurma, int $idAluno): bool
     {
         $pdo = iniciarPDO();
-        $stmt = $pdo->prepare('SELECT 1 FROM matriculas WHERE id_turma = ? AND id_aluno = ?');
+        $stmt = $pdo->prepare('INSERT IGNORE INTO matriculas (id_turma, id_aluno) VALUES (?, ?)');
         $stmt->execute([$idTurma, $idAluno]);
-        if ($stmt->fetchColumn()) {
-            return false;
-        }
-        $pdo->prepare('INSERT INTO matriculas (id_turma, id_aluno) VALUES (?, ?)')
-            ->execute([$idTurma, $idAluno]);
-        return true;
+        return $stmt->rowCount() > 0;
     }
 
     public static function desmatricular(int $idTurma, int $idAluno): void
@@ -190,24 +270,22 @@ class MatriculaModel
 
 class AlunoModel
 {
-    // Todos os alunos (ativos e desativados), com as turmas ativas em que estão matriculados
     public static function listar(): array
     {
         return iniciarPDO()->query(
             "SELECT u.id_usuario, u.nome, u.email, u.ativo, a.matricula, a.xp_total,
-                    GROUP_CONCAT(CONCAT(c.nome_curso, ' - ', t.nome_turma)
-                                 ORDER BY c.nome_curso, t.nome_turma SEPARATOR ', ') AS turmas
+                    (SELECT GROUP_CONCAT(CONCAT(c.nome_curso, ' - ', t.nome_turma)
+                                         ORDER BY c.nome_curso, t.nome_turma SEPARATOR ', ')
+                     FROM matriculas m
+                     JOIN turmas t ON t.id_turma = m.id_turma AND t.ativo = 1
+                     JOIN cursos c ON c.id_curso = t.id_curso
+                     WHERE m.id_aluno = a.id_usuario) AS turmas
              FROM alunos a
              JOIN usuarios u ON u.id_usuario = a.id_usuario
-             LEFT JOIN matriculas m ON m.id_aluno = a.id_usuario
-             LEFT JOIN turmas t ON t.id_turma = m.id_turma AND t.ativo = 1
-             LEFT JOIN cursos c ON c.id_curso = t.id_curso
-             GROUP BY u.id_usuario, u.nome, u.email, u.ativo, a.matricula, a.xp_total
              ORDER BY u.nome"
         )->fetchAll();
     }
 
-    // Alunos ativos que ainda NÃO estão na turma (candidatos à matrícula)
     public static function disponiveisParaTurma(int $idTurma): array
     {
         $stmt = iniciarPDO()->prepare(
@@ -224,7 +302,7 @@ class AlunoModel
 
     public static function existe(int $idAluno): bool
     {
-        $stmt = iniciarPDO()->prepare('SELECT 1 FROM alunos WHERE id_usuario = ?');
+        $stmt = iniciarPDO()->prepare("SELECT 1 FROM alunos a JOIN usuarios u ON u.id_usuario = a.id_usuario WHERE a.id_usuario = ? AND u.ativo = 1");
         $stmt->execute([$idAluno]);
         return (bool) $stmt->fetchColumn();
     }
@@ -239,19 +317,14 @@ class ContaModel
         return (int) $stmt->fetchColumn() === 1;
     }
 
-    // Desativar (0) ou reativar (1) uma conta. A conta NUNCA é apagada.
     public static function definirAtivo(int $idUsuario, int $ativo): void
     {
-        iniciarPDO()->prepare('UPDATE usuarios SET ativo = ? WHERE id_usuario = ?')
-            ->execute([$ativo, $idUsuario]);
+        iniciarPDO()->prepare('UPDATE usuarios SET ativo = ? WHERE id_usuario = ?')->execute([$ativo, $idUsuario]);
     }
 
-    // Só altera alunos: o instrutor não consegue desativar outros instrutores por aqui
     public static function definirAtivoAluno(int $idAluno, int $ativo): bool
     {
-        $stmt = iniciarPDO()->prepare(
-            "UPDATE usuarios SET ativo = ? WHERE id_usuario = ? AND tipo_usuario = 'aluno'"
-        );
+        $stmt = iniciarPDO()->prepare("UPDATE usuarios SET ativo = ? WHERE id_usuario = ? AND tipo_usuario = 'aluno'");
         $stmt->execute([$ativo, $idAluno]);
         return $stmt->rowCount() > 0;
     }

@@ -329,8 +329,18 @@
       const avisarObjetivos = function avisarObjetivos(tipo, detalhe) { for (const ouvir of ouvintesDosObjetivos) { try { ouvir(tipo, detalhe || {}); } catch (erro) { console.error("[FarmEdu] Quadro de objetivos:", erro); } } };
       // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
       const salvarProgresso = function salvarProgresso() {
-        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { }
-        if (window.FarmEduSincronia) window.FarmEduSincronia.agendar();
+        try { 
+          if (!SERVIDOR_DA_FAZENDA){
+            localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado));
+          }
+          if (window.FarmEduSincronia) {
+            window.FarmEduSincronia.agendar();
+          }
+          return true;
+        } catch (erro) {
+          console.error(erro)
+          return false;
+        }
       };
       salvarProgresso();   // grava os campos novos de saves antigos uma única vez
 

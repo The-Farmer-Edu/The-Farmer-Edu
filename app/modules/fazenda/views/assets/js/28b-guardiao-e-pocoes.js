@@ -328,8 +328,11 @@
         const pocao = POCOES_DO_GUARDIAO[tipo], mineriosAntes = estado.recursos.minerios, pocoesAntes = estado.pocoes[tipo];
         estado.recursos.minerios -= pocao.minerios; estado.pocoes[tipo] += 1;
         let sucesso = salvarProgresso();
-        if (!sucesso) { estado.recursos.minerios = mineriosAntes; estado.pocoes[tipo] = pocoesAntes; definirMensagemDoGuardiao('Não foi possível salvar. Nenhum minério foi gasto.'); }
-        else {
+        if (!sucesso) {
+          estado.recursos.minerios = mineriosAntes;
+          estado.pocoes[tipo] = pocoesAntes;
+          definirMensagemDoGuardiao('Não foi possível salvar. Nenhum minério foi gasto.');
+        } else {
           registrarAtividade(); atualizarResumoDeRecursos(); tocarEfeito('levelUp');
           avisarObjetivos('pocao-preparada', { tipo });   // Etapa 2: quadro de objetivos (seção 30e)
           // Etapa 2: o nome vem da VISTA (a misteriosa continua "???"); a dica de uso não fala em XP para as poções de efeito.

@@ -558,11 +558,67 @@ function iniciar() {
 }
 
 iniciar();
-setInterval(() => {
-    if (!document.hidden) {
-        window.location.reload();
+function mostrarAviso(mensagem) {
+    const aviso = document.getElementById('aviso-notificacao');
+    const texto = document.getElementById('mensagem-aviso');
+
+    texto.textContent = mensagem;
+    aviso.style.display = 'block';
+
+    setTimeout(() => {
+        aviso.style.display = 'none';
+    }, 5000);
+}
+let ultimaNotificacao = null;
+
+async function verificarNovas() {
+    try {
+        const resposta = await fetch(
+            '/guilherme22/The-Farmer-Edu/public/index.php?rota=/notificacoes/verificar-novas'
+        );
+
+        const dados = await resposta.json();
+        const notificacoes = dados.notificacoes || [];
+
+       if (notificacoes.length === 0) return;
+
+const nova = notificacoes[0];
+
+        if (ultimaNotificacao === null) {
+            ultimaNotificacao = nova.id_notificacao;
+            return;
+        }
+
+        if (nova.id_notificacao != ultimaNotificacao) {
+            ultimaNotificacao = nova.id_notificacao;
+            mostrarAviso(nova.mensagem);
+        }
+    } catch (erro) {
+        console.error('Erro ao verificar notificações:', erro);
     }
-}, 5000);
+}
+
+verificarNovas();
+setInterval(verificarNovas, 5000);
+
+</script>
+<div id="aviso-notificacao" style="
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ffffff;
+    color: #222;
+    padding: 18px;
+    border-left: 5px solid #22c55e;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px #0003;
+    z-index: 9999;
+    max-width: 320px;
+">
+    🔔 <strong>Nova notificação!</strong>
+    <p id="mensagem-aviso"></p>
+</div>
 </script>
 
 </body>

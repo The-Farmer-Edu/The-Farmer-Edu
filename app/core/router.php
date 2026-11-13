@@ -25,30 +25,30 @@ class Router {
 
     public static function enviarRota(): void {
         self::carregarRotas();
-require_once __DIR__ . '/../modules/notificacoes/routes.php';
 
-        $rotaConsulta = $_GET['rota'] ?? null;
+       
+$rotaConsulta = $_GET['rota'] ?? null;
 
-        if (is_string($rotaConsulta) && $rotaConsulta !== '') {
-            $uri = '/' . trim($rotaConsulta, '/');
-        } else {
-            // Pega a URI da requisição (ex: /the-farmer-edu/login)
-            $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+if (is_string($rotaConsulta) && $rotaConsulta !== '') {
+    $uri = '/' . trim($rotaConsulta, '/');
+} else {
+    $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
-            // Pega o caminho base do script (ex: /the-farmer-edu/public/index.php)
-            $scriptName = dirname($_SERVER['SCRIPT_NAME']);
+    $scriptName = dirname($_SERVER['SCRIPT_NAME']);
 
-            // Remove a subpasta da URI para obter apenas a rota relativa (ex: /login)
-            if ($scriptName !== '/' && $scriptName !== '\\') {
-                $uri = str_replace($scriptName, '', $uri);
-            }
-
-            // Garante que a URI comece com '/' e não fique vazia
-            $uri = '/' . trim($uri, '/');
-            if ($uri !== '/') {
-                $uri = rtrim($uri, '/');
-            }
+    if ($scriptName !== '/' && $scriptName !== '\\') {
+        if (strpos($uri, $scriptName . '/') === 0) {
+            $uri = substr($uri, strlen($scriptName));
         }
+    }
+
+    if (strpos($uri, '/index.php/') === 0) {
+        $uri = substr($uri, strlen('/index.php'));
+    }
+
+    $uri = '/' . trim($uri, '/');
+}
+
 
         $method = $_SERVER['REQUEST_METHOD'];
 

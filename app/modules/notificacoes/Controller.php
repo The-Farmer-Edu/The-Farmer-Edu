@@ -98,5 +98,27 @@ $idUsuario = (int) $usuario['idUsuario'];
         echo json_encode([
             'sucesso' => $sucesso
         ]);
+        }
+        
+public function verificarNovas(): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+
+    $usuario = usuarioLogado();
+
+    if (!$usuario) {
+        http_response_code(401);
+        echo json_encode(['erro' => 'Não autenticado']);
+        return;
     }
+
+    $pdo = iniciarPDO();
+    $idUsuario = (int) $usuario['idUsuario'];
+
+    $notificacoes = NotificacoesModel::listar($pdo, $idUsuario);
+
+    echo json_encode([
+        'notificacoes' => $notificacoes
+    ], JSON_UNESCAPED_UNICODE);
+}
 }

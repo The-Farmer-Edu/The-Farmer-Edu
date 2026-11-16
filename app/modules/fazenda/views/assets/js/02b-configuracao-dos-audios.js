@@ -5,7 +5,7 @@
 const AUDIO_CONFIG = {
   // Música de fundo (toca em loop, só depois que o jogador clica em "Ativar áudio")
   musica: { 
-    arquivo: 'assets/audio/Theme_songs/noite_.mp3', volume: 1 },
+    arquivo: 'assets/audio/Theme_songs/anoitecer.mp3', volume: 1 },
 
   invasao: { 
     arquivo: 'assets/audio/Theme_songs/ataque.mp3', volume: 0.9 },
@@ -105,6 +105,11 @@ efeitos: {
           volume: 0.85, intervaloMinimo: 1.2 },
       fazendeiroDano:     { arquivo: 'assets/audio/SFX/mobs/fazendeiros/dano.mp3', volume: 0.7, intervaloMinimo: 1.0 },
       fazendeiroMorte:    { arquivo: 'assets/audio/SFX/mobs/fazendeiros/morte.mp3', volume: 0.9, intervaloMinimo: 0.5 },
+
+      // --- LENHADOR ---
+      machado:     { arquivo: 'assets/audio/SFX/mobs/lenhador/machado.mp3', volume: 0.7, intervaloMinimo: 1.0 },
+      quedaArvore:    { arquivo: 'assets/audio/SFX/mobs/lenhador/arvore.mp3', volume: 0.9, intervaloMinimo: 0.5 },
+      lenhador:    { arquivo: 'assets/audio/SFX/mobs/lenhador/lenhador.mp3', volume: 0.9, intervaloMinimo: 0.5 },
 
       // --- ESQUELETO ---
       esqueletoAparecer:  { arquivo: 'assets/audio/SFX/mobs/esqueleto/surge.mp3', volume: 0.9, intervaloMinimo: 2.0, distanciaMaxima: 35 },

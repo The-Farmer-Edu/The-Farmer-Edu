@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 05-progresso-e-salvamento.js (Fase 3B da refatoração: seção 05)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA); não é aberto sozinho. É um trecho do
       // antigo corpo de iniciarFarmEdu(), copiado sem alterações, exceto que cada função de nível superior foi escrita como
@@ -354,8 +354,9 @@
       const avisarObjetivos = function avisarObjetivos(tipo, detalhe) { for (const ouvir of ouvintesDosObjetivos) { try { ouvir(tipo, detalhe || {}); } catch (erro) { console.error("[FarmEdu] Quadro de objetivos:", erro); } } };
       // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
       const salvarProgresso = function salvarProgresso() {
-        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { }
+        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { return false; }
         if (window.FarmEduSincronia) window.FarmEduSincronia.agendar();
+        return true;
       };
       salvarProgresso();   // grava os campos novos de saves antigos uma única vez
 

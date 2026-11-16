@@ -16,23 +16,18 @@ class NotasController
         $this->model = new NotasModel();
     }
 
-    // -----------------------------------------------------------------
-    // VISÃO DO ALUNO — GET /notas/aluno
-    // -----------------------------------------------------------------
     public function verNotasAluno(): void
     {
-        // Garante que o usuario esta logado
         solicitarLogin();
 
         $usuario = usuarioLogado();
 
-        // Se for instrutor, redireciona para o painel certo
         if ($usuario['perfilAcesso'] === 'instrutor') {
             header('Location: /notas/instrutor');
             exit;
         }
 
-        $idAluno   = (int) $usuario['idUsuario'];
+        $idAluno    = (int) $usuario['idUsuario'];
         $atividades = $this->model->buscarNotasDoAluno($idAluno);
         $resumo     = $this->model->calcularResumoAluno($idAluno);
 
@@ -43,9 +38,6 @@ class NotasController
         ]);
     }
 
-    // -----------------------------------------------------------------
-    // PAINEL DO INSTRUTOR — GET /notas/instrutor
-    // -----------------------------------------------------------------
     public function painelInstrutor(): void
     {
         solicitarLogin();
@@ -67,9 +59,6 @@ class NotasController
         ]);
     }
 
-    // -----------------------------------------------------------------
-    // TURMA ESPECIFICA — GET /notas/turma?id=X
-    // -----------------------------------------------------------------
     public function verTurma(): void
     {
         solicitarLogin();
@@ -99,7 +88,7 @@ class NotasController
     }
 
     // -----------------------------------------------------------------
-    // SALVAR NOTA — POST /notas/salvar
+    // SALVAR NOTA OU CONSULTAR HISTÓRICO — POST /notas/salvar
     // -----------------------------------------------------------------
     public function salvarNota(): void
     {
@@ -113,8 +102,22 @@ class NotasController
             exit;
         }
 
-        // Leitura dos dados enviados via POST (formulario ou fetch/AJAX)
-        $idSubmissao = (int)   ($_POST['id_submissao'] ?? 0);
+        $acao        = $_POST['acao'] ?? 'salvar';
+        $idSubmissao = (int) ($_POST['id_submissao'] ?? 0);
+
+        // Consulta de histórico vindo do modal
+        if ($acao === 'historico') {
+            ob_clean();
+            header('Content-Type: application/json');
+            if ($idSubmissao <= 0) {
+                echo json_encode(['sucesso' => false, 'historico' => []]);
+                exit;
+            }
+            $historico = $this->model->buscarHistoricoNota($idSubmissao);
+            echo json_encode(['sucesso' => true, 'historico' => $historico]);
+            exit;
+        }
+
         $valor       = (float) ($_POST['valor']        ?? -1);
         $idTurma     = (int)   ($_POST['id_turma']     ?? 0);
         $idInstrutor = (int)   $usuario['idUsuario'];
@@ -129,7 +132,6 @@ class NotasController
         }
 
         if (!empty($erros)) {
-            // Se for AJAX retorna JSON; se nao, redireciona com erro na URL
             if ($this->isAjax()) {
                 header('Content-Type: application/json');
                 echo json_encode(['sucesso' => false, 'mensagem' => implode(' ', $erros)]);
@@ -145,7 +147,7 @@ class NotasController
             $sucesso  = true;
         } catch (Throwable $e) {
             error_log($e->getMessage());
-            $mensagem = "Erro ao salvar nota." . $e->getMessage();
+            $mensagem = "Erro ao salvar nota: " . $e->getMessage();
             $sucesso  = false;
         }
 
@@ -160,9 +162,6 @@ class NotasController
         exit;
     }
 
-    // -----------------------------------------------------------------
-    // LOGOUT — GET /notas/logout
-    // -----------------------------------------------------------------
     public function logout(): void
     {
         logout();
@@ -172,18 +171,12 @@ class NotasController
         exit;
     }
 
-    // -----------------------------------------------------------------
-    // Helpers privados
-    // -----------------------------------------------------------------
-
-    /** Carrega a view passando variaveis como locais */
     private function view(string $nome, array $dados = []): void
     {
         extract($dados);
         require __DIR__ . '/views/' . $nome . '.php';
     }
 
-    /** Verifica se a requisicao veio via AJAX / fetch */
     private function isAjax(): bool
     {
         return (

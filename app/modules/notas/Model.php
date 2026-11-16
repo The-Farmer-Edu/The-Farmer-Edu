@@ -19,9 +19,6 @@ class NotasModel
     // VISÃO DO ALUNO
     // -----------------------------------------------------------------
 
-    /**
-     * Retorna todas as atividades de um aluno com status e nota (se houver).
-     */
     public function buscarNotasDoAluno(int $idAluno): array
     {
         $sql = "
@@ -56,20 +53,17 @@ class NotasModel
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno, ]);
+        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno]);
         return $stmt->fetchAll();
     }
 
-    /**
-     * Calcula o resumo geral do aluno: media, total avaliado, pendentes.
-     */
     public function calcularResumoAluno(int $idAluno): array
     {
         $sql = "
             SELECT
-                COUNT(a.id_atividade)                          AS total_atividades,
-                COUNT(n.id_nota)                               AS total_avaliadas,
-                COALESCE(AVG(n.valor), 0)                      AS media_geral,
+                COUNT(a.id_atividade)                           AS total_atividades,
+                COUNT(n.id_nota)                                AS total_avaliadas,
+                COALESCE(AVG(n.valor), 0)                       AS media_geral,
                 SUM(CASE WHEN s.id_submissao IS NULL THEN 1 ELSE 0 END) AS pendentes
             FROM atividades a
             INNER JOIN turmas t     ON t.id_turma = a.id_turma
@@ -85,7 +79,7 @@ class NotasModel
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno, ]);
+        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno]);
         return $stmt->fetch() ?: [];
     }
 
@@ -93,9 +87,6 @@ class NotasModel
     // VISÃO DO INSTRUTOR
     // -----------------------------------------------------------------
 
-    /**
-     * Retorna todas as turmas do instrutor.
-     */
     public function buscarTurmasDoInstrutor(int $idInstrutor): array
     {
         $sql = "
@@ -110,9 +101,6 @@ class NotasModel
         return $stmt->fetchAll();
     }
 
-    /**
-     * Retorna todas as submissoes de uma turma com nota (se houver).
-     */
     public function buscarSubmissoesDaTurma(int $idTurma): array
     {
         $sql = "
@@ -152,17 +140,19 @@ class NotasModel
     }
 
     /**
-     * Lanca ou atualiza uma nota para uma submissao.
+     * Lança ou atualiza uma nota e grava o histórico no banco de dados.
      */
     public function salvarNota(int $idSubmissao, float $valor, int $idInstrutor): bool
     {
         $valor = max(0, min(10, $valor));
 
-        $check = $this->pdo->prepare("SELECT id_nota FROM notas WHERE id_submissao = ?");
+        $check = $this->pdo->prepare("SELECT id_nota, valor FROM notas WHERE id_submissao = ?");
         $check->execute([$idSubmissao]);
-        $nota = $check->fetch();
+        $notaAtual = $check->fetch();
 
-        if ($nota) {
+        $notaAnterior = $notaAtual ? (float) $notaAtual['valor'] : null;
+
+        if ($notaAtual) {
             $stmt = $this->pdo->prepare("
                 UPDATE notas
                 SET valor = ?, origem = 'instrutor', id_instrutor_revisor = ?, data_atribuicao = NOW()
@@ -177,6 +167,13 @@ class NotasModel
             $stmt->execute([$idSubmissao, $valor, $idInstrutor]);
         }
 
+        // Grava o histórico no banco de dados
+        $hist = $this->pdo->prepare("
+            INSERT INTO historico_notas (id_submissao, id_instrutor, nota_anterior, nota_nova)
+            VALUES (?, ?, ?, ?)
+        ");
+        $hist->execute([$idSubmissao, $idInstrutor, $notaAnterior, $valor]);
+
         $upd = $this->pdo->prepare("UPDATE submissoes SET status = 'corrigida' WHERE id_submissao = ?");
         $upd->execute([$idSubmissao]);
 
@@ -184,8 +181,26 @@ class NotasModel
     }
 
     /**
-     * Retorna detalhes de uma turma especifica (para breadcrumb).
+     * Busca o histórico de alterações de uma submissão diretamente do banco.
      */
+    public function buscarHistoricoNota(int $idSubmissao): array
+    {
+        $sql = "
+            SELECT 
+                h.nota_anterior,
+                h.nota_nova,
+                DATE_FORMAT(h.data_alteracao, '%d/%m/%Y às %H:%i') AS data_fmt,
+                u.nome AS nome_instrutor
+            FROM historico_notas h
+            INNER JOIN usuarios u ON u.id_usuario = h.id_instrutor
+            WHERE h.id_submissao = ?
+            ORDER BY h.data_alteracao DESC, h.id_historico DESC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$idSubmissao]);
+        return $stmt->fetchAll();
+    }
+
     public function buscarTurma(int $idTurma): ?array
     {
         $stmt = $this->pdo->prepare("

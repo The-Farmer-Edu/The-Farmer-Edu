@@ -1,4 +1,4 @@
-﻿-- =====================================================================
+-- =====================================================================
 -- The Farmer Edu — seed.sql (População de Dados de Teste)
 -- SENAI · Aprendizagem em Assistente de Programação Web
 -- Banco: MySQL / MariaDB

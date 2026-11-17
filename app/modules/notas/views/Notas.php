@@ -1,4 +1,14 @@
- <?php
+<?php
+/**
+ * ============================================================================
+ * VIEW: ATIVIDADES E NOTAS ESTILO GOOGLE CLASSROOM (Notas.php)
+ * ============================================================================
+ * Visualização protótipo / conceitual inspirada na interface do Google Classroom.
+ * Organiza atividades pedagógicas em blocos temáticos (Tópicos/Categorias) com
+ * informações de prazo de entrega, status e notas máximas/obtidas.
+ * ============================================================================
+ */
+
 // Inicia a sessão
 session_start();
 
@@ -229,7 +239,7 @@ foreach ($atividades as $atv) {
 </head>
 <body>
 
-    <!-- Header do topo -->
+    <!-- Header do topo: Nome da turma e do professor -->
     <nav class="classroom-nav">
         <div class="class-title">
             <h1><?php echo $nome_turma; ?></h1>
@@ -261,6 +271,7 @@ foreach ($atividades as $atv) {
                                 </div>
                             </div>
                             
+                            <!-- Exibição de nota ou status de envio -->
                             <div class="activity-right">
                                 <?php if ($atv['status'] === 'Avaliado'): ?>
                                     <span class="grade-text"><?php echo $atv['nota_aluno'] . '/' . $atv['nota_maxima']; ?></span>

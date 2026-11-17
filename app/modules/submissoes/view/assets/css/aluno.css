@@ -264,6 +264,20 @@ aside {
     background: rgba(52, 199, 89, 0.18);
 }
 
+/* Limite de entrega */
+.prazo {
+    font-family: var(--Fonte-ui);
+    font-size: 0.78rem;
+    color: var(--Texto);
+    opacity: 0.85;
+    margin: -6px 0 16px 4px;
+}
+
+.prazo.encerrado {
+    color: #c20600;
+    opacity: 1;
+}
+
 .btn-comecar-principal {
     background-color: var(--Verde-principal);
     color: var(--Texto);
@@ -275,7 +289,7 @@ aside {
     border-radius: 12px;
     cursor: pointer;
     box-shadow: 0 4px 12px var(--Sombra);
-    transition: 0.2s, 0.1s;
+    transition: background 0.2s, transform 0.1s;
     margin-bottom: 25px;
 }
 
@@ -285,6 +299,18 @@ aside {
 
 .btn-comecar-principal:active {
     transform: scale(0.98);
+}
+
+/* Botão "Visualizar" */
+.btn-comecar-principal.visualizar {
+    background-color: var(--Verde-principal);
+    color: var(--Texto);
+    border: none;
+    box-shadow: 0 4px 12px var(--Sombra);
+}
+
+.btn-comecar-principal.visualizar:hover {
+    background-color: var(--Hoover);
 }
 
 .tech-badges {
@@ -452,7 +478,6 @@ header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: 
     .menu-usuario { right: 12px; }
 
     main { grid-template-columns: 1fr; gap: 16px; width: calc(100% - 24px); margin: 14px auto; }
-    aside { order: -1; }                       /* status e botão "Começar" primeiro */
     .card_trabalhos { width: 100%; padding: 20px 16px; border-radius: 20px; }
     .card_trabalhos p { margin-bottom: 18px; }
     .btn-comecar-principal { min-height: 52px; padding: 12px; font-size: 1.1rem; margin-bottom: 18px; }
@@ -468,4 +493,15 @@ header .titulo-modulo { overflow: hidden; text-overflow: ellipsis; white-space: 
     .mascote-container { padding: 0 12px 12px; }
     .mascote-container img { width: 96px; height: 96px; }
     .modal-options { grid-template-columns: 1fr; }
+    
+    aside { order: 0; }
+    .card-principal { display: contents; }
+    .card-principal > article:first-child {
+        order: -2;
+        background: var(--Branco);
+        box-shadow: 0 4px 20px var(--Sombra);
+        padding: 22px 18px;
+        border-radius: 20px;
+    }
+    .card-principal > article:last-child { order: 2; }
 }

@@ -1,8 +1,5 @@
 <?php
 $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[$campo] ?? ''), ENT_QUOTES, 'UTF-8');
-
-// usuarioLogado() é do core, devolve os dados da sessão ou null
-$logado = usuarioLogado();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -13,7 +10,7 @@ $logado = usuarioLogado();
     <link rel="stylesheet" href="file?type=css&file=loginAluno.css">
 </head>
 <body>
-        <main class="tela-login">
+    <main class="tela-login">
 
         <section class="painel-login">
             <h1 class="titulo-login">Esqueci a senha</h1>
@@ -22,39 +19,24 @@ $logado = usuarioLogado();
                 <p class="mensagem"><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
             <?php endif; ?>
 
-            <?php if ($logado): ?>
-                <p class="mensagem">
-                    Você está logado como <?= htmlspecialchars($logado['nome'], ENT_QUOTES, 'UTF-8') ?>
-                    (<?= htmlspecialchars($logado['perfilAcesso'], ENT_QUOTES, 'UTF-8') ?>).
-                </p>
-                <p class="mensagem"><a class="link-verde" href="logout">Sair</a></p>
-            <?php else: ?>
-                <form class="form-login" action="" method="POST">
-                    <div class="campo">
-                        <label for="email">Usuário</label>
-                        <input type="email" id="email" name="email" value="<?= $antigo('email') ?>" required>
-                    </div>
+            <p class="mensagem">Informe o e-mail da sua conta e enviaremos um código de 6 dígitos para redefinir a senha.</p>
 
-                    <div class="campo">
-                        <label for="senha">Senha</label>
-                        <input type="password" id="senha" name="senha" required>
-                        <div class="links-campo">
-                            <a href="esqueciSenha">Esqueci a senha</a>
-                            <a href="loginInstrutor">Sou Instrutor</a>
-                        </div>
-                    </div>
+            <form class="form-login" action="" method="POST">
+                <div class="campo">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" value="<?= $antigo('email') ?>" required>
+                </div>
 
-                    <button type="submit" id="btn-entrar">Entrar</button>
-                </form>
+                <button type="submit" id="btn-entrar">Enviar código</button>
+            </form>
 
-                <a class="criar-conta" href="novoUsuario">Criar Conta</a>
-            <?php endif; ?>
+            <a class="criar-conta" href="loginAluno">Voltar ao login</a>
         </section>
 
         <aside class="painel-imagem">
             <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
-            <h2 class="nome-marca">The Farm Edu</h2>
-            <p class="subtitulo" id="subtitulo">Aluno</p>
+            <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
+            <p class="subtitulo" id="subtitulo">Recuperar senha</p>
         </aside>
 
     </main>

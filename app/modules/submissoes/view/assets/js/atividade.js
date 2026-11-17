@@ -1,6 +1,7 @@
 (function () {
     const PHP_ABRE = '<' + '?php\n\n';
 
+    /* LINGUAGENS */
     const LINGUAGENS = {
         web: {
             id: 'web', nome: 'HTML + CSS + JS', rotulo: 'Web', modo: 'web', judge0: 63,
@@ -36,21 +37,150 @@
         }
     };
 
+    /* DADOS DA ATIVIDADE */
     const base = {
         id: 1, titulo: 'Atividade', descricao: '', requisitos: [], objetivo: '',
-        idLinguagem: 'web', notaMax: 10, notaMin: 6, entrada: '', codigoInicial: {}
+        idLinguagem: 'web', notaMax: 10, notaMin: 6, entrada: '', codigoInicial: {},
+        limiteEntrega: null, chave: null, queryAluno: ''
     };
 
+    const bloco = document.getElementById('dadosAtividade');
     let lido = {};
-    try {
-        lido = JSON.parse(document.getElementById('dadosAtividade').textContent);
-    } catch (e) {
-        console.error('Bloco #dadosAtividade ausente ou inválido:', e);
+    if (bloco) {
+        try {
+            lido = JSON.parse(bloco.textContent);
+        } catch (e) {
+            console.error('Bloco #dadosAtividade inválido:', e);
+        }
     }
 
+    // TESTE Atividades
+    const TESTES = {
+        web: {
+            id: 1,
+            chave: 'teste-web',
+            titulo: '[TESTE] Web — Minha Fazenda',
+            descricao: 'Turma, vocês vão criar uma página simples para a fazenda: um título, um parágrafo e um botão que reage ao clique.',
+            requisitos: [
+                'Criar um título h1 com o texto "Minha Fazenda" e um parágrafo de apresentação',
+                'Adicionar um botão com id "btn" e o texto "Clique aqui"',
+                'Estilizar o fundo da página e o botão no CSS',
+                'Ao clicar, trocar o texto do botão para "Cocoricó!" e escrever uma mensagem no console'
+            ],
+            objetivo: "Criar uma página 'Minha Fazenda' com título, parágrafo e um botão que, ao ser clicado, muda o texto para 'Cocoricó!' e registra uma mensagem no console.",
+            idLinguagem: 'web',
+            entrada: ''
+        },
+        php: {
+            id: 1,
+            chave: 'teste-php',
+            titulo: '[TESTE] PHP — saudação da fazenda',
+            descricao: 'Atividade de teste do Judge0 com PHP. Leia um nome e mostre uma saudação.',
+            requisitos: [
+                'Ler uma linha da entrada com fgets(STDIN)',
+                'Remover a quebra de linha com trim()',
+                'Mostrar com echo no formato "Bem-vindo, <nome>!"'
+            ],
+            objetivo: 'Ler um nome da entrada e imprimir "Bem-vindo, <nome>!".',
+            idLinguagem: 68,
+            entrada: 'Maria\n',
+            saidaEsperada: 'Bem-vindo, Maria!',
+            codigoInicial: { php: PHP_ABRE + '// Leia o nome com fgets(STDIN) e mostre "Bem-vindo, <nome>!"\n' }
+        },
+        python: {
+            id: 1,
+            chave: 'teste-python',
+            titulo: '[TESTE] Python — soma de dois números',
+            descricao: 'Atividade de teste do Judge0 com Python. Leia dois números inteiros, some e mostre o resultado.',
+            requisitos: [
+                'Ler dois números inteiros com input(), um por linha',
+                'Somar os dois números',
+                'Mostrar o resultado com print no formato "Soma: <resultado>"'
+            ],
+            objetivo: 'Ler dois números inteiros, somá-los e imprimir "Soma: <resultado>".',
+            idLinguagem: 71,
+            entrada: '3\n5\n',
+            saidaEsperada: 'Soma: 8',
+            codigoInicial: { py: '# Leia dois números inteiros (um por linha), some e mostre "Soma: <resultado>"\n' }
+        }
+    };
+
+    (function aplicarTeste() {
+        try {
+            const url = new URLSearchParams(location.search);
+            const existe = n => Object.prototype.hasOwnProperty.call(TESTES, n);
+            const memoria = 'farmedu:teste:atual';
+            const paginaDeCodigo = !!document.getElementById('ed');  
+
+            let nome = url.get('teste');
+            let pedido = url.get('limite');
+            if (existe(nome)) {
+                sessionStorage.setItem(memoria, JSON.stringify({ nome, limite: pedido }));
+            } else {
+                nome = null;
+                // Página do aluno sem ?teste= fica vazia. A página de código lembra o último teste.
+                if (paginaDeCodigo) {
+                    const salvo = JSON.parse(sessionStorage.getItem(memoria) || 'null');
+                    if (salvo && existe(salvo.nome)) { nome = salvo.nome; pedido = salvo.limite; }
+                }
+            }
+            if (!nome) return;
+            const teste = TESTES[nome];
+
+            // Prazo: &limite=AAAA-MM-DDTHH:MM, &limite=off ou, por padrão, hoje 23:59
+            let limiteEntrega = null;
+            if (pedido !== 'off') {
+                let d = pedido ? new Date(pedido) : null;
+                if (!d || isNaN(d)) { d = new Date(); d.setHours(23, 59, 0, 0); }
+                limiteEntrega = d.toISOString();
+            }
+
+            // &limpar=1: recomeça o teste do zero
+            if (url.get('limpar')) {
+                const re = new RegExp('^farmedu:(codigo|entrega|cancelamentos|avaliacao):' + teste.chave + '(:|$)');
+                Object.keys(localStorage).filter(k => re.test(k)).forEach(k => localStorage.removeItem(k));
+            }
+
+            // queryAluno: o botão Voltar da página de código usa para voltar ao aluno com o mesmo teste
+            const queryAluno = '?teste=' + nome + (pedido ? '&limite=' + encodeURIComponent(pedido) : '');
+            lido = Object.assign({}, lido, teste, { limiteEntrega, queryAluno });
+
+            // Leva ?teste= e &limite= junto quando o aluno clica em "Começar" (só existe na página do aluno)
+            const form = document.querySelector('form[action="iniciarAtv"]');
+            if (form) {
+                [['teste', nome], ['limite', pedido]].forEach(([campo, valor]) => {
+                    if (!valor) return;
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = campo;
+                    input.value = valor;
+                    form.appendChild(input);
+                });
+            }
+        } catch (e) {
+            console.warn('Atividade de teste não aplicada:', e);
+        }
+    })();
+
+
+    /* MONTAGEM FINAL*/
     const A = Object.assign({}, base, lido);
     const L = LINGUAGENS[A.idLinguagem] || LINGUAGENS.web;
     A.linguagem = Object.assign({}, L, { inicial: Object.assign({}, L.inicial, A.codigoInicial) });
+
+    // Atividade vinda do banco: usa o próprio id.
+    A.chave = String(A.chave || A.id);
+
+    // Limite de entrega
+    const _lim = A.limiteEntrega ? new Date(A.limiteEntrega) : null;
+    A.limite = _lim && !isNaN(_lim) ? _lim : null;
+    A.prazoExcedido = () => !!A.limite && Date.now() > A.limite.getTime();
+    A.limiteTexto = () => A.limite
+        ? A.limite.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+        : '';
+
+    // Sem dados de atividade (nem do banco, nem de teste)
+    A.vazia = !lido.titulo;
 
     window.FarmAtividade = A;
     window.FarmLinguagens = LINGUAGENS;

@@ -18,7 +18,7 @@
 const CHAVE_DO_AUDIO = 'fazenda3d-audio-v1';
 const TIPOS_DE_ANIMAL_COM_SOM = Object.keys(AUDIO_CONFIG.animais).filter(chave => chave !== 'global');
 const TIPOS_DE_EFEITO = Object.keys(AUDIO_CONFIG.efeitos).filter(chave => chave !== 'global');
-const CATEGORIAS_DE_AUDIO = ['musica', 'animais', 'cachoeira', 'fonte', 'trator', 'efeitos'];   // as que têm botão e volume no painel
+const CATEGORIAS_DE_AUDIO = ['musica', 'animais', 'cachoeira', 'fonte', 'trator'];   // as que têm botão e volume no painel
 const CATEGORIAS_EM_GRUPO = ['animais', 'efeitos'];                                            // vários arquivos, tocados de vez em quando
 const ESTADO_DO_AUDIO = {
   liberado: false,
@@ -54,13 +54,18 @@ const PREFIXO_DOS_AUDIOS = 'assets/audio/';
 const enderecoDoAudio = function enderecoDoAudio(caminho) {
   if (!caminho || !ENDERECO_DO_SCRIPT_PRINCIPAL || !caminho.startsWith(PREFIXO_DOS_AUDIOS)) return caminho;
   try {
-    const relativo = caminho.slice(PREFIXO_DOS_AUDIOS.length), endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL);
+    let relativo = caminho.slice(PREFIXO_DOS_AUDIOS.length), endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL);
     if (endereco.searchParams.get('rota') === 'fazenda/script') {
       endereco.searchParams.set('rota', 'fazenda/audio'); endereco.searchParams.set('arquivo', relativo);
       return endereco.href;
     }
-    return new URL('../audio/' + relativo, endereco).href;   // assets/js/fazenda.js → assets/audio/...
-  } catch (erro) { return caminho; }
+    let file = relativo.split('/');
+    file = file[file.length - 1];
+    if (relativo.includes(file)) {
+      relativo = relativo.replace('/' + file, '');
+    }
+    return new URL('arquivo?type=audio/' + relativo + '&file=' + file, endereco).href;   // assets/js/fazenda.js → assets/audio/...
+  } catch (erro) { console.error('Erro ao criar endereço do áudio:', erro); return caminho; }
 };
 // Cria o elemento <audio> de um som (uma única vez). O arquivo só é carregado quando necessário; erros de
 // carga marcam o som como indisponível. "caminho" é o de AUDIO_CONFIG (mostrado no painel); "arquivo" é o endereço real.
@@ -170,7 +175,7 @@ const liberarAudio = function liberarAudio() { // chamado dentro de um clique do
   const fontesDeSom = [...Object.values(FONTES_DE_SOM.efeitos), ...Object.values(FONTES_DE_SOM.segredos)];
   [...Object.values(FONTES_DE_SOM.animais)].forEach(tipo => {
     tipo.forEach(fonteDeSom => {
-      fontesDeSom.push(fonteDeSom); 
+      fontesDeSom.push(fonteDeSom);
     })
   })
   fontesDeSom.forEach(fonteDeSom => { // "destrava" os demais elementos (necessário no iOS); mudo e só por um instante
@@ -216,70 +221,29 @@ const sortearIntervalo = configuracao => configuracao.intervaloMin + Math.random
 // A cada quadro desconta o tempo de cada tipo de animal; quando zera, sorteia um animal do tipo, calcula o
 // volume pela distância da câmera e toca. Respeita intervalo mínimo e máximo de sons simultâneos.
 const atualizarSonsDosAnimais = function atualizarSonsDosAnimais(segundosDesdeUltimoFrame, tempo) {
-  if (!ESTADO_DO_AUDIO.liberado ||
-    !ESTADO_DO_AUDIO.animais.ligado ||
-    ESTADO_DO_AUDIO.animais.volume <= 0.001) return;
-
+  if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.animais.ligado || ESTADO_DO_AUDIO.animais.volume <= 0.001) return;
   const limitesGlobais = AUDIO_CONFIG.animais.global;
-
   for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {
-    const configuracao = AUDIO_CONFIG.animais[tipo];
-    const fonteDeSom = FONTES_DE_SOM.animais[tipo];
-
-    if (!configuracao || !fonteDeSom) continue;
-
-    if (agendaDosAnimais.proximo[tipo] === undefined) {
-      agendaDosAnimais.proximo[tipo] =
-        4 + Math.random() * configuracao.intervaloMax * 0.6;
-    }
-
+    const configuracao = AUDIO_CONFIG.animais[tipo], variacoes = FONTES_DE_SOM.animais[tipo];   // AQUI: variacoes (lista) no lugar de fonteDeSom
+    const disponiveis = variacoes.filter(f => f.estado !== 'erro');                              // AQUI: só as variações cujo arquivo existe
+    if (agendaDosAnimais.proximo[tipo] === undefined) agendaDosAnimais.proximo[tipo] = 4 + Math.random() * configuracao.intervaloMax * 0.6;
     if ((agendaDosAnimais.proximo[tipo] -= segundosDesdeUltimoFrame) > 0) continue;
-
     agendaDosAnimais.proximo[tipo] = sortearIntervalo(configuracao);
-
-    if (
-      fonteDeSom.estado === 'erro' ||
-      !ESTADO_DO_AUDIO.animais.individuais[tipo]
-    ) continue;
-
-    const candidatos = animaisParaSom.filter(
-      registro => registro.tipo === tipo && registro.grupo.parent
-    );
-
+    if (!disponiveis.length || !ESTADO_DO_AUDIO.animais.individuais[tipo]) continue;             // AQUI: antes era fonteDeSom.estado === 'erro'
+    const candidatos = animaisParaSom.filter(registro => registro.tipo === tipo && registro.grupo.parent);
     if (!candidatos.length) continue;
-
-    const tocandoAgora = Object.values(FONTES_DE_SOM.animais).filter(tocando).length;
-
-    if (
-      tempo - agendaDosAnimais.ultimoSom < limitesGlobais.intervaloMinimoEntreSons ||
-      tocandoAgora >= limitesGlobais.maximoSimultaneos ||
-      tocando(fonteDeSom)
-    ) {
-      agendaDosAnimais.proximo[tipo] = 1.5 + Math.random() * 3;
-      continue;
-    }
-
+    const tocandoAgora = Object.values(FONTES_DE_SOM.animais).flat().filter(tocando).length;     // AQUI: .flat()
+    if (tempo - agendaDosAnimais.ultimoSom < limitesGlobais.intervaloMinimoEntreSons || tocandoAgora >= limitesGlobais.maximoSimultaneos || variacoes.some(tocando)) { agendaDosAnimais.proximo[tipo] = 1.5 + Math.random() * 3; continue; }   // AQUI: variacoes.some(tocando)
     const bicho = candidatos[Math.floor(Math.random() * candidatos.length)];
-
     bicho.grupo.getWorldPosition(vetorDoSom);
-
-    const distancia = Math.hypot(
-      alvoAtualDaCamera.x - vetorDoSom.x,
-      alvoAtualDaCamera.z - vetorDoSom.z
-    );
-
-    try {
-      fonteDeSom.el.currentTime = 0;
-      fonteDeSom.el.playbackRate = 0.94 + Math.random() * 0.12;
-    } catch (erro) { }
-
-    const volume =
-      ESTADO_DO_AUDIO.animais.volume *
-      configuracao.volume *
-      Math.max(0.12, 1 - distancia / limitesGlobais.distanciaMaxima);
-
+    const distancia = Math.hypot(alvoAtualDaCamera.x - vetorDoSom.x, alvoAtualDaCamera.z - vetorDoSom.z);
+    // AQUI (3 linhas): sorteia a variação, evitando repetir a última que tocou
+    const opcoes = disponiveis.length > 1 ? disponiveis.filter(f => f !== agendaDosAnimais['ultima_' + tipo]) : disponiveis;
+    const fonteDeSom = opcoes[Math.floor(Math.random() * opcoes.length)];
+    agendaDosAnimais['ultima_' + tipo] = fonteDeSom;
+    try { fonteDeSom.el.currentTime = 0; fonteDeSom.el.playbackRate = 0.94 + Math.random() * 0.12; } catch (erro) { }
+    const volume = ESTADO_DO_AUDIO.animais.volume * configuracao.volume * Math.max(0.12, 1 - distancia / limitesGlobais.distanciaMaxima);
     agendaDosAnimais.ultimoSom = tempo;
-
     tocarSom(fonteDeSom, volume);
   }
 };

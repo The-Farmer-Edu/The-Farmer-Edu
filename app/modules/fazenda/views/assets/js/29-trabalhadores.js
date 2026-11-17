@@ -71,14 +71,17 @@
         const indice = estado.candidatos.findIndex(candidato => candidato.id === idDoCandidato);
         if (indice < 0) return;
         const candidato = estado.candidatos[indice], custo = CLASSES_DE_TRABALHADORES[candidato.classe].custo;
-        if (vagasOcupadas() >= capacidadeDaCasa()) { mostrarAviso('A casa está cheia (' + vagasOcupadas() + '/' + capacidadeDaCasa() + ' vagas). Evolua a casa ou dispense alguém.'); return; }
-        if (estado.xp < custo) { mostrarAviso('XP insuficiente para contratar ' + candidato.nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
+        if (vagasOcupadas() >= capacidadeDaCasa()) { tocarEfeito('erro'); mostrarAviso('A casa está cheia (' + vagasOcupadas() + '/' + capacidadeDaCasa() + ' vagas). Evolua a casa ou dispense alguém.'); return; }
+        if (estado.xp < custo) { tocarEfeito('erro'); mostrarAviso('XP insuficiente para contratar ' + candidato.nome + ': faltam ' + (custo - estado.xp) + ' XP.'); return; }
         estado.candidatos.splice(indice, 1); estado.xp -= custo;                  // retira o candidato ANTES: um segundo clique não acha mais ninguém
         const dados = { ...candidato, vida: atributosDoTrabalhador(candidato).vidaMaxima, estado: 'ativo', xpInvestido: custo, emCasa: false };
         estado.trabalhadores.push(dados); garantirCandidatos();
         registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards(); tocarEfeito('contratar');   // 8.4.1: efeito sonoro
         mostrarAviso(CLASSES_DE_TRABALHADORES[dados.classe].icone + ' ' + dados.nome + ' foi contratado(a) e está saindo da casa!');
       };
+
+       
+
       const recuperarTrabalhador = function recuperarTrabalhador(idDoTrabalhador) {
         const dados = estado.trabalhadores.find(trabalhador => trabalhador.id === idDoTrabalhador);
         if (!dados || dados.estado !== 'morto') return;
@@ -108,9 +111,12 @@
         estado.trabalhadores.splice(indice, 1);                                     // sai dos dados ANTES de creditar: não há XP duplicado
         const entidade = trabalhadoresNaCena.get(dados.id); if (entidade) cancelarTarefa(entidade);
         removerEntidadeDoTrabalhador(dados.id);
+        tocarEfeito('demitir');
         estado.xp += recompensa; registrarOrigemDoXP('devolucoes', recompensa); registrarAtividade(); desenharCards();   // conta só o creditado (0 sem investimento)
         mostrarAviso('👋 ' + dados.nome + ' foi dispensado(a)' + (recompensa > 0 ? ': +' + recompensa + ' XP' : ' (sem devolução de XP)') + '. Vagas: ' + vagasOcupadas() + '/' + capacidadeDaCasa() + '.');
       };
+
+      registrarAtividade
 
       // ---- modelo 3D: o mesmo fazendeiro da seção 22, com roupa e equipamento da classe ----
       const aparenciaDoTrabalhador = function aparenciaDoTrabalhador(dados) {
@@ -449,3 +455,4 @@
       const criarTrabalhadoresSalvos = function criarTrabalhadoresSalvos() { garantirCandidatos(); for (const dados of estado.trabalhadores) if (dados.estado === 'ativo' && !dados.emCasa) criarEntidadeDoTrabalhador(dados, false); };   // quem está em casa fica em casa
 
       arquivoDaMontagemConcluido('29-trabalhadores.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
+

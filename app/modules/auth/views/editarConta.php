@@ -8,38 +8,46 @@ $valor = static fn(string $campo): string => htmlspecialchars((string) ($dados[$
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Editar conta - The Farmer Edu</title>
+    <link rel="stylesheet" href="file?type=css&file=editarconta.css">
 </head>
 <body>
-    <h1>Editar conta</h1>
+
+    <h1 class="titulo">Editar conta</h1>
 
     <?php if (!empty($mensagem)): ?>
-        <p><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
+        <p id="mensagem-status"><strong><?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?></strong></p>
     <?php endif; ?>
 
-    <form action="" method="POST">
-        <p>
-            <label for="nome">Nome:</label>
+    <form id="form-editar-conta" class="form-editar-conta" action="" method="POST">
+        
+        <div class="campo">
+            <label for="nome" class="label">Nome:</label>
             <input type="text" id="nome" name="nome" value="<?= $valor('nome') ?>" required>
-        </p>
+        </div>
 
-        <p>
-            <label for="email">E-mail:</label>
+        <div class="campo">
+            <label for="email" class="label">Email:</label>
             <input type="email" id="email" name="email" value="<?= $valor('email') ?>" required>
-        </p>
+        </div>
 
-        <p>
-            <label for="nova_senha">Nova senha (deixe em branco para manter a atual):</label>
-            <input type="password" id="nova_senha" name="nova_senha" minlength="8">
-        </p>
+        <div class="campo">
+            <label for="nova_senha" class="label">Nova senha (opcional):</label>
+            <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password">
+        </div>
 
-        <p>
-            <label for="senha_atual">Senha atual (para confirmar):</label>
+        <div class="campo">
+            <label for="senha_atual" class="label">Senha atual:</label>
             <input type="password" id="senha_atual" name="senha_atual" required>
-        </p>
+        </div>
 
-        <button type="submit">Salvar alterações</button>
+        <!-- Os 3 botões agrupados dentro do form -->
+        <div class="botoes-acoes">
+            <button type="submit" id="btn-salvar">Salvar alterações</button>
+            <a href="desativarConta" class="btn-desativar">Desativar conta</a>
+            <a href="logout" class="btn-sair">Sair</a>
+        </div>
+
     </form>
 
-    <p><a href="desativarConta">Desativar conta</a> | <a href="logout">Sair</a></p>
 </body>
 </html>

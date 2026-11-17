@@ -1,9 +1,11 @@
 const paginaDoTipo = { codigo: 'normal', texto: 'texto', quiz: 'pergunta' };
 const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta' };
-const nomeDaLinguagem = { php: 'PHP', javascript: 'JavaScript', python: 'Python', java: 'Java', c: 'C', cpp: 'C++' };
+const nomeDaLinguagem = { php: 'PHP', javascript: 'JavaScript', python: 'Python', java: 'Java', c: 'C', cpp: 'C++', sql: 'SQL' };
 const paginasDoMenu = ['mural', 'pessoas'];
 
 const nomeInstrutor = document.body.dataset.instrutor;
+const tokenCsrf = document.querySelector('meta[name="csrf"]').content;
+const nomeDoTurno = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
 
 const iconeAtividade = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M8 11l1.2 1.2L11 10.4M13 11.5h3M8 16l1.2 1.2L11 15.4M13 16.5h3"/></svg>';
 
@@ -90,8 +92,24 @@ function preencherCampos(dados) {
     }));
     document.querySelectorAll('.select-linguagem').forEach(select => preencherSelect(select, linguagens));
 
+    configurarGabarito(dados.gabarito);
+
     document.querySelectorAll('.formato').forEach(paragrafo => {
         paragrafo.textContent = 'Formato de resposta aceito: ' + dados.formatos[paragrafo.dataset.tipo];
+    });
+}
+
+function configurarGabarito(config) {
+    if (!config) {
+        return;
+    }
+
+    const extensoes = config.extensoes.map(extensao => '.' + extensao);
+    document.querySelectorAll('input[name="gabarito[]"]').forEach(campo => {
+        campo.accept = extensoes.join(',');
+    });
+    document.querySelectorAll('.dica-gabarito').forEach(dica => {
+        dica.textContent = `Até ${config.max_arquivos} arquivos de ${config.max_mb} MB (${config.extensoes.join(', ')}).`;
     });
 }
 
@@ -117,9 +135,10 @@ async function carregarDados() {
         atualizarCabecalho(dados.turmas);
         desenharLista();
         desenharReutilizar();
+        desenharPessoas(dados.pessoas || []);
 
         if (!dados.turmas.length) {
-            mostrarAviso('Você ainda não tem turmas cadastradas, então não dá para publicar atividades.', false);
+            mostrarAviso('Você não tem turmas ativas. Crie ou restaure uma turma em Cursos e turmas para publicar atividades.', false);
         }
     } catch (erro) {
         mostrarAviso(erro.message, false);
@@ -171,11 +190,22 @@ function desenharLista() {
 
     atividades.forEach((atividade, posicao) => {
         const envios = Number(atividade.total_submissoes);
+        const arquivada = Number(atividade.turma_ativa) !== 1;
         const acoes = criar('div', 'feed-acoes');
+
+        if (arquivada) {
+            acoes.append(criar('span', 'selo alerta', 'Turma arquivada'));
+        }
+
+        const editar  = criarBotao('Editar', 'primary pequeno', () => abrirFormulario(atividade, false));
+        const remover = criarBotao('Remover', 'secondary pequeno', () => removerAtividade(atividade));
+        editar.disabled  = arquivada;
+        remover.disabled = arquivada;
+
         acoes.append(
             criar('span', 'selo', envios === 1 ? '1 envio' : `${envios} envios`),
-            criarBotao('Editar', 'primary pequeno', () => abrirFormulario(atividade, false)),
-            criarBotao('Remover', 'secondary pequeno', () => removerAtividade(atividade))
+            editar,
+            remover
         );
 
         const item = criarItemAtividade(atividade, `${nomeInstrutor} lançou uma nova atividade: ${atividade.titulo}`, acoes);
@@ -200,6 +230,78 @@ function desenharReutilizar() {
         acoes.append(criarBotao('Usar como base', 'primary pequeno', () => abrirFormulario(atividade, true)));
 
         lista.append(criarItemAtividade(atividade, atividade.titulo, acoes));
+    });
+}
+
+function desenharPessoas(turmas) {
+    const area = document.getElementById('lista-pessoas');
+    area.replaceChildren();
+
+    if (!turmas.length) {
+        area.append(criar('p', 'vazio', 'Você ainda não tem turmas.'));
+        return;
+    }
+
+    turmas.forEach(turma => {
+        const titulo = criar('h3', 'barra-titulo', `${turma.nome_curso} · ${turma.nome_turma} (${nomeDoTurno[turma.turno] || turma.turno})`);
+        if (Number(turma.ativo) !== 1) {
+            titulo.append(criar('span', 'selo alerta', 'Arquivada'));
+        }
+        titulo.append(criar('span', 'contador', turma.alunos.length));
+
+        const lista = criar('div', 'feed');
+        if (!turma.alunos.length) {
+            lista.append(criar('p', 'vazio', 'Nenhum aluno matriculado nesta turma.'));
+        }
+
+        turma.alunos.forEach(aluno => {
+            const info = criar('div', 'feed-info');
+            info.append(
+                criar('strong', '', aluno.nome),
+                criar('small', '', `${aluno.email} · Matrícula ${aluno.matricula}`)
+            );
+
+            const item = criar('div', 'feed-item');
+            item.append(info);
+            if (Number(aluno.ativo) !== 1) {
+                item.append(criar('span', 'selo alerta', 'Conta desativada'));
+            }
+            lista.append(item);
+        });
+
+        area.append(titulo, lista);
+    });
+}
+
+function desenharArquivos(form, atividade, reutilizando) {
+    const area = form.querySelector('.arquivos-existentes');
+    area.replaceChildren();
+
+    (atividade.arquivos || []).forEach(arquivo => {
+        const nome = criar('span');
+        if (reutilizando) {
+            nome.textContent = arquivo.descricao_arquivo;
+        } else {
+            const link = criar('a', '', arquivo.descricao_arquivo);
+            link.href = 'atividades/gabarito?id=' + encodeURIComponent(arquivo.id_arquivo);
+            nome.append(link);
+        }
+
+        const caixa = document.createElement('input');
+        caixa.type = 'checkbox';
+        caixa.name = reutilizando ? 'copiar_arquivos[]' : 'remover_arquivos[]';
+        caixa.value = arquivo.id_arquivo;
+        caixa.checked = reutilizando;
+
+        const rotulo = criar('label', 'arquivo-opcao');
+        rotulo.append(caixa, document.createTextNode(reutilizando ? ' Copiar' : ' Remover'));
+
+        const item = criar('div', 'arquivo-item');
+        caixa.addEventListener('change', () => {
+            item.classList.toggle('removido', !reutilizando && caixa.checked);
+        });
+        item.append(nome, rotulo);
+        area.append(item);
     });
 }
 
@@ -321,6 +423,7 @@ function abrirFormulario(atividade, reutilizando) {
         ['A', 'B', 'C'].forEach(letra => {
             campos['alternativa' + letra].value = (atividade.alternativas || {})[letra] || '';
         });
+        campos.correta.value = atividade.correta || '';
     }
 
     if (tipo === 'codigo') {
@@ -346,9 +449,12 @@ async function salvarAtividade(evento) {
     botao.disabled = true;
 
     try {
+        const dados = new FormData(form);
+        dados.append('csrf', tokenCsrf);
+
         const resposta = await pedir('atividades/instrutor/salvar', {
             method: 'POST',
-            body: new FormData(form)
+            body: dados
         });
 
         await carregarDados();
@@ -368,6 +474,7 @@ async function removerAtividade(atividade) {
 
     const dados = new FormData();
     dados.append('id_atividade', atividade.id_atividade);
+    dados.append('csrf', tokenCsrf);
 
     try {
         const resposta = await pedir('atividades/instrutor/remover', { method: 'POST', body: dados });

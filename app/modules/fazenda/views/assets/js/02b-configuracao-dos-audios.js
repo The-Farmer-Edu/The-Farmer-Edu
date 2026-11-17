@@ -5,7 +5,14 @@
 const AUDIO_CONFIG = {
   // Música de fundo (toca em loop, só depois que o jogador clica em "Ativar áudio")
   musica: { 
-    arquivo: 'assets/audio/Theme_songs/anoitecer.mp3', volume: 1 },
+    arquivos: [
+      'assets/audio/Theme_songs/musica1.mp3', 
+      'assets/audio/Theme_songs/musica2.mp3',
+      'assets/audio/Theme_songs/musica3.mp3',
+      'assets/audio/Theme_songs/musica4.mp3',
+      'assets/audio/Theme_songs/musica5.mp3',
+      ],
+        volume: 1 },
 
   invasao: { 
     arquivo: 'assets/audio/Theme_songs/ataque.mp3', volume: 0.9 },
@@ -86,6 +93,7 @@ efeitos: {
     desativar:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/desativar.mp3', volume: 0.7 },
     desenvolvedor:{ arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/desenvolvedor.mp3', volume: 0.7 },
     erro:         { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/erros.mp3', volume: 0.8 },
+
     // --- AÇÕES E PROGRESSÃO ---
     construir: { arquivo: 'assets/audio/SFX/sons-do-jogo/acoes/reparar_danos.mp3', volume: 0.8 },
     plantar:      { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/plantar.mp3', volume: 1 },
@@ -96,7 +104,15 @@ efeitos: {
     xp:           { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/Xp.mp3', volume: 0.8 },
     desabamento: { arquivo: 'assets/audio/SFX/sons-do-jogo/acoes/destruicao.mp3', volume: 1, intervaloMinimo: 0.5, distanciaMaxima: 60 },
 
-      // --- FAZENDEIROS / DEFENSORES ---
+    // --- POÇÕES E GUARDIÃO (NPC) ---
+    pocaoPreparar:  { arquivo: 'assets/audio/SFX/pocoes/preparar.mp3', volume: 0.85, intervaloMinimo: 0.2 },
+    pocaoUsar:      { arquivo: 'assets/audio/SFX/pocoes/usar.mp3', volume: 0.9, intervaloMinimo: 0.3 },
+    pocaoEfeitoFim: { arquivo: 'assets/audio/SFX/pocoes/fimefeito.mp3', volume: 0.75, intervaloMinimo: 0.5 },
+    pocaoSecreta: { arquivo: 'assets/audio/SFX/pocoes/pocaosecreta.mp3', volume: 0.75, intervaloMinimo: 0.5 },
+    guardiao:       { arquivo: 'assets/audio/SFX/pocoes/guardiao.mp3', volume: 0.9, intervaloMinimo: 0.5, distanciaMaxima: 45 },
+      
+    
+    // --- FAZENDEIROS / DEFENSORES ---
       fazendeiroAtaque:  { arquivos: 
         [
           'assets/audio/SFX/mobs/fazendeiros/ataquehomem.mp3',
@@ -108,7 +124,7 @@ efeitos: {
 
       // --- LENHADOR ---
       machado:     { arquivo: 'assets/audio/SFX/mobs/lenhador/machado.mp3', volume: 0.7, intervaloMinimo: 1.0 },
-      quedaArvore:    { arquivo: 'assets/audio/SFX/mobs/lenhador/arvore.mp3', volume: 0.9, intervaloMinimo: 0.5 },
+      quedaArvore:    { arquivo: 'assets/audio/SFX/mobs/lenhador/quedaarvore.mp3', volume: 0.2, intervaloMinimo: 0.5 },
       lenhador:    { arquivo: 'assets/audio/SFX/mobs/lenhador/lenhador.mp3', volume: 0.9, intervaloMinimo: 0.5 },
 
       // --- ESQUELETO ---
@@ -132,7 +148,14 @@ efeitos: {
  
 
   segredos: {
-    pedraSecreta: { arquivo: 'assets/audio/SFX/sons-do-jogo/pedra-secreta.mp3', volume: 0.9 }
+    pedraSecreta: { arquivo: 'assets/audio/SFX/segredos/pedra-secreta.mp3', volume: 0.9 },
+    unicornio:    { arquivo: 'assets/audio/SFX/segredos/unicornio.mp3', volume: 0.9 },
+    unicornioTrilha:   { arquivo: 'assets/audio/SFX/segredos/temaunicornio.mp3', volume: 0.95, intervaloMinimo: 1.0 },
+    discoVoador:    { arquivo: 'assets/audio/SFX/segredos/nave.mp3', volume: 0.9, intervaloMinimo: 1.0, distanciaMaxima: 90 },
+    naveindoembora:    { arquivo: 'assets/audio/SFX/segredos/nave_indo_embora.mp3', volume: 0.9, intervaloMinimo: 1.0, distanciaMaxima: 90 },
+    abducao:        { arquivo: 'assets/audio/SFX/segredos/pegavaca.mp3', volume: 0.95, intervaloMinimo: 1.0, distanciaMaxima: 90 },
+    trilha:             { arquivo: 'assets/audio/SFX/segredos/temaaliens.mp3', volume: 0.9, intervaloMinimo: 0.5, distanciaMaxima: 70 },
+    pegarvaca:  { arquivo: 'assets/audio/SFX/vacas/mugido1.mp3', volume: 0.85, intervaloMinimo: 1.0, distanciaMaxima: 90 },
   },
 
   volumesIniciais: { musica: 0.5, animais: 0.7, cachoeira: 0.6, fonte: 0.6, trator: 0.5, riacho: 0.5, efeitos: 0.7 }

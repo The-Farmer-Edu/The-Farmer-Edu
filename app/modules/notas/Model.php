@@ -246,6 +246,14 @@ class NotasModel
         $upd = $this->pdo->prepare("UPDATE submissoes SET status = 'corrigida' WHERE id_submissao = ?");
         $upd->execute([$idSubmissao]);
 
+        // Fazenda: o instrutor validou a nota (RN04) → calcula/ajusta o XP da atividade.
+        try {
+            require_once __DIR__ . '/../fazenda/Model.php';
+            (new FazendaModel($this->pdo))->registrarXPPorNota($idSubmissao);
+        } catch (Throwable $e) {
+            error_log('[Fazenda] XP não registrado: ' . $e->getMessage());   // a nota já foi salva; não derruba o lançamento
+        }
+
         return true;
     }
 

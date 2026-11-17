@@ -92,7 +92,8 @@ CREATE TABLE alunos (
 CREATE TABLE cursos (
   id_curso       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   nome_curso     VARCHAR(150)    NOT NULL,
-  descricao      TEXT            NULL
+  descricao      TEXT            NULL,
+  ativo          TINYINT(1)      NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -105,6 +106,7 @@ CREATE TABLE turmas (
   turno          ENUM('manha', 'tarde', 'noite') NOT NULL,
   id_curso       INT UNSIGNED                    NOT NULL,
   id_instrutor   INT UNSIGNED                    NOT NULL,
+  image_turma    VARCHAR(255)                    NULL, 
   ativo          TINYINT(1)                      NOT NULL     DEFAULT 1,
   CONSTRAINT fk_turmas_curso
     FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)

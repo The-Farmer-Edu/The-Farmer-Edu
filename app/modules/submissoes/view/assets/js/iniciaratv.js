@@ -8,6 +8,8 @@ const LIMITE_EXECUCOES = 10;
 const LIMITE_CANCELAMENTOS = 3;
 const ID_LINGUAGEM_PYTHON = 71;
 const CONSULTA_CELULAR = '(max-width: 780px)';
+const LIMITE_SOPHIA = 10;
+let usosSophia = 0;
 
 /**
  * Regras de destaque por linguagem.
@@ -20,8 +22,8 @@ const REGRAS_DESTAQUE = {
     html: [['c', '<!--[\\s\\S]*?-->'], ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'], ['s', '"[^"]*"|\'[^\']*\''], ['a', '[\\w-]+(?==)']],
     css: [['c', '\\/\\*[\\s\\S]*?\\*\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
           ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
-    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\/'],
-         ['s', '`(?:[^`\\]|\\.)*`|"(?:[^"\\]|\\.)*"|\'(?:[^\'\\]|\\.)*\''],
+       js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\/'],
+         ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
          ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
     py: [['c', '#.*'], ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
@@ -30,8 +32,12 @@ const REGRAS_DESTAQUE = {
     php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
           ['a', '\\$[a-zA-Z_]\\w*'],
           ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
-          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']]
-};
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']],
+    sql: [['c', '--.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '\'(?:[^\'\\\\]|\\\\.)*\''],
+          ['k', '\\b(?:SELECT|FROM|WHERE|CREATE|TABLE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|PRIMARY|KEY|NOT|NULL|AUTO_INCREMENT|INT|VARCHAR|DECIMAL|TEXT|DEFAULT|AND|OR)\\b'],
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b']],
+    txt: [] 
+        };
 
 /* Elementos da página */
 const porId = id => document.getElementById(id);
@@ -120,32 +126,35 @@ if (atividadeAtual.vazia) {
  * A função `colorir` percorre o código com regex e cria spans para cada token detectado.
  * Isso torna possível preservar a sintaxe original e apenas “decorar” o texto em tela.
  */
-function colorir(codigo, regras) {
-    const expressao = new RegExp(regras.map(regra => '(' + regra[1] + ')').join('|'), 'g');
-    let saida = '', ultimoIndice = 0, correspondencia;
-    while ((correspondencia = expressao.exec(codigo))) {
-        if (!correspondencia[0]) { expressao.lastIndex++; continue; }
-        const indiceRegra = correspondencia.slice(1).findIndex(grupo => grupo !== undefined);
-        saida += escaparHtml(codigo.slice(ultimoIndice, correspondencia.index))
-            + `<span class="${regras[indiceRegra][0]}">${escaparHtml(correspondencia[0])}</span>`;
-        ultimoIndice = expressao.lastIndex;
+function colorir(codigo, regras, flags = 'g') {
+    if (!regras || !regras.length) return escaparHtml(codigo);
+    try {
+        const expressao = new RegExp(regras.map(regra => '(' + regra[1] + ')').join('|'), flags);
+        let saida = '', ultimoIndice = 0, correspondencia;
+        while ((correspondencia = expressao.exec(codigo))) {
+            if (!correspondencia[0]) { expressao.lastIndex++; continue; }
+            const indiceRegra = correspondencia.slice(1).findIndex(grupo => grupo !== undefined);
+            saida += escaparHtml(codigo.slice(ultimoIndice, correspondencia.index))
+                + `<span class="${regras[indiceRegra][0]}">${escaparHtml(correspondencia[0])}</span>`;
+            ultimoIndice = expressao.lastIndex;
+        }
+        return saida + escaparHtml(codigo.slice(ultimoIndice));
+    } catch (erro) {
+        console.error('Erro no destaque de sintaxe:', erro);
+        return escaparHtml(codigo);
     }
-    return saida + escaparHtml(codigo.slice(ultimoIndice));
 }
-
 function sincronizar() {
     camadaDestaque.scrollTop = editorTexto.scrollTop;
     camadaDestaque.scrollLeft = editorTexto.scrollLeft;
     numeracaoLinhas.scrollTop = editorTexto.scrollTop;
     atualizarBtnInicio();
 }
-
 function atualizarEditor() {
-    camadaDestaque.innerHTML = colorir(editorTexto.value, REGRAS_DESTAQUE[arquivoAtual]) + '\n';
+    camadaDestaque.innerHTML = colorir(editorTexto.value, REGRAS_DESTAQUE[arquivoAtual], arquivoAtual === 'sql' ? 'gi' : 'g') + '\n';
     numeracaoLinhas.textContent = Array.from({ length: editorTexto.value.split('\n').length }, (_, indice) => indice + 1).join('\n');
     sincronizar();
 }
-
 function posicao() {
     const linhasAntes = editorTexto.value.slice(0, editorTexto.selectionStart).split('\n');
     porId('stPos').textContent = `Ln ${linhasAntes.length}, Col ${linhasAntes[linhasAntes.length - 1].length + 1}`;
@@ -153,6 +162,18 @@ function posicao() {
 
 function montarAbas() {
     porId('arquivos').innerHTML = '';
+
+    // Sem atividade: seção de arquivos vazia
+    if (atividadeAtual.vazia) {
+        porId('stLang').textContent = '—';
+        return;
+    }
+    if (modoExecucao === 'texto') {   // atividade de texto: lista de arquivos vazia
+        porId('stLang').textContent = 'Texto';
+        return;
+    }
+    }
+
     ARQUIVOS.forEach(arquivo => {
         const item = document.createElement('li');
         if (arquivo.lang === arquivoAtual) item.className = 'on';
@@ -163,9 +184,20 @@ function montarAbas() {
         porId('arquivos').appendChild(item);
     });
     porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
-}
 
 function trocar(lang) {
+    // Sem atividade: editor vazio, desativado e sem arquivos
+    if (atividadeAtual.vazia) {
+        editorTexto.value = '';
+        editorTexto.disabled = true;
+        editorTexto.placeholder = 'Abra uma atividade na página do aluno para escrever código.';
+        porId('painelCodigo').classList.add('sem-atividade');
+        montarAbas();
+        atualizarEditor();
+        porId('stPos').textContent = '—';
+        return;
+    }
+
     arquivoAtual = lang;
     editorTexto.value = dadosDosArquivos[arquivoAtual];
     montarAbas();
@@ -227,11 +259,106 @@ window.addEventListener('message', evento => {
 });
 
 // Python, PHP e Node: o sistema ainda marca a execução como “em breve” e não liga ao Judge0 de verdade.
-function rodarTerminal() {
+function escreverTerminal(texto) {
+    saidaTerminal.textContent += texto + '\n';
+    saidaTerminal.scrollTop = saidaTerminal.scrollHeight;
+}
+
+// JavaScript roda em um Web Worker (isolado da página, com limite de 5s).
+function rodarJs(codigo) {
+    return new Promise(resolver => {
+        const fonte = [
+            "const _e=(t,a)=>postMessage({t:t,m:Array.from(a).map(x=>{try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(' ')});",
+            "['log','info','warn','error'].forEach(k=>{console[k]=(...a)=>_e(k,a)});",
+            "try{(0,eval)(" + JSON.stringify(codigo) + ")}catch(e){_e('error',[e&&e.name?e.name+': '+e.message:String(e)])}",
+            "setTimeout(()=>postMessage({fim:true}),300);"
+        ].join('\n');
+        const url = URL.createObjectURL(new Blob([fonte], { type: 'text/javascript' }));
+        const worker = new Worker(url);
+        let linhas = 0, terminou = false;
+        const encerrar = () => {
+            if (terminou) return;
+            terminou = true;
+            clearTimeout(limite);
+            worker.terminate();
+            URL.revokeObjectURL(url);
+            if (!linhas) escreverTerminal('(sem saída)');
+            resolver();
+        };
+        const limite = setTimeout(() => { linhas++; escreverTerminal('✖ Tempo limite de 5 segundos excedido.'); encerrar(); }, 5000);
+        worker.onmessage = evento => {
+            if (evento.data.fim) return encerrar();
+            linhas++;
+            escreverTerminal((evento.data.t === 'error' ? '✖ ' : '') + evento.data.m);
+        };
+        worker.onerror = evento => { linhas++; escreverTerminal('✖ ' + evento.message); evento.preventDefault(); };
+    });
+}
+
+// SQL roda em SQLite no navegador (sql.js), o mesmo motor do Judge0 (language_id 82).
+let sqlJsPromessa = null;
+function carregarSqlJs() {
+    if (!sqlJsPromessa) {
+        const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/';
+        sqlJsPromessa = new Promise((ok, falha) => {
+            const script = document.createElement('script');
+            script.src = base + 'sql-wasm.js';
+            script.onload = () => initSqlJs({ locateFile: arquivo => base + arquivo }).then(ok, falha);
+            script.onerror = () => falha(new Error('Não foi possível baixar o motor SQL (verifique a internet).'));
+            document.head.appendChild(script);
+        });
+        sqlJsPromessa.catch(() => { sqlJsPromessa = null; });
+    }
+    return sqlJsPromessa;
+}
+
+function formatarTabela(resultado) {
+    const texto = valor => (valor === null || valor === undefined ? 'NULL' : String(valor));
+    const larguras = resultado.columns.map((coluna, i) =>
+        Math.max(coluna.length, ...resultado.values.map(linha => texto(linha[i]).length)));
+    const linhaTexto = linha => linha.map((valor, i) => texto(valor).padEnd(larguras[i])).join(' | ');
+    return [
+        linhaTexto(resultado.columns),
+        larguras.map(n => '-'.repeat(n)).join('-+-'),
+        ...resultado.values.map(linhaTexto)
+    ].join('\n');
+}
+
+async function rodarSql(codigo) {
+    escreverTerminal('Carregando motor SQL...');
+    try {
+        const SQL = await carregarSqlJs();
+        const banco = new SQL.Database();   // banco novo e vazio a cada execução
+        saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+        banco.exec(codigo).forEach(resultado => escreverTerminal(formatarTabela(resultado) + '\n'));
+        const tabelas = banco.exec("SELECT name FROM sqlite_master WHERE type='table'");
+        escreverTerminal(tabelas.length
+            ? 'Tabelas no banco: ' + tabelas[0].values.map(linha => linha[0]).join(', ')
+            : 'Comando executado. Nenhuma tabela criada.');
+        banco.close();
+    } catch (erro) {
+        saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+        escreverTerminal('✖ ' + erro.message);
+        escreverConsole(erro.message, 'error');
+    }
+}
+
+async function rodarTerminal() {
     quadroPreview.hidden = true;
     saidaTerminal.hidden = false;
-    saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\nA execução de ${linguagemAtual.rotulo} será integrada em breve.`;
-    escreverConsole('Execução no servidor (Judge0) ainda não integrada.', 'info');
+    saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+    const codigo = dadosDosArquivos[ARQUIVOS[0].lang] || '';
+
+    if (linguagemAtual.id === 63) {
+        await rodarJs(codigo);
+        escreverConsole('Execução concluída.', 'info');
+    } else if (linguagemAtual.id === 'sql') {
+        await rodarSql(codigo);
+        escreverConsole('Execução concluída.', 'info');
+    } else {
+        escreverTerminal(`A execução de ${linguagemAtual.rotulo} será integrada em breve.`);
+        escreverConsole('Execução no servidor (Judge0) ainda não integrada.', 'info');
+    }
 }
 
 async function executar(opcoes = {}) {
@@ -241,7 +368,7 @@ async function executar(opcoes = {}) {
     consoleCorpo.innerHTML = '';
     mostrarResultado(!!opcoes.focar);
     try {
-        if (modoExecucao === 'web') rodarWeb(); else rodarTerminal();
+        if (modoExecucao === 'web') rodarWeb(); else await rodarTerminal();
         executadoAtual = true;
         porId('pvStale').hidden = true;
     } finally {
@@ -249,7 +376,6 @@ async function executar(opcoes = {}) {
         atualizarBotoes();
     }
 }
-
 function atualizarBotoes() {
     porId('btnRodar').disabled = atividadeAtual.vazia || executando || usosExecutar >= LIMITE_EXECUCOES;
     porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
@@ -269,9 +395,8 @@ editorTexto.addEventListener('input', () => {
 editorTexto.addEventListener('scroll', sincronizar);
 editorTexto.addEventListener('click', posicao);
 editorTexto.addEventListener('keyup', posicao);
-
 editorTexto.addEventListener('keydown', evento => {
-    if (evento.key === 'Tab' && !editorTexto.readOnly) {
+    if (evento.key === 'Tab' && !editorTexto.readOnly && modoExecucao !== 'texto') {
         evento.preventDefault();
         const recuo = modoExecucao === 'terminal' && linguagemAtual.id === ID_LINGUAGEM_PYTHON ? '    ' : '  ';
         editorTexto.setRangeText(recuo, editorTexto.selectionStart, editorTexto.selectionEnd, 'end');
@@ -281,7 +406,7 @@ editorTexto.addEventListener('keydown', evento => {
         evento.preventDefault();
         if (editorTexto.readOnly) return;
         salvar();
-        aviso('Código salvo');
+        aviso(modoExecucao === 'texto' ? 'Resposta salva' : 'Código salvo');
     }
 });
 
@@ -329,7 +454,19 @@ if (botaoFecharEditor) botaoFecharEditor.addEventListener('click', recolherEdito
 if (botaoInicio) botaoInicio.addEventListener('click', () => editorTexto.scrollTo({ left: 0, behavior: 'smooth' }));
 window.addEventListener('resize', () => { if (!ehCelular()) recolherEditor(); });
 
+function aplicarModoTexto() {
+    if (modoExecucao !== 'texto') return;
+    porId('btnRodar').hidden = true;                          // sem botão Executar
+    porId('contadorExecutar').parentElement.hidden = true;    // sem limite de Executar
+    porId('abasMobile').hidden = true;                        // sem aba Resultado no celular
+    porId('painelCodigo').classList.add('modo-texto');
+    editorTexto.wrap = 'soft';
+    editorTexto.placeholder = 'Escreva sua resposta aqui...';
+    editorTexto.setAttribute('aria-label', 'Editor de texto');
+}
+
 function iniciarPagina() {
+    aplicarModoTexto();
     atualizarBotoes();
     setInterval(atualizarEntrega, 30000);
     trocar(arquivoAtual);

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Farm Edu - Envio de Atividade</title>
 
-    <!-- CSS local do módulo. O controller serve esses arquivos via /submissoes/file. -->
-    <link rel="stylesheet" href="submissoes/file?type=css&file=aluno.css">
+    <!-- CSS local do módulo. O controller serve esses arquivos via /file. -->
+    <link rel="stylesheet" href="file?type=css&file=aluno.css">
 
     <!-- Bootstrap e ícones para manter o layout visual consistente com o restante do sistema. -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
@@ -18,13 +18,13 @@
     <!-- Cabeçalho principal da tela do aluno: logo, título do módulo e avatar do usuário. -->
     <header>
         <button id="botaoIconi" class="botao-iconi" type="button" aria-expanded="false" aria-controls="menuIconi">
-            <img src="submissoes/file?type=img&file=logo_icone.png" alt="iconiEDU" height="55px" width="55px">
+            <img src="file?type=img&file=logo_icone.png" alt="iconiEDU" height="55px" width="55px">
         </button>
 
         <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
 
         <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário" aria-expanded="false" aria-controls="menuUsuario">
-            <img class="usuario-avatar" src="submissoes/file?type=img&file=icone_user.png" alt="iconiEDU">
+            <img class="usuario-avatar" src="file?type=img&file=icone_user.png" alt="iconiEDU">
         </button>
     </header>
 
@@ -74,7 +74,8 @@
                 <h2 class="atv-sub">O que você precisa fazer</h2>
                 <ol class="atv-requisitos" id="atvRequisitos"></ol>
                 <p class="atv-meta"><b>Linguagem:</b> <span id="atvLinguagem"></span><br>
-                    <b>Nota:</b> <span id="atvNota"></span></p>
+                    <b>Nota:</b> <span id="atvNota"></span>
+                </p>
             </article>
 
             <article>
@@ -96,6 +97,16 @@
 
                     <p id="texto">Escreva seu código direto na plataforma clicando em "Começar".</p>
 
+
+                    <!-- Área onde os arquivos selecionados vão aparecer -->
+                    <div class="lista-anexos" id="listaAnexos"></div>
+
+                    <!-- Input real escondido -->
+                    <input type="file" id="inputArquivoReal" multiple style="display: none;">
+
+                    <!-- Botão para anexar arquivo -->
+                    <button class="btn-adicionar" id="opcaoArquivo">Anexar</button>
+
                     <form action="iniciarAtv" method="get">
                         <!-- O id da atividade é enviado para a próxima página para carregar a atividade correta. -->
                         <input type="hidden" name="id" id="atvInputId">
@@ -113,14 +124,14 @@
         <div class="mascote-container">
             <div class="balao" id="balao"></div>
             <button id="btnGalinha">
-                <img src="submissoes/file?type=img&file=galinha.png" alt="Mascote" width="200" height="200">
+                <img src="file?type=img&file=galinha.png" alt="Mascote" width="200" height="200">
             </button>
         </div>
     </footer>
 
     <!-- JSON serializado no HTML: o JavaScript usa esse bloco para montar a tela sem outra requisição. -->
-    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null) ?></script>
-    <script src="submissoes/file?type=js&file=main.js"></script>
+   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script src="file?type=js&file=main.js"></script>
 </body>
 
 </html>

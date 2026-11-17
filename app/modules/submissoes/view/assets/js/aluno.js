@@ -83,18 +83,20 @@ function atualizarStatus() {
     elementoStatus.classList.toggle('entregue', entregue);
 
     // A mesma CTA é reutilizada para três estados: começar, revisar e visualizar.
+    // O texto muda conforme o tipo: atividade de texto fala em "resposta", as demais em "código".
+    const conteudo = atividadeAtual.idLinguagem === 'texto' ? 'sua resposta' : 'seu código';
     botaoComecar.classList.toggle('visualizar', prazoEncerrado);
     if (prazoEncerrado) {
         botaoComecar.textContent = 'Visualizar';
         textoOrientacao.textContent = entregue
-            ? 'O prazo acabou. Clique em "Visualizar" para ver o código que você entregou.'
+            ? `O prazo acabou. Clique em "Visualizar" para ver ${conteudo} entregue.`
             : 'O prazo de entrega acabou. Você pode apenas visualizar a atividade.';
     } else if (entregue) {
         botaoComecar.textContent = 'Revisar';
-        textoOrientacao.textContent = 'Atividade entregue! Clique em "Revisar" para ver o seu código.';
+        textoOrientacao.textContent = `Atividade entregue! Clique em "Revisar" para ver ${conteudo}.`;
     } else {
         botaoComecar.textContent = 'Começar';
-        textoOrientacao.textContent = 'Escreva seu código direto na plataforma clicando em "Começar".';
+        textoOrientacao.textContent = `Escreva ${conteudo} direto na plataforma clicando em "Começar".`;
     }
 
     // Exibe o prazo da atividade, se existir, com estilo diferente quando acabou.
@@ -115,4 +117,3 @@ window.addEventListener('storage', atualizarStatus);
 setInterval(atualizarStatus, 30000);
 
 document.getElementById('btnVoltar').addEventListener('click', () => history.back());
-

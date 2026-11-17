@@ -10,6 +10,10 @@ class ApiController {
         require_once __DIR__ . '/views/sendAvaliacao.php';
     }
 
+    public function showConsultarSophia(): void {
+        require_once __DIR__ . '/views/consultarSophia.php';
+    }
+
     public function showLinguagens(): void {
         require_once __DIR__ . '/views/ListarLinguagens.php';
     }

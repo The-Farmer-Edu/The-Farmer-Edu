@@ -1,80 +1,38 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>The Farmer Edu - <?= e($turma['nome_turma']) ?></title>
-</head>
-<body>
-    <?php require __DIR__ . '/partials/cabecalho.php'; ?>
-
-    <main>
-        <h1><?= e($turma['nome_turma']) ?> (<?= e(TurmaModel::TURNOS[$turma['turno']] ?? $turma['turno']) ?>)</h1>
-        <p>Curso: <strong><?= e($turma['nome_curso']) ?></strong></p>
-        <p><a href="<?= $base ?>/turmas_cursos/instrutor">Voltar às turmas</a></p>
-        <?php if ($msg): ?><p><strong><?= e($msg) ?></strong></p><?php endif; ?>
-        <?php if ($erro): ?><p><strong><?= e($erro) ?></strong></p><?php endif; ?>
-
-        <?php $arquivada = (int) $turma['ativo'] !== 1; ?>
-        <?php if ($arquivada): ?>
-            <p>Esta turma está arquivada e pode ser consultada, mas não alterada. Restaure-a para modificar matrículas.</p>
-        <?php else: ?>
-            <section aria-labelledby="matricular-aluno-titulo">
-                <h2 id="matricular-aluno-titulo">Matricular aluno</h2>
-                <?php if ($disponiveis): ?>
-                    <form method="POST" action="<?= $base ?>/turmas_cursos/matricular">
-                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                        <input type="hidden" name="id_turma" value="<?= (int) $turma['id_turma'] ?>">
-                        <label>Aluno:
-                            <select name="id_aluno" required>
-                                <option value="">Selecione...</option>
-                                <?php foreach ($disponiveis as $a): ?>
-                                    <option value="<?= (int) $a['id_usuario'] ?>"><?= e($a['nome']) ?> (<?= e($a['email']) ?>)</option>
-                                <?php endforeach; ?>
-                            </select>
-                        </label>
-                        <button type="submit">Matricular</button>
-                    </form>
-                <?php else: ?>
-                    <p>Não há alunos disponíveis para matricular nesta turma.</p>
-                <?php endif; ?>
-            </section>
-        <?php endif; ?>
-
-        <section aria-labelledby="alunos-matriculados-titulo">
-            <h2 id="alunos-matriculados-titulo">Alunos matriculados (<?= count($matriculados) ?>)</h2>
-            <?php if ($matriculados): ?>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Matrícula</th><th>Nome</th><th>E-mail</th><th>Desde</th>
-                            <?php if (!$arquivada): ?><th>Ação</th><?php endif; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($matriculados as $a): ?>
-                            <tr>
-                                <td><?= e($a['matricula']) ?></td>
-                                <td><?= e($a['nome']) ?><?= (int) $a['ativo'] === 1 ? '' : ' (conta desativada)' ?></td>
-                                <td><?= e($a['email']) ?></td>
-                                <td><?= e(date('d/m/Y', strtotime($a['data_matricula']))) ?></td>
-                                <?php if (!$arquivada): ?>
-                                    <td>
-                                        <form method="POST" action="<?= $base ?>/turmas_cursos/desmatricular">
-                                            <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                                            <input type="hidden" name="id_turma" value="<?= (int) $turma['id_turma'] ?>">
-                                            <input type="hidden" name="id_aluno" value="<?= (int) $a['id_usuario'] ?>">
-                                            <button type="submit">Remover da turma</button>
-                                        </form>
-                                    </td>
-                                <?php endif; ?>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+<?php
+$tituloPagina = $turma['nome_turma'] . ' · Mural';
+$activeSection = 'mural';
+$isArchived = (int) $turma['ativo'] !== 1;
+require __DIR__ . '/partials/headClass.php';
+?>
+<div class="class-layout">
+    <?php require __DIR__ . '/partials/sidebarTurma.php'; ?>
+    <main class="class-content">
+        <div class="class-title-row"><div><span class="page-kicker">Mural da turma</span><h2>Atividades</h2></div><?php if (!$isArchived): ?><a href="<?= $base ?>/turmas_cursos/turmaEditar?id=<?= (int) $turma['id_turma'] ?>" class="btn btn-outline-theme"><i class="bi bi-pencil-square me-1"></i>Editar Turma</a><?php else: ?><span class="status-pill status-pill--inactive">Turma arquivada</span><?php endif; ?></div>
+        <?php if (!empty($msg)): ?><div class="alert alert-success flash-message"><?= e($msg) ?></div><?php endif; ?>
+        <?php if (!empty($erro)): ?><div class="alert alert-danger flash-message"><?= e($erro) ?></div><?php endif; ?>
+        <?php if ($isArchived): ?><div class="alert alert-warning">Esta turma está arquivada. O conteúdo pode ser consultado, mas não alterado.</div><?php endif; ?>
+        <section class="activity-section" id="atividades" aria-labelledby="atividades-title">
+            <div class="activity-banner">
+                <div class="activity-banner__title" id="atividades-title"><i class="bi bi-clipboard-check"></i>ATIVIDADES</div>
+                <div class="activity-banner__image">
+                    <?php if (!empty($turma['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $turma['id_turma'] ?>" alt="Imagem da turma <?= e($turma['nome_turma']) ?>">
+                    <?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($turma['nome_curso']) ?></span></div><?php endif; ?>
+                </div>
+            </div>
+            <?php if ($atividades): ?>
+                <div class="activity-list">
+                    <?php foreach ($atividades as $index => $atividade): ?>
+                        <article class="activity-item">
+                            <i class="bi bi-clipboard-check activity-item__icon"></i>
+                            <div class="activity-item__body"><strong><?= e($atividade['titulo']) ?></strong><small><?= !empty($atividade['criado_em']) ? e(date('d/m/Y · H:i', strtotime($atividade['criado_em']))) : 'Atividade da turma' ?><?php if (!empty($atividade['data_entrega'])): ?> · Entrega: <?= e(date('d/m/Y', strtotime($atividade['data_entrega']))) ?><?php endif; ?></small></div>
+                            <span class="activity-item__status"><?= e(ucfirst($atividade['tipo_atividade'] ?? 'atividade')) ?></span>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
             <?php else: ?>
-                <p>Nenhum aluno matriculado ainda.</p>
+                <div class="empty-state"><i class="bi bi-clipboard"></i><strong>Nenhuma atividade publicada ainda.</strong><div>Quando uma atividade for cadastrada para esta turma, ela aparecerá aqui.</div></div>
             <?php endif; ?>
         </section>
     </main>
-</body>
-</html>
+</div>
+<?php require __DIR__ . '/partials/rodape.php'; ?>

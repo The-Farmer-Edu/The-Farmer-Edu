@@ -10,13 +10,13 @@
 require_once __DIR__ . '/Controller.php';
 
 // Página principal do aluno com listagem das atividades.
-Router::get('/aluno', [atividadesSub::class, 'showaluno']);
+Router::get('/submissoes/aluno', [atividadesSub::class, 'showaluno']);
 
 // Página do editor/IDE, onde o aluno programa e entrega a resposta.
-Router::get('/iniciarAtv', [atividadesSub::class, 'showiniciarAtv']);
+Router::get('/submissoes/iniciarAtv', [atividadesSub::class, 'showiniciarAtv']);
 
 // Endpoint de submissão (usado principalmente pelo fluxo de avaliação de atividade).
-Router::post('/enviarSubmissao', [atividadesSub::class, 'processarSubmisssao']);
+Router::post('/submissoes/enviarSubmissao', [atividadesSub::class, 'processarSubmisssao']);
 
 // Servidor de assets: CSS, JS e imagens internos do módulo.
 Router::get('/submissoes/file', [atividadesSub::class, 'sendFile']);

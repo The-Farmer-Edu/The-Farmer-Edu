@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 26-invasoes.js (Fase 3B da refatoração: seção 26)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA); não é aberto sozinho. É um trecho do
       // antigo corpo de iniciarFarmEdu(), copiado sem alterações, exceto que cada função de nível superior foi escrita como
@@ -94,6 +94,7 @@
             const ponto = grade.livre(escalaX, escalaZ) ? [escalaX, escalaZ] : [extensaoX, extensaoZ], caminho = indice === 0 ? primeiro : grade.acharCaminho(ponto[0], ponto[1], ataque[indice][0], ataque[indice][1]);
             if (!caminho) return;
             const modelo = criarMob(tipo); cena.add(modelo.raiz);
+            tocarEfeito(tipo + 'Aparecer', [ponto[0], ponto[1]]);
             INVASAO_EM_CURSO.mobs.push({ tipo, modelo, x: ponto[0], z: ponto[1], rot: Math.atan2(caminho[0][0] - ponto[0], caminho[0][1] - ponto[1]), vel: 0, velAlvo: 0, velMax: configuracao.velocidadeDosMobs * (0.92 + Math.random() * 0.16),
               caminho, indice: 0, passo: Math.random() * 6, fase: indice * 1.7, entrada: [ponto[0], ponto[1]], ataque: ataque[indice], chegou: false, saiu: false, parado: 0, ux: ponto[0], uz: ponto[1],
               // defesa: atributos de combate dos monstros noturnos do mesmo tipo; daInvasao liga os ganchos de ferirMonstro (seção 30a)
@@ -182,7 +183,7 @@
           if (Math.hypot(alvo.x - mob.x, alvo.z - mob.z) <= noturnos.alcanceDoAtaque) {        // ao alcance: golpeia (a precisão decide o acerto)
             golpeando = true; mob.velAlvo = 0; mob.rot += normalizarAngulo(Math.atan2(alvo.x - mob.x, alvo.z - mob.z) - mob.rot) * Math.min(1, segundosDesdeUltimoFrame * 8);
             mob.recarga -= segundosDesdeUltimoFrame;
-            if (mob.recarga <= 0) { mob.recarga = noturnos.segundosEntreAtaques; if (Math.random() < atributos.precisao) ferirTrabalhador(alvo, Math.round(sortearReal(...atributos.dano)), mob); }
+            if (mob.recarga <= 0) { mob.recarga = noturnos.segundosEntreAtaques; tocarEfeito(mob.tipo + 'Ataque', [mob.x, mob.z]); if (Math.random() < atributos.precisao) ferirTrabalhador(alvo, Math.round(sortearReal(...atributos.dano)), mob); }
           } else andarMob(mob, segundosDesdeUltimoFrame, grade);
         } else if (!mob.chegou) { mob.chegou = andarMob(mob, segundosDesdeUltimoFrame, grade); if (mob.chegou) situacao = 'batendo'; }
         else situacao = 'batendo';
@@ -202,7 +203,7 @@
         salvarProgresso();
         invasao.fase = 'repelida'; invasao.relogio = 0;
         mostrarFaixaDeInvasao('🛡️ Invasão repelida!', 'A equipe derrotou todas as criaturas. ' + nomeDaArea(idDaArea) + ' não foi destruído.', 12000);
-        desenharCards(); atualizarPaineisDaMark82(true); tocarEfeito('invasaoRepelida');   // 8.4.1: efeito sonoro
+        desenharCards(); atualizarPaineisDaMark82(true); trocarMusicaDeFundo('normal');   // 8.4.1: efeito sonoro
       };
       // Texto da invasão em curso para o painel Equipe (vazio sem combate).
       const textoDaInvasaoEmCurso = function textoDaInvasaoEmCurso() {
@@ -217,7 +218,7 @@
         INVASAO_EM_CURSO.total = Math.min(INVASOES_CONFIG.maximoDeMobsSimultaneos, dados.tipos.length); INVASAO_EM_CURSO.progresso = dados.progresso || 0;
         if (retomada) mostrarFaixaDeInvasao('🧟 A invasão continua!', 'As criaturas que restavam voltaram para: ' + nomeDaArea(dados.alvo) + ' (dano ' + Math.floor(INVASAO_EM_CURSO.progresso * 100) + '%). Defenda a instalação!', 12000);
         else mostrarFaixaDeInvasao('🧟 A fazenda está sob ataque!', (dados.teste ? 'Invasão de teste. ' : 'Hoje é dia de invasão. ') + 'Criaturas da floresta estão indo para: ' + nomeDaArea(dados.alvo) + '. Guardas em campo vão defender.', 12000);
-        focarCameraNaArea(dados.alvo); tocarEfeito('alarmeDeInvasao');   // 8.4.1: efeito sonoro
+        focarCameraNaArea(dados.alvo); trocarMusicaDeFundo('invasao');   // 8.4.1: efeito sonoro
       };
       // aplica o resultado no estado salvo (a destruição é registrada separadamente de nível e XP)
       const aplicarDestruicao = function aplicarDestruicao(idDaArea, mensagemDeRetorno) {
@@ -264,7 +265,7 @@
               if (estado.invasao.emAndamento) { estado.invasao.emAndamento.progresso = invasao.progresso; marcarParaSalvar(); }
               if (invasao.dica <= 0) {                                                    // poeira e impacto discretos, no máximo a cada 0,4 s
                 invasao.dica = 0.4;
-                for (const mob of batendo) { const distancia = Math.hypot(invasao.centro[0] - mob.x, invasao.centro[1] - mob.z) || 1; PoeiraDeAtaque.emitir(mob.x + (invasao.centro[0] - mob.x) / distancia * 1.0, 0.2, mob.z + (invasao.centro[1] - mob.z) / distancia * 1.0, 2, 0.8); }
+                for (const mob of batendo) { const distancia = Math.hypot(invasao.centro[0] - mob.x, invasao.centro[1] - mob.z) || 1; PoeiraDeAtaque.emitir(mob.x + (invasao.centro[0] - mob.x) / distancia * 1.0, 0.2, mob.z + (invasao.centro[1] - mob.z) / distancia * 1.0, 2, 0.8); tocarEfeito(mob.tipo + 'Ataque', [mob.x, mob.z]); }
               }
               const tremor = batendo.length ? 0.04 * Math.min(1, invasao.relogio / 2) : 0;
               grupoDaInstalacao.position.x = area.posicao.x + Math.sin(tempo * 45) * tremor; grupoDaInstalacao.position.z = area.posicao.z + Math.cos(tempo * 38) * tremor;
@@ -299,7 +300,7 @@
             posicionarBarraDeVida(mob.barra, mob.x, 2.15, mob.z, mob.vida / mob.vidaMaxima);
             if (mob.chegou && mob.vel < 0.05 || invasao.relogio > 40) removerMobDaInvasao(mob); else restantes++;
           }
-          if (!restantes) { removerTodosOsMobs(); invasao.fase = 'nenhuma'; invasao.dados = null; }
+          if (!restantes) { removerTodosOsMobs(); invasao.fase = 'nenhuma'; invasao.dados = null; trocarMusicaDeFundo('normal'); }
         }
         invasao.infoRelogio -= segundosDesdeUltimoFrame;
         if (invasao.infoRelogio <= 0) { invasao.infoRelogio = 1; atualizarInformacaoDasInvasoes(); }

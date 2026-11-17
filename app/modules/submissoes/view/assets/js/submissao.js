@@ -5,10 +5,13 @@ const modalEntrega = porId('modalEntrega');
 
 function atualizarContadores() {
     const execucoesRestantes = Math.max(0, LIMITE_EXECUCOES - usosExecutar);
+    const sophiaRestantes = Math.max(0, LIMITE_SOPHIA - usosSophia);
     const cancelamentosRestantes = Math.max(0, LIMITE_CANCELAMENTOS - cancelamentos);
     porId('contadorExecutar').textContent = `${execucoesRestantes}/${LIMITE_EXECUCOES}`;
+    porId('contadorSophia').textContent = `${sophiaRestantes}/${LIMITE_SOPHIA}`;
     porId('contadorCancelar').textContent = `${cancelamentosRestantes}/${LIMITE_CANCELAMENTOS}`;
-    porId('contadorLimite').classList.toggle('is-limitado', execucoesRestantes === 0 || cancelamentosRestantes === 0);
+    porId('contadorLimite').classList.toggle('is-limitado',
+        execucoesRestantes === 0 || sophiaRestantes === 0 || cancelamentosRestantes === 0);
 }
 
 function atualizarEntrega() {
@@ -38,6 +41,11 @@ function atualizarEntrega() {
 }
 
 function abrirModalEntrega() {
+    // Texto do modal muda conforme o tipo da atividade
+    document.querySelector('#modalEntrega .modal-card p').textContent = modoExecucao === 'texto'
+        ? 'Você vai entregar esta resposta:'
+        : 'Você viu o resultado e vai entregar estes arquivos:';
+
     porId('resumoEntrega').innerHTML = '';
     ARQUIVOS.forEach(arquivo => {
         const totalLinhas = dadosDosArquivos[arquivo.lang].trim() ? dadosDosArquivos[arquivo.lang].split('\n').length : 0;
@@ -60,14 +68,18 @@ const fecharModalEntrega = () => modalEntrega.classList.remove('active');
 /* Antes de confirmar, o aluno sempre vê como ficou */
 async function iniciarEntrega() {
     if (atividadeAtual.prazoExcedido()) return aviso('O prazo de entrega acabou');
-    if (ARQUIVOS.every(arquivo => !dadosDosArquivos[arquivo.lang].trim())) return aviso('Escreva algum código antes de entregar');
+    if (ARQUIVOS.every(arquivo => !dadosDosArquivos[arquivo.lang].trim())) {
+        return aviso(modoExecucao === 'texto' ? 'Escreva sua resposta antes de entregar' : 'Escreva algum código antes de entregar');
+    }
     salvar();
-    if (!resultadoAberto || !executadoAtual) {
-        aviso('Vamos ver como ficou antes de confirmar a entrega');
-        await executar({ focar: true });
-        await esperar(900);
-    } else if (ehCelular()) {
-        setAba('resultado');
+    if (modoExecucao !== 'texto') {
+        if (!resultadoAberto || !executadoAtual) {
+            aviso('Vamos ver como ficou antes de confirmar a entrega');
+            await executar({ focar: true });
+            await esperar(900);
+        } else if (ehCelular()) {
+            setAba('resultado');
+        }
     }
     abrirModalEntrega();
 }

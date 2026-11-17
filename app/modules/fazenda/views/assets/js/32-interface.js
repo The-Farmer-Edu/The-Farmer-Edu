@@ -34,12 +34,20 @@
       // Mark 8.2: no nível 0 o mesmo botão CONSTRÓI a área (nível 1). Sem os recursos, explica quanto falta de cada um.
       // Os DOIS requisitos são conferidos antes de qualquer desconto: nunca há cobrança parcial.
       const evoluirArea = function evoluirArea(idDaArea) {
-        if (instalacaoDestruida(idDaArea)) { mostrarAviso('Repare ' + nomeDaArea(idDaArea) + ' antes de evoluir.'); return; }
+        if (instalacaoDestruida(idDaArea)) {
+          tocarEfeito('erro');
+          mostrarAviso('Repare ' + nomeDaArea(idDaArea) + ' antes de evoluir.');
+          return; 
+        }
         const nivel = estado.niveis[idDaArea], gratuita = plantacaoGratuitaDisponivel(idDaArea, nivel), custo = custoAtualDaEvolucao(idDaArea), madeira = madeiraAtualDaEvolucao(idDaArea), nome = nomeDaArea(idDaArea);
         if (nivel >= NIVEL_MAXIMO) { mostrarAviso(nome + ' já está no nível máximo.'); return; }
         const construindo = nivel === 0 && !AREAS_COM_BASE_FISICA_NO_NIVEL_0.includes(idDaArea);
         const falta = faltaParaEvoluir(idDaArea);
-        if (falta.xp || falta.madeira) { tocarEfeito('erro'); mostrarAviso('Recursos insuficientes para ' + (construindo ? 'construir ' : 'evoluir ') + nome + ': faltam ' + textoDoQueFalta(falta) + '.' + (falta.madeira ? ' 🪓 Peça madeira ao lenhador, depois da ponte.' : '')); return; }
+        if (falta.xp || falta.madeira) {
+          tocarEfeito('erro');
+          mostrarAviso('Recursos insuficientes para ' + (construindo ? 'construir ' : 'evoluir ') + nome + ': faltam ' + textoDoQueFalta(falta) + '.' + (falta.madeira ? ' 🪓 Peça madeira ao lenhador, depois da ponte.' : ''));
+          return; 
+        }
         estado.xp -= custo;
         estado.recursos.madeira -= madeira;
         estado.niveis[idDaArea]++;

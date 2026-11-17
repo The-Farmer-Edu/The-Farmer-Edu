@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- CSS do editor/IDE, servido pelo controller de assets do módulo. -->
-    <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
+    <link rel="stylesheet" href="file?type=css&file=iniciaratv.css">
 </head>
 <body data-pagina="iniciaratv">
     <!-- Topbar do editor: em uma só linha, o aluno vê o fluxo de navegação, status e ações. -->
@@ -19,7 +19,7 @@
         <div class="brand">
             <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
             <span class="logo">
-                <img src="submissoes/file?type=img&file=logo_icone.png" alt="The Farm Edu">
+                <img src="file?type=img&file=logo_icone.png" alt="The Farm Edu">
             </span>
             <span class="nome">The Farm <b>Edu</b></span>
             <span class="modulo">Escrever código</span>
@@ -64,7 +64,7 @@
             <div class="contador-limite" id="contadorLimite">
                 <span class="contador-limite__titulo">Limites</span>
                 <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong></div>
-                <!-- <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div> -->
+                <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div>
                 <div class="contador-limite__linha"><span>Cancelar entrega</span><strong id="contadorCancelar">3/3</strong></div>
             </div>
         </aside>
@@ -115,7 +115,7 @@
     <div class="sophia">
         <div class="balao" id="balao"></div>
         <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
-            <img src="submissoes/file?type=img&file=sophia_ia.webp" alt="Sophia">
+            <img src="file?type=img&file=sophia_ia.webp" alt="Sophia">
         </button>
     </div>
 
@@ -135,7 +135,7 @@
     <div class="toast" id="toast" role="status"></div>
 
     <!-- A mesma estratégia de JSON em bloco permite ao JS montar a atividade sem nova chamada de API. -->
-    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null) ?></script>
-    <script src="submissoes/file?type=js&file=main.js"></script>
-</body>
+    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script src="file?type=js&file=main.js"></script>
+
 </html>

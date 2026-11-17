@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 29-trabalhadores.js (Fase 3B da refatoração: seção 29)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA); não é aberto sozinho. É um trecho do
       // antigo corpo de iniciarFarmEdu(), copiado sem alterações, exceto que cada função de nível superior foi escrita como
@@ -80,8 +80,6 @@
         registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards(); tocarEfeito('contratar');   // 8.4.1: efeito sonoro
         mostrarAviso(CLASSES_DE_TRABALHADORES[dados.classe].icone + ' ' + dados.nome + ' foi contratado(a) e está saindo da casa!');
       };
-
-       
 
       const recuperarTrabalhador = function recuperarTrabalhador(idDoTrabalhador) {
         const dados = estado.trabalhadores.find(trabalhador => trabalhador.id === idDoTrabalhador);
@@ -317,7 +315,11 @@
         if (dano > 0) dano = Math.max(1, Math.round(dano * multiplicadorDoDanoRecebidoPelaEquipe()));   // Poção da Bravura: metade (seção 28c)
         entidade.dados.vida = Math.max(0, entidade.dados.vida - dano); marcarParaSalvar(); tocarEfeito('golpe', [entidade.x, entidade.z]);   // 8.4.1: efeito sonoro
         if (!entidade.alvo && atacante && !atacante.morto) { entidade.alvo = atacante; entidade.estado = 'combatendo'; }   // reage a quem o atacou
-        if (entidade.dados.vida > 0) return;
+        if (entidade.dados.vida > 0) {
+          tocarEfeito('fazendeiroDano', [entidade.x, entidade.z]);                  // 8.4.1: efeito sonoro
+          return;
+        }
+        tocarEfeito('fazendeiroMorte', [entidade.x, entidade.z]);                   // 8.4.1: efeito sonoro
         cancelarTarefa(entidade); entidade.ordem = null;                            // morto não continua nenhuma ordem
         entidade.dados.estado = 'morto'; entidade.estado = 'caido'; entidade.tempoCaido = 0; entidade.alvo = null; entidade.vel = entidade.velAlvo = 0;
         salvarProgresso();
@@ -458,4 +460,3 @@
       const criarTrabalhadoresSalvos = function criarTrabalhadoresSalvos() { garantirCandidatos(); for (const dados of estado.trabalhadores) if (dados.estado === 'ativo' && !dados.emCasa) criarEntidadeDoTrabalhador(dados, false); };   // quem está em casa fica em casa
 
       arquivoDaMontagemConcluido('29-trabalhadores.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
-

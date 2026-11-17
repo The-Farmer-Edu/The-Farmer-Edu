@@ -1,35 +1,81 @@
 const notification = document.getElementById("phoneNotification");
-const closeBtn = document.getElementById("closeNotificationBtn");
+const appIcon = document.getElementById("appIcon");
+const messageSender = document.getElementById("messageSender");
+
 let autoHideTimeout;
 
-// Função para exibir a notificação
-function showNotification() {
+// Lista com as 5 notificações solicitadas
+const filaNotificacoes = [
+    {
+        mensagem: "O instrutor postou uma nova atividade!",
+        icone: "📚",
+        cor: "verde"
+    },
+    {
+        mensagem: "Atividade pendente há mais de 5 dias sem entrega.",
+        icone: "⏳",
+        cor: "amarela"
+    },
+    {
+        mensagem: "O feedback da IA para sua atividade está pronto!",
+        icone: "🤖",
+        cor: "verde"
+    },
+    {
+        mensagem: "O instrutor atribuiu uma nota à sua atividade!",
+        icone: "⭐",
+        cor: "verde"
+    },
+    {
+        mensagem: "Alerta! A fazenda foi atacada por mobs!",
+        icone: "⚔️",
+        cor: "vermelha"
+    }
+];
+
+let indiceAtual = 0;
+
+// Função para exibir uma notificação específica
+function showNotification(dados) {
     clearTimeout(autoHideTimeout);
+
+    // Atualiza texto e ícone
+    messageSender.textContent = dados.mensagem;
+    appIcon.textContent = dados.icone;
+
+    // Reseta classes de cor e aplica a nova
+    notification.classList.remove("verde", "amarela", "vermelha");
+    notification.classList.add(dados.cor);
+
+    // Mostra o balão
     notification.classList.add("show");
 
-    // Esconde automaticamente após 5 segundos
+    // Esconde automaticamente após 4 segundos e agenda a próxima
     autoHideTimeout = setTimeout(() => {
         hideNotification();
-    }, 5000);
+    }, 4000);
 }
 
-// Função para esconder a notificação
+// Função para esconder e chamar a próxima da fila
 function hideNotification() {
     notification.classList.remove("show");
+    clearTimeout(autoHideTimeout);
+
+    indiceAtual++;
+    if (indiceAtual < filaNotificacoes.length) {
+        // Aguarda 800ms para a animação de saída terminar antes de mostrar a próxima
+        setTimeout(() => {
+            showNotification(filaNotificacoes[indiceAtual]);
+        }, 800);
+    }
 }
 
-// Dispara a notificação automaticamente 1 segundo após abrir a página
+// Inicia a sequência 1 segundo após carregar a página
 window.addEventListener("DOMContentLoaded", () => {
-    setTimeout(showNotification, 1000);
+    setTimeout(() => {
+        showNotification(filaNotificacoes[0]);
+    }, 1000);
 });
 
-// Fechar ao clicar no botão "X"
-if (closeBtn) {
-    closeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        hideNotification();
-    });
-}
-
-// Fechar ao clicar no corpo da notificação
+// Fechar imediatamente ao clicar (e já puxar a próxima se houver)
 notification.addEventListener("click", hideNotification);

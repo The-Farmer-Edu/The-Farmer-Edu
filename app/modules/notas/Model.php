@@ -84,7 +84,7 @@ class NotasModel
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno, ]);
+        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno]);
         return $stmt->fetchAll();
     }
 
@@ -104,9 +104,9 @@ class NotasModel
     {
         $sql = "
             SELECT
-                COUNT(a.id_atividade)                          AS total_atividades,
-                COUNT(n.id_nota)                               AS total_avaliadas,
-                COALESCE(AVG(n.valor), 0)                      AS media_geral,
+                COUNT(a.id_atividade)                           AS total_atividades,
+                COUNT(n.id_nota)                                AS total_avaliadas,
+                COALESCE(AVG(n.valor), 0)                       AS media_geral,
                 SUM(CASE WHEN s.id_submissao IS NULL THEN 1 ELSE 0 END) AS pendentes
             FROM atividades a
             INNER JOIN turmas t     ON t.id_turma = a.id_turma
@@ -122,7 +122,7 @@ class NotasModel
         ";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno, ]);
+        $stmt->execute([':idAluno' => $idAluno, ':idAluno2' => $idAluno, ':idAluno3' => $idAluno]);
         return $stmt->fetch() ?: [];
     }
 
@@ -223,10 +223,11 @@ class NotasModel
         // Verifica existência prévia de nota para esta submissão
         $check = $this->pdo->prepare("SELECT id_nota FROM notas WHERE id_submissao = ?");
         $check->execute([$idSubmissao]);
-        $nota = $check->fetch();
+        $notaAtual = $check->fetch();
 
-        if ($nota) {
-            // Nota já existente: atualiza valor e data de atribuição
+        $notaAnterior = $notaAtual ? (float) $notaAtual['valor'] : null;
+
+        if ($notaAtual) {
             $stmt = $this->pdo->prepare("
                 UPDATE notas
                 SET valor = ?, origem = 'instrutor', id_instrutor_revisor = ?, data_atribuicao = NOW()
@@ -242,7 +243,13 @@ class NotasModel
             $stmt->execute([$idSubmissao, $valor, $idInstrutor]);
         }
 
-        // Marca a submissão como corrigida
+        // Grava o histórico no banco de dados
+        $hist = $this->pdo->prepare("
+            INSERT INTO historico_notas (id_submissao, id_instrutor, nota_anterior, nota_nova)
+            VALUES (?, ?, ?, ?)
+        ");
+        $hist->execute([$idSubmissao, $idInstrutor, $notaAnterior, $valor]);
+
         $upd = $this->pdo->prepare("UPDATE submissoes SET status = 'corrigida' WHERE id_submissao = ?");
         $upd->execute([$idSubmissao]);
 
@@ -263,6 +270,24 @@ class NotasModel
      * @param int $idTurma Identificador da turma
      * @return array|null Dados cadastrais da turma ou null caso não exista
      */
+    public function buscarHistoricoNota(int $idSubmissao): array
+    {
+        $sql = "
+            SELECT 
+                h.nota_anterior,
+                h.nota_nova,
+                DATE_FORMAT(h.data_alteracao, '%d/%m/%Y às %H:%i') AS data_fmt,
+                u.nome AS nome_instrutor
+            FROM historico_notas h
+            INNER JOIN usuarios u ON u.id_usuario = h.id_instrutor
+            WHERE h.id_submissao = ?
+            ORDER BY h.data_alteracao DESC, h.id_historico DESC
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$idSubmissao]);
+        return $stmt->fetchAll();
+    }
+
     public function buscarTurma(int $idTurma): ?array
     {
         $stmt = $this->pdo->prepare("

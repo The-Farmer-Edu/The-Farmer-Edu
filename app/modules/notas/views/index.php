@@ -31,6 +31,7 @@ foreach ($atividades as $atv) {
 // Verde para média >= 7, Laranja para média >= 5 e Vermelho para notas abaixo de 5
 $media = (float) ($resumo['media_geral'] ?? 0);
 $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
+$base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -154,6 +155,92 @@ $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
             font-weight: 600;
             font-size: .875rem;
             color: var(--texto-principal);
+            position: relative;
+            cursor: pointer;
+            padding: 5px 12px 5px 6px;
+            border-radius: var(--raio-pill);
+            transition: var(--transicao);
+            user-select: none;
+        }
+
+        .topbar-user:hover {
+            background: rgba(255, 255, 255, 0.45);
+        }
+
+        .seta-user {
+            transition: transform 0.2s ease;
+        }
+
+        .topbar-user.aberto .seta-user {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(0,0,0,.15);
+            min-width: 210px;
+            z-index: 200;
+            overflow: hidden;
+            display: none;
+            animation: fadeInMenu .2s ease;
+        }
+
+        @keyframes fadeInMenu {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topbar-user.aberto .user-dropdown {
+            display: block;
+        }
+
+        .user-dropdown-header {
+            padding: 14px 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-dropdown-header strong {
+            font-size: .875rem;
+            color: var(--texto-principal);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-dropdown-header span {
+            font-size: .75rem;
+            color: var(--verde-primario);
+            font-weight: 600;
+        }
+
+        .user-dropdown-divider {
+            height: 1px;
+            background: var(--cinza-100);
+            margin: 4px 0;
+        }
+
+        .user-dropdown .item-logout {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--vermelho);
+            text-decoration: none;
+            transition: background .15s;
+        }
+
+        .user-dropdown .item-logout:hover {
+            background: var(--vermelho-claro);
         }
 
         .avatar {
@@ -244,6 +331,35 @@ $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
             font-size: .8rem;
             color: var(--texto-secundario);
             font-weight: 500;
+        }
+
+        /* ============================================================
+           BARRA DE PESQUISA
+           ============================================================ */
+        .filtro-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: var(--raio-icone);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            box-shadow: var(--sombra-card);
+        }
+
+        .filtro-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: .9rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--texto-principal);
+            background: transparent;
+        }
+
+        .filtro-bar input::placeholder {
+            color: var(--texto-secundario);
         }
 
         /* ============================================================
@@ -405,10 +521,22 @@ $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
     <a class="topbar-logo" href="/">
         🌱 <span>The Farmer</span>Edu
     </a>
-    <div class="topbar-user">
+    <div class="topbar-user" id="userMenuBtn" tabindex="0">
         <!-- Avatar circular com iniciais do aluno -->
         <div class="avatar"><?= strtoupper(substr($usuario['nome'], 0, 2)) ?></div>
         <span><?= htmlspecialchars($usuario['nome']) ?></span>
+        <svg class="seta-user" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        <div class="user-dropdown">
+            <div class="user-dropdown-header">
+                <strong><?= htmlspecialchars($usuario['nome']) ?></strong>
+                <span>🎓 Aluno</span>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <a href="<?= $base ?>/notas/logout" class="item-logout">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                <span>Sair da conta</span>
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -461,6 +589,19 @@ $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
 
     </section>
 
+    <?php if (!empty($atividades)): ?>
+        <div class="filtro-bar">
+            <span>🔍</span>
+            <input
+                type="text"
+                id="filtro-atividade"
+                placeholder="Buscar atividade pelo nome..."
+                oninput="filtrarAtividades(this.value)"
+                aria-label="Filtrar atividades"
+            >
+        </div>
+    <?php endif; ?>
+
     <!-- LISTA DE ATIVIDADES AGRUPADAS POR TURMA -->
     <?php if (empty($atividades)): ?>
         <!-- Mensagem de estado vazio caso não haja atividades -->
@@ -501,7 +642,7 @@ $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
                         $origem = $atv['origem_nota'] ?? null;
                         ?>
                         <!-- Card individual da atividade -->
-                        <article class="card-atividade">
+                        <article class="card-atividade" data-titulo="<?= htmlspecialchars(strtolower($atv['titulo'])) ?>">
                             <div class="atividade-esq">
                                 <!-- Ícone do tipo -->
                                 <div class="tipo-icone <?= $classTipo ?>">
@@ -550,6 +691,40 @@ $corMedia = $media >= 7 ? '#1B5E20' : ($media >= 5 ? '#FF8D28' : '#dc2626');
     <?php endif; ?>
 
 </div><!-- /container -->
+
+<script>
+// Menu de usuário dropdown
+const userBtn = document.getElementById('userMenuBtn');
+if (userBtn) {
+    userBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        this.classList.toggle('aberto');
+    });
+}
+document.addEventListener('click', function(e) {
+    if (userBtn && !userBtn.contains(e.target)) {
+        userBtn.classList.remove('aberto');
+    }
+});
+
+// Filtro de pesquisa das atividades
+function filtrarAtividades(termo) {
+    const q = termo.toLowerCase().trim();
+    document.querySelectorAll('.secao').forEach(secao => {
+        const cards = secao.querySelectorAll('.card-atividade');
+        let visiveis = 0;
+
+        cards.forEach(card => {
+            const titulo = card.dataset.titulo || '';
+            const mostrar = !q || titulo.includes(q);
+            card.style.display = mostrar ? '' : 'none';
+            if (mostrar) visiveis++;
+        });
+
+        secao.style.display = visiveis > 0 ? '' : 'none';
+    });
+}
+</script>
 
 </body>
 </html>

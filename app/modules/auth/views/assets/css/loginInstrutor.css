@@ -160,7 +160,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: url("file?type=images&file=lua_cheia.jpg") center / cover no-repeat;
+    background: url("file?type=images&file=lua_cheia.webp") center / cover no-repeat;
     image-rendering: pixelated;
     height: 100vh;
 }

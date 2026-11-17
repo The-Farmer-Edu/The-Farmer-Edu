@@ -5,6 +5,7 @@ require_once __DIR__ . '/Controller.php';
 
 Router::get('/turmas_cursos', [CursosController::class, 'inicio']);
 Router::get('/turmas_cursos/instrutor', [CursosController::class, 'instrutor']);
+Router::get('/turmas_cursos/cursos', [CursosController::class, 'cursos']);
 Router::get('/turmas_cursos/aluno', [CursosController::class, 'aluno']);
 Router::get('/turmas_cursos/alunos', [CursosController::class, 'alunos']);
 Router::get('/turmas_cursos/cursoNovo', [CursosController::class, 'cursoNovo']);

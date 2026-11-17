@@ -316,6 +316,7 @@ canvas.addEventListener('pointerup', evento => {
 const ativarPedraSecreta = function ativarPedraSecreta() {
   pedraSecreta.pulso = 1;
   tocarSegredo('pedraSecreta');
+  avisarObjetivos('pedra-secreta', {});   // Etapa 2: descoberta do quadro de objetivos (seção 30e)
 };
 
 arquivoDaMontagemConcluido('23-audio.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

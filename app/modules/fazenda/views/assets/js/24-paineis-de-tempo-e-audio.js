@@ -29,6 +29,7 @@
       // cobriria o outro): abrir um fecha o outro. O estado aberto/fechado vive só na interface (não vai para o salvamento).
       const conteudoDaGaveta = selecionar('#conteudo-da-gaveta'), botaoDaGaveta = selecionar('#botao-gaveta-construcoes');
       const definirGavetaAberta = function definirGavetaAberta(aberta) {
+        if (aberta) fecharPainelDaEstrutura(false);   // a gaveta e o painel de uma estrutura (seção 32) não ficam abertos juntos
         conteudoDaGaveta.hidden = !aberta; botaoDaGaveta.setAttribute('aria-expanded', String(aberta));
         selecionar('#lista-cards').classList.toggle('aberta', aberta);
       };

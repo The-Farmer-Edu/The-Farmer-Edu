@@ -76,6 +76,7 @@
         estado.candidatos.splice(indice, 1); estado.xp -= custo;                  // retira o candidato ANTES: um segundo clique não acha mais ninguém
         const dados = { ...candidato, vida: atributosDoTrabalhador(candidato).vidaMaxima, estado: 'ativo', xpInvestido: custo, emCasa: false };
         estado.trabalhadores.push(dados); garantirCandidatos();
+        avisarObjetivos('equipe', {});   // Etapa 2: quadro de objetivos (seção 30e)
         registrarAtividade(); criarEntidadeDoTrabalhador(dados, true); desenharCards(); tocarEfeito('contratar');   // 8.4.1: efeito sonoro
         mostrarAviso(CLASSES_DE_TRABALHADORES[dados.classe].icone + ' ' + dados.nome + ' foi contratado(a) e está saindo da casa!');
       };
@@ -313,6 +314,7 @@
       // ---- dano recebido ----
       const ferirTrabalhador = function ferirTrabalhador(entidade, dano, atacante) {
         if (entidade.estado === 'caido' || entidade.removido) return;
+        if (dano > 0) dano = Math.max(1, Math.round(dano * multiplicadorDoDanoRecebidoPelaEquipe()));   // Poção da Bravura: metade (seção 28c)
         entidade.dados.vida = Math.max(0, entidade.dados.vida - dano); marcarParaSalvar(); tocarEfeito('golpe', [entidade.x, entidade.z]);   // 8.4.1: efeito sonoro
         if (!entidade.alvo && atacante && !atacante.morto) { entidade.alvo = atacante; entidade.estado = 'combatendo'; }   // reage a quem o atacou
         if (entidade.dados.vida > 0) return;
@@ -385,7 +387,8 @@
         }
         for (const entidade of [...trabalhadoresNaCena.values()]) {
           const dados = entidade.dados, classe = CLASSES_DE_TRABALHADORES[dados.classe], atributos = atributosDoTrabalhador(dados);
-          entidade.velMax = atributos.velocidade;                                     // melhorias de velocidade valem na hora
+          // melhorias de velocidade valem na hora; a Poção da Aceleração (seção 28c) multiplica por 2 enquanto dura (nunca acumula)
+          entidade.velMax = atributos.velocidade * multiplicadorDaCaminhadaDosTrabalhadores();
           if (entidade.estado === 'caido') {                                           // cai, fica alguns segundos e some (continua no menu como morto)
             entidade.tempoCaido += segundosDesdeUltimoFrame;
             entidade.corpo.rotation.x = -Math.min(1, entidade.tempoCaido * 2) * Math.PI / 2; entidade.corpo.position.y = 0.15;
@@ -422,11 +425,11 @@
             if (distancia <= classe.alcance) {                                          // ao alcance: para, encara e golpeia (a precisão decide o acerto)
               entidade.velAlvo = 0; virarPara(entidade, alvo.x, alvo.z, segundosDesdeUltimoFrame);
               golpeando = true; entidade.recarga -= segundosDesdeUltimoFrame;
-              if (entidade.recarga <= 0) { entidade.recarga = classe.segundosEntreAtaques; if (Math.random() * 100 < atributos.precisao) ferirMonstro(alvo, Math.round(atributos.dano * sortearReal(0.85, 1.15)), entidade); }
+              if (entidade.recarga <= 0) { entidade.recarga = classe.segundosEntreAtaques; if (Math.random() * 100 < atributos.precisao) ferirMonstro(alvo, Math.round(atributos.dano * sortearReal(0.85, 1.15) * multiplicadorDoDanoDaEquipe()), entidade); }   // Poção da Bravura: 2× (28c)
             } else andarMob(entidade, segundosDesdeUltimoFrame, grade);
           } else if (entidade.tarefa && entidade.tarefa.fase === 'colhendo') {          // colhendo: o tempo depende da velocidade de tarefa e da classe
             entidade.velAlvo = 0; colhendo = true; virarPara(entidade, entidade.tarefa.alvoX, entidade.tarefa.alvoZ, segundosDesdeUltimoFrame);
-            entidade.tarefa.restante -= segundosDesdeUltimoFrame;
+            entidade.tarefa.restante -= segundosDesdeUltimoFrame * multiplicadorDaColheitaDosTrabalhadores();   // Poção da Aceleração: 8× (seção 28c)
             if (entidade.tarefa.restante <= 0) {                                         // fim da colheita: UMA colheita deste canteiro
               const { area, indice } = entidade.tarefa, ordem = entidade.ordem;
               cancelarTarefa(entidade);                                                 // libera a reserva antes de colher

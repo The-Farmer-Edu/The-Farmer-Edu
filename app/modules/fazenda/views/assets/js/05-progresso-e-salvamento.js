@@ -16,13 +16,28 @@
       // trabalhadores com atributos completos e melhorias, fazendeiro inicial único). A chave do localStorage não muda.
       const VERSAO_DO_SALVAMENTO = 5;
       const nivelInicialDaArea = () => 0;   // todas as áreas começam no nível 0 (a casa no nível 0 é a "base", que já existe)
+      // Backend: quando a fazenda é aberta pela aplicação PHP, o Controller injeta window.FARMEDU_SERVIDOR (save do banco, revisão e XP
+      // pendente das atividades). Nesse caso o BANCO é a fonte do save e o localStorage do navegador NÃO é lido nem gravado (em
+      // computadores compartilhados ele misturaria a fazenda de alunos diferentes). Aberto direto pelo arquivo (file://), sem
+      // o objeto, tudo continua como antes: só localStorage. A gravação no banco fica em 34-sincronizacao-com-servidor.js.
+      const SERVIDOR_DA_FAZENDA = window.FARMEDU_SERVIDOR || null;
       let estado = { versao: VERSAO_DO_SALVAMENTO, xp: 0, niveis: Object.fromEntries(AREAS.map(area => [area.id, 0])) };
       const avisosDaMigracao = [];   // mensagens mostradas uma vez ao abrir (seção 33)
       let existiaSalvamento = false; // false = fazenda nova (a seção 32 pergunta o nome da fazenda)
       try {
-        const salvo = JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));
+        const salvo = SERVIDOR_DA_FAZENDA ? SERVIDOR_DA_FAZENDA.estado : JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));   // Backend: save do banco quando existe
         if (salvo && salvo.niveis) { estado = salvo; existiaSalvamento = true; }
       } catch (erro) { }
+      // Backend: uma versão anterior do PHP regravava objetos vazios {} como listas vazias [] (json_decode associativo). Uma lista
+      // não guarda propriedades por nome e o JSON.stringify as descarta, então tudo o que o jogo gravava nessas chaves depois
+      // (instalações destruídas em "danos", estado das invasões, melhorias da equipe...) "voltava ao normal" ao recarregar. O
+      // servidor já preserva o formato; este trecho só conserta saves que JÁ foram gravados assim.
+      for (const campo of ['niveis', 'danos', 'invasao', 'calendarioDasInvasoes', 'xpPorOrigem', 'xpDaFazendaHoje', 'recursos', 'lavouras', 'animais', 'mina', 'atividade']) {
+        if (Array.isArray(estado[campo])) estado[campo] = {};
+      }
+      for (const lista of [estado.trabalhadores, estado.candidatos]) {
+        if (Array.isArray(lista)) for (const pessoa of lista) if (pessoa && Array.isArray(pessoa.melhorias)) pessoa.melhorias = {};
+      }
       if (!estado.niveis || typeof estado.niveis !== 'object') estado.niveis = {};
       if (!Number.isFinite(estado.xp)) estado.xp = 0;
       const versaoCarregada = Number.isFinite(estado.versao) ? estado.versao : 0;
@@ -128,7 +143,82 @@
       const xpDaFazendaSalvo = estado.xpDaFazendaHoje && typeof estado.xpDaFazendaHoje === 'object' ? estado.xpDaFazendaHoje : {};
       estado.xpDaFazendaHoje = Number.isInteger(xpDaFazendaSalvo.dia) && Number.isFinite(xpDaFazendaSalvo.total) && xpDaFazendaSalvo.total >= 0 ? { dia: xpDaFazendaSalvo.dia, total: xpDaFazendaSalvo.total } : { dia: null, total: 0 };
       estado.recursos = estado.recursos && typeof estado.recursos === 'object' ? estado.recursos : {};
-      for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
+      for (const recurso of ['trigo', 'milho', 'cenoura', 'abobora', 'minerios', 'madeira']) estado.recursos[recurso] = Math.floor(numeroValido(estado.recursos[recurso]));
+      // Campo opcional e compatível com saves antigos: cada entrada guarda o instante em que uma árvore volta a ficar disponível.
+      const arvoresColetaveisSalvas = estado.arvoresColetaveis && typeof estado.arvoresColetaveis === 'object' ? estado.arvoresColetaveis : {};
+      estado.arvoresColetaveis = Object.fromEntries(Object.entries(arvoresColetaveisSalvas)
+        .filter(([id, instante]) => /^arvore-\d+$/.test(id) && Number.isFinite(instante) && instante >= 0)
+        .map(([id, instante]) => [id, Math.floor(instante)]));
+      // Economia integrada (campos opcionais; saves antigos começam zerados, sem perder nada):
+      //   pocoes       → quantas poções de cada tipo o jogador guarda (POCOES_DO_GUARDIAO, seção 01)
+      //   madeiraHoje  → madeira já coletada HOJE pelo lenhador (limite diário, mesmo formato de xpDaFazendaHoje)
+      const pocoesSalvas = estado.pocoes && typeof estado.pocoes === 'object' ? estado.pocoes : {};
+      // Etapa da alquimia: as três poções de XP antigas (tonico 3, elixir 6, essencia 10 minérios) saíram do catálogo. Quem ainda
+      // as guardava recebe de volta os minérios gastos nelas (nada é perdido e nenhum XP é criado). Depois desta conversão os ids
+      // antigos deixam de existir no save, então a devolução acontece uma única vez.
+      // Etapa 2: o Elixir da Fertilidade (12 minérios) também saiu do catálogo, substituído pela poção misteriosa. Mesmo padrão
+      // seguro: cada elixir guardado volta como 12 minérios; os ids que saem do catálogo deixam de existir no save, então a
+      // devolução acontece uma única vez.
+      const MINERIOS_DAS_POCOES_ANTIGAS = { tonico: 3, elixir: 6, essencia: 10, fertilidade: 12 };
+      let mineriosDevolvidos = 0;
+      for (const [tipoAntigo, minerios] of Object.entries(MINERIOS_DAS_POCOES_ANTIGAS)) {
+        if (POCOES_DO_GUARDIAO[tipoAntigo]) continue;
+        mineriosDevolvidos += Math.floor(numeroValido(pocoesSalvas[tipoAntigo])) * minerios;
+      }
+      // Efeitos ativos das poções (seção 28c): { tipo: { inicio, fim, aplicadoAte } } em ms do relógio do jogo. Só ficam os tipos
+      // que existem no catálogo e têm duração; valores inválidos são descartados (o efeito simplesmente não vale).
+      const efeitosSalvos = estado.efeitosDasPocoes && typeof estado.efeitosDasPocoes === 'object' ? estado.efeitosDasPocoes : {};
+      // Etapa 2: um Elixir da Fertilidade que ainda estava fazendo efeito devolve a parte que não chegou a valer (proporcional ao
+      // tempo restante, arredondado para baixo). O registro sai do save junto com o tipo, então isso também acontece uma vez só.
+      const fertilidadeAtiva = efeitosSalvos.fertilidade;
+      if (!POCOES_DO_GUARDIAO.fertilidade && fertilidadeAtiva && Number.isFinite(fertilidadeAtiva.inicio) && Number.isFinite(fertilidadeAtiva.fim) && fertilidadeAtiva.fim > fertilidadeAtiva.inicio)
+        mineriosDevolvidos += Math.floor(MINERIOS_DAS_POCOES_ANTIGAS.fertilidade * Math.max(0, Math.min(1, (fertilidadeAtiva.fim - agoraNoJogo()) / (fertilidadeAtiva.fim - fertilidadeAtiva.inicio))));
+      if (mineriosDevolvidos) {
+        estado.recursos.minerios += mineriosDevolvidos;
+        avisosDaMigracao.push('A alquimia do Guardião mudou: suas poções antigas viraram ' + mineriosDevolvidos + ' minérios de volta.');
+      }
+      estado.pocoes = Object.fromEntries(Object.keys(POCOES_DO_GUARDIAO).map(tipo => [tipo, Math.floor(numeroValido(pocoesSalvas[tipo]))]));
+      estado.efeitosDasPocoes = Object.fromEntries(Object.entries(efeitosSalvos)
+        .filter(([tipo, efeito]) => POCOES_DO_GUARDIAO[tipo] && POCOES_DO_GUARDIAO[tipo].minutos && efeito && Number.isFinite(efeito.inicio) && Number.isFinite(efeito.fim) && efeito.fim > efeito.inicio)
+        .map(([tipo, efeito]) => [tipo, { inicio: efeito.inicio, fim: Math.min(efeito.fim, efeito.inicio + POCOES_DO_GUARDIAO[tipo].minutos * 60000),
+          aplicadoAte: Number.isFinite(efeito.aplicadoAte) ? Math.max(efeito.inicio, Math.min(efeito.aplicadoAte, efeito.fim)) : efeito.inicio }]));
+      const madeiraHojeSalva = estado.madeiraHoje && typeof estado.madeiraHoje === 'object' ? estado.madeiraHoje : {};
+      // Etapa 1.1: "reserva" = madeira do limite que não foi coletada no último dia jogado, guardada por até RESERVA_DE_COTA_EM_DIAS
+      // dia (mesma regra das cotas de XP; seção 29b). Saves antigos começam com reserva 0.
+      estado.madeiraHoje = Number.isInteger(madeiraHojeSalva.dia) && Number.isFinite(madeiraHojeSalva.total) && madeiraHojeSalva.total >= 0
+        ? { dia: madeiraHojeSalva.dia, total: madeiraHojeSalva.total, reserva: numeroValido(madeiraHojeSalva.reserva) } : { dia: null, total: 0, reserva: 0 };
+      // Rebalanceamento (campos opcionais; saves antigos começam zerados):
+      //   cotasDoDia → XP já usado HOJE em cada atividade (COTAS_DIARIAS_DE_XP) e a reserva guardada de dias anteriores (seção 27).
+      //                xpDaFazendaHoje continua existindo como o TOTAL do dia (somado pela seção 27), para quem já o lia.
+      //   recompensasRecebidas → ids das recompensas externas já creditadas por window.adicionarXP (impede crédito duplicado).
+      const cotasSalvas = estado.cotasDoDia && typeof estado.cotasDoDia === 'object' ? estado.cotasDoDia : {};
+      const numerosPorAtividade = objeto => Object.fromEntries(Object.keys(COTAS_DIARIAS_DE_XP).map(atividade => [atividade, numeroValido(objeto && objeto[atividade])]));
+      estado.cotasDoDia = { dia: Number.isInteger(cotasSalvas.dia) ? cotasSalvas.dia : null, usado: numerosPorAtividade(cotasSalvas.usado), reserva: numerosPorAtividade(cotasSalvas.reserva) };
+      estado.recompensasRecebidas = Array.isArray(estado.recompensasRecebidas) ? estado.recompensasRecebidas.filter(id => typeof id === 'string' && id.length <= 120).slice(-500) : [];
+      // Etapa 2 — eventos especiais (seção 30c). Campos opcionais; saves antigos começam sem nada usado.
+      //   misterio.usadoEm    → (poção misteriosa; nome neutro porque o save pode ser lido) instante (ms) em que a poção misteriosa foi usada (null = nunca). Uma vez preenchido, nunca volta a null:
+      //                         é o que impede um segundo uso, inclusive depois de recarregar.
+      //   misterio.concluido  → false enquanto a cena não terminou; se a página fechar no meio, a cena é mostrada de novo ao abrir.
+      //   alienigena.ultimoEm → instante (ms) da última abdução (intervalo mínimo entre elas) · alienigena.abducoes → total já ocorrido.
+      const eventosSalvos = estado.eventosEspeciais && typeof estado.eventosEspeciais === 'object' ? estado.eventosEspeciais : {};
+      const unicornioSalvo = eventosSalvos.misterio && typeof eventosSalvos.misterio === 'object' ? eventosSalvos.misterio : {};
+      const alienigenaSalvo = eventosSalvos.alienigena && typeof eventosSalvos.alienigena === 'object' ? eventosSalvos.alienigena : {};
+      const usadoEmSalvo = Number.isFinite(unicornioSalvo.usadoEm) && unicornioSalvo.usadoEm > 0 ? unicornioSalvo.usadoEm : null;
+      estado.eventosEspeciais = {
+        misterio: { usadoEm: usadoEmSalvo, concluido: usadoEmSalvo ? unicornioSalvo.concluido === true : false },
+        alienigena: { ultimoEm: Number.isFinite(alienigenaSalvo.ultimoEm) && alienigenaSalvo.ultimoEm > 0 ? Math.min(alienigenaSalvo.ultimoEm, AGORA_AO_CARREGAR) : null, abducoes: Math.floor(numeroValido(alienigenaSalvo.abducoes)),
+          // Etapa 1 — abdução TEMPORÁRIA: { saiuEm, voltaEm } (relógio real, ms) enquanto uma vaca está com o disco; null quando não há.
+          // Se a página reabrir depois do prazo, a vaca volta já aqui, antes de o curral ser desenhado (sem duplicar: o curral só
+          // conta animais vivos − mortos − abduzidos, e abduzidos é derivado deste registro logo abaixo).
+          vacaAusente: (() => {
+            const salvo = alienigenaSalvo.vacaAusente;
+            if (!salvo || !Number.isFinite(salvo.voltaEm) || !Number.isFinite(salvo.saiuEm)) return null;
+            return Date.now() >= salvo.voltaEm ? null : { saiuEm: salvo.saiuEm, voltaEm: Math.min(salvo.voltaEm, Date.now() + EVENTOS_ESPECIAIS_CONFIG.abducao.segundosParaVoltar * 1000), origem: salvo.origem === 'et' ? 'et' : 'sorteio' };   // origem: abdução normal (sorteio) ou easter egg do ET
+          })() },
+      };
+      // Etapa 1 — a poção misteriosa é de uso único: depois do uso registrado o frasco nunca volta (nem por save editado, migração
+      // ou recarga). O registro (usadoEm/concluido) é a fonte da verdade.
+      if (estado.eventosEspeciais.misterio.usadoEm && estado.pocoes && estado.pocoes.misteriosa) estado.pocoes.misteriosa = 0;
       // Plantações: cada uma tem a PRÓPRIA lista de canteiros (estado.lavouras[id].canteiros). A lista antiga (estado.lavoura, só da
       // Nova plantação) é migrada para a Nova plantação, com o progresso preservado.
       const normalizarCanteiros = lista => Array.from({ length: LAVOURA_CONFIG.maximoDeCanteiros }, (_, indice) => {
@@ -143,7 +233,12 @@
       for (const idDaArea in ANIMAIS_DAS_AREAS) {
         const salvo = estado.animais[idDaArea] || {}, limite = ANIMAIS_DAS_AREAS[idDaArea].porNivel[NIVEL_MAXIMO - 1];
         estado.animais[idDaArea] = { comida: Math.min(100, numeroValido(salvo.comida, 100)), saude: Math.min(100, numeroValido(salvo.saude, 100)), mortos: Math.min(limite, Math.floor(numeroValido(salvo.mortos))),
-          atualizadoEm: Math.min(numeroValido(salvo.atualizadoEm, agoraNoJogo()), agoraNoJogo()), avisouFome: !!salvo.avisouFome };
+          atualizadoEm: Math.min(numeroValido(salvo.atualizadoEm, agoraNoJogo()), agoraNoJogo()), avisouFome: !!salvo.avisouFome,
+          produtos: Math.min(limite * PRODUCAO_DOS_ANIMAIS.maximoPorAnimal, numeroValido(salvo.produtos)),   // rebalanceamento: produção guardada (saves antigos: 0)
+          // Etapa 1: "abduzidos" passou a ser DERIVADO do registro da abdução temporária (1 enquanto a vaca está com o disco, 0 fora
+          // disso). Migração: na regra antiga (Etapa 2) a vaca saía para sempre e era reposta por 60 XP; quem ainda tinha vacas
+          // abduzidas as recebe de volta aqui, sem custo (nenhuma vaca se perde).
+          abduzidos: idDaArea === 'curral' && estado.eventosEspeciais.alienigena.vacaAusente ? 1 : 0 };
       }
       const FASES_DA_MINA = ['parado', 'indo', 'minerando', 'voltando', 'descarregando'];
       const minaSalva = estado.mina || {};
@@ -188,10 +283,55 @@
       estado.versao = VERSAO_DO_SALVAMENTO;
       // Quantos animais a instalação tem no nível atual, e quantos estão vivos (os mortos de fome só voltam se forem repostos).
       const totalDeAnimais = function totalDeAnimais(idDaArea) { const nivel = estado.niveis[idDaArea]; return nivel ? ANIMAIS_DAS_AREAS[idDaArea].porNivel[nivel - 1] : 0; };
-      const animaisVivosDaArea = function animaisVivosDaArea(idDaArea) { return Math.max(0, totalDeAnimais(idDaArea) - Math.min(estado.animais[idDaArea].mortos, totalDeAnimais(idDaArea))); };
+      // Etapa 2: os abduzidos (disco voador, seção 30c) também ficam fora: não aparecem, não comem e não produzem, até serem repostos.
+      const animaisAusentesDaArea = idDaArea => (estado.animais[idDaArea].mortos | 0) + (estado.animais[idDaArea].abduzidos | 0);
+      // Etapa 1: segundos até a vaca abduzida voltar (0 se nenhuma está fora). Relógio real, como o registro salvo.
+      const segundosParaAVacaVoltar = function segundosParaAVacaVoltar() { const ausente = estado.eventosEspeciais.alienigena.vacaAusente; return ausente ? Math.max(0, Math.ceil((ausente.voltaEm - Date.now()) / 1000)) : 0; };
+      const animaisVivosDaArea = function animaisVivosDaArea(idDaArea) { return Math.max(0, totalDeAnimais(idDaArea) - Math.min(animaisAusentesDaArea(idDaArea), totalDeAnimais(idDaArea))); };
       // Grava o objeto "estado" (xp, niveis, atividade, danos e invasao) no localStorage. Falhas de
       // armazenamento (modo privado, cota cheia) são ignoradas para não travar o jogo.
-      const salvarProgresso = function salvarProgresso() { try { localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { } };
+      // ---- Etapa 2 (objetivos): registros novos; saves antigos começam vazios, sem perder nada ----
+      //   eventosEspeciais.et → easter egg do ET nas vacas (seção 30c): ultimaEm (ms, relógio real; intervalo mínimo entre aparições),
+      //                         vezes (quantas aparições), descobertoEm (1ª descoberta; permanente).
+      //   objetivos.concluidos → { id: instante } dos objetivos concluídos (seção 30e). PERMANENTE: um objetivo concluído nunca
+      //                          volta a ficar incompleto, mesmo que a condição deixe de valer (ex.: instalação destruída).
+      //   objetivos.contadores → atividades que o jogo não contava em lugar nenhum (plantios, colheitas, produção coletada...). O que
+      //                          já existe no save (níveis, viagens da mina, poção misteriosa, abduções, equipe) NÃO é copiado aqui:
+      //                          o quadro lê direto da fonte original.
+      const etSalvo = eventosSalvos.et && typeof eventosSalvos.et === 'object' ? eventosSalvos.et : {};
+      estado.eventosEspeciais.et = {
+        ultimaEm: Number.isFinite(etSalvo.ultimaEm) && etSalvo.ultimaEm > 0 ? Math.min(etSalvo.ultimaEm, AGORA_AO_CARREGAR) : null,
+        vezes: Math.floor(numeroValido(etSalvo.vezes)),
+        descobertoEm: Number.isFinite(etSalvo.descobertoEm) && etSalvo.descobertoEm > 0 ? etSalvo.descobertoEm : null,
+      };
+      const objetivosSalvos = estado.objetivos && typeof estado.objetivos === 'object' ? estado.objetivos : {};
+      const contadoresSalvos = objetivosSalvos.contadores && typeof objetivosSalvos.contadores === 'object' ? objetivosSalvos.contadores : {};
+      const porCulturaSalvo = contadoresSalvos.colheitasPorCultura && typeof contadoresSalvos.colheitasPorCultura === 'object' ? contadoresSalvos.colheitasPorCultura : {};
+      estado.objetivos = {
+        concluidos: Object.fromEntries(Object.entries(objetivosSalvos.concluidos && typeof objetivosSalvos.concluidos === 'object' ? objetivosSalvos.concluidos : {})
+          .filter(([id, quando]) => /^[a-z0-9-]{1,40}$/.test(id) && Number.isFinite(quando) && quando > 0)),
+        contadores: {
+          plantios: Math.floor(numeroValido(contadoresSalvos.plantios)), colheitas: Math.floor(numeroValido(contadoresSalvos.colheitas)),
+          colheitasPorCultura: Object.fromEntries(Object.keys(CULTURAS).map(cultura => [cultura, Math.floor(numeroValido(porCulturaSalvo[cultura]))])),
+          producaoColetada: Math.floor(numeroValido(contadoresSalvos.producaoColetada)), alimentacoes: Math.floor(numeroValido(contadoresSalvos.alimentacoes)),
+          arvoresCortadas: Math.floor(numeroValido(contadoresSalvos.arvoresCortadas)), pocoesPreparadas: Math.floor(numeroValido(contadoresSalvos.pocoesPreparadas)),
+          tiposDePocaoPreparados: Array.isArray(contadoresSalvos.tiposDePocaoPreparados) ? contadoresSalvos.tiposDePocaoPreparados.filter(tipo => POCOES_DO_GUARDIAO[tipo]).filter((tipo, i, lista) => lista.indexOf(tipo) === i) : [],
+          pocoesDeExperienciaUsadas: Math.floor(numeroValido(contadoresSalvos.pocoesDeExperienciaUsadas)), pedraSecreta: Math.floor(numeroValido(contadoresSalvos.pedraSecreta)),
+          contratacoes: Math.floor(numeroValido(contadoresSalvos.contratacoes)),
+        },
+        iniciadoEm: Number.isFinite(objetivosSalvos.iniciadoEm) && objetivosSalvos.iniciadoEm > 0 ? objetivosSalvos.iniciadoEm : null,   // null = quadro ainda não avaliado neste save
+        vistoAte: Number.isFinite(objetivosSalvos.vistoAte) ? objetivosSalvos.vistoAte : 0,   // última vez que o jogador abriu o quadro (selo de "novo")
+      };
+      // Etapa 2: ponto ÚNICO de aviso ao quadro de objetivos. Os sistemas chamam avisarObjetivos(tipo, detalhe) logo depois de uma
+      // ação concluída (colheita, poção preparada...). Fica aqui, no início da montagem, para existir antes de quem a chama; o quadro
+      // (seção 30e) só se inscreve como ouvinte. Sem ouvinte (ou se um ouvinte falhar), a ação original continua igual.
+      const ouvintesDosObjetivos = [];
+      const avisarObjetivos = function avisarObjetivos(tipo, detalhe) { for (const ouvir of ouvintesDosObjetivos) { try { ouvir(tipo, detalhe || {}); } catch (erro) { console.error("[FarmEdu] Quadro de objetivos:", erro); } } };
+      // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
+      const salvarProgresso = function salvarProgresso() {
+        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { }
+        if (window.FarmEduSincronia) window.FarmEduSincronia.agendar();
+      };
       salvarProgresso();   // grava os campos novos de saves antigos uma única vez
 
       arquivoDaMontagemConcluido('05-progresso-e-salvamento.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

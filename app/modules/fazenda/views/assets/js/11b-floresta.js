@@ -14,7 +14,8 @@
       const malhaInstanciada = function malhaInstanciada(geometria, itens, materialDoObjeto = materialBranco, respeitarAreasLivres = true) { // item = [x, y, z, sx, sy, sz, cor, giroY, giroZ]
         const malha = new THREE.InstancedMesh(geometria, materialDoObjeto, itens.length), objetoAuxiliar = new THREE.Object3D(), cor = new THREE.Color();
         itens.forEach((item, indice) => {
-          const livre = !respeitarAreasLivres || (Math.hypot(item[0] - PLACA.x, item[2] - PLACA.z) > 5.6 && !estaNaAreaDaPracaCentral(item[0], item[2], 0.8)) ? 1 : 0; // escala 0 = instância oculta (mantém a semente intacta)
+          // Clareiras dos NPCs (seção 09): o acampamento do lenhador e o posto do Guardião ficam sem árvores e arbustos da floresta.
+          const livre = !respeitarAreasLivres || (Math.hypot(item[0] - PLACA.x, item[2] - PLACA.z) > 5.6 && !estaNaAreaDaPracaCentral(item[0], item[2], 0.8) && !estaNaClareiraDosNpcs(item[0], item[2])) ? 1 : 0; // escala 0 = instância oculta (mantém a semente intacta)
           objetoAuxiliar.position.set(item[0], item[1], item[2]); objetoAuxiliar.rotation.set(0, item[7] || 0, item[8] || 0); objetoAuxiliar.scale.set(item[3] * livre, item[4] * livre, item[5] * livre); objetoAuxiliar.updateMatrix();
           malha.setMatrixAt(indice, objetoAuxiliar.matrix); malha.setColorAt(indice, cor.set(item[6]));
         });

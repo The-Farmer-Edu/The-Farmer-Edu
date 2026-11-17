@@ -61,6 +61,7 @@
         return null;
       };
       const surgirMonstro = function surgirMonstro() {
+        if (monstrosNoturnosAfastados()) return null;   // Poção da Noite Serena (seção 28c): nenhum monstro NOVO enquanto dura
         const grade = obterGradeDosMobs();
         for (let tentativa = 0; tentativa < 1; tentativa++) {
           const ponto = pontoDeSurgimento(grade); if (!ponto) return null;
@@ -85,7 +86,7 @@
         if (monstro.vida > 0) return;
         monstro.vida = 0; monstro.morto = true; monstro.alvo = null; monstro.vel = monstro.velAlvo = 0; monstro.barra.grupo.visible = false;
         if (atacante) atacante.alvo = null;
-        creditarXP(TRABALHADORES_CONFIG.xpPorMonstroDerrotado, monstro.chamadoPeloTeste ? 'teste' : 'fazenda');   // mesmo XP; só muda a origem registrada
+        creditarXP(TRABALHADORES_CONFIG.xpPorMonstroDerrotado, monstro.chamadoPeloTeste ? 'teste' : 'fazenda', true, 'defesa');   // mesmo XP; só muda a origem registrada
         tocarEfeito('monstroDerrotado', [monstro.x, monstro.z]);                  // 8.4.1: efeito sonoro
         if (monstro.daInvasao) registrarMobDaInvasaoDerrotado(monstro);           // não volta se a invasão for retomada (seção 26)
       };

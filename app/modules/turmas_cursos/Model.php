@@ -96,6 +96,23 @@ class TurmaModel
         return $stmt->fetchAll();
     }
 
+    // Todas as turmas de um instrutor, separadas por situação (ativas/arquivadas).
+    // Inclui o curso e a quantidade de alunos para a tela inicial do instrutor.
+    public static function listarDoInstrutor(int $idInstrutor, int $ativo = 1): array
+    {
+        $stmt = iniciarPDO()->prepare(
+            'SELECT t.*, c.nome_curso, COUNT(m.id_matricula) AS total_alunos
+             FROM turmas t
+             JOIN cursos c ON c.id_curso = t.id_curso
+             LEFT JOIN matriculas m ON m.id_turma = t.id_turma
+             WHERE t.id_instrutor = ? AND t.ativo = ?
+             GROUP BY t.id_turma, c.nome_curso
+             ORDER BY c.nome_curso, t.nome_turma'
+        );
+        $stmt->execute([$idInstrutor, $ativo]);
+        return $stmt->fetchAll();
+    }
+
     // Turma + dados do curso, só se pertencer ao instrutor informado (null caso contrário)
     public static function buscarDoInstrutor(int $idTurma, int $idInstrutor): ?array
     {

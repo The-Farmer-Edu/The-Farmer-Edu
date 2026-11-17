@@ -210,6 +210,33 @@
         return { boca, inicio, fundo, direcaoParaDentro, comprimento: inicio.distanceTo(fundo), profundidadeDoTunel: 5,
           giroDaEntrada: Math.atan2(-direcaoParaDentro.x, -direcaoParaDentro.z) };   // a frente da caverna (+z local) olha para o depósito
       })();
+      // == POSTOS DOS NPCS INDEPENDENTES (Guardião da Mina e Lenhador) ==
+      // Definidos aqui, ANTES da floresta e da vegetação (seção 11), para que as árvores e arbustos instanciados sejam escondidos
+      // dentro das clareiras (malhaInstanciada, seção 11b) sem mudar a semente da floresta: o resto do mapa fica idêntico.
+      // Guardião: fora da caverna, ao lado esquerdo de quem olha a boca (coordenadas do pórtico: x lateral, z para fora). O lado
+      // direito fica livre para o castelete do nível 3 da mina e os caixotes do nível 2 ficam entre ele e a entrada.
+      const POSTO_DO_GUARDIAO = (() => {
+        const { boca, direcaoParaDentro, giroDaEntrada } = MINA_GEOMETRIA;
+        const paraFora = direcaoParaDentro.clone().negate(), esquerda = new THREE.Vector3(direcaoParaDentro.z, 0, -direcaoParaDentro.x);
+        const ponto = (lateral, frente) => boca.clone().addScaledVector(esquerda, lateral).addScaledVector(paraFora, frente);
+        const pessoa = ponto(3.6, 4.4);
+        return { x: pessoa.x, z: pessoa.z, giro: giroDaEntrada + 0.55, ponto, giroDaEntrada };
+      })();
+      // Acampamento do lenhador: clareira na floresta depois da ponte, ao sul do fim da estrada oeste e do depósito da mina.
+      // Fica fora da grade de navegação da equipe (x < −26): ninguém da equipe nem os monstros entram nele.
+      const ACAMPAMENTO_DO_LENHADOR = { x: -34, z: 9, raio: 7.2, trilha: [[-28.2, 1.0], [-31.2, 4.2]] };
+      const CLAREIRAS_DOS_NPCS = [
+        [POSTO_DO_GUARDIAO.ponto(4.2, 4.0).x, POSTO_DO_GUARDIAO.ponto(4.2, 4.0).z, 2.6],
+        [ACAMPAMENTO_DO_LENHADOR.x, ACAMPAMENTO_DO_LENHADOR.z, ACAMPAMENTO_DO_LENHADOR.raio],
+      ];
+      const estaNaClareiraDosNpcs = (posicaoX, posicaoZ) => CLAREIRAS_DOS_NPCS.some(([centroX, centroZ, raio]) => Math.hypot(posicaoX - centroX, posicaoZ - centroZ) < raio)
+        || estaNaTrilhaDoLenhador(posicaoX, posicaoZ, 1.1);
+      // Trilha de terra que liga o fim da estrada oeste ao acampamento (segmento com folga).
+      const estaNaTrilhaDoLenhador = function estaNaTrilhaDoLenhador(posicaoX, posicaoZ, folga) {
+        const [[xInicial, zInicial], [xFinal, zFinal]] = ACAMPAMENTO_DO_LENHADOR.trilha, segmentoX = xFinal - xInicial, segmentoZ = zFinal - zInicial;
+        const fracao = Math.max(0, Math.min(1, ((posicaoX - xInicial) * segmentoX + (posicaoZ - zInicial) * segmentoZ) / (segmentoX * segmentoX + segmentoZ * segmentoZ)));
+        return Math.hypot(posicaoX - (xInicial + segmentoX * fracao), posicaoZ - (zInicial + segmentoZ * fracao)) < folga;
+      };
       // Verdadeiro se (x, z) está no corredor dos trilhos (do depósito até a boca da caverna).
       const estaNoCorredorDaMina = function estaNoCorredorDaMina(posicaoX, posicaoZ, margem = 0) {
         const { inicio, fundo: boca } = MINA_GEOMETRIA, segmentoX = boca.x - inicio.x, segmentoZ = boca.z - inicio.z;   // até o fundo do túnel (nada de capim dentro da caverna)

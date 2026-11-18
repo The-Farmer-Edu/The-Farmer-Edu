@@ -20,9 +20,10 @@
             $array_payload = [
                 "model" => $this->model,
                 "prompt" => $this->prompt,
-                "stream" => false // false para receber a resposta toda de uma vez
+                "stream" => false, // false para receber a resposta toda de uma vez
+                "think" => $think
             ];
-            $think ? $array_payload['think'] = $think : null;
+            // $think ? $array_payload['think'] = $think : null;
             $this->payload = json_encode($array_payload);
 
             $curlOllama = curl_init();
@@ -34,7 +35,7 @@
 
             $respostaOllama = json_decode(curl_exec($curlOllama), true);
 
-            return $respostaOllama['response'] ?? "A IA não conseguiu gerar um feedback. Erro: " . curl_error($curlOllama);
+            return $respostaOllama['response'] ?? "A IA não conseguiu gerar um feedback. Erro: " . curl_error($curlOllama) . ". Resposta: " . curl_exec($curlOllama);
         }
     }
 

@@ -32,10 +32,4 @@ Router::get('/notas/turma', [NotasController::class, 'verTurma']);
 
 // Endpoint POST para processamento e persistência das notas atribuídas (suporta AJAX)
 Router::post('/notas/salvar', [NotasController::class, 'salvarNota']);
-
-// ----------------------------------------------------------------------------
-// ROTA DE AUTENTICAÇÃO / SESSÃO
-// ----------------------------------------------------------------------------
-// Logout pelo modulo de notas (redireciona para o login do aluno)
-Router::get('/notas/logout', [NotasController::class, 'logout']);
 ?>

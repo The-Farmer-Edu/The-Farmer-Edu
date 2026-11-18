@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 30e-objetivos.js (Etapa 2: quadro de objetivos da Fazenda)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA), depois da seção 30d e antes do loop
       // (seção 31). Mesmo padrão dos demais: declarações no escopo global compartilhado, funções como "const nome = function...".
@@ -207,22 +207,29 @@
         botaoDosObjetivos.title = destaque && !destaque.objetivo.secreto ? 'Objetivos da fazenda · agora: ' + destaque.objetivo.nome + ' (' + destaque.atual + '/' + destaque.objetivo.meta + ')' : 'Objetivos da fazenda';
       };
       const abrirQuadroDeObjetivos = function abrirQuadroDeObjetivos() {
-        if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis();
+        if (!janelaDosObjetivos.hidden) return;
+        if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis(true);
+        if (typeof definirGavetaAberta === 'function') definirGavetaAberta(false, true);
         avaliarObjetivos(false);
         assinaturaDoQuadro = ''; janelaDosObjetivos.hidden = false; botaoDosObjetivos.setAttribute('aria-expanded', 'true');
         desenharQuadroDeObjetivos();
         estado.objetivos.vistoAte = Date.now(); salvarProgresso(); atualizarBotaoDosObjetivos();
         tocarEfeito('Enter'); selecionar('#fechar-objetivos').focus();
       };
-      const fecharQuadroDeObjetivos = function fecharQuadroDeObjetivos() { if (janelaDosObjetivos.hidden) return; janelaDosObjetivos.hidden = true; botaoDosObjetivos.setAttribute('aria-expanded', 'false'); botaoDosObjetivos.focus(); };
-      botaoDosObjetivos.addEventListener('click', () => { if (janelaDosObjetivos.hidden) abrirQuadroDeObjetivos(); else fecharQuadroDeObjetivos(); });
-      selecionar('#fechar-objetivos').addEventListener('click', fecharQuadroDeObjetivos);
+      const fecharQuadroDeObjetivos = function fecharQuadroDeObjetivos(silencioso = false) {
+        if (janelaDosObjetivos.hidden) return;
+        janelaDosObjetivos.hidden = true; botaoDosObjetivos.setAttribute('aria-expanded', 'false');
+        if (!silencioso) tocarEfeito('Fecha');
+        botaoDosObjetivos.focus();
+      };
+      botaoDosObjetivos.addEventListener('click', () => { if (janelaDosObjetivos.hidden) abrirQuadroDeObjetivos(); else fecharQuadroDeObjetivos(false); });
+      selecionar('#fechar-objetivos').addEventListener('click', () => fecharQuadroDeObjetivos(false));
       janelaDosObjetivos.addEventListener('click', evento => {
-        if (evento.target === janelaDosObjetivos) { fecharQuadroDeObjetivos(); return; }
+        if (evento.target === janelaDosObjetivos) { fecharQuadroDeObjetivos(false); return; }
         if (evento.target.closest('#ver-todos-os-objetivos')) { listaCompletaAberta = !listaCompletaAberta; desenharQuadroDeObjetivos(); selecionar('#ver-todos-os-objetivos').focus(); }
         if (evento.target.closest('#abrir-colecao-dos-objetivos') && window.farmEduConquistas) window.farmEduConquistas.abrirDiario('colecao');   // Etapa 3
       });
-      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDosObjetivos.hidden) fecharQuadroDeObjetivos(); });
+      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDosObjetivos.hidden) fecharQuadroDeObjetivos(false); });
 
       // ---- Abertura do jogo ----
       // 1ª vez com o quadro neste save: o que JÁ estava cumprido é registrado em silêncio (sem uma chuva de avisos num save antigo).
@@ -238,7 +245,7 @@
         destaques: () => objetivosEmDestaque().map(item => item.objetivo.id),
         aoConcluir: funcao => { if (typeof funcao === 'function') ouvintesDeConclusao.push(funcao); },
         avaliar: () => avaliarObjetivos(false),
-        abrir: abrirQuadroDeObjetivos, fechar: fecharQuadroDeObjetivos,
+        abrir: abrirQuadroDeObjetivos, fechar: () => fecharQuadroDeObjetivos(false),
         estatisticas: () => ({ avaliacoes: avaliacoesFeitas, avaliacaoPendente: !!avaliacaoAgendada }),   // testes: prova que nada roda por quadro
       };
 

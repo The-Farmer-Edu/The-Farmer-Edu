@@ -7,7 +7,7 @@
 // evento por um peso de 0 a 1, então, quando o peso volta a 0, o jogador está exatamente onde estava.
 //  • Cena do céu (poção misteriosa): a câmera sobe suavemente até enquadrar o céu da própria fazenda, um unicórnio montado com
 //    peças 3D atravessa o céu soltando um arco-íris (faixas de 7 cores que ficam no céu por alguns segundos) e a câmera volta.
-//    Música opcional: AUDIO_CONFIG.segredos.misterio (seção 02b).
+//    Música opcional: AUDIO_CONFIG.segredos.unicornioTrilha (seção 02b).
 //  • Abdução: um disco voador com um alienígena verde chega, acende o feixe sobre uma vaca do curral, a puxa para dentro e vai
 //    embora. Etapa 1: a vaca sai por 20 s (estado.eventosEspeciais.alienigena.vacaAusente, salvo) e o disco a traz de volta, sem custo.
 // Todos os objetos temporários são criados aqui e descartados no fim (geometrias, materiais e texturas próprias).
@@ -259,15 +259,14 @@
         for (let indice = 0; indice < 140; indice++) estrelas.soltar(focoDoCeu.clone().addScaledVector(direita, (Math.random() - 0.5) * 150).addScaledVector(CIMA, (Math.random() - 0.5) * 70), 4, 0.4, 999, [0xffffff, 0xfff1b0, 0xd9c8ff][indice % 3]);
         const traseiro = new THREE.Vector3(), anterior = new THREE.Vector3(), atual = new THREE.Vector3();
         let tempo = 0, musicaIniciada = false, encerrado = false;
-        const musica = FONTES_DE_SOM.segredos.misterio;
+        const musica = FONTES_DE_SOM.segredos.unicornioTrilha;
         entrarNoModoDeCena('cena-do-ceu');
-        if (FONTES_DE_SOM.musica && !FONTES_DE_SOM.musica.el.paused) FONTES_DE_SOM.musica.el.volume = volumeDaMusica() * 0.25;   // a música de fundo abaixa durante a cena
+        tocarSegredo('unicornioTrilha');
         const encerrar = function encerrar(porErro = false) {
           if (encerrado) return; encerrado = true;
           recursos.descartar();
           cameraDoEvento.peso = 0; eventoEmAndamento = null;
-          if (musica) pararSom(musica);
-          sincronizarMusica();
+          pararSegredo('unicornioTrilha');
           sairDoModoDeCena();
           if (!opcoes.teste) {
             const registro = estado.eventosEspeciais.misterio;
@@ -285,7 +284,7 @@
             cameraDoEvento.peso = tempo < fimDaSubida ? suavizarNoEvento(tempo / fimDaSubida) : tempo < fimDoArcoIris ? 1 : 1 - suavizarNoEvento((tempo - fimDoArcoIris) / C.segundosDaVolta);
             estrelas.material.opacity = 0.85 * cameraDoEvento.peso * (0.75 + 0.25 * Math.sin(tempo * 3));
             if (tempo >= fimDaSubida && tempo < fimDoVoo) {
-              if (!musicaIniciada) { musicaIniciada = true; if (musica) tocarSegredo('misterio'); }
+              if (!musicaIniciada) { musicaIniciada = true; tocarSegredo('unicornioTrilha'); }
               const s = (tempo - fimDaSubida) / C.segundosDoVoo;
               anterior.copy(unicornio.raiz.position); atual.copy(caminho(s));
               unicornio.raiz.position.copy(atual); unicornio.raiz.visible = true;
@@ -307,7 +306,9 @@
             // o arco-íris fica no céu e some devagar enquanto a câmera volta
             arcoIris.material.opacity = tempo < fimDoArcoIris ? 0.88 : 0.88 * (1 - suavizarNoEvento((tempo - fimDoArcoIris) / C.segundosDaVolta));
             brilhos.atualizar(segundos);
-            if (musica && musicaIniciada && tempo > fimDoArcoIris) musica.el.volume = Math.max(0, AUDIO_CONFIG.segredos.misterio.volume * (1 - (tempo - fimDoArcoIris) / C.segundosDaVolta));
+            if (musica && musicaIniciada && tempo > fimDoArcoIris && AUDIO_CONFIG.segredos.unicornioTrilha) {
+              musica.el.volume = Math.max(0, ESTADO_DO_AUDIO.musica.volume * AUDIO_CONFIG.segredos.unicornioTrilha.volume * (1 - (tempo - fimDoArcoIris) / C.segundosDaVolta));
+            }
             if (tempo >= fim) encerrar();
           },
         };
@@ -409,7 +410,7 @@
         const C = EVENTOS_ESPECIAIS_CONFIG.abducao, recursos = criarColecaoDeRecursos(), disco = criarDiscoVoador(recursos);
         const registro = estado.eventosEspeciais.alienigena;
         registro.ultimoEm = Date.now(); salvarProgresso();   // o intervalo mínimo começa já (mesmo que o disco vá embora sem levar nada)
-        let vacaReal = vacaVisivelDoCurral(), vacaLevada = null, levou = false, tempo = 0, encerrado = false;
+        let vacaReal = vacaVisivelDoCurral(), vacaLevada = null, levou = false, tempo = 0, encerrado = false, feixeTocado = false, somSaidaTocado = false;
         const alvo = new THREE.Vector3(), inicioDoVoo = new THREE.Vector3(), pairando = new THREE.Vector3(), direcaoDaCamera = new THREE.Vector3(), saida = new THREE.Vector3();
         const centroDoCurral = AREAS.find(area => area.id === 'curral').posicao;
         const posicaoDaVaca = destino => { if (vacaReal && vacaReal.parent) vacaReal.getWorldPosition(destino); else destino.set(centroDoCurral.x, 0, centroDoCurral.z); return destino; };
@@ -419,10 +420,15 @@
         saida.set(alvo.x - Math.cos(angulo) * 40, 90, alvo.z - Math.sin(angulo) * 40);
         disco.raiz.position.copy(inicioDoVoo); recursos.naCena(disco.raiz);
         mostrarAviso('🛸 Um disco voador apareceu sobre o ' + nomeDaArea('curral') + '!');
-        tocarSegredo('discoVoador');
+        tocarSegredo('discoVoador', [alvo.x, alvo.z]);
+        tocarSegredo('trilha', [alvo.x, alvo.z]);
         if (performance.now() - ultimaInteracaoDoJogador > C.segundosParadoParaFocar * 1000) focarCameraNaArea('curral');   // só se o jogador estiver parado
         const encerrar = function encerrar() {
           if (encerrado) return; encerrado = true;
+          pararSegredo('discoVoador');
+          pararSegredo('abducao');
+          pararSegredo('naveindoembora');
+          pararSegredo('trilha');
           recursos.descartar();
           if (vacaLevada) { vacaLevada.a.traverse(objeto => { if (objeto.geometry && !geometriasCompartilhadas.has(objeto.geometry)) objeto.geometry.dispose(); }); if (vacaLevada.a.parent) vacaLevada.a.parent.remove(vacaLevada.a); }
           eventoEmAndamento = null;
@@ -441,6 +447,10 @@
               disco.raiz.position.lerpVectors(inicioDoVoo, pairando, suavizarNoEvento(tempo / 5));
               disco.nave.rotation.z = Math.sin(tempo * 3) * 0.12;
             } else if (tempo < 12) {                                                      // pairando com o feixe
+              if (!feixeTocado) {
+                feixeTocado = true;
+                tocarSegredo('abducao', [alvo.x, alvo.z]);
+              }
               disco.raiz.position.copy(pairando); disco.nave.rotation.z = Math.sin(tempo * 3) * 0.05;
               disco.materialDoFeixe.opacity = tempo < 6.2 ? 0.45 * suavizarNoEvento((tempo - 5) / 1.2) : tempo < 11 ? 0.45 + Math.sin(tempo * 9) * 0.06 : 0.45 * (1 - suavizarNoEvento(tempo - 11));
               disco.feixe.scale.set(1, pairando.y - alvo.y + 0.2, 1);
@@ -449,6 +459,7 @@
                 if (vacaReal && vacaReal.parent) vacaReal.getWorldQuaternion(rotacao);
                 levou = abduzirUmaVaca();
                 if (levou) {                                                              // a vaca de verdade saiu do curral: entra a vaca do feixe
+                  tocarSegredo('pegarvaca', [posicaoReal.x, posicaoReal.z]);
                   vacaLevada = montarAnimal('vaca'); vacaLevada.a.position.copy(posicaoReal); vacaLevada.a.quaternion.copy(rotacao);
                   vacaLevada.inicioY = posicaoReal.y; cena.add(vacaLevada.a);
                 } else tempo = Math.max(tempo, 11);                                       // não deu (regra das 2 vacas): desliga o feixe
@@ -462,7 +473,16 @@
                 if (subida >= 1) { vacaLevada.a.traverse(objeto => { if (objeto.geometry && !geometriasCompartilhadas.has(objeto.geometry)) objeto.geometry.dispose(); }); cena.remove(vacaLevada.a); }
               }
             } else {                                                                      // vai embora acelerando
+              if (!somSaidaTocado) {
+                somSaidaTocado = true;
+                pararSegredo('discoVoador');
+                tocarSegredo('naveindoembora', [pairando.x, pairando.z]);
+              }
               const partida = suavizarNoEvento((tempo - 12) / 4);
+              const fonteSaida = FONTES_DE_SOM.segredos.naveindoembora;
+              if (fonteSaida && !fonteSaida.el.paused && AUDIO_CONFIG.segredos.naveindoembora) {
+                fonteSaida.el.volume = limitarVolume(ESTADO_DO_AUDIO.efeitos.volume * AUDIO_CONFIG.segredos.naveindoembora.volume * (1 - partida * 0.85));
+              }
               disco.materialDoFeixe.opacity = 0;
               disco.raiz.position.lerpVectors(pairando, saida, partida * partida);
               disco.raiz.scale.setScalar(1 - 0.6 * partida);
@@ -497,10 +517,15 @@
         disco.raiz.position.copy(alto); disco.raiz.scale.setScalar(0.4); recursos.naCena(disco.raiz);
         vacaDoFeixe.a.visible = false; vacaDoFeixe.a.scale.setScalar(0.45); recursos.naCena(vacaDoFeixe.a);
         mostrarAviso(doET ? '👽 O ET está trazendo a vaca de volta!' : '🛸 O disco voador está trazendo a vaca de volta!');
-        tocarSegredo('discoVoador');
-        let tempo = 0, encerrado = false, pousou = false;
+        tocarSegredo('discoVoador', [alvo.x, alvo.z]);
+        tocarSegredo('trilha', [alvo.x, alvo.z]);
+        let tempo = 0, encerrado = false, pousou = false, feixeTocado = false, somSaidaTocado = false;
         const encerrar = function encerrar() {
           if (encerrado) return; encerrado = true;
+          pararSegredo('discoVoador');
+          pararSegredo('abducao');
+          pararSegredo('naveindoembora');
+          pararSegredo('trilha');
           vacaReal.visible = true;          // a vaca de verdade sempre reaparece, mesmo se a cena for interrompida
           if (!vacaDoFeixe.copia) vacaDoFeixe.a.traverse(objeto => { if (objeto.geometry && !geometriasCompartilhadas.has(objeto.geometry)) objeto.geometry.dispose(); });   // geometrias próprias da vaca do feixe (a cópia da mesma vaca compartilha as da original: não libera)
           recursos.descartar(); eventoEmAndamento = null;
@@ -518,6 +543,10 @@
               const descida = suavizarNoEvento(tempo / 2);
               disco.raiz.position.lerpVectors(alto, pairando, descida); disco.raiz.scale.setScalar(0.4 + 0.6 * descida);
             } else if (tempo < 6.6) {                                                  // feixe aceso; a vaca desce girando devagar
+              if (!feixeTocado) {
+                feixeTocado = true;
+                tocarSegredo('abducao', [alvo.x, alvo.z]);
+              }
               disco.raiz.position.copy(pairando); disco.raiz.scale.setScalar(1); disco.nave.rotation.z = Math.sin(tempo * 3) * 0.05;
               disco.materialDoFeixe.opacity = tempo < 2.6 ? 0.45 * suavizarNoEvento((tempo - 2) / 0.6) : tempo < 5.8 ? 0.45 + Math.sin(tempo * 9) * 0.06 : 0.45 * (1 - suavizarNoEvento((tempo - 5.8) / 0.8));
               disco.feixe.scale.set(1, pairando.y - alvo.y + 0.2, 1);
@@ -530,10 +559,20 @@
                 for (const [perna, fase] of vacaDoFeixe.pernas) perna.rotation.x = Math.sin(tempo * 10 + fase) * 0.5 * (1 - descida);
                 if (descida >= 1) {                                                    // tocou o chão: troca pela vaca de verdade
                   pousou = true; vacaDoFeixe.a.visible = false; vacaReal.visible = true;
+                  tocarSegredo('pegarvaca', [alvo.x, alvo.z]);
                 }
               }
             } else {                                                                   // vai embora acelerando
+              if (!somSaidaTocado) {
+                somSaidaTocado = true;
+                pararSegredo('discoVoador');
+                tocarSegredo('naveindoembora', [pairando.x, pairando.z]);
+              }
               const partida = suavizarNoEvento((tempo - 6.6) / 3.2);
+              const fonteSaida = FONTES_DE_SOM.segredos.naveindoembora;
+              if (fonteSaida && !fonteSaida.el.paused && AUDIO_CONFIG.segredos.naveindoembora) {
+                fonteSaida.el.volume = limitarVolume(ESTADO_DO_AUDIO.efeitos.volume * AUDIO_CONFIG.segredos.naveindoembora.volume * (1 - partida * 0.85));
+              }
               disco.materialDoFeixe.opacity = 0;
               disco.raiz.position.lerpVectors(pairando, saida, partida * partida); disco.raiz.scale.setScalar(1 - 0.6 * partida);
               if (tempo >= 9.8) encerrar();
@@ -605,10 +644,15 @@
         saida.set(alvo.x + Math.cos(angulo) * 40, alvo.y + 80, alvo.z + Math.sin(angulo) * 40);
         disco.raiz.scale.setScalar(0.35); disco.raiz.position.copy(alto); recursos.naCena(disco.raiz);
         mostrarAviso(primeiraVez ? '👽 Um disco voador surgiu sobre a vaca… é o ET!' : '👽 O ET voltou atrás das vacas!');
-        tocarSegredo('discoVoador');
-        let tempo = 0, encerrado = false, levou = false, vacaNoFeixe = null, inicioY = 0, entrou = false;
+        tocarSegredo('discoVoador', [alvo.x, alvo.z]);
+        tocarSegredo('trilha', [alvo.x, alvo.z]);
+        let tempo = 0, encerrado = false, levou = false, vacaNoFeixe = null, inicioY = 0, entrou = false, feixeTocado = false, somSaidaTocado = false;
         const encerrar = function encerrar() {
           if (encerrado) return; encerrado = true;
+          pararSegredo('discoVoador');
+          pararSegredo('abducao');
+          pararSegredo('naveindoembora');
+          pararSegredo('trilha');
           recursos.descartar(); eventoEmAndamento = null;   // a cópia da vaca compartilha geometrias com a original: só sai da cena
           if (levou) mostrarAviso('👽 O ET levou a vaca para um passeio no espaço! Ela volta em ' + segundosParaAVacaVoltar() + ' segundos.');
         };
@@ -625,6 +669,10 @@
               disco.raiz.position.lerpVectors(alto, pairando, descida); disco.raiz.scale.setScalar(0.35 + 0.5 * descida);
               disco.nave.rotation.z = Math.sin(tempo * 6) * 0.15 * (1 - descida);
             } else if (tempo < 6.6) {
+              if (tempo >= 2 && !feixeTocado) {
+                feixeTocado = true;
+                tocarSegredo('abducao', [alvo.x, alvo.z]);
+              }
               disco.raiz.position.copy(pairando); disco.raiz.scale.setScalar(0.85);
               // o ET sobe na cúpula e se inclina para olhar a vaca (início da abdução)
               const olhar = suavizarNoEvento((tempo - 1.4) / 0.6);
@@ -637,6 +685,7 @@
                 vaca.getWorldPosition(posicao); vaca.getWorldQuaternion(rotacao);
                 levou = levarVacaPeloET(vaca);
                 if (levou) {                                                              // no feixe sobe a MESMA vaca (cópia idêntica)
+                  tocarSegredo('pegarvaca', [posicao.x, posicao.z]);
                   vacaNoFeixe = vaca.clone(true); vacaNoFeixe.visible = true; vacaNoFeixe.position.copy(posicao); vacaNoFeixe.quaternion.copy(rotacao);
                   inicioY = posicao.y; recursos.naCena(vacaNoFeixe);
                 } else { entrou = true; tempo = Math.max(tempo, 6.2); }                       // não deu: o feixe apaga e o disco vai embora sem a vaca
@@ -649,7 +698,16 @@
                 if (subida >= 1) { entrou = true; vacaNoFeixe.visible = false; disco.alienigena.position.y = 0.18; disco.alienigena.rotation.x = 0; }
               }
             } else {                                                                      // gira e some no céu, levando a vaca
+              if (!somSaidaTocado) {
+                somSaidaTocado = true;
+                pararSegredo('discoVoador');
+                tocarSegredo('naveindoembora', [pairando.x, pairando.z]);
+              }
               const partida = suavizarNoEvento((tempo - 6.6) / (C.segundosDaCena - 6.6));
+              const fonteSaida = FONTES_DE_SOM.segredos.naveindoembora;
+              if (fonteSaida && !fonteSaida.el.paused && AUDIO_CONFIG.segredos.naveindoembora) {
+                fonteSaida.el.volume = limitarVolume(ESTADO_DO_AUDIO.efeitos.volume * AUDIO_CONFIG.segredos.naveindoembora.volume * (1 - partida * 0.85));
+              }
               disco.materialDoFeixe.opacity = 0;
               disco.nave.rotation.y += segundos * 16 * (1 - partida * 0.5);
               disco.raiz.position.lerpVectors(pairando, saida, partida * partida); disco.raiz.scale.setScalar(0.85 * (1 - 0.85 * partida));
@@ -689,7 +747,9 @@
         }
         // A poção foi usada, mas a página fechou antes do fim da cena: mostra a cena uma vez ao voltar (o uso já está gravado).
         const registro = estado.eventosEspeciais.misterio;
-        if (registro.usadoEm && !registro.concluido && !cenaDoCeuJaRetomada && segundosDesdeAMontagem > 5 && !document.hidden && painelDoGuardiao.hidden) {
+        // finalização das invasões: com uma invasão em curso (ou uma salva esperando para continuar), a cena espera
+        const invasaoAtiva = invasaoAtivaOuIminente();   // missão final: uma invasão salva que espera a noite não segura a cena de dia
+        if (registro.usadoEm && !registro.concluido && !cenaDoCeuJaRetomada && segundosDesdeAMontagem > 5 && !document.hidden && painelDoGuardiao.hidden && !invasaoAtiva) {
           cenaDoCeuJaRetomada = true; iniciarEventoDoUnicornio(); return;
         }
         if (document.hidden) return;

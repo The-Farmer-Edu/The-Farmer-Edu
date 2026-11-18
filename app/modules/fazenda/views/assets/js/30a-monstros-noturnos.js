@@ -128,7 +128,10 @@
           temporizadorDeSurgimento -= segundosDesdeUltimoFrame;
           if (temporizadorDeSurgimento <= 0) {
             temporizadorDeSurgimento = configuracao.segundosEntreSurgimentos;
-            if (monstrosVivos() < limiteDeMonstrosSimultaneos() && monstrosNestaNoite < limiteDeMonstrosPorNoite()) surgirMonstro();   // um por vez, nunca acima dos limites
+            // Missão final: as invasões agora acontecem à noite; enquanto uma está em curso (seção 26), não surgem monstros noturnos
+            // NOVOS (os que já estão em campo continuam). Mantém o teto de criaturas medido no desempenho e o equilíbrio da defesa.
+            const invasaoEmCurso = INVASAO_EM_CURSO.fase !== 'nenhuma';
+            if (!invasaoEmCurso && monstrosVivos() < limiteDeMonstrosSimultaneos() && monstrosNestaNoite < limiteDeMonstrosPorNoite()) surgirMonstro();   // um por vez, nunca acima dos limites
           }
         }
         if (!monstrosNoturnos.length) return;

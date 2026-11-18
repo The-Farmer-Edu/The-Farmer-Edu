@@ -110,7 +110,7 @@
     <div class="navegacao-do-painel" id="navegacao-do-painel" hidden><button class="botao-ferramenta" id="voltar-ao-menu" aria-label="Voltar ao menu">‹ Menu</button><button class="botao-fechar" id="fechar-painel" aria-label="Fechar painel">✕</button></div>
     <section class="painel" id="painel-tempo" hidden>
       <h3>🌗 Dia e noite</h3>
-      <div class="estado-tempo"><span id="tempo-relogio">08:30</span> <small>· <span id="tempo-periodo">Manhã</span></small></div>
+      <div class="estado-tempo"><span id="tempo-relogio">08:30</span> <small>· <span id="tempo-periodo">Manhã</span> · <span id="tempo-clima">☀️ Ensolarado</span></small></div>
       <!-- Fazenda 8.4.1: os modos do ciclo só apasrecem com o Modo desenvolvedor; sem ele o ciclo fica no automático -->
       <div class="testes-invasao" id="controles-do-ciclo" hidden><h4>🧪 Ciclo de dia e noite</h4>
       <div class="segmentos" role="group" aria-label="Modo do ciclo">
@@ -119,7 +119,15 @@
         <button data-modo="dia" aria-pressed="false">☀️ Dia fixo</button>
         <button data-modo="noite" aria-pressed="false">🌙 Noite fixa</button>
       </div>
-      <div class="modo-ativo">Modo ativo: <b id="tempo-modo">Automático</b></div></div>
+      <div class="modo-ativo">Modo ativo: <b id="tempo-modo">Automático</b></div>
+      <!-- Etapa 4 (SEÇÃO 30g): clima para testes; no automático ele segue o relógio do ciclo -->
+      <h4>🧪 Clima (só visual)</h4>
+      <div class="segmentos segmentos-do-clima" role="group" aria-label="Clima">
+        <button data-clima="auto" class="ativo" aria-pressed="true">⏱ Automático</button>
+        <button data-clima="ensolarado" aria-pressed="false">☀️ Ensolarado</button>
+        <button data-clima="nublado" aria-pressed="false">☁️ Nublado</button>
+        <button data-clima="chuvoso" aria-pressed="false">🌧️ Chuvoso</button>
+      </div></div>
       <div class="testes-invasao" id="testes-do-tempo" hidden><h4>🧪 Testes de invasão (calendário)</h4>
         <button id="teste-invasao">🧟 Invasão agora</button>
         <button id="teste-dia-elegivel">📅 Avançar um dia elegível</button>
@@ -148,9 +156,11 @@
   <aside id="tutorial" hidden aria-labelledby="tutorial-titulo">
     <div class="tutorial-cabecalho"><span id="tutorial-topico"></span><span class="tutorial-botoes"><button type="button" id="tutorial-minimizar" aria-expanded="true" aria-label="Minimizar o tutorial">▾</button><button type="button" id="tutorial-pausar" aria-label="Pausar o tutorial (continua depois)">⏸</button></span></div>
     <div id="tutorial-corpo">
+      <div class="tutorial-rolagem" id="tutorial-rolagem"><!-- Etapa 4: só o texto rola; progresso e botões ficam sempre visíveis -->
       <h3 id="tutorial-titulo"></h3>
       <div id="tutorial-texto" aria-live="polite"></div>
       <div id="tutorial-tarefa" hidden></div>
+      </div>
       <div class="tutorial-progresso" role="progressbar" aria-valuemin="1"><span id="tutorial-barra"></span></div>
       <div class="tutorial-acoes" id="tutorial-acoes"></div>
     </div>

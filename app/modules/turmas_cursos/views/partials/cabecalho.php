@@ -21,7 +21,7 @@
                     <li><a class="dropdown-item" href="<?= $base ?>/turmas_cursos/alunos"><i class="bi bi-people me-2"></i>Alunos</a></li>
                 <?php endif; ?>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="<?= $base ?>/auth/editarConta"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
+                <li><a class="dropdown-item" href="<?= $base ?>/turmas_cursos/minhaConta"><i class="bi bi-person-circle me-2"></i>Minha conta</a></li>
                 <li><a class="dropdown-item" href="<?= $base ?>/auth/logout"><i class="bi bi-box-arrow-right me-2"></i>Sair</a></li>
             </ul>
         </div>

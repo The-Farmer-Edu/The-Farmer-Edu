@@ -12,21 +12,15 @@ class CursosController
         'image/webp' => 'webp',
     ];
 
-    // Nome de arquivo aceito em storage/turmas-e-cursos:
-    //  - "<id_turma>.<ext>"  → padrão atual (imagem salva pelo ID da turma);
-    //  - hash de 40 hex      → padrão antigo, mantido só para turmas já cadastradas.
-    private const PADRAO_ARQUIVO_IMAGEM = '/\A(?:\d+|[a-f0-9]{40})\.(?:jpg|png|webp)\z/i';
-
     public function inicio(): void
     {
-        solicitarLogin();
-        $this->ir('turmas_cursos/' . usuarioLogado()['perfilAcesso']);
+        $u = usuarioLogado();
+        $this->ir($u ? 'turmas_cursos/' . $u['perfilAcesso'] : 'auth/loginAluno');
     }
 
     public function instrutor(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $this->view('paginaInstrutor', [
             'cursos'       => CursoModel::listar(),
             'turmas'       => TurmaModel::listarDoInstrutor((int) $u['idUsuario'], 1),
@@ -41,9 +35,7 @@ class CursosController
     // cursos que possuem turmas em que ele está matriculado.
     public function cursos(): void
     {
-        solicitarLogin();
-        $u = usuarioLogado();
-        solicitarPerfilDeAcesso($u['perfilAcesso']);
+        $u = $this->exigirQualquerPerfil();
         $instrutor = $u['perfilAcesso'] === 'instrutor';
         $this->view('cursos', [
             'cursos'       => $instrutor ? CursoModel::listar(1) : CursoModel::listarDoAluno((int) $u['idUsuario']),
@@ -57,8 +49,7 @@ class CursosController
 
     public function cursoAluno(): void
     {
-        solicitarPerfilDeAcesso('aluno');
-        $u = usuarioLogado();
+        $u = $this->exigir('aluno');
         $curso = CursoModel::buscarDoAluno((int) ($_GET['id'] ?? 0), (int) $u['idUsuario']);
         if (!$curso) {
             $this->ir('turmas_cursos/cursos?erro=' . urlencode('Curso não encontrado.'));
@@ -71,17 +62,15 @@ class CursosController
 
     public function aluno(): void
     {
-        solicitarPerfilDeAcesso('aluno');
-        $u = usuarioLogado();
+        $u = $this->exigir('aluno');
         $this->view('paginaAluno', [
             'turmas' => TurmaModel::listarDoAluno((int) $u['idUsuario']),
         ]);
     }
 
-    // Consulta (somente leitura) dos alunos cadastrados no sistema.
     public function alunos(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $this->view('alunos', [
             'alunos' => AlunoModel::listar(),
             'msg'    => $_GET['msg'] ?? '',
@@ -93,13 +82,13 @@ class CursosController
 
     public function cursoNovo(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $this->ir('turmas_cursos/cursos?modal=curso');
     }
 
     public function cursoSalvar(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $this->validarCsrf();
         [$nome, $descricao, $erro] = $this->lerCurso();
         if ($erro !== '') {
@@ -111,7 +100,7 @@ class CursosController
 
     public function cursoEditar(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $curso = $this->cursoExistente((int) ($_GET['id'] ?? 0));
         if ((int) ($curso['ativo'] ?? 1) !== 1) {
             $this->ir('turmas_cursos/cursos?erro=' . urlencode('Restaure o curso antes de editá-lo.'));
@@ -121,7 +110,7 @@ class CursosController
 
     public function cursoAtualizar(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $this->validarCsrf();
         $curso = $this->cursoExistente((int) ($_POST['id_curso'] ?? 0));
         if ((int) ($curso['ativo'] ?? 1) !== 1) {
@@ -147,7 +136,7 @@ class CursosController
 
     private function mudarSituacaoDoCurso(int $ativo, string $mensagem): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $this->validarCsrf();
         $curso = $this->cursoExistente((int) ($_POST['id_curso'] ?? 0));
         CursoModel::definirAtivo((int) $curso['id_curso'], $ativo);
@@ -156,7 +145,7 @@ class CursosController
 
     public function cursoExcluir(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
+        $this->exigir('instrutor');
         $this->validarCsrf();
         $curso = $this->cursoExistente((int) ($_POST['id_curso'] ?? 0));
         try {
@@ -199,8 +188,7 @@ class CursosController
     // Tela de gestão de turmas vinculadas a um curso, para o instrutor.
     public function form(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $curso = CursoModel::buscar((int) ($_GET['curso'] ?? 0));
         if (!$curso || (int) ($curso['ativo'] ?? 1) !== 1) {
             $this->ir('turmas_cursos/cursos?erro=' . urlencode('Curso não encontrado ou arquivado. Restaure-o para adicionar novas turmas.'));
@@ -216,8 +204,7 @@ class CursosController
 
     public function salvar(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $idCurso = (int) ($_POST['id_curso'] ?? 0);
         $nome = trim((string) ($_POST['nome'] ?? ''));
@@ -234,37 +221,24 @@ class CursosController
             $this->ir('turmas_cursos/instrutor?erro=' . urlencode('Selecione um turno válido.') . '&modal=turma');
         }
 
-        // A imagem é só validada aqui: o arquivo é nomeado pelo ID da turma,
-        // que só existe depois do INSERT.
-        [$upload, $erroImagem] = $this->validarImagemTurma();
+        [$imagem, $erroImagem] = $this->receberImagemTurma();
         if ($erroImagem !== '') {
             $this->ir('turmas_cursos/instrutor?erro=' . urlencode($erroImagem) . '&modal=turma');
         }
 
-        $pdo = iniciarPDO();
-        $idTurma = 0;
         try {
-            $pdo->beginTransaction();
-            $idTurma = TurmaModel::criar($nome, $turno, $idCurso, (int) $u['idUsuario']);
-            if ($upload !== null) {
-                $arquivo = $this->nomeArquivoImagem($idTurma, $upload['ext']);
-                TurmaModel::definirImagem($idTurma, $arquivo);
-                $this->guardarImagemTurma($upload['tmp'], $arquivo); // por último: se falhar, o banco volta atrás
-            }
-            $pdo->commit();
+            TurmaModel::criar($nome, $turno, $idCurso, (int) $u['idUsuario'], $imagem);
         } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
-            if ($idTurma > 0) $this->apagarImagensDaTurma($idTurma);
+            if ($imagem) $this->apagarImagem($imagem);
             error_log($e->getMessage());
-            $this->ir('turmas_cursos/instrutor?erro=' . urlencode('Não foi possível salvar a turma. Tente novamente.') . '&modal=turma');
+            $this->ir('turmas_cursos/instrutor?erro=' . urlencode('Não foi possível salvar a turma. Verifique se a coluna image_turma já existe no banco.') . '&modal=turma');
         }
         $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Turma criada com sucesso.'));
     }
 
     public function editar(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $turma = $this->turmaDoInstrutor((int) ($_GET['id'] ?? 0), $u);
         $this->exigirTurmaAtiva($turma);
         $this->view('turmaEditar', ['turma' => $turma, 'erro' => $_GET['erro'] ?? '']);
@@ -272,8 +246,7 @@ class CursosController
 
     public function atualizar(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $idTurma = (int) ($_POST['id_turma'] ?? 0);
         $turma = $this->turmaDoInstrutor($idTurma, $u);
@@ -289,46 +262,44 @@ class CursosController
             $this->ir($voltar . urlencode('Selecione um turno válido.'));
         }
 
-        [$upload, $erroImagem] = $this->validarImagemTurma();
+        [$novaImagem, $erroImagem] = $this->receberImagemTurma();
         if ($erroImagem !== '') {
             $this->ir($voltar . urlencode($erroImagem));
         }
-
         $imagemAntiga = $turma['image_turma'] ?? null;
-        if ($upload !== null) {
-            // Uma nova imagem tem prioridade sobre o pedido de remoção.
-            $imagemFinal = $this->nomeArquivoImagem($idTurma, $upload['ext']);
-        } elseif (($_POST['remover_imagem'] ?? '') === '1') {
+        $imagemFinal = $imagemAntiga;
+        if ($novaImagem !== null) {
+            // Uma nova imagem tem prioridade sobre a opção de remoção.
+            $imagemFinal = $novaImagem;
+        } elseif (!empty($_POST['remover_imagem'])) {
             $imagemFinal = null;
-        } else {
-            $imagemFinal = $imagemAntiga;
         }
 
-        $pdo = iniciarPDO();
         try {
-            $pdo->beginTransaction();
-            $atualizada = TurmaModel::atualizar($idTurma, (int) $u['idUsuario'], $nome, $turno, $imagemFinal);
+            $atualizada = TurmaModel::atualizar(
+                $idTurma,
+                (int) $u['idUsuario'],
+                $nome,
+                $turno,
+                $imagemFinal
+            );
             if (!$atualizada) {
-                throw new RuntimeException('Atualização da turma #' . $idTurma . ' não confirmada.');
+                if ($novaImagem) $this->apagarImagem($novaImagem);
+                $this->ir($voltar . urlencode('Não foi possível confirmar a atualização da turma. Tente novamente.'));
             }
-            if ($upload !== null) {
-                // Último passo antes do commit: só substitui o arquivo se o banco aceitou a alteração.
-                $this->guardarImagemTurma($upload['tmp'], $imagemFinal);
-            }
-            $pdo->commit();
         } catch (Throwable $e) {
-            if ($pdo->inTransaction()) $pdo->rollBack();
+            // A imagem antiga continua no banco e no disco se o UPDATE falhar.
+            if ($novaImagem) $this->apagarImagem($novaImagem);
             error_log($e->getMessage());
             $this->ir($voltar . urlencode('Não foi possível atualizar a turma.'));
         }
 
-        // Limpeza depois do commit: variantes do mesmo ID com outra extensão
-        // e o arquivo antigo (inclusive os de nome em hash, do padrão anterior).
-        $this->apagarImagensDaTurma($idTurma, $imagemFinal);
+        // Só remove a imagem anterior depois de confirmar o novo caminho no
+        // banco. O método também protege arquivos eventualmente compartilhados.
         if ($imagemAntiga && $imagemAntiga !== $imagemFinal) {
             $this->apagarImagemSeNaoUtilizada($imagemAntiga);
         }
-        $this->ir('turmas_cursos/instrutor?msg=' . urlencode('Turma atualizada.'));
+        $this->ir('turmas_cursos/turma?id=' . $idTurma . '&msg=' . urlencode('Turma atualizada.'));
     }
 
     public function arquivar(): void { $this->mudarSituacaoDaTurma(0, 'Turma arquivada.'); }
@@ -336,20 +307,46 @@ class CursosController
 
     private function mudarSituacaoDaTurma(int $ativo, string $mensagem): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
         TurmaModel::definirAtivo((int) $turma['id_turma'], (int) $u['idUsuario'], $ativo);
         $this->ir('turmas_cursos/instrutor?msg=' . urlencode($mensagem));
     }
 
-    // Tela de alunos da turma (visualizar, cadastrar e remover). A matrícula é
-    // feita selecionando um aluno já cadastrado no sistema.
+    // Mural da turma para o instrutor.
+    public function turma(): void
+    {
+        $u = $this->exigir('instrutor');
+        $turma = $this->turmaDoInstrutor((int) ($_GET['id'] ?? 0), $u);
+        $this->view('turma', [
+            'turma'      => $turma,
+            // A listagem será fornecida pela API pública do módulo atividades na integração.
+            'atividades' => [],
+            'msg'        => $_GET['msg'] ?? '',
+            'erro'       => $_GET['erro'] ?? '',
+        ]);
+    }
+
+    // Mural da turma para o aluno matriculado.
+    public function turmaAluno(): void
+    {
+        $u = $this->exigir('aluno');
+        $turma = TurmaModel::buscarDoAluno((int) ($_GET['id'] ?? 0), (int) $u['idUsuario']);
+        if (!$turma) $this->ir('turmas_cursos/aluno?erro=' . urlencode('Turma não encontrada.'));
+        $this->view('turmaAluno', [
+            'turma'      => $turma,
+            // A listagem será fornecida pela API pública dos módulos atividades/submissoes na integração.
+            'atividades' => [],
+            'pessoas'    => TurmaModel::alunosDaTurma((int) $turma['id_turma']),
+        ]);
+    }
+
+    // Tela de pessoas/alunos da turma. A matrícula é feita selecionando
+    // um aluno já cadastrado no sistema, conforme o protótipo.
     public function turmaPessoas(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $turma = $this->turmaDoInstrutor((int) ($_GET['id'] ?? 0), $u);
         $this->view('turmaPessoas', [
             'turma'        => $turma,
@@ -360,10 +357,20 @@ class CursosController
         ]);
     }
 
+    public function turmaPessoasAluno(): void
+    {
+        $u = $this->exigir('aluno');
+        $turma = TurmaModel::buscarDoAluno((int) ($_GET['id'] ?? 0), (int) $u['idUsuario']);
+        if (!$turma) $this->ir('turmas_cursos/aluno?erro=' . urlencode('Turma não encontrada.'));
+        $this->view('turmaPessoasAluno', [
+            'turma'   => $turma,
+            'pessoas' => TurmaModel::alunosDaTurma((int) $turma['id_turma']),
+        ]);
+    }
+
     public function matricular(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
         $this->exigirTurmaAtiva($turma);
@@ -379,13 +386,51 @@ class CursosController
 
     public function desmatricular(): void
     {
-        solicitarPerfilDeAcesso('instrutor');
-        $u = usuarioLogado();
+        $u = $this->exigir('instrutor');
         $this->validarCsrf();
         $turma = $this->turmaDoInstrutor((int) ($_POST['id_turma'] ?? 0), $u);
         $this->exigirTurmaAtiva($turma);
         MatriculaModel::desmatricular((int) $turma['id_turma'], (int) ($_POST['id_aluno'] ?? 0));
         $this->ir('turmas_cursos/turmaPessoas?id=' . (int) $turma['id_turma'] . '&msg=' . urlencode('Matrícula removida.'));
+    }
+
+    // ---------- Ativação/desativação de contas de alunos ----------
+
+    public function desativarAluno(): void { $this->mudarSituacaoDoAluno(0, 'Conta do aluno desativada.'); }
+    public function reativarAluno(): void { $this->mudarSituacaoDoAluno(1, 'Conta do aluno reativada.'); }
+
+    private function mudarSituacaoDoAluno(int $ativo, string $mensagem): void
+    {
+        $this->exigir('instrutor');
+        $this->validarCsrf();
+        $idTurma = (int) ($_POST['id_turma'] ?? 0);
+        if ($idTurma > 0) {
+            $u = usuarioLogado();
+            $this->turmaDoInstrutor($idTurma, $u);
+        }
+        $ok = ContaModel::definirAtivoAluno((int) ($_POST['id_aluno'] ?? 0), $ativo);
+        $destino = $idTurma > 0 ? 'turmas_cursos/turmaPessoas?id=' . $idTurma : 'turmas_cursos/alunos';
+        $this->ir($destino . '?' . ($ok ? 'msg=' : 'erro=') . urlencode($ok ? $mensagem : 'Aluno não encontrado.'));
+    }
+
+    // ---------- Minha conta ----------
+
+    public function conta(): void
+    {
+        $u = $this->exigirQualquerPerfil();
+        $this->view('conta', ['erro' => $_GET['erro'] ?? '']);
+    }
+
+    public function desativarConta(): void
+    {
+        $u = $this->exigirQualquerPerfil();
+        $this->validarCsrf();
+        if (!ContaModel::senhaConfere((int) $u['idUsuario'], (string) ($_POST['senha'] ?? ''))) {
+            $this->ir('turmas_cursos/minhaConta?erro=' . urlencode('Senha incorreta.'));
+        }
+        ContaModel::definirAtivo((int) $u['idUsuario'], 0);
+        logout();
+        $this->ir('auth/login' . ucfirst($u['perfilAcesso']));
     }
 
     // ---------- Arquivos estáticos e imagens privadas ----------
@@ -410,9 +455,7 @@ class CursosController
 
     public function imagemTurma(): void
     {
-        solicitarLogin();
-        $u = usuarioLogado();
-        solicitarPerfilDeAcesso($u['perfilAcesso']);
+        $u = $this->exigirQualquerPerfil();
         $idTurma = (int) ($_GET['id'] ?? 0);
         if ($u['perfilAcesso'] === 'instrutor') {
             $turma = TurmaModel::buscarDoInstrutor($idTurma, (int) $u['idUsuario']);
@@ -428,7 +471,7 @@ class CursosController
             http_response_code(404);
             exit;
         }
-        $arquivo = $this->diretorioImagens() . '/' . $nomeArquivo;
+        $arquivo = __DIR__ . '/uploads/turmas/' . $nomeArquivo;
         if (!is_file($arquivo)) {
             http_response_code(404);
             exit;
@@ -438,46 +481,17 @@ class CursosController
             http_response_code(415);
             exit;
         }
-
-        // Como o arquivo agora tem sempre o mesmo nome (o ID da turma), o
-        // navegador precisa revalidar a cada acesso; senão, após trocar a
-        // imagem, continuaria exibindo a antiga em cache.
-        $modificado = (int) filemtime($arquivo);
-        $etag = '"' . md5($nomeArquivo . '|' . $modificado . '|' . filesize($arquivo)) . '"';
-        header('ETag: ' . $etag);
-        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $modificado) . ' GMT');
-        header('Cache-Control: private, no-cache');
-        header('X-Content-Type-Options: nosniff');
-        if (($_SERVER['HTTP_IF_NONE_MATCH'] ?? '') === $etag) {
-            http_response_code(304);
-            exit;
-        }
         header('Content-Type: ' . $mime);
         header('Content-Length: ' . filesize($arquivo));
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: private, max-age=3600');
         readfile($arquivo);
         exit;
     }
 
-    // ---------- Imagens das turmas ----------
+    // ---------- Helpers ----------
 
-    /** Pasta de armazenamento das imagens (antes chamada "uploads"). */
-    private function diretorioImagens(): string
-    {
-        return __DIR__ . '/storage/turmas-e-cursos';
-    }
-
-    /** Nome do arquivo de uma turma: o próprio ID + extensão (ex.: 6.jpg). */
-    private function nomeArquivoImagem(int $idTurma, string $ext): string
-    {
-        return $idTurma . '.' . $ext;
-    }
-
-    /**
-     * Valida a imagem enviada sem movê-la.
-     * Retorna [null, ''] quando nenhum arquivo foi enviado,
-     * [['tmp' => caminho, 'ext' => extensão], ''] quando é válido ou [null, erro].
-     */
-    private function validarImagemTurma(): array
+    private function receberImagemTurma(): array
     {
         if (!isset($_FILES['imagem_turma'])) {
             return [null, ''];
@@ -507,43 +521,26 @@ class CursosController
         if ($info === false || !isset($info['mime']) || $info['mime'] !== $mime) {
             return [null, 'O arquivo enviado não é uma imagem válida.'];
         }
-        return [['tmp' => $temporario, 'ext' => self::MIME_IMAGENS[$mime]], ''];
-    }
 
-    /** Move o arquivo validado para storage/turmas-e-cursos. Lança exceção se falhar. */
-    private function guardarImagemTurma(string $temporario, string $nomeArquivo): void
-    {
-        if (!preg_match(self::PADRAO_ARQUIVO_IMAGEM, $nomeArquivo)) {
-            throw new RuntimeException('Nome de arquivo de imagem inválido: ' . $nomeArquivo);
-        }
-        $diretorio = $this->diretorioImagens();
+        $diretorio = __DIR__ . '/uploads/turmas';
         if (!is_dir($diretorio) && !mkdir($diretorio, 0750, true) && !is_dir($diretorio)) {
-            throw new RuntimeException('Não foi possível preparar o armazenamento das imagens.');
+            return [null, 'Não foi possível preparar o armazenamento das imagens.'];
         }
-        if (!move_uploaded_file($temporario, $diretorio . '/' . $nomeArquivo)) {
-            throw new RuntimeException('Não foi possível salvar a imagem enviada.');
+        $nome = bin2hex(random_bytes(20)) . '.' . self::MIME_IMAGENS[$mime];
+        if (!move_uploaded_file($temporario, $diretorio . '/' . $nome)) {
+            return [null, 'Não foi possível salvar a imagem enviada.'];
         }
+        return [$nome, ''];
     }
 
-    /** Apaga as imagens "<id>.<ext>" da turma, preservando $manter (se informado). */
-    private function apagarImagensDaTurma(int $idTurma, ?string $manter = null): void
-    {
-        foreach (self::MIME_IMAGENS as $ext) {
-            $nome = $this->nomeArquivoImagem($idTurma, $ext);
-            if ($nome !== $manter) {
-                $this->apagarImagem($nome);
-            }
-        }
-    }
-
-    /** Remove apenas arquivos gerados por este módulo (padrão de nome conhecido). */
+    /** Remove apenas arquivos gerados por este módulo (nome aleatório + extensão permitida). */
     private function apagarImagem(?string $nome): bool
     {
-        if (!$nome || !preg_match(self::PADRAO_ARQUIVO_IMAGEM, $nome)) {
+        if (!$nome || !preg_match('/\A[a-f0-9]{40}\.(?:jpg|png|webp)\z/i', $nome)) {
             return false;
         }
 
-        $diretorio = realpath($this->diretorioImagens());
+        $diretorio = realpath(__DIR__ . '/uploads/turmas');
         if ($diretorio === false) return true; // Não há arquivo para remover.
 
         $arquivo = $diretorio . DIRECTORY_SEPARATOR . $nome;
@@ -557,7 +554,7 @@ class CursosController
     /** Evita apagar um arquivo que ainda esteja associado a outra turma. */
     private function apagarImagemSeNaoUtilizada(?string $nome): void
     {
-        if (!$nome || !preg_match(self::PADRAO_ARQUIVO_IMAGEM, $nome)) return;
+        if (!$nome || !preg_match('/\A[a-f0-9]{40}\.(?:jpg|png|webp)\z/i', $nome)) return;
 
         try {
             if (!TurmaModel::imagemEstaEmUso($nome)) {
@@ -570,7 +567,26 @@ class CursosController
         }
     }
 
-    // ---------- Helpers ----------
+    private function exigirQualquerPerfil(): array
+    {
+        $u = usuarioLogado();
+        return $this->exigir($u['perfilAcesso'] ?? 'aluno');
+    }
+
+    private function exigir(string $perfil): array
+    {
+        $u = usuarioLogado();
+        if (!$u) $this->ir('auth/login' . ucfirst($perfil));
+        if (!ContaModel::estaAtiva((int) $u['idUsuario'])) {
+            logout();
+            $this->ir('auth/login' . ucfirst($perfil));
+        }
+        if (($u['perfilAcesso'] ?? '') !== $perfil) {
+            http_response_code(403);
+            exit('Você não tem acesso a essa página.');
+        }
+        return $u;
+    }
 
     private function turmaDoInstrutor(int $idTurma, array $u): array
     {
@@ -582,7 +598,7 @@ class CursosController
     private function exigirTurmaAtiva(array $turma): void
     {
         if ((int) $turma['ativo'] !== 1) {
-            $this->ir('turmas_cursos/instrutor?erro=' . urlencode('Turma arquivada. Restaure-a para fazer alterações.'));
+            $this->ir('turmas_cursos/turma?id=' . (int) $turma['id_turma'] . '&erro=' . urlencode('Turma arquivada. Restaure-a para fazer alterações.'));
         }
     }
 

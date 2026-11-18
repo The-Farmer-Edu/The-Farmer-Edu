@@ -15,16 +15,18 @@ require __DIR__ . '/partials/head.php';
         <div class="card-grid">
             <?php foreach ($turmas as $t): ?>
                 <article class="course-card">
-                    <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
-                    <div class="course-card__cover">
-                        <?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma <?= e($t['nome_turma']) ?>">
-                        <?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?>
-                    </div>
+                    <a href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>" class="text-reset">
+                        <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
+                        <div class="course-card__cover">
+                            <?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma <?= e($t['nome_turma']) ?>">
+                            <?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?>
+                        </div>
+                    </a>
                     <div class="course-card__body">
                         <div class="course-card__meta"><span><i class="bi bi-journal-bookmark"></i><?= e($t['nome_curso']) ?></span><span><i class="bi bi-people"></i><?= (int) $t['total_alunos'] ?> aluno(s)</span><span><i class="bi bi-clock"></i><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></span></div>
                         <div class="course-card__actions">
-                            <a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/turmaPessoas?id=<?= (int) $t['id_turma'] ?>" aria-label="Alunos da turma" title="Ver, cadastrar e remover alunos"><i class="bi bi-people"></i></a>
-                            <a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/turmaEditar?id=<?= (int) $t['id_turma'] ?>" aria-label="Editar turma" title="Editar turma"><i class="bi bi-pencil"></i></a>
+                            <a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/turmaPessoas?id=<?= (int) $t['id_turma'] ?>" aria-label="Ver alunos"><i class="bi bi-people"></i></a>
+                            <a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/turmaEditar?id=<?= (int) $t['id_turma'] ?>" aria-label="Editar turma"><i class="bi bi-pencil"></i></a>
                             <form method="post" action="<?= $base ?>/turmas_cursos/turmaArquivar" data-confirm="Deseja arquivar esta turma? Ela continuará disponível no histórico e poderá ser restaurada.">
                                 <input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>">
                                 <button class="btn btn-outline-danger" type="submit" aria-label="Arquivar turma" title="Arquivar turma"><i class="bi bi-archive"></i></button>
@@ -46,8 +48,10 @@ require __DIR__ . '/partials/head.php';
             <div class="card-grid">
                 <?php foreach ($arquivadas as $t): ?>
                     <article class="course-card archived-card">
-                        <div class="course-card__title"><?= e($t['nome_turma']) ?> <small class="d-block">Arquivada</small></div>
-                        <div class="course-card__cover"><?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma"><?php else: ?><div class="course-placeholder"><i class="bi bi-archive"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?></div>
+                        <a href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>" class="text-reset">
+                            <div class="course-card__title"><?= e($t['nome_turma']) ?> <small class="d-block">Arquivada</small></div>
+                            <div class="course-card__cover"><?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma"><?php else: ?><div class="course-placeholder"><i class="bi bi-archive"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?></div>
+                        </a>
                         <div class="course-card__body"><div class="course-card__meta"><span><?= e($t['nome_curso']) ?></span><span><?= (int) $t['total_alunos'] ?> aluno(s)</span></div>
                             <form method="post" action="<?= $base ?>/turmas_cursos/turmaRestaurar" data-confirm="Deseja restaurar esta turma?">
                                 <input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>"><button class="btn btn-outline-theme" type="submit">Restaurar</button>
@@ -71,7 +75,7 @@ require __DIR__ . '/partials/head.php';
                     <div class="col-12"><label class="form-label" for="turmaNome">Nome da Turma</label><input class="form-control" id="turmaNome" name="nome" maxlength="100" placeholder="Ex.: Automação em Python" required></div>
                     <div class="col-md-6"><label class="form-label" for="turmaCurso">Curso</label><select class="form-select" id="turmaCurso" name="id_curso" required><option value="">Selecione um curso...</option><?php foreach ($cursos as $c): ?><option value="<?= (int) $c['id_curso'] ?>"><?= e($c['nome_curso']) ?></option><?php endforeach; ?></select></div>
                     <div class="col-md-6"><label class="form-label" for="turmaTurno">Turno</label><select class="form-select" id="turmaTurno" name="turno" required><option value="">Selecione um turno...</option><?php foreach (TurmaModel::TURNOS as $valor => $rotulo): ?><option value="<?= e($valor) ?>"><?= e($rotulo) ?></option><?php endforeach; ?></select></div>
-                    <div class="col-12"><label class="form-label" for="imagemTurma">Imagem da turma</label><?php $imagemAtualUrl = null; require __DIR__ . '/partials/campoImagemTurma.php'; ?></div>
+                    <div class="col-12"><label class="form-label" for="imagemTurma">Imagem da turma</label><label class="image-dropzone w-100" for="imagemTurma"><i class="bi bi-image"></i><strong data-image-label>Adicione uma imagem de até 5 MB, preferencialmente WEBP</strong><small>Formatos aceitos: JPG, PNG e WEBP.</small><img id="imagePreview" class="image-preview d-none" alt="Prévia da imagem selecionada"></label><input class="visually-hidden" id="imagemTurma" type="file" name="imagem_turma" accept="image/jpeg,image/png,image/webp" data-image-input data-preview-target="imagePreview" data-label-target="[data-image-label]"></div>
                 </div>
             </div>
             <div class="modal-footer"><button class="btn btn-theme" type="submit" <?= !$cursos ? 'disabled' : '' ?>>Salvar</button><button class="btn btn-muted" type="button" data-bs-dismiss="modal">Cancelar</button></div>

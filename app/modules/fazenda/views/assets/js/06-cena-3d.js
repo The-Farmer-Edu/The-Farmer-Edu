@@ -9,7 +9,9 @@
       // SEÇÃO 06 — CENA 3D BÁSICA: RENDERIZADOR, CÂMERA E LUZES PRINCIPAIS
       // Renderizador WebGL, cena, neblina, câmera de perspectiva, luz ambiente (hemisférica) e a luz direcional "luzDoSol", única que projeta sombras (à noite ela vira a luz da lua).
       // ====================================================================================================
-      const renderizador = new THREE.WebGLRenderer({ antialias: true });
+      // Etapa 0: a suavização de bordas (MSAA) segue o nível de qualidade da abertura (seção 02); no nível baixo fica desligada,
+      // porque em placas fracas e na rasterização por software ela multiplica o custo de cada pixel. Só muda ao recarregar.
+      const renderizador = new THREE.WebGLRenderer({ antialias: QUALIDADE_GRAFICA.antialiasNaAbertura });
       const canvas = renderizador.domElement;
       renderizador.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderizador.shadowMap.enabled = true;
@@ -24,7 +26,7 @@
       const luzDoSol = new THREE.DirectionalLight(0xfff2cc, 0.9);
       luzDoSol.position.set(26, 24, 18); luzDoSol.target.position.set(12, 0, 6); cena.add(luzDoSol.target);
       luzDoSol.castShadow = true;
-      luzDoSol.shadow.mapSize.set(2048, 2048);
+      luzDoSol.shadow.mapSize.set(perfilDaQualidade().mapaDeSombra, perfilDaQualidade().mapaDeSombra);   // Etapa 0: 2048 no alto, 1024 no médio/baixo
       Object.assign(luzDoSol.shadow.camera, { left: -44, right: 44, top: 44, bottom: -44, near: 1, far: 100 });
       luzDoSol.shadow.bias = -0.0005; luzDoSol.shadow.normalBias = 0.03; // evita listras quando o sol/lua está baixo no horizonte
       cena.add(luzDoSol);

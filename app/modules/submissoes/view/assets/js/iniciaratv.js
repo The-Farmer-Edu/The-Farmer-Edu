@@ -4,23 +4,38 @@ const modo = L.modo;
 const ARQUIVOS = L.arquivos;
 const LIMITE_CLICKS = 10;
 const LIMITE_CANCELAMENTOS = 3;
+const ID_LINGUAGEM_PYTHON = 71;
+const CONSULTA_CELULAR = '(max-width: 780px)';
+const LIMITE_SOPHIA = 10;
+let usosSophia = 0;
 
-const REGRAS = {
+/**
+ * Regras de destaque por linguagem.
+ *
+ * Cada valor é um array de pares [classeCss, expressãoRegex].
+ * O algoritmo percorre o texto e aplica classes de cor conforme o tipo do token identificado.
+ * Isso permite que o editor tenha uma experiência de syntax highlighting sem bibliotecas externas.
+ */
+const REGRAS_DESTAQUE = {
     html: [['c', '<!--[\\s\\S]*?-->'], ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'], ['s', '"[^"]*"|\'[^\']*\''], ['a', '[\\w-]+(?==)']],
-    css: [['c', '\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
+    css: [['c', '\\/\\*[\\s\\S]*?\\*\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
           ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
-    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\\/'],
+       js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\/'],
          ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
          ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
     py: [['c', '#.*'], ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
          ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']],
-    php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+    php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
           ['a', '\\$[a-zA-Z_]\\w*'],
           ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
-          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']]
-};
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']],
+    sql: [['c', '--.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '\'(?:[^\'\\\\]|\\\\.)*\''],
+          ['k', '\\b(?:SELECT|FROM|WHERE|CREATE|TABLE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|PRIMARY|KEY|NOT|NULL|AUTO_INCREMENT|INT|VARCHAR|DECIMAL|TEXT|DEFAULT|AND|OR)\\b'],
+          ['n', '\\b\\d+(?:\\.\\d+)?\\b']],
+    txt: [] 
+        };
 
 const $ = id => document.getElementById(id);
 const ed = $('ed'), hl = $('hl'), gutter = $('gutter'), pv = $('pv'), pvPy = $('pvPy'), con = $('console');
@@ -37,9 +52,9 @@ let dados;
 try { dados = { ...L.inicial, ...JSON.parse(localStorage.getItem(CHAVE)) }; } catch (e) { dados = { ...L.inicial }; }
 if (A.vazia) ARQUIVOS.forEach(a => { dados[a.lang] = ''; });
 let entrega = null;
-try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) {}
+try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) {}
 let cancelamentos = 0;
-try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (e) {}
+try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) {}
 
 // Ajuda da Sophia: analisando = esperando a IA; aguardando = esperando o aluno digitar sim/não no console; dados = resposta da IA
 const ajuda = { analisando: false, aguardando: false, dados: null, assinatura: '' };
@@ -52,13 +67,7 @@ let atual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
 let executadoAtual = false;
 let executando = false;
-let enviando = false;
-let avaliacaoSeq = 0;
-const usos = { executar: 0, sophia: 0 };
-// Erros da última execução: só valem enquanto o código não mudou depois dela
-const errosAtuais = () => (executadoAtual ? errosConsole : []);
-// "Foto" do código + erros: a Sophia usa para saber se o aluno mexeu no código depois da pergunta
-const assinaturaDoCodigo = () => contextoEntrega().codigo + '\u0000' + JSON.stringify(errosAtuais());
+let usosExecutar = 0;
 
 const mobile = () => window.matchMedia('(max-width: 780px)').matches;
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -73,66 +82,99 @@ if (A.vazia) {
     const detalhes = document.querySelector('.atv-detalhes');
     if (detalhes) detalhes.hidden = true;
 } else {
-    $('atvId').textContent = `Atividade #${A.id}`;
-    $('atvTitulo').textContent = A.titulo;
-    $('atvLang').textContent = L.nome;
-    $('atvDescricao').textContent = A.descricao;
-    $('atvResumo').textContent = `O que fazer (${A.requisitos.length} ${A.requisitos.length === 1 ? 'item' : 'itens'})`;
-    A.requisitos.forEach(r => {
-        const li = document.createElement('li');
-        li.textContent = r;
-        $('atvRequisitos').appendChild(li);
+    const totalRequisitos = atividadeAtual.requisitos.length;
+    porId('atvId').textContent = `Atividade #${atividadeAtual.id}`;
+    porId('atvTitulo').textContent = atividadeAtual.titulo;
+    porId('atvLang').textContent = linguagemAtual.nome;
+    porId('atvDescricao').textContent = atividadeAtual.descricao;
+    porId('atvResumo').textContent = `O que fazer (${totalRequisitos} ${totalRequisitos === 1 ? 'item' : 'itens'})`;
+    atividadeAtual.requisitos.forEach(requisito => {
+        const item = document.createElement('li');
+        item.textContent = requisito;
+        porId('atvRequisitos').appendChild(item);
     });
 }
 
-/*Editor*/
-function colorir(codigo, regras) {
-    const re = new RegExp(regras.map(r => '(' + r[1] + ')').join('|'), 'g');
-    let saida = '', ultimo = 0, m;
-    while ((m = re.exec(codigo))) {
-        if (!m[0]) { re.lastIndex++; continue; }
-        const i = m.slice(1).findIndex(x => x !== undefined);
-        saida += esc(codigo.slice(ultimo, m.index)) + `<span class="${regras[i][0]}">${esc(m[0])}</span>`;
-        ultimo = re.lastIndex;
+/*
+ * Editor e destaque de sintaxe.
+ *
+ * A função `colorir` percorre o código com regex e cria spans para cada token detectado.
+ * Isso torna possível preservar a sintaxe original e apenas “decorar” o texto em tela.
+ */
+function colorir(codigo, regras, flags = 'g') {
+    if (!regras || !regras.length) return escaparHtml(codigo);
+    try {
+        const expressao = new RegExp(regras.map(regra => '(' + regra[1] + ')').join('|'), flags);
+        let saida = '', ultimoIndice = 0, correspondencia;
+        while ((correspondencia = expressao.exec(codigo))) {
+            if (!correspondencia[0]) { expressao.lastIndex++; continue; }
+            const indiceRegra = correspondencia.slice(1).findIndex(grupo => grupo !== undefined);
+            saida += escaparHtml(codigo.slice(ultimoIndice, correspondencia.index))
+                + `<span class="${regras[indiceRegra][0]}">${escaparHtml(correspondencia[0])}</span>`;
+            ultimoIndice = expressao.lastIndex;
+        }
+        return saida + escaparHtml(codigo.slice(ultimoIndice));
+    } catch (erro) {
+        console.error('Erro no destaque de sintaxe:', erro);
+        return escaparHtml(codigo);
     }
-    return saida + esc(codigo.slice(ultimo));
 }
-
 function sincronizar() {
-    hl.scrollTop = ed.scrollTop;
-    hl.scrollLeft = ed.scrollLeft;
-    gutter.scrollTop = ed.scrollTop;
+    camadaDestaque.scrollTop = editorTexto.scrollTop;
+    camadaDestaque.scrollLeft = editorTexto.scrollLeft;
+    numeracaoLinhas.scrollTop = editorTexto.scrollTop;
     atualizarBtnInicio();
 }
-
 function atualizarEditor() {
-    hl.innerHTML = colorir(ed.value, REGRAS[atual]) + '\n';
-    gutter.textContent = Array.from({ length: ed.value.split('\n').length }, (_, i) => i + 1).join('\n');
+    camadaDestaque.innerHTML = colorir(editorTexto.value, REGRAS_DESTAQUE[arquivoAtual], arquivoAtual === 'sql' ? 'gi' : 'g') + '\n';
+    numeracaoLinhas.textContent = Array.from({ length: editorTexto.value.split('\n').length }, (_, indice) => indice + 1).join('\n');
     sincronizar();
 }
-
 function posicao() {
-    const antes = ed.value.slice(0, ed.selectionStart).split('\n');
-    $('stPos').textContent = `Ln ${antes.length}, Col ${antes[antes.length - 1].length + 1}`;
+    const linhasAntes = editorTexto.value.slice(0, editorTexto.selectionStart).split('\n');
+    porId('stPos').textContent = `Ln ${linhasAntes.length}, Col ${linhasAntes[linhasAntes.length - 1].length + 1}`;
 }
 
 function montarAbas() {
-    $('arquivos').innerHTML = '';
-    ARQUIVOS.forEach(a => {
-        const li = document.createElement('li');
-        if (a.lang === atual) li.className = 'on';
-        const bolinha = document.createElement('span');
-        bolinha.className = 'dot dot-' + a.lang;
-        li.append(bolinha, a.nome);
-        li.onclick = () => trocar(a.lang);
-        $('arquivos').appendChild(li);
-    });
-    $('stLang').textContent = ARQUIVOS.find(a => a.lang === atual).rotulo;
-}
+    porId('arquivos').innerHTML = '';
 
+    // Sem atividade: seção de arquivos vazia
+    if (atividadeAtual.vazia) {
+        porId('stLang').textContent = '—';
+        return;
+    }
+    // Atividade de texto: lista de arquivos vazia
+    if (modoExecucao === 'texto') {
+        porId('stLang').textContent = 'Texto';
+        return;
+    }
+
+    ARQUIVOS.forEach(arquivo => {
+        const item = document.createElement('li');
+        if (arquivo.lang === arquivoAtual) item.className = 'on';
+        const bolinha = document.createElement('span');
+        bolinha.className = 'dot dot-' + arquivo.lang;
+        item.append(bolinha, arquivo.nome);
+        item.onclick = () => trocar(arquivo.lang);
+        porId('arquivos').appendChild(item);
+    });
+    porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
+}
 function trocar(lang) {
-    atual = lang;
-    ed.value = dados[atual];
+    // Sem atividade: editor vazio, desativado e sem arquivos
+    if (atividadeAtual.vazia) {
+        editorTexto.value = '';
+        editorTexto.disabled = true;
+        editorTexto.placeholder = 'Abra uma atividade na página do aluno para escrever código.';
+        porId('painelCodigo').classList.add('sem-atividade');
+        montarAbas();
+        atualizarEditor();
+        porId('stPos').textContent = '—';
+        return;
+    }
+
+    arquivoAtual = lang;
+    editorTexto.value = dadosDosArquivos[arquivoAtual];
     montarAbas();
     atualizarEditor();
     posicao();
@@ -237,126 +279,60 @@ function escreverConsole(msg, tipo = 'log') {
 
 /*Executar (só quando o aluno clica) */
 function setAba(aba) {
-    ide.dataset.aba = aba;
-    document.querySelectorAll('.aba').forEach(b => b.classList.toggle('on', b.dataset.aba === aba));
+    areaIde.dataset.aba = aba;
+    document.querySelectorAll('.aba').forEach(botao => botao.classList.toggle('on', botao.dataset.aba === aba));
 }
 
 function mostrarResultado(focar) {
     if (!resultadoAberto) {
         resultadoAberto = true;
-        $('painelResultado').hidden = false;
-        ide.classList.add('com-resultado');
-        $('abaResultado').disabled = false;
+        porId('painelResultado').hidden = false;
+        areaIde.classList.add('com-resultado');
+        porId('abaResultado').disabled = false;
     }
-    if (focar && mobile()) setAba('resultado');
+    if (focar && ehCelular()) setAba('resultado');
 }
 
-/*Lê a resposta do servidor como JSON (igual a response.json()), mas se o PHP imprimiu avisos em HTML
-  antes do JSON, aproveita o JSON. Sem JSON, devolve a mensagem do servidor de forma legível.*/
-function lerJson(texto) {
-    try { return JSON.parse(texto); } catch (e) {}
-    // tira avisos do PHP no formato <br /><b>Warning</b>: ... <br />
-    const limpo = texto.replace(/<br\s*\/?>\s*<b>[^<]*<\/b>:[\s\S]*?<br\s*\/?>/gi, '').trim();
-    try { return JSON.parse(limpo); } catch (e) {}
-    // último recurso: começa no primeiro { ou [ que forme um JSON válido
-    let tentativas = 0;
-    for (const m of texto.matchAll(/[\[{]/g)) {
-        if (++tentativas > 20) break;
-        try { return JSON.parse(texto.slice(m.index)); } catch (e) {}
-    }
-    const legivel = texto.replace(/<[^>]*>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim().slice(0, 700);
-    throw new Error(legivel || 'resposta vazia');
+function escreverConsole(mensagem, tipo = 'log') {
+    const linha = document.createElement('div');
+    linha.className = tipo;
+    linha.textContent = mensagem;
+    consoleCorpo.appendChild(linha);
+    consoleCorpo.scrollTop = consoleCorpo.scrollHeight;
 }
 
-/*Erro impresso pelo próprio PHP do servidor (aviso/erro fatal), e não uma página qualquer*/
-const erroDoPHP = texto => /<b>\s*(Warning|Fatal error|Notice|Parse error|Deprecated)\s*<\/b>|Fatal error:|Warning:|Uncaught/i.test(texto);
-
-const PONTE = '<script>(function(){' +
-    'var s=function(t,a){parent.postMessage({farm:1,t:t,m:[].map.call(a,function(x){' +
+// Ponte que envia console.log/erros da página executada para o console da IDE.
+// O iframe preview usa postMessage para reportar erros e logs sem quebrar a segurança do navegador.
+const PONTE_CONSOLE = '<script>(function(){' +
+    'var enviar=function(tipo,args){parent.postMessage({farm:1,t:tipo,m:[].map.call(args,function(x){' +
     'try{return typeof x==="object"?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(" ")},"*")};' +
-    '["log","warn","error"].forEach(function(k){var o=console[k];console[k]=function(){s(k,arguments);o.apply(console,arguments)}});' +
-    'window.addEventListener("error",function(e){s("error",[e.message])});' +
+    '["log","warn","error"].forEach(function(k){var original=console[k];console[k]=function(){enviar(k,arguments);original.apply(console,arguments)}});' +
+    'window.addEventListener("error",function(e){enviar("error",[e.message])});' +
     '})()<\/script>';
 
-/* Judge0 não renderiza HTML*/
 function rodarWeb() {
-    pv.hidden = false;
-    pvPy.hidden = true;
-    const css = `<style>${dados.css}</style>`;
-    const js = PONTE + `<script>${dados.js}<\/script>`;
-    let doc = dados.html;
-    doc = doc.includes('</head>') ? doc.replace('</head>', () => css + '</head>') : css + doc;
-    doc = doc.includes('</body>') ? doc.replace('</body>', () => js + '</body>') : doc + js;
-    pv.srcdoc = doc;
+    quadroPreview.hidden = false;
+    saidaTerminal.hidden = true;
+
+    // Em HTML/CSS/JS, o código é transformado em um documento completo em um iframe.
+    const estilo = `<style>${dadosDosArquivos.css}</style>`;
+    const script = PONTE_CONSOLE + `<script>${dadosDosArquivos.js}<\/script>`;
+    let documentoHtml = dadosDosArquivos.html;
+    documentoHtml = documentoHtml.includes('</head>') ? documentoHtml.replace('</head>', () => estilo + '</head>') : estilo + documentoHtml;
+    documentoHtml = documentoHtml.includes('</body>') ? documentoHtml.replace('</body>', () => script + '</body>') : documentoHtml + script;
+    quadroPreview.srcdoc = documentoHtml;
     escreverConsole('Página renderizada com o código do momento do clique.', 'info');
 }
 
-/*Terminal (Python/PHP): envia o código ao servidor, que executa no Judge0 e avalia com a IA (como no exemplo
-  sendAvaliacao). A resposta do Judge0 (compilacao) aparece no console; a avaliação fica guardada para a Sophia.*/
-async function rodarTerminal() {
-    pv.hidden = true;
-    pvPy.hidden = false;
-    const arq = ARQUIVOS[0];
-    pvPy.textContent = `$ ${arq.nome}\nExecutando...`;
-    escreverConsole('Enviando o código para executar no Judge0...', 'info');
-    const codigoEnviado = contextoEntrega().codigo;
-    try {
-        const f = FEEDBACK.interpretar(await avaliarNoServidor());
-        ultimaResposta = { codigo: codigoEnviado, f };
-        const saida = String(f.saida || '').trim();
-        const aceito = !f.compilador || /accepted|aceito/i.test(f.compilador);
-        pvPy.textContent = `$ ${arq.nome}\n` + (saida || '(sem saída)');
-        escreverConsole(`Judge0: ${f.compilador || 'sem status'}`, aceito ? 'info' : 'error');
-        if (saida) escreverConsole('Saída: ' + saida, aceito ? 'log' : 'error');
-        if (!aceito) {
-            // erro de compilação/execução: vai para a Sophia e para a IA
-            errosConsole.push((saida || String(f.compilador)).slice(0, 300));
-        } else if (typeof A.saidaEsperada === 'string') {
-            // se a atividade tiver "saidaEsperada", compara com o que o código imprimiu
-            const esperado = A.saidaEsperada.trim();
-            const ok = saida === esperado;
-            escreverConsole(ok ? '✔ Saída confere com o esperado'
-                               : '✖ Saída diferente. Esperado: ' + esperado, ok ? 'info' : 'error');
-            if (!ok) errosConsole.push(`A saída foi "${saida}", mas o esperado é "${esperado}".`);
-        }
-    } catch (e) {
-        pvPy.textContent = `$ ${arq.nome}\nNão foi possível executar agora.`;
-        escreverConsole('Falha ao falar com o servidor: ' + e.message, 'error');
-    }
-}
-
-async function executar(opcoes = {}) {
-    if (executando) return;
-    executando = true;
-    atualizarBotoes();
-    con.innerHTML = '';
-    errosConsole = [];
-    mostrarResultado(!!opcoes.focar);
-    try {
-        if (modo === 'web') rodarWeb(); else await rodarTerminal();
-        executadoAtual = true;
-        $('pvStale').hidden = true;
-    } finally {
-        executando = false;
-        atualizarBotoes();
-    }
-}
-
-window.addEventListener('message', e => {
-    if (e.source !== pv.contentWindow || !e.data || !e.data.farm) return;
-    if (e.data.t === 'error') errosConsole.push(e.data.m);
-    escreverConsole((e.data.t === 'error' ? '✖ ' : '› ') + e.data.m, e.data.t);
+window.addEventListener('message', evento => {
+    if (evento.source !== quadroPreview.contentWindow || !evento.data || !evento.data.farm) return;
+    escreverConsole((evento.data.t === 'error' ? '✖ ' : '› ') + evento.data.m, evento.data.t);
 });
 
-/*Limites e estado dos botões*/
-function atualizarContadores() {
-    const exec = Math.max(0, LIMITE_CLICKS - usos.executar);
-    const soph = Math.max(0, LIMITE_CLICKS - usos.sophia);
-    const canc = Math.max(0, LIMITE_CANCELAMENTOS - cancelamentos);
-    $('contadorExecutar').textContent = `${exec}/${LIMITE_CLICKS}`;
-    $('contadorSophia').textContent = `${soph}/${LIMITE_CLICKS}`;
-    $('contadorCancelar').textContent = `${canc}/${LIMITE_CANCELAMENTOS}`;
-    $('contadorLimite').classList.toggle('is-limitado', exec === 0 || soph === 0 || canc === 0);
+// Python, PHP e Node: o sistema ainda marca a execução como “em breve” e não liga ao Judge0 de verdade.
+function escreverTerminal(texto) {
+    saidaTerminal.textContent += texto + '\n';
+    saidaTerminal.scrollTop = saidaTerminal.scrollHeight;
 }
 
 function atualizarBotoes() {
@@ -582,88 +558,75 @@ async function avaliarNoServidor(extra = {}) {
     throw ultimoErro || new Error('Sem resposta do servidor de avaliação');
 }
 
-/*Usada pela Sophia e pela entrega: reaproveita a resposta da última execução se o código não mudou*/
-async function consultarIA(extra = {}) {
-    if (ultimaResposta && ultimaResposta.codigo === contextoEntrega().codigo) return ultimaResposta.f;
-    return FEEDBACK.interpretar(await avaliarNoServidor(extra));
+function formatarTabela(resultado) {
+    const texto = valor => (valor === null || valor === undefined ? 'NULL' : String(valor));
+    const larguras = resultado.columns.map((coluna, i) =>
+        Math.max(coluna.length, ...resultado.values.map(linha => texto(linha[i]).length)));
+    const linhaTexto = linha => linha.map((valor, i) => texto(valor).padEnd(larguras[i])).join(' | ');
+    return [
+        linhaTexto(resultado.columns),
+        larguras.map(n => '-'.repeat(n)).join('-+-'),
+        ...resultado.values.map(linhaTexto)
+    ].join('\n');
 }
 
-async function consultarIAcomFallback(extra) {
+async function rodarSql(codigo) {
+    escreverTerminal('Carregando motor SQL...');
     try {
-        return await consultarIA(extra);
+        const SQL = await carregarSqlJs();
+        const banco = new SQL.Database();   // banco novo e vazio a cada execução
+        saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+        banco.exec(codigo).forEach(resultado => escreverTerminal(formatarTabela(resultado) + '\n'));
+        const tabelas = banco.exec("SELECT name FROM sqlite_master WHERE type='table'");
+        escreverTerminal(tabelas.length
+            ? 'Tabelas no banco: ' + tabelas[0].values.map(linha => linha[0]).join(', ')
+            : 'Comando executado. Nenhuma tabela criada.');
+        banco.close();
     } catch (erro) {
-        console.warn('IA indisponível:', erro);
-        if (FEEDBACK.usarExemploSeFalhar) return { ...FEEDBACK.interpretar(FEEDBACK.exemplo()), exemplo: true };
-        throw erro;
+        saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+        escreverTerminal('✖ ' + erro.message);
+        escreverConsole(erro.message, 'error');
     }
 }
 
-function temProblema(f) {
-    const aceito = !f.compilador || /accepted|aceito/i.test(f.compilador);
-    const aprovado = !f.status || /^aprovado$/i.test(String(f.status).trim());
-    return !aceito || !aprovado || errosAtuais().length > 0 || f.faltando.length > 0;
-}
+async function rodarTerminal() {
+    quadroPreview.hidden = true;
+    saidaTerminal.hidden = false;
+    saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+    const codigo = dadosDosArquivos[ARQUIVOS[0].lang] || '';
 
-function habilitarConsole(ligado) {
-    const inp = $('conInput');
-    inp.disabled = !ligado;
-    $('conForm').classList.toggle('ativo', ligado);
-    if (ligado) inp.focus();
-}
-
-function perguntarAjuda() {
-    ajuda.aguardando = true;
-    mostrarResultado(true);
-    const msg = 'Encontrei algum problema no seu código. Quer a minha ajuda? Digite sim ou não no console.';
-    sophiaFala(msg, 0);
-    escreverConsole('Sophia: ' + msg, 'sophia-msg');
-    habilitarConsole(true);
-}
-
-const normalizar = t => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[.!?,]/g, '').trim();
-
-function responderSophia(texto) {
-    escreverConsole('› ' + texto, 'voce');
-    if (!ajuda.aguardando) return;
-    if (assinaturaDoCodigo() !== ajuda.assinatura) {
-        ajuda.aguardando = false;
-        habilitarConsole(false);
-        escreverConsole('Sophia: Você mexeu no código. Clique em mim de novo para eu olhar outra vez.', 'sophia-msg');
-        return;
-    }
-    const r = normalizar(texto);
-    if (['sim', 's', 'quero', 'claro', 'pode', 'yes'].includes(r)) {
-        ajuda.aguardando = false;
-        habilitarConsole(false);
-        escreverConsole('Sophia: Pronto! Minha ajuda está no balão.', 'sophia-msg');
-        sophiaMostrarAjuda(ajuda.dados, true);
-    } else if (['nao', 'n', 'agora nao', 'no'].includes(r)) {
-        ajuda.aguardando = false;
-        habilitarConsole(false);
-        escreverConsole('Sophia: Tudo bem! Se precisar, é só clicar em mim.', 'sophia-msg');
-        sophiaFala('Tudo bem! Se precisar, é só clicar em mim de novo.', 5000);
+    if (linguagemAtual.id === 63) {
+        await rodarJs(codigo);
+        escreverConsole('Execução concluída.', 'info');
+    } else if (linguagemAtual.id === 'sql') {
+        await rodarSql(codigo);
+        escreverConsole('Execução concluída.', 'info');
     } else {
-        escreverConsole('Sophia: Não entendi. Digite sim ou não.', 'sophia-msg');
+        escreverTerminal(`A execução de ${linguagemAtual.rotulo} será integrada em breve.`);
+        escreverConsole('Execução no servidor (Judge0) ainda não integrada.', 'info');
     }
 }
 
-/*Na entrega a IA avalia em segundo plano: a nota fica guardada e NÃO é mostrada agora*/
-async function enviarParaAvaliacao() {
-    const seq = ++avaliacaoSeq;
-    enviando = true;
+async function executar(opcoes = {}) {
+    if (executando) return;
+    executando = true;
+    atualizarBotoes();
+    consoleCorpo.innerHTML = '';
+    mostrarResultado(!!opcoes.focar);
     try {
-        const r = await consultarIAcomFallback({ erros_execucao: errosAtuais() });
-        if (seq !== avaliacaoSeq) return;
-        try {
-            localStorage.setItem(CHAVE_AVALIACAO, JSON.stringify({
-                nota: r.nota, status: r.status, feedback: r.feedback, melhorias: r.melhorias,
-                feitos: r.feitos, faltando: r.faltando, exemplo: !!r.exemplo, data: new Date().toISOString()
-            }));
-        } catch (e) {}
-    } catch (erro) {
-        console.warn('Não foi possível avaliar a entrega agora:', erro);
+        if (modoExecucao === 'web') rodarWeb(); else await rodarTerminal();
+        executadoAtual = true;
+        porId('pvStale').hidden = true;
+    } finally {
+        executando = false;
+        atualizarBotoes();
     }
-    if (seq === avaliacaoSeq) enviando = false;
+}
+function atualizarBotoes() {
+    porId('btnRodar').disabled = atividadeAtual.vazia || executando || usosExecutar >= LIMITE_EXECUCOES;
+    porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
+    porId('btnSophia').disabled = atividadeAtual.vazia;
+    atualizarEntrega();
 }
 
 /*  Eventos  */
@@ -679,21 +642,21 @@ ed.addEventListener('input', () => {
     posicao();
     salvar();
 });
-ed.addEventListener('scroll', sincronizar);
-ed.addEventListener('click', posicao);
-ed.addEventListener('keyup', posicao);
-
-ed.addEventListener('keydown', e => {
-    if (e.key === 'Tab' && !ed.readOnly) {
-        e.preventDefault();
-        ed.setRangeText(modo === 'terminal' && L.id === 71 ? '    ' : '  ', ed.selectionStart, ed.selectionEnd, 'end');
-        ed.dispatchEvent(new Event('input'));
+editorTexto.addEventListener('scroll', sincronizar);
+editorTexto.addEventListener('click', posicao);
+editorTexto.addEventListener('keyup', posicao);
+editorTexto.addEventListener('keydown', evento => {
+    if (evento.key === 'Tab' && !editorTexto.readOnly && modoExecucao !== 'texto') {
+        evento.preventDefault();
+        const recuo = modoExecucao === 'terminal' && linguagemAtual.id === ID_LINGUAGEM_PYTHON ? '    ' : '  ';
+        editorTexto.setRangeText(recuo, editorTexto.selectionStart, editorTexto.selectionEnd, 'end');
+        editorTexto.dispatchEvent(new Event('input'));
     }
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        if (ed.readOnly) return;
+    if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 's') {
+        evento.preventDefault();
+        if (editorTexto.readOnly) return;
         salvar();
-        aviso('Código salvo');
+        aviso(modoExecucao === 'texto' ? 'Resposta salva' : 'Código salvo');
     }
 });
 
@@ -705,57 +668,20 @@ document.addEventListener('keydown', e => {
 document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => setAba(b.dataset.aba)));
 $('btnLimpar').onclick = () => { con.innerHTML = ''; };
 
-$('btnRodar').onclick = () => {
-    if ($('btnRodar').disabled) return;
-    usos.executar++;
+porId('btnRodar').onclick = () => {
+    if (porId('btnRodar').disabled) return;
+    usosExecutar++;
     atualizarContadores();
     executar({ focar: true });
 };
 
-$('btnSophia').onclick = async () => {
-    if ($('btnSophia').disabled) return;
+// Voltar sempre leva à página do aluno.
+porId('btnVoltar').onclick = () => { location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id); };
 
-    if (ajuda.analisando) return sophiaFala('Calma, ainda estou olhando o seu código...', 3000);
-    if (ajuda.aguardando) {
-        if (assinaturaDoCodigo() === ajuda.assinatura) {
-            // nada mudou desde a pergunta: só lembra
-            mostrarResultado(true);
-            habilitarConsole(true);
-            return sophiaFala('Quer a minha ajuda? Digite sim ou não no console.', 0);
-        }
-        // o aluno mexeu no código: a pergunta antiga não vale mais, olha de novo
-        ajuda.aguardando = false;
-        habilitarConsole(false);
-    }
-    if (ARQUIVOS.every(a => !dados[a.lang].trim())) {
-        return sophiaFala('Escreva um pouco de código e clique em mim de novo!', 4000);
-    }
-
-    usos.sophia++;
-    atualizarBotoes();
-    ajuda.analisando = true;
-    ajuda.assinatura = assinaturaDoCodigo();
-    sophiaFala('Deixa eu olhar o seu código...', 0);
-    try {
-        ajuda.dados = await consultarIAcomFallback({ erros_execucao: errosAtuais() });
-        if (temProblema(ajuda.dados)) {
-            perguntarAjuda();
-        } else {
-            escreverConsole('Sophia: Código sem erros!', 'sophia-msg');
-            sophiaMostrarAjuda(ajuda.dados, false);
-        }
-    } catch (erro) {
-        sophiaFala('Não consegui analisar agora. Tente novamente mais tarde.', 6000);
-    } finally {
-        ajuda.analisando = false;
-    }
-};
-
-$('conForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const texto = $('conInput').value.trim();
-    $('conInput').value = '';
-    if (texto) responderSophia(texto);
+document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
+    const semImagem = () => imagem.parentElement.classList.add('sem-img');
+    imagem.addEventListener('error', semImagem);
+    if (imagem.complete && !imagem.naturalWidth) semImagem();
 });
 
 // Voltar sempre leva à página do aluno (não às páginas visitadas antes)
@@ -773,23 +699,23 @@ document.querySelectorAll('.logo img, .sophia-avatar img').forEach(img => {
 
 /*Celular: o editor ocupa a tela toda enquanto o aluno digita (X para voltar ao normal)*/
 function atualizarBtnInicio() {
-    if (!btnInicio) return;
-    btnInicio.hidden = !(document.body.classList.contains('editor-expandido') && ed.scrollLeft > 24);
+    if (!botaoInicio) return;
+    botaoInicio.hidden = !(document.body.classList.contains('editor-expandido') && editorTexto.scrollLeft > 24);
 }
 function expandirEditor() {
-    if (!mobile() || ed.readOnly) return;
+    if (!ehCelular() || editorTexto.readOnly) return;
     document.body.classList.add('editor-expandido');
     atualizarBtnInicio();
 }
 function recolherEditor() {
     document.body.classList.remove('editor-expandido');
-    ed.blur();
+    editorTexto.blur();
     atualizarBtnInicio();
 }
-ed.addEventListener('focus', expandirEditor);
-if (btnFecharEditor) btnFecharEditor.addEventListener('click', recolherEditor);
-if (btnInicio) btnInicio.addEventListener('click', () => ed.scrollTo({ left: 0, behavior: 'smooth' }));
-window.addEventListener('resize', () => { if (!mobile()) recolherEditor(); });
+editorTexto.addEventListener('focus', expandirEditor);
+if (botaoFecharEditor) botaoFecharEditor.addEventListener('click', recolherEditor);
+if (botaoInicio) botaoInicio.addEventListener('click', () => editorTexto.scrollTo({ left: 0, behavior: 'smooth' }));
+window.addEventListener('resize', () => { if (!ehCelular()) recolherEditor(); });
 
 atualizarBotoes();
 setInterval(atualizarEntrega, 30000);

@@ -7,21 +7,40 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <base href="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>/">
+<meta name="csrf" content="<?= htmlspecialchars($csrf, ENT_QUOTES, 'UTF-8') ?>">
 <title>Postar Atividade</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap">
-<link rel="stylesheet" href="atividades/file?type=css&file=atividades.css">
+<link rel="stylesheet" href="atividades/file?type=css&file=base.css">
+<link rel="stylesheet" href="atividades/file?type=css&file=instrutor.css">
 </head>
 <body class="tema-instrutor" data-instrutor="<?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?>">
 
 <header>
-    <img src="/assets/img/png/logo_icone.png" alt="The Farm Edu">
+    <img src="assets/img/svg/logo_icone.svg" alt="The Farmer Edu">
     <div class="titulo-header">
-        <h2 id="cabeçalho-titulo">MINHAS TURMAS</h2>
+        <h2 id="cabecalho-titulo">MINHAS TURMAS</h2>
         <p id="cabecalho-sub">The Farmer Edu</p>
     </div>
-    <div class="avatar"><?= htmlspecialchars($inicial, ENT_QUOTES, 'UTF-8') ?></div>
+
+    <div>
+        <h4>Bem-Vindo!</h4> <span><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></span>
+    </div>
+
+    <div class="menu-perfil">
+        <button type="button" class="avatar" id="botao-perfil" aria-haspopup="true"
+                aria-expanded="false" aria-controls="menu-perfil-lista" title="Menu do perfil"><?= htmlspecialchars($inicial, ENT_QUOTES, 'UTF-8') ?></button>
+        <div class="menu-perfil-lista hidden" id="menu-perfil-lista" role="menu">
+            <p class="menu-perfil-nome">
+                <span><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></span>
+                <small>Instrutor</small>
+            </p>
+            <a role="menuitem" href="turmas_cursos/instrutor">Cursos e turmas</a>
+            <a role="menuitem" href="turmas_cursos/minhaConta">Minha conta</a>
+            <a role="menuitem" class="sair" href="auth/logout">Sair</a>
+        </div>
+    </div>
 </header>
 
 <div class="layout">
@@ -46,12 +65,12 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             Pessoas
         </button>
 
-        <button class="menu-item back" onclick="abrirPagina('atividades')">
+        <a class="menu-item back" href="turmas_cursos/instrutor">
             <span class="icone">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>
             </span>
-            Voltar
-        </button>
+            Voltar aos cursos
+        </a>
 
         </aside>
 
@@ -162,6 +181,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                     <div class="field">
                         <label for="gabarito-normal">Gabarito</label>
                         <input type="file" id="gabarito-normal" name="gabarito[]" multiple>
+                        <small class="dica dica-gabarito"></small>
                         <div class="arquivos-existentes"></div>
                     </div>
 
@@ -221,6 +241,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                     <div class="field">
                         <label for="gabarito-texto">Gabarito</label>
                         <input type="file" id="gabarito-texto" name="gabarito[]" multiple>
+                        <small class="dica dica-gabarito"></small>
                         <div class="arquivos-existentes"></div>
                     </div>
 
@@ -278,25 +299,41 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 
                     <div class="field">
                         <label for="alternativa-a">Alternativa A</label>
-                        <input id="alternativa-a" name="alternativaA"
-                            placeholder="" required>
+                        <div class="alternativa-linha">
+                            <input id="alternativa-a" name="alternativaA"
+                                placeholder="" required>
+                            <label class="correta">
+                                <input type="radio" name="correta" value="A" required> Correta
+                            </label>
+                        </div>
                     </div>
 
                     <div class="field">
                         <label for="alternativa-b">Alternativa B</label>
-                        <input id="alternativa-b" name="alternativaB"
-                            placeholder="" required>
+                        <div class="alternativa-linha">
+                            <input id="alternativa-b" name="alternativaB"
+                                placeholder="" required>
+                            <label class="correta">
+                                <input type="radio" name="correta" value="B" required> Correta
+                            </label>
+                        </div>
                     </div>
 
                     <div class="field">
                         <label for="alternativa-c">Alternativa C</label>
-                        <input id="alternativa-c" name="alternativaC"
-                            placeholder="" required>
+                        <div class="alternativa-linha">
+                            <input id="alternativa-c" name="alternativaC"
+                                placeholder="" required>
+                            <label class="correta">
+                                <input type="radio" name="correta" value="C" required> Correta
+                            </label>
+                        </div>
                     </div>
 
                     <div class="field">
                         <label for="gabarito-pergunta">Gabarito</label>
                         <input type="file" id="gabarito-pergunta" name="gabarito[]" multiple>
+                        <small class="dica dica-gabarito"></small>
                         <div class="arquivos-existentes"></div>
                     </div>
 
@@ -359,10 +396,10 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                 <h1>PESSOAS</h1>
             </div>
 
-            <div class="form-card">
-                <h2>Participantes da turma</h2>
-                <p>Os alunos e instrutores poderão ser listados aqui.</p>
-            </div>
+            <p>Alunos matriculados nas suas turmas. Para matricular ou remover alunos, use
+                <a href="turmas_cursos/instrutor">Cursos e turmas</a>.</p>
+
+            <div id="lista-pessoas" class="pessoas"></div>
         </section>
     </main>
 </div>
@@ -380,6 +417,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
     </div>
 </div>
 
+<script src="atividades/file?type=js&file=menu.js"></script>
 <script src="atividades/file?type=js&file=instrutor.js"></script>
 </body>
 </html>

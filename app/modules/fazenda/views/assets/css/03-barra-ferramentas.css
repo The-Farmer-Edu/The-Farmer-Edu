@@ -14,6 +14,14 @@
 .aviso-silencio-global[hidden] { display: none }
 #menu-principal { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 6px; width: min(250px, calc(100vw - 24px)); box-sizing: border-box;
   max-height: calc(100vh - env(safe-area-inset-top, 0px) - 70px); overflow-y: auto; padding: 10px; border-radius: 16px; background: var(--fundo-card); color: var(--texto); box-shadow: 0 4px 14px #0004 }
+/* Etapa 1 — correção da rolagem do menu (causa raiz): o menu herda .botoes-ferramentas, cujo "justify-content: flex-end" serve para
+   alinhar botões à direita numa LINHA. Como o menu é um flex em COLUNA, o flex-end empurrava os itens para baixo e, quando o
+   conteúdo passava da altura máxima (janela baixa, modo desenvolvedor, textos maiores), o excesso transbordava para CIMA, fora do
+   alcance da rolagem: o navegador nem considerava que havia o que rolar e os primeiros itens ficavam escondidos atrás do cabeçalho.
+   Agora o conteúdo começa no topo (flex-start) e transborda para baixo, onde a rolagem alcança; os itens não encolhem (flex-shrink 0)
+   e a rolagem não "vaza" para a página no toque (overscroll-behavior). */
+#menu-principal { justify-content: flex-start; overscroll-behavior: contain }
+#menu-principal > * { flex-shrink: 0 }
 #menu-principal[hidden], .navegacao-do-painel[hidden] { display: none }
 .cabecalho-do-menu { display: flex; align-items: center; justify-content: space-between; font-size: 15px; padding: 0 2px 2px }
 #menu-principal .botao-ferramenta { width: 100%; text-align: left; box-shadow: none; background: #8882; margin: 0; max-width: none }

@@ -12,32 +12,97 @@
       // seção 29) com reserva por canteiro, para ninguém colher o mesmo canteiro duas vezes. Também controla a comida dos
       // animais: sem comida a saúde cai devagar e, se chegar a zero, um animal morre (com avisos antes).
       // ====================================================================================================
-      const ICONES_DOS_RECURSOS = { trigo: '🌾', milho: '🌽', cenoura: '🥕', abobora: '🎃', minerios: '🪨' };
+      const ICONES_DOS_RECURSOS = { trigo: '🌾', milho: '🌽', cenoura: '🥕', abobora: '🎃', minerios: '🪨', madeira: '🪵' };
       let houveMudancaParaSalvar = false;
       const marcarParaSalvar = () => { houveMudancaParaSalvar = true; };
       // Credita XP de ganhos AUTOMÁTICOS (colheita por trabalhador, mina, monstro derrotado). NÃO conta como atividade do jogador:
       // só ações feitas pelo jogador renovam o contador da regra dos 5 dias reais de inatividade (seção 26).
       // A origem vai para os contadores da seção 05 (padrão 'fazenda'; monstro chamado pelo botão de teste → 'teste'). Este é o
       // ÚNICO ponto que conta colheita, mina e monstro: quem chama não conta de novo.
-      // Fazenda 8.4.1 (balanceamento): a origem 'fazenda' respeita o limite diário (ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda, por dia
-      // do calendário local, em estado.xpDaFazendaHoje); o que passar do limite não vira XP. Devolve o XP EFETIVAMENTE creditado,
-      // para as mensagens mostrarem o valor real.
-      const xpDaFazendaRestanteHoje = function xpDaFazendaRestanteHoje() {
-        const hoje = diaDoCalendario(Date.now()), registro = estado.xpDaFazendaHoje;
-        if (registro.dia !== hoje) { registro.dia = hoje; registro.total = 0; }   // dia novo: o limite renova
-        return Math.max(0, ECONOMIA_CONFIG.limiteDiarioDeXPDaFazenda - registro.total);
+      // ---- COTAS DIÁRIAS POR ATIVIDADE (rebalanceamento; regras em COTAS_DIARIAS_DE_XP, seção 01) ----
+      // A origem 'fazenda' passa por UMA cota por atividade: lavoura (colheitas), mina (= Limite da alquimia: só a Poção de Experiência; a mina não dá XP), criacao (produção dos
+      // animais) e defesa (monstros). O que passar da cota da atividade não vira XP, mas os recursos da atividade continuam
+      // entrando no estoque. Cada cota cresce com o nível das construções ligadas a ela e com a equipe (bônus por trabalhador).
+      // estado.cotasDoDia = { dia, usado: {atividade: XP usado da cota de hoje}, reserva: {atividade: XP guardado de dias anteriores} }.
+      const ATIVIDADES_COM_COTA = Object.keys(COTAS_DIARIAS_DE_XP);
+      const nivelAtivo = idDaArea => instalacaoDestruida(idDaArea) ? 0 : estado.niveis[idDaArea] | 0;   // instalação destruída não conta
+      // Bônus da equipe na cota da especialidade: 3 por trabalhador vivo e em campo + 1 a cada 5 níveis de melhoria (máx. 8).
+      const bonusDoTrabalhadorNaCota = function bonusDoTrabalhadorNaCota(dados) {
+        const niveis = Object.values(dados.melhorias || {}).reduce((soma, nivel) => soma + nivel, 0), regra = BONUS_DA_EQUIPE_NA_COTA;
+        return Math.min(regra.maximoPorTrabalhador, regra.porTrabalhador + Math.floor(niveis / regra.niveisDeMelhoriaPorPonto));
       };
-      const creditarXP = function creditarXP(quantidade, origem = 'fazenda') {
+      const bonusDaEquipeNaCota = atividade => estado.trabalhadores
+        .filter(dados => dados.estado === 'ativo' && !dados.emCasa && BONUS_DA_EQUIPE_NA_COTA.especialidade[dados.classe] === atividade)
+        .reduce((soma, dados) => soma + bonusDoTrabalhadorNaCota(dados), 0);
+      // Cota de HOJE da atividade (sem a reserva), calculada a partir das construções e da equipe atuais.
+      const cotaDaAtividade = function cotaDaAtividade(atividade) {
+        const regra = COTAS_DIARIAS_DE_XP[atividade];
+        if (atividade === 'lavoura') return regra.base + regra.porNivelDePlantacao * PLANTACOES_COM_CANTEIROS.reduce((soma, idDaArea) => soma + nivelAtivo(idDaArea), 0) + bonusDaEquipeNaCota('lavoura');
+        if (atividade === 'mina') return nivelAtivo('mina') ? regra.base + regra.porNivelDaMina * nivelAtivo('mina') : 0;
+        if (atividade === 'criacao') return regra.porNivelDeInstalacao * Object.keys(ANIMAIS_DAS_AREAS).reduce((soma, idDaArea) => soma + nivelAtivo(idDaArea), 0);
+        if (atividade === 'defesa') return regra.base + bonusDaEquipeNaCota('defesa');
+        return 0;
+      };
+      const somaDasCotasDiarias = () => ATIVIDADES_COM_COTA.reduce((soma, atividade) => soma + cotaDaAtividade(atividade), 0);
+      // Dia novo: a cota renova. A parte NÃO usada do último dia jogado (e a cota inteira dos dias sem jogar) vai para a reserva,
+      // até RESERVA_DE_COTA_EM_DIAS × a cota. Quem joga todo dia e usa a cota inteira não acumula nada.
+      const renovarCotasDoDia = function renovarCotasDoDia() {
+        const hoje = diaDoCalendario(Date.now()), cotas = estado.cotasDoDia;
+        if (cotas.dia === hoje) return;
+        if (Number.isInteger(cotas.dia) && hoje > cotas.dia) {
+          const diasSemJogar = Math.min(RESERVA_DE_COTA_EM_DIAS, hoje - cotas.dia - 1);
+          for (const atividade of ATIVIDADES_COM_COTA) {
+            const cota = cotaDaAtividade(atividade), naoUsada = Math.max(0, cota - cotas.usado[atividade]);
+            cotas.reserva[atividade] = Math.min(cota * RESERVA_DE_COTA_EM_DIAS, cotas.reserva[atividade] + naoUsada + diasSemJogar * cota);
+          }
+        }
+        cotas.dia = hoje; for (const atividade of ATIVIDADES_COM_COTA) cotas.usado[atividade] = 0;
+        if (estado.xpDaFazendaHoje.dia !== hoje) { estado.xpDaFazendaHoje.dia = hoje; estado.xpDaFazendaHoje.total = 0; }
+      };
+      // XP que a atividade ainda pode render hoje (cota livre + reserva).
+      const xpRestanteDaCota = function xpRestanteDaCota(atividade) {
+        renovarCotasDoDia();
+        return Math.max(0, cotaDaAtividade(atividade) - estado.cotasDoDia.usado[atividade]) + estado.cotasDoDia.reserva[atividade];
+      };
+      // Total que a Fazenda ainda pode render hoje (soma das atividades). Mantida com o nome antigo para quem já a usava.
+      const xpDaFazendaRestanteHoje = () => ATIVIDADES_COM_COTA.reduce((soma, atividade) => soma + xpRestanteDaCota(atividade), 0);
+      // ÚNICO ponto de crédito do XP ganho NA FAZENDA. atividade = 'lavoura' | 'mina' | 'criacao' | 'defesa' (só para origem 'fazenda').
+      // Consome primeiro a cota do dia e depois a reserva. Devolve o XP EFETIVAMENTE creditado (as mensagens mostram o valor real).
+      const creditarXP = function creditarXP(quantidade, origem = 'fazenda', salvar = true, atividade = 'lavoura') {
         if (!(quantidade > 0)) return 0;
-        const creditado = origem === 'fazenda' ? Math.min(quantidade, xpDaFazendaRestanteHoje()) : quantidade;
-        if (origem === 'fazenda') estado.xpDaFazendaHoje.total += creditado;
+        let creditado = quantidade;
+        if (origem === 'fazenda') {
+          renovarCotasDoDia();
+          const cotas = estado.cotasDoDia, livre = Math.max(0, cotaDaAtividade(atividade) - cotas.usado[atividade]);
+          const doDia = Math.min(quantidade, livre), daReserva = Math.min(quantidade - doDia, cotas.reserva[atividade]);
+          cotas.usado[atividade] += doDia; cotas.reserva[atividade] -= daReserva;
+          creditado = doDia + daReserva;
+          estado.xpDaFazendaHoje.total += creditado;
+        }
         if (creditado > 0) { estado.xp += creditado; registrarOrigemDoXP(origem, creditado); }
-        salvarProgresso(); desenharCards();
+        if (salvar) salvarProgresso();
+        desenharCards();
         return creditado;
       };
-      // Texto do XP de uma recompensa da Fazenda para os avisos: "+4 XP", "+1 XP (limite diário da Fazenda)" ou "sem XP: ...".
-      const textoDoXPDaFazenda = (creditado, previsto) => creditado >= previsto ? '+' + creditado + ' XP'
-        : creditado > 0 ? '+' + creditado + ' XP (limite diário da Fazenda)' : 'sem XP: limite diário da Fazenda atingido';
+      // Texto do XP de uma recompensa da Fazenda para os avisos: "+4 XP", "+1 XP (cota de Lavoura de hoje)" ou "sem XP: ...".
+      const textoDoXPDaFazenda = (creditado, previsto, atividade = 'lavoura') => {
+        const nome = COTAS_DIARIAS_DE_XP[atividade] ? COTAS_DIARIAS_DE_XP[atividade].nome : 'Fazenda';
+        if (atividade === 'mina') return creditado >= previsto ? '+' + creditado + ' XP' : creditado > 0 ? '+' + creditado + ' XP (' + nome + ')' : 'sem XP: ' + nome + ' de hoje atingido';   // "Limite", não "cota"
+        return creditado >= previsto ? '+' + creditado + ' XP' : creditado > 0 ? '+' + creditado + ' XP (cota de ' + nome + ' de hoje)' : 'sem XP: cota de ' + nome + ' de hoje atingida';
+      };
+      // Quadro das cotas de hoje (painel 🌾 Fazenda): usado/cota, a reserva e de onde vem cada uma. Só leitura.
+      const htmlDasCotasDoDia = function htmlDasCotasDoDia() {
+        renovarCotasDoDia();
+        const linhas = ATIVIDADES_COM_COTA.map(atividade => {
+          const regra = COTAS_DIARIAS_DE_XP[atividade], cota = cotaDaAtividade(atividade), usado = Math.min(cota, estado.cotasDoDia.usado[atividade]), reserva = Math.round(estado.cotasDoDia.reserva[atividade]);
+          return `<li class="${cota ? (usado >= cota && !reserva ? 'cheia' : '') : 'bloqueada'}"><span>${regra.icone} ${regra.nome}</span><b>${cota ? usado + ' / ' + cota : '—'}</b><small>${cota ? regra.fonte + (reserva ? ' · +' + reserva + ' guardados' : '') : atividade === 'mina' ? 'construa a mina' : 'construa uma instalação de animais'}</small></li>`;
+        }).join('');
+        return `<div class="cotas-do-dia"><p class="dica">⭐ <b>XP da Fazenda hoje</b>: cada atividade tem a sua cota, que cresce com as construções e a equipe. Passado o limite, a atividade continua rendendo recursos, sem XP. O XP das atividades do curso não entra nessas cotas.</p><ul>${linhas}</ul></div>`;
+      };
+      // ---- Funções das construções (FUNCOES_DAS_CONSTRUCOES, seção 01) ----
+      const horasDoCochoCheio = () => ALIMENTACAO_CONFIG.horasParaAComidaAcabar * (1 + FUNCOES_DAS_CONSTRUCOES.celeiro.duracaoDoCochoPorNivel * nivelAtivo('celeiro'));
+      const alimentoPorUnidade = recurso => ALIMENTACAO_CONFIG.comidaPorUnidade[recurso] * (FUNCOES_DAS_CONSTRUCOES.moinho.graos.includes(recurso) ? 1 + FUNCOES_DAS_CONSTRUCOES.moinho.alimentoDosGraosPorNivel * nivelAtivo('moinho') : 1);
+      const colheitaPorCanteiro = recurso => CULTURAS[recurso].colheita + FUNCOES_DAS_CONSTRUCOES.maquinario.colheitaExtraPorNivel * nivelAtivo('maquinario');
       let ultimoResumoDeRecursos = '';
       const atualizarResumoDeRecursos = function atualizarResumoDeRecursos() {
         const texto = Object.entries(ICONES_DOS_RECURSOS).map(([recurso, icone]) => icone + ' ' + estado.recursos[recurso]).join('  ');
@@ -45,7 +110,7 @@
       };
       // Estado inicial de uma instalação recém-construída (nível 0 → 1).
       const aoConstruirArea = function aoConstruirArea(idDaArea) {
-        if (ANIMAIS_DAS_AREAS[idDaArea]) estado.animais[idDaArea] = { comida: 100, saude: 100, mortos: 0, atualizadoEm: agoraNoJogo(), avisouFome: false };
+        if (ANIMAIS_DAS_AREAS[idDaArea]) estado.animais[idDaArea] = { comida: 100, saude: 100, mortos: 0, atualizadoEm: agoraNoJogo(), avisouFome: false, produtos: 0 };
         if (idDaArea === 'mina') estado.mina = { fase: 'parado', inicioDaFase: agoraNoJogo(), ciclos: estado.mina.ciclos };
       };
 
@@ -78,6 +143,7 @@
         canteiro.cultura = cultura; canteiro.plantadoEm = agoraNoJogo();
         marcarParaSalvar(); atualizarVisualDaLavoura();
         tocarEfeito('plantar', posicaoDoCanteiroNoMundo(idDaArea, indice));   // 8.4.1: efeito sonoro (seção 23)
+        avisarObjetivos('plantio', { idDaArea, cultura });   // Etapa 2: quadro de objetivos (seção 30e)
         return true;
       };
       // Colhe só o que está maduro. O canteiro é esvaziado ANTES de creditar e a reserva é liberada: não há colheita dupla.
@@ -87,11 +153,13 @@
         if (estagioDoCanteiro(canteiro) < 3) { if (!silencioso) mostrarAviso(CULTURAS[canteiro.cultura].nome + ' ainda não está pronta para a colheita (' + Math.floor(progressoDoCanteiro(canteiro) * 100) + '%).'); return false; }
         const cultura = CULTURAS[canteiro.cultura], recurso = canteiro.cultura;
         canteiro.cultura = null; canteiro.plantadoEm = 0; reservasDeColheita.delete(chaveDoCanteiro(idDaArea, indice));
-        estado.recursos[recurso] += cultura.colheita;
-        const xpCreditado = creditarXP(cultura.xp);   // também salva
+        const unidades = colheitaPorCanteiro(recurso);                       // maquinário: +1 unidade por nível (só recurso)
+        estado.recursos[recurso] += unidades;
+        const xpCreditado = creditarXP(cultura.xp, 'fazenda', true, 'lavoura');   // também salva (cota diária de Lavoura)
         tocarEfeito('colher', posicaoDoCanteiroNoMundo(idDaArea, indice));     // 8.4.1: efeito sonoro (seção 23)
         atualizarVisualDaLavoura();
-        if (!silencioso) mostrarAviso('Colheita em ' + nomeDaPlantacao(idDaArea) + ': +' + cultura.colheita + ' ' + cultura.icone + ' · ' + textoDoXPDaFazenda(xpCreditado, cultura.xp));
+        avisarObjetivos('colheita', { idDaArea, cultura: recurso });   // Etapa 2: quadro de objetivos (seção 30e)
+        if (!silencioso) mostrarAviso('Colheita em ' + nomeDaPlantacao(idDaArea) + ': +' + unidades + ' ' + cultura.icone + ' · ' + textoDoXPDaFazenda(xpCreditado, cultura.xp, 'lavoura'));
         return true;
       };
       const plantarEmTodosOsVazios = function plantarEmTodosOsVazios(idDaArea) {
@@ -199,8 +267,14 @@
           situacao.atualizadoEm = agora;
           if (!total || vivos <= 0 || horas <= 0 || instalacaoDestruida(idDaArea)) continue;   // em ruínas (regra dos 5 dias): sem animais para alimentar
           horas = Math.min(horas, configuracao.limiteDeTempoAusenteHoras);
-          const consumoPorHora = 100 / configuracao.horasParaAComidaAcabar * (vivos / total), horasComComida = Math.min(horas, situacao.comida / consumoPorHora);
+          // Poções (seção 28c): a Ração Encantada reduz o consumo SÓ na parte deste
+          // intervalo em que o efeito estava ativo (o intervalo pode ser longo quando a página ficou fechada).
+          const inicioDoIntervalo = agora - horas * 3600000;
+          const consumoPorHora = 100 / horasDoCochoCheio() * (vivos / total) * consumoDoCochoNoIntervalo(inicioDoIntervalo, agora), horasComComida = Math.min(horas, situacao.comida / consumoPorHora);
           situacao.comida = Math.max(0, situacao.comida - consumoPorHora * horas);
+          // Produção (rebalanceamento): só nas horas em que havia comida, 1 item por animal vivo a cada horasPorProduto, até o
+          // máximo guardado por animal. O tempo com a página fechada já vem limitado por limiteDeTempoAusenteHoras.
+          situacao.produtos = Math.min(vivos * PRODUCAO_DOS_ANIMAIS.maximoPorAnimal, (situacao.produtos || 0) + vivos * horasComComida / PRODUCAO_DOS_ANIMAIS.horasPorProduto);   // Etapa 2: sem o Elixir da Fertilidade (saiu do catálogo)
           situacao.saude = Math.min(100, situacao.saude + configuracao.recuperacaoDeSaudePorHora * horasComComida);
           situacao.saude -= configuracao.perdaDeSaudePorHoraSemComida * (horas - horasComComida);
           let mortes = 0;
@@ -213,6 +287,24 @@
           marcarParaSalvar();
         }
       };
+      // Coleta da produção (rebalanceamento): transforma os itens INTEIROS guardados na instalação em XP da cota de Criação.
+      // Os itens saem do estoque da instalação ANTES do crédito (um segundo clique não acha nada) e só são retirados os que cabem
+      // na cota de hoje; o resto continua guardado para amanhã.
+      const coletarProducao = function coletarProducao(idDaArea) {
+        const situacao = estado.animais[idDaArea], produto = PRODUCAO_DOS_ANIMAIS.produtos[idDaArea];
+        if (!situacao || !produto || !estado.niveis[idDaArea]) return 0;
+        atualizarAlimentacao();
+        const inteiros = Math.floor(situacao.produtos || 0);
+        if (!inteiros) { mostrarAviso(produto.icone + ' Ainda não há ' + produto.nome + ' para coletar em ' + nomeDaArea(idDaArea) + '. Os animais produzem enquanto têm comida.'); return 0; }
+        const cabem = Math.min(inteiros, Math.floor(xpRestanteDaCota('criacao') / PRODUCAO_DOS_ANIMAIS.xpPorProduto));
+        if (!cabem) { mostrarAviso('🐄 A cota de Criação de hoje está cheia. Os ' + inteiros + ' item(ns) de ' + produto.nome + ' continuam guardados.'); return 0; }
+        situacao.produtos -= cabem;
+        const creditado = creditarXP(cabem * PRODUCAO_DOS_ANIMAIS.xpPorProduto, 'fazenda', true, 'criacao');
+        avisarObjetivos('producao', { idDaArea, quantidade: cabem });   // Etapa 2: quadro de objetivos (seção 30e)
+        registrarAtividade(); tocarEfeito('colher');
+        mostrarAviso(produto.icone + ' Coletado em ' + nomeDaArea(idDaArea) + ': ' + cabem + ' ' + produto.nome + ' · +' + creditado + ' XP' + (inteiros > cabem ? ' (o resto fica guardado: cota de Criação cheia)' : ''));
+        return creditado;
+      };
       // Enche o cocho usando as colheitas na ordem de preferência do animal (só o necessário).
       const alimentarAnimais = function alimentarAnimais(idDaArea) {
         const informacao = ANIMAIS_DAS_AREAS[idDaArea], situacao = estado.animais[idDaArea];
@@ -221,17 +313,19 @@
         atualizarAlimentacao();
         if (situacao.comida >= 99) { mostrarAviso('O cocho de ' + nomeDaArea(idDaArea) + ' já está cheio.'); return; }
         const usados = {};
-        for (const recurso of informacao.come) while (situacao.comida < 99 && estado.recursos[recurso] > 0) { estado.recursos[recurso]--; situacao.comida = Math.min(100, situacao.comida + ALIMENTACAO_CONFIG.comidaPorUnidade[recurso]); usados[recurso] = (usados[recurso] || 0) + 1; }
+        for (const recurso of informacao.come) while (situacao.comida < 99 && estado.recursos[recurso] > 0) { estado.recursos[recurso]--; situacao.comida = Math.min(100, situacao.comida + alimentoPorUnidade(recurso)); usados[recurso] = (usados[recurso] || 0) + 1; }
         if (!Object.keys(usados).length) { mostrarAviso('Sem alimento para ' + informacao.nome + 's! Colha ' + informacao.come.map(recurso => CULTURAS[recurso].icone + ' ' + CULTURAS[recurso].nome).join(', ') + ' na Nova plantação.'); return; }
         situacao.avisouFome = situacao.comida < ALIMENTACAO_CONFIG.avisoDeFomeAbaixoDe;
         registrarAtividade(); desenharCards();
+        avisarObjetivos('alimentacao', { idDaArea });   // Etapa 2: quadro de objetivos (seção 30e)
         mostrarAviso(informacao.icone + ' Animais alimentados (' + Object.entries(usados).map(([recurso, quantidade]) => quantidade + ' ' + CULTURAS[recurso].icone).join(' ') + '). Cocho: ' + Math.floor(situacao.comida) + '%');
       };
       const reporAnimal = function reporAnimal(idDaArea) {
         const situacao = estado.animais[idDaArea], custo = ALIMENTACAO_CONFIG.custoParaReporAnimal;
-        if (!situacao || situacao.mortos <= 0 || animaisVivosDaArea(idDaArea) >= totalDeAnimais(idDaArea)) return;
+        if (!situacao || (situacao.mortos | 0) <= 0 || animaisVivosDaArea(idDaArea) >= totalDeAnimais(idDaArea)) return;   // Etapa 1: só mortos (a vaca abduzida volta sozinha, sem custo)
         if (estado.xp < custo) { mostrarAviso('XP insuficiente para repor o animal: faltam ' + (custo - estado.xp) + ' XP.'); return; }
-        estado.xp -= custo; situacao.mortos--; situacao.saude = Math.max(situacao.saude, 70);
+        estado.xp -= custo; situacao.mortos--;
+        situacao.saude = Math.max(situacao.saude, 70);
         registrarAtividade(); reconstruirArea(idDaArea); desenharCards();
         mostrarAviso(ANIMAIS_DAS_AREAS[idDaArea].icone + ' Animal reposto em ' + nomeDaArea(idDaArea) + '.');
       };

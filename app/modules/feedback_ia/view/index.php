@@ -6,7 +6,7 @@
     <title>The Farmer Edu - testarAPI</title>
     <!-- Fontes Inter e Poppins para manter a estética dark tech -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="shortcut icon" href="/The-Farmer-Edu-Tarde-Setup/public/assets/img/ico/logo_icone.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/The-Farmer-Edu-Tarde/public/assets/img/ico/logo_icone.ico" type="image/x-icon">
 
     <style>
         * {
@@ -135,20 +135,20 @@ button::after {
         }
 
         #logo_cabecalho {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
         }
 
         #nome_cabecalho {
             color: #2bad1a;
-            font-size: 30px;
+            font-size: 28px;
         }
 
         header {
             background-color: #A0FDA3;
             display: flex;
             width: 100%;
-            height: 100px;
+            height: 80px;
             justify-content: space-between;
             position: fixed;
             z-index: 1000;
@@ -306,7 +306,7 @@ button::after {
 <body>
     <header>
         <div id="esquerda_cabecalho">
-            <img src="/The-Farmer-Edu-Tarde-Setup/public//assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
+            <img src="/The-Farmer-Edu-Tarde/public/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
             <p id="nome_cabecalho">The Farmer Edu</p>
         </div>
         
@@ -320,12 +320,6 @@ button::after {
         <h1>Desafio de Lógica</h1>
         <p>Objetivo: Criar uma função que receba um código em PHP codificado em Base64 e retornar ele decodificado</p>
     </div>
-<!-- 
-    <img src="file?type=img&file=agropecuaria-capa-1.png" alt="Logo" id="logo_fundo"> -->
-
-
-
-    <!-- O textarea pode ser substituído futuramente pela biblioteca do VS Code (Monaco Editor) -->
     <h1 id="titulo_codigo">Digite seu Código abaixo:</h1>
     <textarea id="codigo_aluno" placeholder="Escreva seu código PHP aqui..."></textarea>
    

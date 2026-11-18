@@ -18,7 +18,7 @@
       const domo = new THREE.Mesh(new THREE.SphereGeometry(300, 24, 14), new THREE.ShaderMaterial({
         uniforms: uniformesDoCeu, side: THREE.BackSide, depthWrite: false, fog: false,
         vertexShader: `varying vec3 vDir;
-          void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+          void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_Position.z = gl_Position.w; }`,   // Etapa 0b: profundidade máxima (fundo)
         fragmentShader: `uniform vec3 uTopo; uniform vec3 uHorizonte; uniform vec3 uBrilho; uniform float uForcaDoBrilho; uniform vec3 uDirecaoDoSol;
           varying vec3 vDir;
           void main() {
@@ -34,7 +34,11 @@
             gl_FragColor = vec4(cor, 1.0);
           }`,
       }));
-      domo.renderOrder = -3; domo.frustumCulled = false; cena.add(domo);
+      // Etapa 0b (desempenho, mesma imagem): o céu era desenhado PRIMEIRO na tela inteira e quase tudo era pintado por cima,
+      // pagando o gradiente em todos os pixels. Agora ele fica na profundidade máxima (gl_Position.z = w) e é o ÚLTIMO dos
+      // objetos opacos: o teste de profundidade só deixa o céu ser calculado onde ele aparece de fato. Estrelas, sol e lua são
+      // transparentes (desenhados depois dos opacos) e continuam por cima dele, como antes. Medido: ~13% do quadro no nível baixo.
+      domo.renderOrder = 1e6; domo.frustumCulled = false; cena.add(domo);
       // Desenha a textura do sol (disco com brilho ou somente os raios) num canvas.
       const criarTexturaDoSol = function criarTexturaDoSol(somenteRaios) {
         const canvasDaImagem = document.createElement('canvas'); canvasDaImagem.width = canvasDaImagem.height = 512;

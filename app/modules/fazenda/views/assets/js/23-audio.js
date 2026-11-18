@@ -46,12 +46,15 @@ const salvarPreferenciasDeAudio = function salvarPreferenciasDeAudio() { try { l
 const limitarVolume = volume => Math.min(1, Math.max(0, volume));
 // Ganchos chamados quando o estado de algum som muda; é trocada por atualizarPainelDeAudio mais adiante.
 let aoMudarOAudio = () => { };
+// Extrai a string do caminho mesmo que o item tenha sido configurado como objeto { arquivo: '...' }
+const extrairCaminhoDeAudio = item => typeof item === 'string' ? item : (item && typeof item.arquivo === 'string' ? item.arquivo : '');
 // Fazenda 8.4.1: endereço real de um áudio de AUDIO_CONFIG ("assets/audio/<subpasta>/<nome>"), montado a partir do endereço do
 // fazenda.js, como o carregador já faz com os scripts. Pela aplicação PHP (script vindo de index.php?rota=fazenda/script) vira
 // a rota fazenda/audio, porque a pasta views/ não é pública; aberto pelo arquivo (file://) é a pasta views/assets/audio.
 // Caminhos fora de "assets/audio/" (ou sem o endereço do script) ficam como estão, relativos à página (comportamento antigo).
 const PREFIXO_DOS_AUDIOS = 'assets/audio/';
 const enderecoDoAudio = function enderecoDoAudio(caminho) {
+  caminho = extrairCaminhoDeAudio(caminho);
   if (!caminho || !ENDERECO_DO_SCRIPT_PRINCIPAL || !caminho.startsWith(PREFIXO_DOS_AUDIOS)) return caminho;
   try {
     let relativo = caminho.slice(PREFIXO_DOS_AUDIOS.length), endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL);
@@ -59,6 +62,9 @@ const enderecoDoAudio = function enderecoDoAudio(caminho) {
       endereco.searchParams.set('rota', 'fazenda/audio'); endereco.searchParams.set('arquivo', relativo);
       return endereco.href;
     }
+    // Missão final: aberto pelo arquivo (file://, modo local sem servidor) não há rota PHP: o áudio é lido direto da pasta
+    // views/assets/audio, ao lado de assets/js (antes virava "assets/js/arquivo?type=...", que não existe, e o jogo ficava mudo).
+    if (endereco.protocol === 'file:') return new URL('../audio/' + relativo.split('/').map(encodeURIComponent).join('/'), endereco).href;
     let file = relativo.split('/');
     file = file[file.length - 1];
     if (relativo.includes(file)) {
@@ -70,34 +76,94 @@ const enderecoDoAudio = function enderecoDoAudio(caminho) {
 // Cria o elemento <audio> de um som (uma única vez). O arquivo só é carregado quando necessário; erros de
 // carga marcam o som como indisponível. "caminho" é o de AUDIO_CONFIG (mostrado no painel); "arquivo" é o endereço real.
 const criarFonteDeSom = function criarFonteDeSom(caminho, repetirEmLoop) {
-  const fonteDeSom = { caminho, arquivo: enderecoDoAudio(caminho), estado: 'ocioso', el: new Audio() }; // estado: ocioso | carregando | erro
+  caminho = extrairCaminhoDeAudio(caminho);
+  const fonteDeSom = { caminho, arquivo: enderecoDoAudio(caminho), estado: caminho ? 'ocioso' : 'erro', el: new Audio() }; // estado: ocioso | carregando | erro
   fonteDeSom.el.preload = 'none'; fonteDeSom.el.loop = repetirEmLoop; fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
   fonteDeSom.el.addEventListener('error', () => { fonteDeSom.estado = 'erro'; aoMudarOAudio(); });
   fonteDeSom.el.addEventListener('playing', () => { fonteDeSom.estado = 'ok'; aoMudarOAudio(); });
   fonteDeSom.el.addEventListener('pause', () => aoMudarOAudio());
   return fonteDeSom;
 };
-const FONTES_DE_SOM = {
-  musica: criarFonteDeSom(AUDIO_CONFIG.musica.arquivo, true), cachoeira: criarFonteDeSom(AUDIO_CONFIG.ambiente.cachoeira.arquivo, true),
-  fonte: criarFonteDeSom(AUDIO_CONFIG.ambiente.fonte.arquivo, true), trator: criarFonteDeSom(AUDIO_CONFIG.ambiente.trator.arquivo, true), animais: {}, efeitos: {}, segredos: {}
+
+// Playlist aleatória das músicas-tema (suporta lista `arquivos` ou `arquivo` único, com strings ou objetos { arquivo })
+const origemDasMusicasTema = Array.isArray(AUDIO_CONFIG.musica.arquivos)
+  ? AUDIO_CONFIG.musica.arquivos
+  : (Array.isArray(AUDIO_CONFIG.musica.arquivo) ? AUDIO_CONFIG.musica.arquivo : [AUDIO_CONFIG.musica.arquivo]);
+const LISTA_DE_MUSICAS_TEMA = origemDasMusicasTema.map(extrairCaminhoDeAudio).filter(Boolean);
+const MUSICAS_COM_ERRO = new Set();
+
+const sortearIndiceMusicaTema = (indiceAtual = -1) => {
+  const validos = LISTA_DE_MUSICAS_TEMA.map((_, idx) => idx).filter(idx => !MUSICAS_COM_ERRO.has(idx));
+  const pool = validos.length ? validos : LISTA_DE_MUSICAS_TEMA.map((_, idx) => idx);
+  if (pool.length <= 1) return pool[0] || 0;
+  const semAtual = pool.filter(idx => idx !== indiceAtual);
+  const candidatos = semAtual.length ? semAtual : pool;
+  return candidatos[Math.floor(Math.random() * candidatos.length)];
 };
+let indiceDaMusicaTema = sortearIndiceMusicaTema();
+let modoMusicaAtual = 'normal'; // 'normal' | 'invasao'
+let trilhaEspecialAtiva = null;   // 'unicornioTrilha' | 'trilha' | null
+
+const FONTES_DE_SOM = {
+  musica: criarFonteDeSom(LISTA_DE_MUSICAS_TEMA[indiceDaMusicaTema] || '', LISTA_DE_MUSICAS_TEMA.length <= 1),
+  cachoeira: criarFonteDeSom(AUDIO_CONFIG.ambiente.cachoeira.arquivo, true),
+  fonte: criarFonteDeSom(AUDIO_CONFIG.ambiente.fonte.arquivo, true),
+  trator: criarFonteDeSom(AUDIO_CONFIG.ambiente.trator.arquivo, true),
+  animais: {}, efeitos: {}, segredos: {}
+};
+
+// Sorteia uma nova música-tema (diferente da que acabou de tocar) quando a faixa atual termina
+const avancarMusicaTema = function avancarMusicaTema() {
+  if (modoMusicaAtual === 'invasao' || LISTA_DE_MUSICAS_TEMA.length <= 1) return;
+  indiceDaMusicaTema = sortearIndiceMusicaTema(indiceDaMusicaTema);
+  const proxima = LISTA_DE_MUSICAS_TEMA[indiceDaMusicaTema];
+  reiniciarFonteDeSom(FONTES_DE_SOM.musica);
+  FONTES_DE_SOM.musica.caminho = proxima;
+  FONTES_DE_SOM.musica.arquivo = enderecoDoAudio(proxima);
+  FONTES_DE_SOM.musica.el.loop = false;
+  sincronizarMusica();
+};
+FONTES_DE_SOM.musica.el.addEventListener('ended', avancarMusicaTema);
+FONTES_DE_SOM.musica.el.addEventListener('error', () => {
+  if (modoMusicaAtual === 'normal' && LISTA_DE_MUSICAS_TEMA.length > 1) {
+    console.warn('[áudio] faixa não encontrada, pulando:', FONTES_DE_SOM.musica.caminho);
+    MUSICAS_COM_ERRO.add(indiceDaMusicaTema);
+    if (MUSICAS_COM_ERRO.size < LISTA_DE_MUSICAS_TEMA.length) {
+      avancarMusicaTema();
+    }
+  }
+});
+
 for (const tipo of TIPOS_DE_ANIMAL_COM_SOM) {
   const configuracao = AUDIO_CONFIG.animais[tipo];
 
   FONTES_DE_SOM.animais[tipo] = (
     configuracao.arquivos || [configuracao.arquivo]
   )
+    .map(extrairCaminhoDeAudio)
     .filter(Boolean)
     .map(caminho => criarFonteDeSom(caminho, false));
 }
 for (const nome of TIPOS_DE_EFEITO) {
   const configuracao = AUDIO_CONFIG.efeitos[nome];
   FONTES_DE_SOM.efeitos[nome] = configuracao.arquivos
-    ? configuracao.arquivos.filter(Boolean).map(caminho => criarFonteDeSom(caminho, false))
+    ? configuracao.arquivos.map(extrairCaminhoDeAudio).filter(Boolean).map(caminho => criarFonteDeSom(caminho, false))
     : criarFonteDeSom(configuracao.arquivo, false);
 }
 for (const nome of Object.keys(AUDIO_CONFIG.segredos)) FONTES_DE_SOM.segredos[nome] = criarFonteDeSom(AUDIO_CONFIG.segredos[nome].arquivo, false);
 FONTES_DE_SOM.pedraSecreta = FONTES_DE_SOM.segredos.pedraSecreta;   // nome antigo, mesmo objeto (todasAsFontesDeSom não o repete)
+
+// Quando uma trilha especial termina sozinha, libera a música de fundo novamente
+for (const nomeTrilha of ['unicornioTrilha', 'trilha']) {
+  if (FONTES_DE_SOM.segredos[nomeTrilha]) {
+    FONTES_DE_SOM.segredos[nomeTrilha].el.addEventListener('ended', () => {
+      if (trilhaEspecialAtiva === nomeTrilha) {
+        trilhaEspecialAtiva = null;
+        sincronizarMusica();
+      }
+    });
+  }
+}
 
 // ---- Fazenda 8.4 (C4): silenciamento global ----
 // Percorre FONTES_DE_SOM inteiro (inclusive grupos como "animais"), para que fontes registradas no futuro também entrem.
@@ -136,8 +202,11 @@ const pararSom = function pararSom(fonteDeSom) { try { fonteDeSom.el.pause(); } 
 // erro de carga fica com paused = false e, antes, ocupava as vagas de "maximoSimultaneos" dos animais para sempre).
 const tocando = fonteDeSom => fonteDeSom.estado !== 'erro' && !fonteDeSom.el.paused && !fonteDeSom.el.ended;
 
-// Volume final da música = volume do painel × volume da configuração.
-const volumeDaMusica = () => limitarVolume(ESTADO_DO_AUDIO.musica.volume * AUDIO_CONFIG.musica.volume);
+// Volume final da música = volume do painel × volume da configuração (normal ou invasão).
+const volumeDaMusica = () => {
+  const multConfig = modoMusicaAtual === 'invasao' && AUDIO_CONFIG.invasao ? AUDIO_CONFIG.invasao.volume : AUDIO_CONFIG.musica.volume;
+  return limitarVolume(ESTADO_DO_AUDIO.musica.volume * multConfig);
+};
 // Trator do Maquinário (seção 08 registra o modelo em farolDoTrator): conta como presente só se estiver na cena (o grupo antigo
 // sai da cena quando a área é reconstruída) e se o Maquinário não estiver destruído.
 const posicaoDoTrator = new THREE.Vector3();
@@ -155,24 +224,37 @@ const volumeDoAmbiente = function volumeDoAmbiente(nome) {
   return limitarVolume(ESTADO_DO_AUDIO[nome].volume * configuracao.volume * Math.max(configuracao.volumeMinimoDeLonge, 1 - distancia / configuracao.distanciaMaxima));
 };
 // Liga ou pausa a música conforme o estado (áudio liberado, categoria ligada, jogador quer tocar, arquivo
-// disponível) e ajusta o volume.
+// disponível, sem trilha especial ativa) e ajusta o volume. Se uma faixa da playlist falhar ao carregar, sorteia outra automaticamente.
 const sincronizarMusica = function sincronizarMusica() {
-  const fonteDeSom = FONTES_DE_SOM.musica, deveEstarTocando = ESTADO_DO_AUDIO.liberado && ESTADO_DO_AUDIO.musica.ligado && ESTADO_DO_AUDIO.musica.querTocar && fonteDeSom.estado !== 'erro';
+  const fonteDeSom = FONTES_DE_SOM.musica;
+  if (fonteDeSom.estado === 'erro' && modoMusicaAtual === 'normal' && LISTA_DE_MUSICAS_TEMA.length > 1 && MUSICAS_COM_ERRO.size < LISTA_DE_MUSICAS_TEMA.length) {
+    MUSICAS_COM_ERRO.add(indiceDaMusicaTema);
+    avancarMusicaTema();
+    return;
+  }
+  const deveEstarTocando = !trilhaEspecialAtiva && ESTADO_DO_AUDIO.liberado && ESTADO_DO_AUDIO.musica.ligado && ESTADO_DO_AUDIO.musica.querTocar && fonteDeSom.estado !== 'erro';
   if (deveEstarTocando && fonteDeSom.el.paused) tocarSom(fonteDeSom, volumeDaMusica());
   else if (!deveEstarTocando && !fonteDeSom.el.paused) pararSom(fonteDeSom);
   else if (deveEstarTocando) fonteDeSom.el.volume = volumeDaMusica();
   aoMudarOAudio();
 };
-// Alterna a faixa de fundo entre a música normal e a música de invasão sem quebrar o estado do painel.
+// Alterna a faixa de fundo entre a playlist aleatória e a música de invasão sem quebrar o estado do painel.
 const trocarMusicaDeFundo = function trocarMusicaDeFundo(tipo) {
-  const cfg = tipo === 'invasao' ? AUDIO_CONFIG.invasao : AUDIO_CONFIG.musica;
-  if (!cfg || !cfg.arquivo) return;
-  const novoEndereco = enderecoDoAudio(cfg.arquivo);
-  if (FONTES_DE_SOM.musica.arquivo === novoEndereco) return;
+  const ehInvasao = tipo === 'invasao' && AUDIO_CONFIG.invasao && AUDIO_CONFIG.invasao.arquivo;
+  const novoModo = ehInvasao ? 'invasao' : 'normal';
+  if (!ehInvasao && modoMusicaAtual === 'invasao' && LISTA_DE_MUSICAS_TEMA.length > 1) {
+    indiceDaMusicaTema = sortearIndiceMusicaTema(indiceDaMusicaTema);
+  }
+  const caminhoAlvo = ehInvasao ? AUDIO_CONFIG.invasao.arquivo : LISTA_DE_MUSICAS_TEMA[indiceDaMusicaTema];
+  if (!caminhoAlvo) return;
+  const novoEndereco = enderecoDoAudio(caminhoAlvo);
+  if (modoMusicaAtual === novoModo && FONTES_DE_SOM.musica.arquivo === novoEndereco) return;
 
+  modoMusicaAtual = novoModo;
   reiniciarFonteDeSom(FONTES_DE_SOM.musica);
-  FONTES_DE_SOM.musica.caminho = cfg.arquivo;
+  FONTES_DE_SOM.musica.caminho = extrairCaminhoDeAudio(caminhoAlvo);
   FONTES_DE_SOM.musica.arquivo = novoEndereco;
+  FONTES_DE_SOM.musica.el.loop = ehInvasao ? true : (LISTA_DE_MUSICAS_TEMA.length <= 1);
   sincronizarMusica();
 };
 // Igual a sincronizarMusica, mas para os sons contínuos (cachoeira e fonte), com volume dependente da
@@ -215,7 +297,7 @@ const liberarAudio = function liberarAudio() { // chamado dentro de um clique do
 // Botão play/pause da música. O primeiro clique libera o áudio e já inicia a música.
 const alternarMusica = function alternarMusica() {
   if (!ESTADO_DO_AUDIO.liberado) { ESTADO_DO_AUDIO.musica.ligado = true; ESTADO_DO_AUDIO.musica.querTocar = true; liberarAudio(); salvarPreferenciasDeAudio(); return; } // o primeiro clique já inicia a música
-  if (FONTES_DE_SOM.musica.estado === 'erro') reiniciarFonteDeSom(FONTES_DE_SOM.musica);   // nova tentativa
+  if (FONTES_DE_SOM.musica.estado === 'erro') { MUSICAS_COM_ERRO.clear(); reiniciarFonteDeSom(FONTES_DE_SOM.musica); }   // nova tentativa
   ESTADO_DO_AUDIO.musica.querTocar = !(ESTADO_DO_AUDIO.musica.ligado && ESTADO_DO_AUDIO.musica.querTocar && tocando(FONTES_DE_SOM.musica));
   if (!ESTADO_DO_AUDIO.musica.ligado) ESTADO_DO_AUDIO.musica.ligado = true;
   sincronizarMusica(); salvarPreferenciasDeAudio();
@@ -225,7 +307,7 @@ const alternarMusica = function alternarMusica() {
 const definirCategoriaDeAudio = function definirCategoriaDeAudio(categoria, ligado) {
   ESTADO_DO_AUDIO[categoria].ligado = ligado;
   if (ligado) { // religar tenta de novo arquivos que falharam
-    if (categoria === 'musica') reiniciarFonteDeSom(FONTES_DE_SOM.musica); else if (CATEGORIAS_EM_GRUPO.includes(categoria)) Object.values(FONTES_DE_SOM[categoria]).flat().forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
+    if (categoria === 'musica') { MUSICAS_COM_ERRO.clear(); reiniciarFonteDeSom(FONTES_DE_SOM.musica); } else if (CATEGORIAS_EM_GRUPO.includes(categoria)) Object.values(FONTES_DE_SOM[categoria]).flat().forEach(fonteDeSom => { if (fonteDeSom.estado === 'erro') reiniciarFonteDeSom(fonteDeSom); }); else reiniciarFonteDeSom(FONTES_DE_SOM[categoria]);
   }
   if (categoria === 'musica') sincronizarMusica(); else if (!CATEGORIAS_EM_GRUPO.includes(categoria)) sincronizarAmbiente(categoria);
   aoMudarOAudio(); salvarPreferenciasDeAudio();
@@ -233,7 +315,12 @@ const definirCategoriaDeAudio = function definirCategoriaDeAudio(categoria, liga
 // Define o volume de uma categoria e aplica na hora aos sons que já tocam.
 const definirVolumeDaCategoria = function definirVolumeDaCategoria(categoria, volume) {
   ESTADO_DO_AUDIO[categoria].volume = limitarVolume(volume);
-  if (categoria === 'musica') sincronizarMusica(); else if (!CATEGORIAS_EM_GRUPO.includes(categoria)) sincronizarAmbiente(categoria);
+  if (categoria === 'musica') {
+    sincronizarMusica();
+    if (trilhaEspecialAtiva && FONTES_DE_SOM.segredos[trilhaEspecialAtiva] && AUDIO_CONFIG.segredos[trilhaEspecialAtiva]) {
+      FONTES_DE_SOM.segredos[trilhaEspecialAtiva].el.volume = limitarVolume(ESTADO_DO_AUDIO.musica.volume * AUDIO_CONFIG.segredos[trilhaEspecialAtiva].volume);
+    }
+  } else if (!CATEGORIAS_EM_GRUPO.includes(categoria)) sincronizarAmbiente(categoria);
   salvarPreferenciasDeAudio();
 };
 
@@ -304,15 +391,60 @@ const tocarEfeito = function tocarEfeito(nome, posicao) {
   tocarSom(fonteDeSom, ESTADO_DO_AUDIO.efeitos.volume * configuracao.volume * fator);
   return true;
 };
-// Segredos (AUDIO_CONFIG.segredos): toca o som do segredo descoberto, sem repetir enquanto ele ainda está tocando.
-const tocarSegredo = function tocarSegredo(nome) {
+const pararEfeito = function pararEfeito(nome) {
+  const entrada = FONTES_DE_SOM.efeitos[nome];
+  if (!entrada) return;
+  const lista = Array.isArray(entrada) ? entrada : [entrada];
+  for (const fonteDeSom of lista) {
+    pararSom(fonteDeSom);
+    try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
+  }
+};
+// Segredos (AUDIO_CONFIG.segredos): toca o som ou trilha do segredo descoberto, sem repetir enquanto ainda está tocando.
+// unicornioTrilha e trilha (aliens) pausam temporariamente a música de fundo e respeitam o volume da categoria música.
+// pegarvaca sorteia um dos mugidos da vaca já carregados em FONTES_DE_SOM.animais.vaca.
+const tocarSegredo = function tocarSegredo(nome, posicao) {
   const fonteDeSom = FONTES_DE_SOM.segredos[nome], configuracao = AUDIO_CONFIG.segredos[nome];
+  if (!configuracao) return false;
+  if (nome === 'pegarvaca') {
+    if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.animais.ligado || !ESTADO_DO_AUDIO.animais.individuais.vaca) return false;
+    const disponiveis = (FONTES_DE_SOM.animais.vaca || []).filter(f => f.estado !== 'erro');
+    const mugido = disponiveis.length ? disponiveis[Math.floor(Math.random() * disponiveis.length)] : fonteDeSom;
+    if (!mugido || mugido.estado === 'erro') return false;
+    const distMax = configuracao.distanciaMaxima ?? 90;
+    const fator = posicao ? Math.max(0.25, 1 - Math.hypot(alvoAtualDaCamera.x - posicao[0], alvoAtualDaCamera.z - posicao[1]) / distMax) : 1;
+    try { mugido.el.currentTime = 0; mugido.el.playbackRate = 1.08; } catch (erro) { }
+    tocarSom(mugido, ESTADO_DO_AUDIO.animais.volume * configuracao.volume * fator);
+    return true;
+  }
   if (!fonteDeSom || tocando(fonteDeSom)) return false;
   if (fonteDeSom.estado === 'erro') { console.info('[áudio] segredo "' + nome + '": arquivo ausente (' + fonteDeSom.arquivo + ')'); return false; }
+  if (nome === 'unicornioTrilha' || nome === 'trilha') {
+    if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.musica.ligado) return false;
+    trilhaEspecialAtiva = nome;
+    sincronizarMusica();
+    fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
+    try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
+    tocarSom(fonteDeSom, ESTADO_DO_AUDIO.musica.volume * configuracao.volume).then(ok => {
+      if (!ok && trilhaEspecialAtiva === nome) { trilhaEspecialAtiva = null; sincronizarMusica(); }
+    });
+    return true;
+  }
+  if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.efeitos.ligado) return false;
+  const distMax = configuracao.distanciaMaxima ?? 90;
+  const fator = posicao ? Math.max(0.15, 1 - Math.hypot(alvoAtualDaCamera.x - posicao[0], alvoAtualDaCamera.z - posicao[1]) / distMax) : 1;
   fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
   try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
-  tocarSom(fonteDeSom, configuracao.volume);
+  tocarSom(fonteDeSom, ESTADO_DO_AUDIO.efeitos.volume * configuracao.volume * fator);
   return true;
+};
+const pararSegredo = function pararSegredo(nome) {
+  const fonteDeSom = FONTES_DE_SOM.segredos[nome];
+  if (fonteDeSom) { pararSom(fonteDeSom); try { fonteDeSom.el.currentTime = 0; } catch (erro) { } }
+  if (trilhaEspecialAtiva === nome) {
+    trilhaEspecialAtiva = null;
+    sincronizarMusica();
+  }
 };
 
 // ---- Fazenda 8.4.1: liberação no primeiro gesto natural ----

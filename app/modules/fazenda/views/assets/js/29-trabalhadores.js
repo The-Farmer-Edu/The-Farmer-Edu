@@ -339,10 +339,19 @@
         if (monstro) {
           entidade.alvo = monstro; entidade.estado = 'combatendo';
           const distancia = Math.hypot(monstro.x - entidade.x, monstro.z - entidade.z), planejado = entidade.ultimoAlvoPlanejado;
-          if (distancia > classe.alcance && (!entidade.caminho || entidade.indice >= entidade.caminho.length || !planejado || Math.hypot(planejado[0] - monstro.x, planejado[1] - monstro.z) > 1.2)) {
-            const caminho = GRADE_DAS_PESSOAS.acharCaminho(entidade.x, entidade.z, monstro.x, monstro.z);
-            if (caminho) { entidade.caminho = caminho; entidade.indice = 0; entidade.ultimoAlvoPlanejado = [monstro.x, monstro.z]; }
-            else { entidade.caminho = [[monstro.x, monstro.z]]; entidade.indice = 0; entidade.ultimoAlvoPlanejado = [monstro.x, monstro.z]; }   // vai direto (passoDoMob não entra em células bloqueadas)
+          // Ajuste do estábulo (só nos alvos de INVASOES_CONFIG.ladoDeAtaquePorAlvo com guardasEsperamNoPontoDeAtaque): enquanto a
+          // criatura ainda está a caminho da instalação e longe (> 12), o GUARDA vai esperá-la no ponto de ataque dela, em vez de
+          // perseguir a posição atual (que o fazia contornar a instalação por trás e chegar depois do ataque começar). Perto, persegue.
+          const ajusteDoAlvo = entidade.dados.classe === 'guarda' && monstro.daInvasao && !monstro.alvo && !monstro.chegou && monstro.ataque && distancia > 12 && INVASAO_EM_CURSO.dados && (INVASOES_CONFIG.ladoDeAtaquePorAlvo || {})[INVASAO_EM_CURSO.dados.alvo];
+          const [destinoX, destinoZ] = ajusteDoAlvo && ajusteDoAlvo.guardasEsperamNoPontoDeAtaque ? monstro.ataque : [monstro.x, monstro.z];
+          if (distancia > classe.alcance && (!entidade.caminho || entidade.indice >= entidade.caminho.length || !planejado || Math.hypot(planejado[0] - destinoX, planejado[1] - destinoZ) > 1.2)) {
+            let caminho = GRADE_DAS_PESSOAS.acharCaminho(entidade.x, entidade.z, destinoX, destinoZ);
+            // Finalização das invasões: a criatura pode estar numa célula que é livre na grade dos monstros (células de 0,7, margem do rio
+            // 3,4) e bloqueada na das pessoas (0,6 e 5,2), como nos pontos de ataque ao redor do estábulo. Sem caminho até ela, o
+            // trabalhador vai até a célula livre mais próxima dela (antes ia em linha reta e parava na primeira cerca, longe do combate).
+            if (!caminho) { const [livreX, livreZ] = GRADE_DAS_PESSOAS.centro(GRADE_DAS_PESSOAS.maisProxima(destinoX, destinoZ)); caminho = GRADE_DAS_PESSOAS.acharCaminho(entidade.x, entidade.z, livreX, livreZ); }
+            if (caminho) { entidade.caminho = caminho; entidade.indice = 0; entidade.ultimoAlvoPlanejado = [destinoX, destinoZ]; }
+            else { entidade.caminho = [[destinoX, destinoZ]]; entidade.indice = 0; entidade.ultimoAlvoPlanejado = [destinoX, destinoZ]; }   // vai direto (passoDoMob não entra em células bloqueadas)
           }
           return;
         }

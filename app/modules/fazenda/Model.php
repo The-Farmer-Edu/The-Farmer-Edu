@@ -25,6 +25,7 @@ class FazendaModel
 
     private const LIMITE_DO_ESTADO_BYTES = 1000000;
     private const LIMITE_DE_IDS_POR_SAVE = 500;
+    private const NIVEL_MAXIMO = 3;   // mesmo valor de NIVEL_MAXIMO em 01-configuracoes-gerais.js
 
     // tipo de cada área em elementos_fazenda.tipo (área desconhecida entra como 'construcao').
     private const TIPO_DAS_AREAS = [
@@ -319,6 +320,13 @@ class FazendaModel
         }
         if (!isset($estado['xp']) || !is_numeric($estado['xp'])) {
             throw new InvalidArgumentException('Save da fazenda inválido (XP).');
+        }
+        // Nível de cada área: inteiro de 0 (não construída) a NIVEL_MAXIMO (3). Antes qualquer número era aceito (ex.: 99), e o
+        // elementos_fazenda guardaria um nível que o jogo não tem.
+        foreach ($estado['niveis'] as $codigo => $nivel) {
+            if (!is_numeric($nivel) || $nivel < 0 || $nivel > self::NIVEL_MAXIMO || (float) $nivel !== floor((float) $nivel)) {
+                throw new InvalidArgumentException('Save da fazenda inválido (nível de "' . mb_substr((string) $codigo, 0, 30) . '").');
+            }
         }
         return $estado;
     }

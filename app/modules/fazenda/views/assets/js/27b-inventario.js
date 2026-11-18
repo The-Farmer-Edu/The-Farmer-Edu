@@ -53,19 +53,22 @@
         }).join('');
       };
       const abrirInventario = function abrirInventario() {
-        fecharMenuEPaineis(); definirGavetaAberta(false);
+        if (!janelaDoInventario.hidden) return;
+        fecharMenuEPaineis(true);
+        if (typeof definirGavetaAberta === 'function') definirGavetaAberta(false, true);
         janelaDoInventario.hidden = false; botaoDoInventario.setAttribute('aria-expanded', 'true');
         desenharInventario(true); tocarEfeito('Enter');
         selecionar('#fechar-inventario').focus();
       };
-      const fecharInventario = function fecharInventario() {
+      const fecharInventario = function fecharInventario(silencioso = false) {
         if (janelaDoInventario.hidden) return;
-        janelaDoInventario.hidden = true; botaoDoInventario.setAttribute('aria-expanded', 'false'); tocarEfeito('Fecha');
+        janelaDoInventario.hidden = true; botaoDoInventario.setAttribute('aria-expanded', 'false');
+        if (!silencioso) tocarEfeito('Fecha');
       };
-      botaoDoInventario.addEventListener('click', () => { if (janelaDoInventario.hidden) abrirInventario(); else fecharInventario(); });
-      selecionar('#fechar-inventario').addEventListener('click', fecharInventario);
-      janelaDoInventario.addEventListener('click', evento => { if (evento.target === janelaDoInventario) fecharInventario(); });
-      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDoInventario.hidden) fecharInventario(); });
+      botaoDoInventario.addEventListener('click', () => { if (janelaDoInventario.hidden) abrirInventario(); else fecharInventario(false); });
+      selecionar('#fechar-inventario').addEventListener('click', () => fecharInventario(false));
+      janelaDoInventario.addEventListener('click', evento => { if (evento.target === janelaDoInventario) fecharInventario(false); });
+      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDoInventario.hidden) fecharInventario(false); });
       // Chamada pelo loop (seção 30b): só trabalha com a janela aberta e só redesenha quando alguma quantidade muda.
       const atualizarInventario = function atualizarInventario() { if (!janelaDoInventario.hidden) desenharInventario(false); };
 

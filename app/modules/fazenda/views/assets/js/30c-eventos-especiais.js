@@ -354,6 +354,10 @@
         if (grupoDaArea.curral) grupoDaArea.curral.traverse(objeto => { if (objeto.userData && objeto.userData.animal === 'vaca') vacas.push(objeto); });
         return vacas.length ? vacas[Math.floor(Math.random() * vacas.length)] : null;
       };
+      // "Ocupado" = algo que de fato prende a atenção do jogador: painel do Guardião aberto ou aba escondida. O cartão do TUTORIAL não conta:
+      // ele não bloqueia o jogo, abre sozinho na primeira visita de cada navegador e pode ficar aberto por muito tempo. Contando-o, a abdução,
+      // o clique na vaca (ET) e o botão de teste respondiam "O jogador está ocupado." (ou não faziam nada) enquanto o tutorial estivesse na tela.
+      const jogadorOcupado = () => !painelDoGuardiao.hidden || document.hidden;
       // Pode acontecer agora? (todas as regras de segurança juntas; usada pelo sorteio e pelo botão de teste)
       const motivoParaNaoAbduzir = function motivoParaNaoAbduzir(ignorarIntervalo = false) {
         const C = EVENTOS_ESPECIAIS_CONFIG.abducao, registro = estado.eventosEspeciais.alienigena;
@@ -363,7 +367,7 @@
         if (animaisVivosDaArea('curral') < C.vacasMinimas) return 'Não há vaca no curral agora.';
         if (!ignorarIntervalo && registro.ultimoEm && Date.now() - registro.ultimoEm < C.horasDeIntervaloMinimo * 3600000) return 'Intervalo mínimo entre abduções ainda não passou.';
         if (typeof INVASAO_EM_CURSO !== 'undefined' && INVASAO_EM_CURSO.fase !== 'nenhuma') return 'Há uma invasão em andamento.';
-        if (!painelDoGuardiao.hidden || !selecionar('#tutorial').hidden || document.hidden) return 'O jogador está ocupado.';
+        if (jogadorOcupado()) return 'O jogador está ocupado.';
         return '';
       };
       // Etapa 1 — abdução TEMPORÁRIA. Tira a vaca do curral só por segundosParaVoltar: ela conta como abduzida (seção 05: não aparece,
@@ -572,7 +576,7 @@
         if (estado.eventosEspeciais.alienigena.vacaAusente) return 'Uma abdução está em andamento.';   // espera a vaca voltar
         if (!estado.niveis.curral || instalacaoDestruida('curral')) return 'Não há curral.';
         if (typeof INVASAO_EM_CURSO !== 'undefined' && INVASAO_EM_CURSO.fase !== 'nenhuma') return 'Há uma invasão em andamento.';
-        if (!painelDoGuardiao.hidden || !selecionar('#tutorial').hidden || document.hidden) return 'O jogador está ocupado.';
+        if (jogadorOcupado()) return 'O jogador está ocupado.';
         if (!ignorarIntervalo && registro.ultimaEm && Date.now() - registro.ultimaEm < C.minutosEntreAparicoes * 60000) return 'O ET ainda não voltou (intervalo mínimo).';
         return '';
       };

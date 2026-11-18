@@ -28,7 +28,9 @@
         maximoDeMobsSimultaneos: 6,         // teto de segurança para o desempenho
         instalacoesElegiveis: ['celeiro', 'estabulo', 'ovelhal', 'curral', 'galinheiro', 'chiqueiro', 'maquinario'], // casa, ponte, plantações e cenário nunca são alvo
         tiposDeMob: ['zumbi', 'esqueleto', 'vampiro'],
-        custoDeReparoPorNivel: [150, 400, 800], // XP para reconstruir uma instalação destruída (índice = nível preservado − 1); progressão de 1 ano (8.4.1): antes [60, 150, 250]
+        // XP para reconstruir uma instalação destruída (índice = nível preservado − 1). Rebalanceamento: antes [150, 400, 800] (e
+        // [60, 150, 250] antes da 8.4.1). Acompanha a queda dos custos das construções: reparar continua mais barato que reconstruir.
+        custoDeReparoPorNivel: [100, 250, 450],
         atrasoAposCarregarSegundos: 3,      // tempo entre abrir a fazenda e as criaturas aparecerem
         tempoMaximoDeChegadaSegundos: 45,   // se alguma criatura travar, o ataque começa mesmo assim
         duracaoDoAtaqueSegundos: 9,         // tempo de ataque antes da instalação desabar

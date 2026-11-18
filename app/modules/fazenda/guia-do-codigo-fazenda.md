@@ -538,3 +538,25 @@ cena (Scene)
 ```
 
 Cada peça visível é um `Mesh` (geometria + material) criado por `criarCaixa` ou `criarCilindro`, posicionado com `position.set(x, y, z)` e adicionado ao grupo com `.add()`.
+
+---
+
+## 17. Guardião da Mina e troca de minérios
+
+O módulo `28b-troca-de-minerios.js`, carregado logo depois da mineração em `fazenda.js`, cria um personagem original na entrada da caverna. Um clique curto sobre ele abre o diálogo; arrastar a câmera não conta como interação.
+
+`TROCA_DE_MINERIOS_CONFIG`, em `01-configuracoes-gerais.js`, concentra a taxa (inicialmente 1 minério = 1 XP) e os botões de quantidade rápida. O diálogo mostra o estoque, a cota diária restante e a quantidade máxima conversível. Uma troca passa por revisão e confirmação; o código valida estoque e cota novamente antes de creditar.
+
+As trocas chamam `creditarXP` com origem `fazenda`, a mesma origem usada pela mina, colheitas e monstros. Portanto, **o limite diário continua sendo 100 XP somados**, não 100 XP mais uma cota adicional. A mineração mantém os valores originais: a cada 40 minutos, os níveis 1, 2 e 3 dão, respectivamente, 20, 35 e 50 XP, além de 3, 5 e 8 minérios. Se todos esses minérios forem convertidos, a capacidade teórica por ciclo passa para 23, 40 e 58 XP (+15%, +14,3% e +16%). Isso pode fazer a fazenda alcançar a cota diária mais cedo, mas não permite ultrapassá-la; por isso, a taxa inicial 1:1 é compatível com o limite compartilhado, sem alterar a recompensa da mina.
+
+Se a gravação falhar, os saldos e o contador diário da troca são restaurados, e os minérios não são descontados. `salvarProgresso()` retorna sucesso ou falha e registra a falha no console.
+
+## 18. Lenhador, árvores coletáveis e madeira
+
+`29b-lenhador.js` é executado depois dos trabalhadores e não adiciona o lenhador ao estado da equipe, à grade de trabalhadores ou aos sistemas de combate. Seu modelo e a pequena quantidade de árvores coletáveis são objetos 3D comuns; a floresta de grande porte continua usando `InstancedMesh`.
+
+Os valores de produção ficam em `LENHADOR_CONFIG`, em `01-configuracoes-gerais.js`: 5 madeiras, 8 segundos de corte, 60 segundos de reaparecimento, uma coleta simultânea, uma árvore por ordem e três pontos coletáveis. Os locais usam `podeColocarArvore`, `REGISTRO_DE_ARVORES` e a grade de navegação para evitar construções, árvores existentes, rio e caminhos. O lenhador caminha pelo caminho A* existente, corta, credita uma recompensa salva uma única vez e retorna à casa.
+
+`madeira` é normalizada junto dos recursos existentes em `05-progresso-e-salvamento.js`; saves antigos recebem 0 sem perder os demais dados. O estado opcional `arvoresColetaveis` guarda os instantes de reaparecimento, sem exigir troca de versão ou reestruturação do save. A madeira aparece na barra e no painel Fazenda.
+
+Os dois diálogos usam a moldura de papel e madeira da interface existente (`fazenda.html` e `05-paineis.css`). O loop de `30b-integracao-e-paineis.js` atualiza a troca, o lenhador e os temporizadores das árvores.

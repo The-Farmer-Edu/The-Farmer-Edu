@@ -55,9 +55,11 @@
         }
         alvoAtualDaCamera.lerp(alvoDestinoDaCamera, 0.06);
         posicionarCamera();
+        aplicarCameraDosEventos();                                       // Etapa 2 (seção 30c): mistura a câmera da cena especial (peso 0 = órbita normal)
         atualizarCeu(tempo);
-        contadorDeQuadrosDaSombra = (contadorDeQuadrosDaSombra + 1) % INTERVALO_DE_QUADROS_DA_SOMBRA;
+        contadorDeQuadrosDaSombra = (contadorDeQuadrosDaSombra + 1) % quadrosEntreAsSombras();   // Etapa 0: 2 (alto), 3 (médio)
         if (renderizador.shadowMap.enabled && contadorDeQuadrosDaSombra === 0) renderizador.shadowMap.needsUpdate = true;
+        atualizarDesempenho(segundosDesdeUltimoFrame);                    // Etapa 0 (seção 30d): mesclagem vigiada e qualidade automática
         renderizador.render(cena, camera);
       };
       let contadorDeQuadrosDaSombra = 0;

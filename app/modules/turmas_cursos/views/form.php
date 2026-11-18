@@ -1,97 +1,22 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>The Farmer Edu - Turmas de <?= e($curso['nome_curso']) ?></title>
-</head>
-<body>
-    <?php require __DIR__ . '/partials/cabecalho.php'; ?>
-
-    <main>
-        <h1>Turmas - <?= e($curso['nome_curso']) ?></h1>
-        <p><a href="<?= $base ?>/turmas_cursos/cursos">Voltar para Cursos</a></p>
-        <?php if ($curso['descricao']): ?><p><?= e($curso['descricao']) ?></p><?php endif; ?>
-        <?php if ($msg): ?><p><strong><?= e($msg) ?></strong></p><?php endif; ?>
-        <?php if ($erro): ?><p><strong><?= e($erro) ?></strong></p><?php endif; ?>
-
-        <section aria-labelledby="nova-turma-titulo">
-            <h2 id="nova-turma-titulo">Nova turma</h2>
-            <form method="POST" action="<?= $base ?>/turmas_cursos/turmaSalvar">
-                <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                <input type="hidden" name="id_curso" value="<?= (int) $curso['id_curso'] ?>">
-                <p><label>Nome da turma: <input name="nome" maxlength="100" required></label></p>
-                <p>
-                    <label>Turno:
-                        <select name="turno" required>
-                            <?php foreach (TurmaModel::TURNOS as $valor => $rotulo): ?>
-                                <option value="<?= e($valor) ?>"><?= e($rotulo) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </label>
-                </p>
-                <button type="submit">Criar turma</button>
-            </form>
-        </section>
-
-        <section aria-labelledby="turmas-ativas-titulo">
-            <h2 id="turmas-ativas-titulo">Suas turmas neste curso</h2>
-            <?php if ($turmas): ?>
-                <table>
-                    <thead>
-                        <tr><th>Turma</th><th>Turno</th><th>Alunos</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($turmas as $t): ?>
-                            <tr>
-                                <td><?= e($t['nome_turma']) ?></td>
-                                <td><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></td>
-                                <td><?= (int) $t['total_alunos'] ?></td>
-                                <td>
-                                    <a href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>">Alunos</a>
-                                    |
-                                    <a href="<?= $base ?>/turmas_cursos/turmaEditar?id=<?= (int) $t['id_turma'] ?>">Editar</a>
-                                    <form method="POST" action="<?= $base ?>/turmas_cursos/turmaArquivar">
-                                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                                        <input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>">
-                                        <button type="submit">Arquivar</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <p>Você ainda não criou turmas para este curso.</p>
-            <?php endif; ?>
-        </section>
-
-        <?php if ($arquivadas): ?>
-            <section aria-labelledby="turmas-arquivadas-titulo">
-                <h2 id="turmas-arquivadas-titulo">Turmas arquivadas</h2>
-                <table>
-                    <thead>
-                        <tr><th>Turma</th><th>Turno</th><th>Alunos</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($arquivadas as $t): ?>
-                            <tr>
-                                <td><?= e($t['nome_turma']) ?></td>
-                                <td><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></td>
-                                <td><?= (int) $t['total_alunos'] ?></td>
-                                <td>
-                                    <a href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>">Ver alunos</a>
-                                    <form method="POST" action="<?= $base ?>/turmas_cursos/turmaRestaurar">
-                                        <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
-                                        <input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>">
-                                        <button type="submit">Restaurar</button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </section>
-        <?php endif; ?>
-    </main>
-</body>
-</html>
+<?php
+$tituloPagina = 'Turmas de ' . $curso['nome_curso'];
+$abrirModal = $abrirModal ?? '';
+require __DIR__ . '/partials/head.php';
+?>
+<main class="page-main">
+    <div class="page-heading"><div><span class="page-kicker">Gerenciamento do curso</span><h1><?= e($curso['nome_curso']) ?></h1><?php if (!empty($curso['descricao'])): ?><p><?= e($curso['descricao']) ?></p><?php else: ?><p>Gerencie as turmas vinculadas a este curso.</p><?php endif; ?></div><a href="<?= $base ?>/turmas_cursos/cursos" class="btn btn-outline-theme"><i class="bi bi-arrow-left me-2"></i>Voltar aos cursos</a></div>
+    <?php if (!empty($msg)): ?><div class="alert alert-success flash-message"><?= e($msg) ?></div><?php endif; ?>
+    <?php if (!empty($erro)): ?><div class="alert alert-danger flash-message"><?= e($erro) ?></div><?php endif; ?>
+    <div class="card-grid">
+        <?php foreach ($turmas as $t): ?>
+            <article class="course-card"><a class="text-reset" href="<?= $base ?>/turmas_cursos/turma?id=<?= (int) $t['id_turma'] ?>"><div class="course-card__title"><?= e($t['nome_turma']) ?></div><div class="course-card__cover"><?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma"><?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($curso['nome_curso']) ?></span></div><?php endif; ?></div></a>
+                <div class="course-card__body"><div class="course-card__meta"><span><i class="bi bi-people"></i><?= (int) $t['total_alunos'] ?> aluno(s)</span><span><i class="bi bi-clock"></i><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></span></div><div class="course-card__actions"><a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/turmaPessoas?id=<?= (int) $t['id_turma'] ?>" aria-label="Ver alunos"><i class="bi bi-people"></i></a><a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/turmaEditar?id=<?= (int) $t['id_turma'] ?>" aria-label="Editar turma"><i class="bi bi-pencil"></i></a><form method="post" action="<?= $base ?>/turmas_cursos/turmaArquivar" data-confirm="Deseja arquivar esta turma? Ela poderá ser restaurada depois."><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>"><button class="btn btn-outline-danger" type="submit" aria-label="Arquivar turma" title="Arquivar turma"><i class="bi bi-archive"></i></button></form></div></div>
+            </article>
+        <?php endforeach; ?>
+        <button class="add-card" type="button" data-bs-toggle="modal" data-bs-target="#modalTurma"><span class="add-card__icon"><i class="bi bi-plus-lg"></i></span><span>Adicionar Turma</span></button>
+    </div>
+    <?php if (!$turmas): ?><div class="empty-state mt-3"><i class="bi bi-collection"></i><strong>Nenhuma turma ativa neste curso.</strong><div>Adicione uma turma para começar.</div></div><?php endif; ?>
+    <?php if ($arquivadas): ?><h2 class="section-heading">Turmas arquivadas</h2><div class="card-grid"><?php foreach ($arquivadas as $t): ?><article class="course-card archived-card"><div class="course-card__title"><?= e($t['nome_turma']) ?> · Arquivada</div><div class="course-card__body"><span><?= (int) $t['total_alunos'] ?> aluno(s)</span><form method="post" action="<?= $base ?>/turmas_cursos/turmaRestaurar" data-confirm="Deseja restaurar esta turma?"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="id_turma" value="<?= (int) $t['id_turma'] ?>"><button class="btn btn-outline-theme btn-sm">Restaurar</button></form></div></article><?php endforeach; ?></div><?php endif; ?>
+</main>
+<div class="modal fade" id="modalTurma" tabindex="-1" aria-labelledby="modalTurmaTitulo" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-lg"><div class="modal-content"><form method="post" action="<?= $base ?>/turmas_cursos/turmaSalvar" enctype="multipart/form-data"><div class="modal-header"><h2 class="modal-title" id="modalTurmaTitulo">Adicionar Turma</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div><div class="modal-body"><input type="hidden" name="csrf" value="<?= e($csrf) ?>"><input type="hidden" name="id_curso" value="<?= (int) $curso['id_curso'] ?>"><div class="mb-3"><label class="form-label" for="turmaNome">Nome da Turma</label><input class="form-control" id="turmaNome" name="nome" maxlength="100" required></div><div class="mb-3"><label class="form-label" for="turmaTurno">Turno</label><select class="form-select" id="turmaTurno" name="turno" required><option value="">Selecione...</option><?php foreach (TurmaModel::TURNOS as $valor => $rotulo): ?><option value="<?= e($valor) ?>"><?= e($rotulo) ?></option><?php endforeach; ?></select></div><label class="form-label" for="imagemTurma">Imagem da turma</label><label class="image-dropzone w-100" for="imagemTurma"><i class="bi bi-image"></i><strong data-image-label>Adicione uma imagem de até 5 MB, preferencialmente WEBP</strong><small>JPG, PNG ou WEBP</small><img id="imagePreview" class="image-preview d-none" alt="Prévia da imagem"></label><input class="visually-hidden" id="imagemTurma" type="file" name="imagem_turma" accept="image/jpeg,image/png,image/webp" data-image-input data-preview-target="imagePreview" data-label-target="[data-image-label]"></div><div class="modal-footer"><button class="btn btn-theme" type="submit">Salvar</button><button class="btn btn-muted" type="button" data-bs-dismiss="modal">Cancelar</button></div></form></div></div></div>
+<?php require __DIR__ . '/partials/rodape.php'; ?>

@@ -75,7 +75,7 @@
       const arvoresDeMadeira = POSICOES_DAS_ARVORES_DE_CORTE.map(([x, z, escala], indice) => {
         const id = 'arvore-' + (indice + 1);
         const raiz = new THREE.Group(); raiz.position.set(x, 0, z); grupoDoAcampamento.add(raiz);
-        const copa = criarArvore(raiz, 0, 0, escala);                                                       // tronco + 3 cones (a parte que cai)
+        const copa = criarArvore(raiz, 0, 0, escala);                                                      // tronco + 3 cones (a parte que cai)
         const toco = new THREE.Group(); raiz.add(toco);
         criarCilindro(0.17 * escala, 0.21 * escala, 0.32, 0x6b4a2b, 0, 0.16, 0, toco, 7);
         criarCilindro(0.15 * escala, 0.15 * escala, 0.02, 0xd8b27a, 0, 0.33, 0, toco, 7);
@@ -94,7 +94,7 @@
           bota: 0x2a1a10, cabelo: 0x3a2616, barba: 0x3a2616, chapeu: 'vaqueiro', corChapeu: 0x7a4a2a, fita: 0xd5b56d,
         }),
         x: POSTO_DO_LENHADOR.x, z: POSTO_DO_LENHADOR.z, rot: POSTO_DO_LENHADOR.giro, fase: 'parado', destino: null,
-        arvoreAlvo: null, tempoDaFase: 0, passo: 0,
+        arvoreAlvo: null, tempoDaFase: 0, passo: 0, ultimoGolpeSonoro: -1,
       };
       grupoDoAcampamento.add(lenhador.modelo.raiz);
       {
@@ -176,7 +176,7 @@
         mensagemDoLenhador = '';
         dialogoDoLenhador.hidden = false;
         atualizarDialogoDoLenhador();
-        tocarEfeito('Enter');
+        tocarEfeito('lenhador', [ACAMPAMENTO_DO_LENHADOR.x + lenhador.x, ACAMPAMENTO_DO_LENHADOR.z + lenhador.z]);
         (botaoDeColetarMadeira.disabled ? selecionar('#dispensar-lenhador') : botaoDeColetarMadeira).focus();
       };
       const fecharDialogoDoLenhador = () => { dialogoDoLenhador.hidden = true; };
@@ -194,7 +194,7 @@
         if (!escolhida) { mensagemDoLenhador = 'Não há árvore disponível agora. Espere uma rebrotar.'; atualizarDialogoDoLenhador(); return false; }
         coletaDeMadeiraEmAndamento = true;
         escolhida.emUso = true;
-        lenhador.arvoreAlvo = escolhida; lenhador.destino = escolhida.pontoDeCorte; lenhador.fase = 'indo'; lenhador.tempoDaFase = 0;
+        lenhador.arvoreAlvo = escolhida; lenhador.destino = escolhida.pontoDeCorte; lenhador.fase = 'indo'; lenhador.tempoDaFase = 0; lenhador.ultimoGolpeSonoro = -1;
         mensagemDoLenhador = '';
         registrarAtividade();
         atualizarDialogoDoLenhador();
@@ -217,7 +217,8 @@
           return false;
         }
         arvore.disponivelEm = rebrotaEm; arvore.copa.visible = false; arvore.copa.quaternion.identity(); arvore.toco.visible = true;
-        atualizarResumoDeRecursos(); desenharCards(); tocarEfeito('colher');
+        atualizarResumoDeRecursos(); desenharCards();
+        tocarEfeito('colher', [ACAMPAMENTO_DO_LENHADOR.x + arvore.x, ACAMPAMENTO_DO_LENHADOR.z + arvore.z]);
         mostrarAviso('🪵 O lenhador entregou ' + madeira + ' madeiras. A árvore rebrota em ' + LENHADOR_CONFIG.minutosParaRebrotar + ' min.');
         avisarObjetivos('arvore', { madeira });   // Etapa 2: quadro de objetivos (seção 30e)
         return true;
@@ -237,8 +238,18 @@
         const modelo = lenhador.modelo, balanco = andando ? Math.sin(lenhador.passo) * 0.7 : 0;
         modelo.pernas[0].rotation.x = balanco; modelo.pernas[1].rotation.x = -balanco;
         if (lenhador.fase === 'cortando') {                                     // golpes: ergue o machado e desce com força
-          const golpe = (lenhador.tempoDaFase * 1.4) % 1, angulo = golpe < 0.6 ? -2.4 * (golpe / 0.6) : -2.4 + 2.6 * ((golpe - 0.6) / 0.4);
+          const progressoGolpe = lenhador.tempoDaFase * 1.4;
+          const numeroGolpe = Math.floor(progressoGolpe);
+          const golpe = progressoGolpe % 1, angulo = golpe < 0.6 ? -2.4 * (golpe / 0.6) : -2.4 + 2.6 * ((golpe - 0.6) / 0.4);
           modelo.bracos[1].rotation.x = angulo; modelo.bracos[0].rotation.x = angulo * 0.8; modelo.corpo.rotation.x = golpe < 0.6 ? -0.05 : 0.12;
+          if (golpe >= 0.65 && lenhador.ultimoGolpeSonoro !== numeroGolpe) {
+            lenhador.ultimoGolpeSonoro = numeroGolpe;
+            const alvo = lenhador.arvoreAlvo;
+            if (alvo) {
+              const efeito = numeroGolpe % 2 === 0 ? 'machado' : 'lenhador';
+              tocarEfeito(efeito, [ACAMPAMENTO_DO_LENHADOR.x + alvo.x, ACAMPAMENTO_DO_LENHADOR.z + alvo.z]);
+            }
+          }
         } else if (lenhador.fase === 'voltando') {
           modelo.bracos[0].rotation.x = -2.6; modelo.bracos[1].rotation.x = balanco * 0.6; modelo.corpo.rotation.x = 0;   // segura a tora no ombro
         } else {
@@ -268,11 +279,19 @@
         const arvore = lenhador.arvoreAlvo;
         if (lenhador.fase === 'indo') {
           andando = true;
-          if (andarAte(lenhador.destino, segundosDesdeUltimoFrame)) { lenhador.fase = 'cortando'; lenhador.tempoDaFase = 0; }
+          if (andarAte(lenhador.destino, segundosDesdeUltimoFrame)) { lenhador.fase = 'cortando'; lenhador.tempoDaFase = 0; lenhador.ultimoGolpeSonoro = -1; }
         } else if (lenhador.fase === 'cortando') {
           lenhador.rot += normalizarAngulo(Math.atan2(arvore.x - lenhador.x, arvore.z - lenhador.z) - lenhador.rot) * Math.min(1, segundosDesdeUltimoFrame * 8);
           arvore.copa.rotation.z = Math.sin(lenhador.tempoDaFase * 9) * 0.012;      // a árvore treme com os golpes
-          if (lenhador.tempoDaFase >= LENHADOR_CONFIG.segundosDeCorte) { arvore.copa.rotation.z = 0; lenhador.fase = 'derrubando'; lenhador.tempoDaFase = 0; arvore.toco.visible = true; }
+          if (lenhador.tempoDaFase >= LENHADOR_CONFIG.segundosDeCorte) {
+            arvore.copa.rotation.z = 0;
+            lenhador.fase = 'derrubando';
+            lenhador.tempoDaFase = 0;
+            arvore.toco.visible = true;
+            pararEfeito('machado');
+            pararEfeito('lenhador');
+            tocarEfeito('quedaArvore', [ACAMPAMENTO_DO_LENHADOR.x + arvore.x, ACAMPAMENTO_DO_LENHADOR.z + arvore.z]);
+          }
         } else if (lenhador.fase === 'derrubando') {
           // a árvore tomba para longe do lenhador (gira em torno da base), acelerando como uma queda de verdade
           const fracao = Math.min(1, lenhador.tempoDaFase / LENHADOR_CONFIG.segundosDaQueda);

@@ -293,6 +293,7 @@
       const coletarProducao = function coletarProducao(idDaArea) {
         const situacao = estado.animais[idDaArea], produto = PRODUCAO_DOS_ANIMAIS.produtos[idDaArea];
         if (!situacao || !produto || !estado.niveis[idDaArea]) return 0;
+        if (instalacaoDestruida(idDaArea)) { mostrarAviso(nomeDaArea(idDaArea) + ' está destruído. Repare-o no cartão para voltar a coletar (a produção guardada continua lá).'); return 0; }   // finalização das invasões
         atualizarAlimentacao();
         const inteiros = Math.floor(situacao.produtos || 0);
         if (!inteiros) { mostrarAviso(produto.icone + ' Ainda não há ' + produto.nome + ' para coletar em ' + nomeDaArea(idDaArea) + '. Os animais produzem enquanto têm comida.'); return 0; }
@@ -309,6 +310,7 @@
       const alimentarAnimais = function alimentarAnimais(idDaArea) {
         const informacao = ANIMAIS_DAS_AREAS[idDaArea], situacao = estado.animais[idDaArea];
         if (!informacao || !estado.niveis[idDaArea]) { mostrarAviso('Construa ' + nomeDaArea(idDaArea) + ' primeiro.'); return; }
+        if (instalacaoDestruida(idDaArea)) { mostrarAviso(nomeDaArea(idDaArea) + ' está destruído. Repare-o no cartão antes de alimentar os animais.'); return; }   // finalização das invasões
         if (animaisVivosDaArea(idDaArea) <= 0) { mostrarAviso('Não há animais vivos em ' + nomeDaArea(idDaArea) + '. Reponha os animais primeiro.'); return; }
         atualizarAlimentacao();
         if (situacao.comida >= 99) { mostrarAviso('O cocho de ' + nomeDaArea(idDaArea) + ' já está cheio.'); return; }
@@ -323,6 +325,7 @@
       const reporAnimal = function reporAnimal(idDaArea) {
         const situacao = estado.animais[idDaArea], custo = ALIMENTACAO_CONFIG.custoParaReporAnimal;
         if (!situacao || (situacao.mortos | 0) <= 0 || animaisVivosDaArea(idDaArea) >= totalDeAnimais(idDaArea)) return;   // Etapa 1: só mortos (a vaca abduzida volta sozinha, sem custo)
+        if (instalacaoDestruida(idDaArea)) { mostrarAviso(nomeDaArea(idDaArea) + ' está destruído. Repare-o no cartão antes de repor os animais.'); return; }   // finalização das invasões
         if (estado.xp < custo) { mostrarAviso('XP insuficiente para repor o animal: faltam ' + (custo - estado.xp) + ' XP.'); return; }
         estado.xp -= custo; situacao.mortos--;
         situacao.saude = Math.max(situacao.saude, 70);

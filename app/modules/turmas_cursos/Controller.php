@@ -20,7 +20,7 @@ class CursosController
 
     public function inicio(): void
     {
-        solicitarLogin();
+        // solicitarLogin();
         $this->ir('turmas_cursos/' . usuarioLogado()['perfilAcesso']);
     }
 
@@ -42,7 +42,7 @@ class CursosController
     // cursos que possuem turmas em que ele está matriculado.
     public function cursos(): void
     {
-        solicitarLogin();
+        // solicitarLogin();
         $u = usuarioLogado();
         solicitarPerfilDeAcesso($u['perfilAcesso']);
         $instrutor = $u['perfilAcesso'] === 'instrutor';
@@ -411,7 +411,7 @@ class CursosController
 
     public function imagemTurma(): void
     {
-        solicitarLogin();
+        // solicitarLogin();
         $u = usuarioLogado();
         solicitarPerfilDeAcesso($u['perfilAcesso']);
         $idTurma = (int) ($_GET['id'] ?? 0);

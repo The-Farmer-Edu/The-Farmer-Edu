@@ -46,7 +46,8 @@
                     <li><a href="#equipe">Equipe</a></li>
                 </ul>
                 <div class="nav-cta">
-                    <a class="btn btn-outline" href="#" style="padding:11px 24px;font-size:15px;">Entrar</a>
+                    <a class="btn btn-outline" href="auth/novoUsuario" style="padding:11px 24px;font-size:15px;">Cadastrar</a>
+                    <a class="btn btn-outline" href="auth/loginAluno" style="padding:11px 24px;font-size:15px;">Entrar</a>
                 </div>
                 <button class="menu-btn" aria-label="Abrir menu"><span></span><span></span><span></span></button>
             </nav>

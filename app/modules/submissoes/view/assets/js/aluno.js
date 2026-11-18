@@ -1,7 +1,7 @@
 function renderizarAtividade() {
-    const A = window.FarmAtividade;
-    if (!A) return;
-    if (A.vazia) {
+    const atividadeAtual = window.FarmAtividade;
+    if (!atividadeAtual) return;
+    if (atividadeAtual.vazia) {
         // sem atividade: deixa os quadros em branco
         document.querySelectorAll('.atv-sub, .atv-meta').forEach(e => e.style.display = 'none');
         return;
@@ -37,8 +37,8 @@ renderizarAtividade();
 /*  Status da entrega, prazo e botão principal  */
 // A entrega é guardada por atividade
 const CHAVE_ENTREGA = 'farmedu:entrega:' + window.FarmAtividade.chave;
-const status = document.querySelector('.status');
-const texto = document.getElementById('texto');
+const elementoStatus = document.querySelector('.status');
+const textoOrientacao = document.getElementById('texto');
 const botaoComecar = document.getElementById('comecar');
 const elementoPrazo = document.getElementById('atvPrazo');
 
@@ -47,6 +47,7 @@ function lerEntrega() {
 }
 
 function atualizarStatus() {
+    const atividadeAtual = window.FarmAtividade;
     if (atividadeAtual.vazia) {
         elementoStatus.style.display = 'none';
         elementoPrazo.hidden = true;

@@ -57,9 +57,9 @@
         limiteEntrega: null, chave: null, queryAluno: ''
     };
 
-    const bloco = document.getElementById('dadosAtividade');
+    const blocoDadosAtividade = document.getElementById('dadosAtividade');
     let lido = {};
-    if (bloco) {
+    if (blocoDadosAtividade) {
         try {
             dadosDoBanco = JSON.parse(blocoDadosAtividade.textContent) || {};
         } catch (erro) {
@@ -68,7 +68,7 @@
     }
 
     // Junta os valores do banco com os defaults do sistema para garantir campos sempre presentes.
-    const atividade = Object.assign({}, ATIVIDADE_PADRAO, dadosDoBanco);
+    const atividade = Object.assign({}, dadosDoBanco);
     const linguagem = LINGUAGENS[atividade.idLinguagem] || LINGUAGENS.web;
     atividade.linguagem = Object.assign({}, linguagem, {
         inicial: Object.assign({}, linguagem.inicial, atividade.codigoInicial)
@@ -151,6 +151,7 @@
 
     // Sem dados de atividade (nem do banco, nem de teste)
     A.vazia = !lido.titulo;
+    // A.vazia = false;
 
     window.FarmAtividade = A;
     window.FarmLinguagens = LINGUAGENS;

@@ -24,7 +24,7 @@
         <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
 
         <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário" aria-expanded="false" aria-controls="menuUsuario">
-            <img class="usuario-avatar" src="submissoes/file?type=img&file=icone_user.png" alt="iconiEDU">
+            <img class="usuario-avatar" src="file?type=img&file=icone_user.png" alt="iconiEDU">
         </button>
     </header>
 
@@ -127,7 +127,10 @@
     </footer>
 </body>
 
-<script src="submissoes/file?type=js&file=atividade.js"></script>
-<script src="submissoes/file?type=js&file=aluno.js"></script>
+<script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+<script src="file?type=js&file=main.js"></script>
+
+<script src="file?type=js&file=atividade.js"></script>
+<script src="file?type=js&file=aluno.js"></script>
 
 </html>

@@ -74,7 +74,7 @@ class atividadesSub {
      * Serve arquivos estáticos internos da pasta view/assets.
      *
      * O front-end usa URLs do tipo:
-     * submissoes/file?type=js&file=main.js
+     * file?type=js&file=main.js
      *
      * Isso centraliza a entrega desses recursos e impede leitura de arquivos arbitrários.
      */

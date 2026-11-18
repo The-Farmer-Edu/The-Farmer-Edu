@@ -1,6 +1,29 @@
-
 <?php
 $notificacoes = $notificacoes ?? [];
+
+// Base da URL gerada pelo PHP (funciona em qualquer pasta do servidor).
+$urlBase = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+
+// Status e título derivados do tipo da notificação (a tabela não grava "status").
+$statusPorTipo = [
+    'atividade_pendente'  => 'pendente',
+    'atividade_atrasada'  => 'atrasado',
+    'fazenda_atacada'     => 'atrasado',
+    'atividade_entregue'  => 'entregue',
+    'nota_atribuida'      => 'entregue',
+    'feedback_ia'         => 'entregue',
+    'atividade_publicada' => 'entregue',
+];
+
+$titulosPorTipo = [
+    'atividade_pendente'  => 'Nova atividade',
+    'atividade_atrasada'  => 'Atividade atrasada',
+    'fazenda_atacada'     => 'Fazenda atacada',
+    'atividade_entregue'  => 'Atividade entregue',
+    'nota_atribuida'      => 'Nota atribuída',
+    'feedback_ia'         => 'Feedback da IA',
+    'atividade_publicada' => 'Atividade publicada',
+];
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -318,27 +341,24 @@ input:focus-visible {
 
         <?php foreach ($notificacoes as $n): ?>
             <?php
-                $status = $n['status'] ?? 'pendente';
-
                 $titulosStatus = [
                     'entregue' => 'Entregue',
                     'pendente' => 'Pendente',
                     'atrasado' => 'Atrasado'
                 ];
 
+                $tipo = (string) ($n['tipo'] ?? '');
+
+                // Usa o status da tabela se existir e for válido; senão deriva do tipo.
+                $status = $n['status'] ?? ($statusPorTipo[$tipo] ?? 'pendente');
                 if (!isset($titulosStatus[$status])) {
-                    $status = 'pendente';
+                    $status = $statusPorTipo[$tipo] ?? 'pendente';
                 }
 
-            
-                $titulo = (string) ($n['tipo'] ?? '');
+                $titulo = $titulosPorTipo[$tipo]
+                    ?? ucfirst(str_replace('_', ' ', $tipo));
                 $mensagem = (string) ($n['mensagem'] ?? '');
                 $data = (string) ($n['criado_em'] ?? '');
-
-                $chave = hash(
-                    'sha256',
-                    $titulo . '|' . $mensagem . '|' . $data
-                );
             ?>
 
             <article
@@ -346,7 +366,6 @@ input:focus-visible {
                 data-status="<?= $status ?>"
                 data-id="<?= (int) ($n['id_notificacao'] ?? 0) ?>"
                 data-lida="<?= (int) ($n['lida'] ?? 0) ?>"
-                data-chave="<?= htmlspecialchars($chave, ENT_QUOTES, 'UTF-8') ?>"
             >
 
                 <div class="notificacao-topo">
@@ -386,32 +405,29 @@ input:focus-visible {
 
 </main>
 
+<div id="aviso-notificacao" style="
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #ffffff;
+    color: #222;
+    padding: 18px;
+    border-left: 5px solid #22c55e;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px #0003;
+    z-index: 9999;
+    max-width: 320px;
+">
+    🔔 <strong>Nova notificação!</strong>
+    <p id="mensagem-aviso"></p>
+</div>
+
 <script>
 let filtroAtual = 'todas';
-const chaveArmazenamento = 'farmerEduNotificacoesLidas';
-
-function obterLidas() {
-    try {
-        const dados = JSON.parse(
-            localStorage.getItem(chaveArmazenamento) || '[]'
-        );
-
-        return Array.isArray(dados) ? dados : [];
-    } catch (erro) {
-        return [];
-    }
-}
-
-function salvarLidas(lidas) {
-    try {
-        localStorage.setItem(
-            chaveArmazenamento,
-            JSON.stringify(lidas)
-        );
-    } catch (erro) {
-        console.warn('Não foi possível salvar as notificações.');
-    }
-}
+const URL_BASE = <?= json_encode($urlBase) ?>;
+const URL_MARCAR_LIDA = URL_BASE + '?rota=/notificacoes/marcar-lida';
+const URL_VERIFICAR_NOVAS = URL_BASE + '?rota=/notificacoes/verificar-novas';
 
 function atualizarResumo() {
     const cards = document.querySelectorAll('.notificacao');
@@ -423,7 +439,7 @@ function atualizarResumo() {
         document.querySelectorAll('.notificacao:not(.lida)').length;
 
     document.getElementById('quantidadePendentes').textContent =
-        document.querySelectorAll('.notificacao.pendente').length;
+        document.querySelectorAll('.notificacao.pendente:not(.lida)').length;
 }
 
 function atualizarBotao(card) {
@@ -445,14 +461,18 @@ async function alternarLeitura(botao) {
     const id = Number(card.dataset.id);
     const lida = card.classList.contains('lida') ? 0 : 1;
 
-    if (!Number.isInteger(id) || id <= 0) return;
+    if (!Number.isInteger(id) || id <= 0) {
+        console.error('Notificação sem id válido (data-id):', card.dataset.id);
+        alert('Esta notificação não tem um identificador válido.');
+        return;
+    }
 
     botao.disabled = true;
 
     try {
-        const resposta = await fetch('/guilherme22/The-Farmer-Edu/public/index.php?rota=/notificacoes/marcar-lida'
-, {
+        const resposta = await fetch(URL_MARCAR_LIDA, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
@@ -462,10 +482,19 @@ async function alternarLeitura(botao) {
             })
         });
 
-        const dados = await resposta.json();
+        const texto = await resposta.text();
+        let dados;
+
+        try {
+            dados = JSON.parse(texto);
+        } catch (e) {
+            console.error('Resposta não é JSON (status ' + resposta.status + '):', texto);
+            throw new Error('Resposta inválida do servidor');
+        }
 
         if (!resposta.ok || !dados.sucesso) {
-            throw new Error('Erro ao salvar no banco');
+            console.error('Falha ao salvar:', resposta.status, dados);
+            throw new Error(dados.erro || 'Erro ao salvar no banco');
         }
 
         card.classList.toggle('lida', lida === 1);
@@ -543,8 +572,6 @@ function filtrar(tipo, botao) {
 }
 
 function iniciar() {
-    const lidas = obterLidas();
-
     document.querySelectorAll('.notificacao').forEach(card => {
         if (card.dataset.lida === '1') {
             card.classList.add('lida');
@@ -562,6 +589,8 @@ function mostrarAviso(mensagem) {
     const aviso = document.getElementById('aviso-notificacao');
     const texto = document.getElementById('mensagem-aviso');
 
+    if (!aviso || !texto) return;
+
     texto.textContent = mensagem;
     aviso.style.display = 'block';
 
@@ -573,16 +602,19 @@ let ultimaNotificacao = null;
 
 async function verificarNovas() {
     try {
-        const resposta = await fetch(
-            '/guilherme22/The-Farmer-Edu/public/index.php?rota=/notificacoes/verificar-novas'
-        );
+        const resposta = await fetch(URL_VERIFICAR_NOVAS, {
+            credentials: 'same-origin'
+        });
+
+        // Sessão expirada ou erro: não tenta processar.
+        if (!resposta.ok) return;
 
         const dados = await resposta.json();
         const notificacoes = dados.notificacoes || [];
 
-       if (notificacoes.length === 0) return;
+        if (notificacoes.length === 0) return;
 
-const nova = notificacoes[0];
+        const nova = notificacoes[0];
 
         if (ultimaNotificacao === null) {
             ultimaNotificacao = nova.id_notificacao;
@@ -601,24 +633,6 @@ const nova = notificacoes[0];
 verificarNovas();
 setInterval(verificarNovas, 5000);
 
-</script>
-<div id="aviso-notificacao" style="
-    display: none;
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #ffffff;
-    color: #222;
-    padding: 18px;
-    border-left: 5px solid #22c55e;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px #0003;
-    z-index: 9999;
-    max-width: 320px;
-">
-    🔔 <strong>Nova notificação!</strong>
-    <p id="mensagem-aviso"></p>
-</div>
 </script>
 
 </body>

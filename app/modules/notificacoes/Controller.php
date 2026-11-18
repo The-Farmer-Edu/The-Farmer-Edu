@@ -1,3 +1,5 @@
+
+
 <?php
 
 require_once __DIR__ . '/Model.php';
@@ -15,66 +17,56 @@ class NotificacoesController
 
         if (!$usuario) {
             solicitarLogin();
-            // http_response_code(401);
-            // echo 'Você precisa estar logado.';
             return;
         }
 
         $idUsuario = (int) $usuario['idUsuario'];
-        $perfilAcesso = $usuario['perfilAcesso'];
 
         // Buscar notificações do usuário
-        $notificacoes = $idUsuario
-            ? NotificacoesModel::listar($pdo, (int) $idUsuario)
-            : [];
+        $notificacoes = NotificacoesModel::listar($pdo, $idUsuario);
 
         require __DIR__ . '/views/notificacoes.php';
     }
 
     public function testarApi(): void
     {
+        // Rota de teste: exige login para não expor Judge0/Ollama publicamente.
+        if (!usuarioLogado()) {
+            solicitarLogin();
+            return;
+        }
+
         require __DIR__ . '/views/testarApi.php';
     }
 
     public function marcarComoLida(): void
     {
-        header('Content-Type: application/json');
+        header('Content-Type: application/json; charset=utf-8');
 
         // Permitir apenas requisições POST
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
-            echo json_encode(['sucesso' => false]);
+            echo json_encode(['sucesso' => false, 'erro' => 'Método não permitido']);
             return;
         }
 
-        $pdo = iniciarPDO();
-
         // Identificar usuário logado
-$usuario = usuarioLogado();
+        $usuario = usuarioLogado();
 
-if (!$usuario) {
-    http_response_code(401);
-    echo json_encode([
-        'sucesso' => false,
-        'erro' => 'Usuário não autenticado'
-    ]);
-    return;
-}
+        if (!$usuario) {
+            http_response_code(401);
+            echo json_encode([
+                'sucesso' => false,
+                'erro' => 'Usuário não autenticado'
+            ]);
+            return;
+        }
 
-$idUsuario = (int) $usuario['idUsuario'];
+        $idUsuario = (int) $usuario['idUsuario'];
 
         // Receber dados da notificação
-        $idNotificacao = filter_input(
-            INPUT_POST,
-            'id_notificacao',
-            FILTER_VALIDATE_INT
-        );
-
-        $lida = filter_input(
-            INPUT_POST,
-            'lida',
-            FILTER_VALIDATE_INT
-        );
+        $idNotificacao = filter_input(INPUT_POST, 'id_notificacao', FILTER_VALIDATE_INT);
+        $lida = filter_input(INPUT_POST, 'lida', FILTER_VALIDATE_INT);
 
         // Validar dados
         if (
@@ -83,42 +75,57 @@ $idUsuario = (int) $usuario['idUsuario'];
             !in_array($lida, [0, 1], true)
         ) {
             http_response_code(400);
-            echo json_encode(['sucesso' => false]);
+            echo json_encode(['sucesso' => false, 'erro' => 'Dados inválidos']);
             return;
         }
 
-        // Atualizar notificação no banco
-        $sucesso = NotificacoesModel::marcarComoLida(
-            $pdo,
-            (int) $idNotificacao,
-            (int) $idUsuario,
-            (bool) $lida
-        );
+        try {
+            $pdo = iniciarPDO();
 
-        echo json_encode([
-            'sucesso' => $sucesso
-        ]);
+            // Atualizar notificação no banco
+            $sucesso = NotificacoesModel::marcarComoLida(
+                $pdo,
+                (int) $idNotificacao,
+                $idUsuario,
+                (bool) $lida
+            );
+        } catch (Throwable $e) {
+            // Sempre responde JSON, mesmo em erro de banco (ex.: coluna inexistente).
+            error_log('[notificacoes] marcarComoLida: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['sucesso' => false, 'erro' => 'Erro interno ao salvar']);
+            return;
         }
-        
-public function verificarNovas(): void
-{
-    header('Content-Type: application/json; charset=utf-8');
 
-    $usuario = usuarioLogado();
-
-    if (!$usuario) {
-        http_response_code(401);
-        echo json_encode(['erro' => 'Não autenticado']);
-        return;
+        echo json_encode(['sucesso' => $sucesso]);
     }
 
-    $pdo = iniciarPDO();
-    $idUsuario = (int) $usuario['idUsuario'];
+    public function verificarNovas(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
 
-    $notificacoes = NotificacoesModel::listar($pdo, $idUsuario);
+        $usuario = usuarioLogado();
 
-    echo json_encode([
-        'notificacoes' => $notificacoes
-    ], JSON_UNESCAPED_UNICODE);
-}
+        if (!$usuario) {
+            http_response_code(401);
+            echo json_encode(['erro' => 'Não autenticado']);
+            return;
+        }
+
+        try {
+            $pdo = iniciarPDO();
+            $idUsuario = (int) $usuario['idUsuario'];
+
+            $notificacoes = NotificacoesModel::listar($pdo, $idUsuario);
+        } catch (Throwable $e) {
+            error_log('[notificacoes] verificarNovas: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['erro' => 'Erro interno']);
+            return;
+        }
+
+        echo json_encode([
+            'notificacoes' => $notificacoes
+        ], JSON_UNESCAPED_UNICODE);
+    }
 }

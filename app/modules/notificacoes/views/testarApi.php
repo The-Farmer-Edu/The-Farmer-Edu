@@ -1,7 +1,21 @@
-
 <?php
-require_once __DIR__ . '/../../api/model/Judge0.php';
-require_once __DIR__ . '/../../api/model/Ollama.php';
+// Localiza a pasta api/model (ajuste a lista se o seu projeto tiver outra estrutura).
+$pastaApi = null;
+foreach (['/../../../api/model/', '/../../api/model/'] as $candidato) {
+    if (is_file(__DIR__ . $candidato . 'Judge0.php')) {
+        $pastaApi = __DIR__ . $candidato;
+        break;
+    }
+}
+
+if ($pastaApi === null) {
+    http_response_code(500);
+    echo 'Não foi possível localizar api/model/Judge0.php';
+    return;
+}
+
+require_once $pastaApi . 'Judge0.php';
+require_once $pastaApi . 'Ollama.php';
 
 $objetivo = "Criar uma mensagem de notificacao para um aluno.";
 
@@ -28,8 +42,8 @@ try {
         "6",
         "",
         $codigo,
-        $resultadoJudge["status"],
-        $resultadoJudge["saida"]
+        $resultadoJudge["status"] ?? "",
+        $resultadoJudge["saida"] ?? ""
     );
 } catch (Throwable $e) {
     $erro = $e->getMessage();

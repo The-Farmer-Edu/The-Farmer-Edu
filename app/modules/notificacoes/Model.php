@@ -1,3 +1,4 @@
+
 <?php
 
 class NotificacoesModel
@@ -13,25 +14,46 @@ class NotificacoesModel
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
        }
-       public static function marcarComoLida($pdo, $idNotificacao, $idUsuario, $lida)
-{
-    $sql = "UPDATE notificacoes
-            SET lida = :lida
-            WHERE id_notificacao = :id
-            AND id_usuario = :usuario";
+    public static function marcarComoLida($pdo, $idNotificacao, $idUsuario, $lida)
+    {
+        $sql = "UPDATE notificacoes
+                SET lida = :lida
+                WHERE id_notificacao = :id
+                AND id_usuario = :usuario";
 
-    $stmt = $pdo->prepare($sql);
+        $stmt = $pdo->prepare($sql);
 
-    $stmt->execute([
-    'lida' => $lida ? 1 : 0,
-    'id' => $idNotificacao,
-    'usuario' => $idUsuario
-]);
+        $ok = $stmt->execute([
+            'lida'    => $lida ? 1 : 0,
+            'id'      => $idNotificacao,
+            'usuario' => $idUsuario
+        ]);
 
-return $stmt->rowCount() > 0;
+        if (!$ok) {
+            return false;
+        }
 
-}
-public static function criar($pdo, $idUsuario, $tipo, $mensagem)
+        // No MySQL, rowCount() conta apenas linhas ALTERADAS. Se a notificação
+        // já estava com esse valor, retorna 0 mesmo sem haver erro.
+        if ($stmt->rowCount() > 0) {
+            return true;
+        }
+
+        // 0 linhas alteradas: confirma se a notificação existe e é do usuário.
+        $check = $pdo->prepare(
+            "SELECT 1 FROM notificacoes
+             WHERE id_notificacao = :id
+             AND id_usuario = :usuario"
+        );
+        $check->execute([
+            'id'      => $idNotificacao,
+            'usuario' => $idUsuario
+        ]);
+
+        return (bool) $check->fetchColumn();
+    }
+
+    public static function criar($pdo, $idUsuario, $tipo, $mensagem)
 {
     $sql = "INSERT INTO notificacoes (id_usuario, tipo, mensagem)
             VALUES (:usuario, :tipo, :mensagem)";

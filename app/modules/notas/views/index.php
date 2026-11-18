@@ -21,11 +21,18 @@
 
 // Agrupa atividades por turma/curso para exibicao em secoes
 $grupos = [];
+$somaNotas = 0.0;
 foreach ($atividades as $atv) {
     // Chave composta para separar visualmente as disciplinas/turmas
     $chave = $atv['nome_curso'] . ' — ' . $atv['nome_turma'];
     $grupos[$chave][] = $atv;
+    if (isset($atv['nota_valor']) && $atv['nota_valor'] !== null) {
+        $somaNotas += (float) $atv['nota_valor'];
+    }
 }
+
+$notaTotal = isset($resumo['nota_total']) ? (float) $resumo['nota_total'] : $somaNotas;
+$notaMaximaTotal = (int) ($resumo['total_atividades'] ?? count($atividades)) * 10;
 
 // Calcula cor da media para o card de resumo
 // Verde para média >= 7, Laranja para média >= 5 e Vermelho para notas abaixo de 5
@@ -293,7 +300,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
            ============================================================ */
         .resumo-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 16px;
             margin-bottom: 32px;
         }
@@ -576,6 +583,15 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 <?= (int) ($resumo['pendentes'] ?? 0) ?>
             </span>
             <span class="label">Pendentes</span>
+        </div>
+
+        <!-- Nota total acumulada -->
+        <div class="card-resumo">
+            <span class="icone">🏆</span>
+            <span class="valor" style="color: var(--verde-primario)">
+                <?= number_format($notaTotal, 1, ',', '') ?><span style="font-size: 1rem; font-weight: 500; color: var(--texto-secundario);">/<?= $notaMaximaTotal ?></span>
+            </span>
+            <span class="label">Nota total</span>
         </div>
 
         <!-- Média geral com cor dinâmica -->

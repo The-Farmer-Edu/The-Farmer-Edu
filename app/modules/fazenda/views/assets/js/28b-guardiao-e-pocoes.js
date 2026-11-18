@@ -158,6 +158,7 @@
       // Devolve o motivo (texto) que impede preparar, ou '' se pode.
       const motivoParaNaoPreparar = function motivoParaNaoPreparar(tipo) {
         const pocao = POCOES_DO_GUARDIAO[tipo];
+        if (!pocao) return 'Poção desconhecida.';   // missão final: nome inválido (ex.: chamada antiga pelo console) não quebra mais
         if (pocao.misteriosa) {
           if (misterioDescoberto()) return 'Esta poção já foi descoberta. Ela só podia ser usada uma vez.';
           if (!pocaoLiberada(tipo)) return '❔ ' + SEGREDO;
@@ -177,6 +178,8 @@
         if (!pocao) return 'Poção desconhecida.';
         if (pocao.misteriosa && misterioDescoberto()) return 'Esta poção já foi usada. Ela só podia ser usada uma vez.';
         if (!(estado.pocoes[tipo] >= 1)) return 'Você não tem esta poção guardada.';
+        // finalização das invasões: a cena do céu esconde a interface e prende a câmera; durante uma invasão ela espera
+        if (pocao.misteriosa && invasaoAtivaOuIminente()) return 'Agora não: há uma invasão em andamento. Use depois que ela terminar.';
         if (pocao.misteriosa) return eventoEspecialEmAndamento() ? '❔ ' + SEGREDO : '';
         if (pocaoDeExperiencia(tipo)) return xpRestanteDaCota('mina') < pocao.xp ? textoDoLimiteQueFalta(tipo) : '';
         return motivoParaNaoUsarEfeito(tipo);
@@ -310,6 +313,7 @@
         painelDoGuardiao.hidden = false; document.body.classList.add('com-tela-do-guardiao');
         desenharPainelDoGuardiao(true);
         tocarEfeito('Enter');
+        tocarEfeito('guardiao', [POSTO_DO_GUARDIAO.x, POSTO_DO_GUARDIAO.z]);
         selecionar('#fechar-guardiao').focus();
       };
       const fecharPainelDoGuardiao = function fecharPainelDoGuardiao() {
@@ -330,7 +334,7 @@
         let sucesso = salvarProgresso();
         if (!sucesso) { estado.recursos.minerios = mineriosAntes; estado.pocoes[tipo] = pocoesAntes; definirMensagemDoGuardiao('Não foi possível salvar. Nenhum minério foi gasto.'); }
         else {
-          registrarAtividade(); atualizarResumoDeRecursos(); tocarEfeito('levelUp');
+          registrarAtividade(); atualizarResumoDeRecursos(); tocarEfeito('pocaoPreparar');
           avisarObjetivos('pocao-preparada', { tipo });   // Etapa 2: quadro de objetivos (seção 30e)
           // Etapa 2: o nome vem da VISTA (a misteriosa continua "???"); a dica de uso não fala em XP para as poções de efeito.
           const vista = vistaDaPocao(tipo);
@@ -365,6 +369,7 @@
           definirMensagemDoGuardiao('Não foi possível salvar. A poção continua guardada.'); return false;
         }
         registrarAtividade(); definirMensagemDoGuardiao('', '');
+        tocarEfeito('pocaoUsar');
         fecharPainelDoGuardiao();
         iniciarEventoDoUnicornio();
         return true;
@@ -379,7 +384,7 @@
         const xpCreditado = creditarXP(pocao.xp, 'fazenda', false, 'mina');   // Limite da alquimia (id 'mina' mantido nos saves)
         if (xpCreditado !== pocao.xp) { restaurar(); definirMensagemDoGuardiao('O Limite da alquimia de hoje mudou. A poção continua guardada.'); return false; }
         if (!salvarProgresso()) { restaurar(); definirMensagemDoGuardiao('Não foi possível salvar. A poção e o XP foram restaurados.'); return false; }
-        registrarAtividade(); tocarEfeito('xp');
+        registrarAtividade(); tocarEfeito('pocaoUsar'); tocarEfeito('xp');
         definirMensagemDoGuardiao('🥤 Você usou ' + pocao.nome + ': +' + xpCreditado + ' XP!', 'sucesso');
         mostrarAviso('🥤 ' + pocao.nome + ': +' + xpCreditado + ' XP');
         atualizarPaineisDaMark82(true);
@@ -401,7 +406,7 @@
         catch (erro) { console.error('[FarmEdu] Falha ao aplicar a poção:', erro); restaurar(); definirMensagemDoGuardiao('Não foi possível aplicar a poção. Ela continua guardada.'); return false; }
         if (!salvarProgresso()) { restaurar(); definirMensagemDoGuardiao('Não foi possível salvar. A poção continua guardada.'); return false; }
         if (depoisDeSalvar) depoisDeSalvar();
-        registrarAtividade(); tocarEfeito('levelUp');
+        registrarAtividade(); tocarEfeito('pocaoUsar');
         const texto = pocao.icone + ' ' + pocao.nome + ': ' + pocao.efeito + (pocao.minutos ? ' Dura ' + duracaoCurta(pocao) + '.' : '');
         definirMensagemDoGuardiao('🥤 ' + texto, 'sucesso'); mostrarAviso('🥤 ' + texto);
         atualizarEfeitosDasPocoes(); atualizarPaineisDaMark82(true);

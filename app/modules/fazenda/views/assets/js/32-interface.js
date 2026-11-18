@@ -318,6 +318,7 @@
         modoDesenvolvedorAtivo = ativo;
         // desligado, o ciclo volta ao automático (uma pausa ou um dia/noite fixos não ficam presos sem os controles)
         if (!ativo && CICLO_DE_DIA_E_NOITE.modo !== 'auto') { definirModoDoCiclo('auto'); atualizarPainelDeTempo(true); }
+        if (!ativo) limparDeslocamentoDeTeste();   // finalização das invasões: o "Avançar um dia elegível" não fica no save (seção 26)
         selecionar('#ferramentas-de-desenvolvedor').hidden = !ativo; selecionar('#testes-do-tempo').hidden = !ativo; selecionar('#controles-do-ciclo').hidden = !ativo;
         botaoDoModoDesenvolvedor.hidden = !ativo;
         botaoDoModoDesenvolvedor.setAttribute('aria-pressed', String(ativo));

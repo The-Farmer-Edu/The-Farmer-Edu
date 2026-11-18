@@ -16,7 +16,7 @@ require __DIR__ . '/partials/head.php';
         <?php if ($ativas): ?>
             <div class="card-grid">
                 <?php foreach ($ativas as $t): ?>
-                    <a class="course-card" href="<?= $base ?>/turmas_cursos/turmaAluno?id=<?= (int) $t['id_turma'] ?>">
+                    <article class="course-card">
                         <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
                         <div class="course-card__cover">
                             <?php if (!empty($t['image_turma'])): ?>
@@ -25,8 +25,8 @@ require __DIR__ . '/partials/head.php';
                                 <div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($t['nome_curso']) ?></span></div>
                             <?php endif; ?>
                         </div>
-                        <div class="course-card__body"><div class="course-card__meta"><span><i class="bi bi-journal-bookmark"></i><?= e($t['nome_curso']) ?></span><span><i class="bi bi-sun"></i><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></span></div><i class="bi bi-arrow-up-right-circle fs-4 text-success"></i></div>
-                    </a>
+                        <div class="course-card__body"><div class="course-card__meta"><span><i class="bi bi-journal-bookmark"></i><?= e($t['nome_curso']) ?></span><span><i class="bi bi-sun"></i><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></span></div></div>
+                    </article>
                 <?php endforeach; ?>
             </div>
         <?php else: ?>
@@ -39,14 +39,14 @@ require __DIR__ . '/partials/head.php';
             <h2 class="section-heading" id="turmas-arquivadas-title">Turmas arquivadas</h2>
             <div class="card-grid">
                 <?php foreach ($arquivadas as $t): ?>
-                    <a class="course-card archived-card" href="<?= $base ?>/turmas_cursos/turmaAluno?id=<?= (int) $t['id_turma'] ?>">
+                    <article class="course-card archived-card">
                         <div class="course-card__title"><?= e($t['nome_turma']) ?> <small class="d-block">Arquivada</small></div>
                         <div class="course-card__cover">
                             <?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma">
                             <?php else: ?><div class="course-placeholder"><i class="bi bi-archive"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?>
                         </div>
                         <div class="course-card__body"><div class="course-card__meta"><span><?= e($t['nome_curso']) ?></span><span><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></span></div></div>
-                    </a>
+                    </article>
                 <?php endforeach; ?>
             </div>
         </section>

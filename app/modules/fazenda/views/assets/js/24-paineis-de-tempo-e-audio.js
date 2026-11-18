@@ -35,7 +35,9 @@
       };
       const fecharPaineisDaBarra = function fecharPaineisDaBarra() { for (const [painel, botao] of PAINEIS_DA_BARRA) { painel.hidden = true; botao.setAttribute('aria-expanded', 'false'); } };
       const abrirMenu = function abrirMenu() { tocarEfeito('Enter'); fecharPaineisDaBarra(); definirGavetaAberta(false); menuPrincipal.hidden = false; atualizarBotaoDoMenu(); };
-      const fecharMenuEPaineis = function fecharMenuEPaineis() { tocarEfeito('Fecha'); fecharPaineisDaBarra(); menuPrincipal.hidden = true; atualizarBotaoDoMenu(); };
+      // silencioso === true (só o booleano: os botões passam o evento do clique): fecha sem o som "Fecha", usado quando outra janela
+      // abre em seguida (inventário e objetivos, integração do áudio da equipe), para não tocar "Fecha" e "Enter" juntos.
+      const fecharMenuEPaineis = function fecharMenuEPaineis(silencioso) { if (silencioso !== true) tocarEfeito('Fecha'); fecharPaineisDaBarra(); menuPrincipal.hidden = true; atualizarBotaoDoMenu(); };
       const alternarPainel = function alternarPainel(painel, botao) {
         const abrir = painel.hidden;
         tocarEfeito(abrir ? 'Enter' : 'Fecha');

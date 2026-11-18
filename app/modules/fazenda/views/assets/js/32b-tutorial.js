@@ -113,6 +113,7 @@
       // ---- cartão do tutorial ----
       const cartaoDoTutorial = selecionar('#tutorial'), molduraDoTutorial = selecionar('#tutorial-destaque');
       const textoDoTopico = selecionar('#tutorial-topico'), tituloDoTutorial = selecionar('#tutorial-titulo'), corpoDoTutorial = selecionar('#tutorial-corpo');
+      const rolagemDoTutorial = selecionar('#tutorial-rolagem');   // Etapa 4: área do texto que rola
       const conteudoDoTutorial = selecionar('#tutorial-texto'), tarefaDoTutorial = selecionar('#tutorial-tarefa'), barraDoTutorial = selecionar('#tutorial-barra'), acoesDoTutorial = selecionar('#tutorial-acoes');
       const botaoMinimizarTutorial = selecionar('#tutorial-minimizar'), botaoPausarTutorial = selecionar('#tutorial-pausar');
       // modo: null (fechado) · 'convite' · 'tutorial' (sequência completa) · 'consulta' (um tópico aberto pela ajuda, sem mexer no progresso)
@@ -128,20 +129,37 @@
       //  • telas largas: com o cartão aberto, a gaveta aberta se desloca para a direita (classe "tutorial-aberto" no body, 08-tutorial.css);
       //  • telas estreitas: o cartão fica logo acima da gaveta (aberta ou fechada) ou, se o elemento apontado estiver na metade de
       //    baixo, no alto; a altura máxima acompanha o espaço livre (o texto rola dentro do cartão).
+      // Etapa 4: o vigia do tutorial chama a função abaixo a cada 400 ms; só escreve no estilo o que mudou (sem recalcular o layout à toa).
+      const escreverEstilos = function escreverEstilos(elemento, estilos) { for (const nome in estilos) if (elemento.style[nome] !== estilos[nome]) elemento.style[nome] = estilos[nome]; };
       const atualizarMolduraDoTutorial = function atualizarMolduraDoTutorial() {
         const minimizado = cartaoDoTutorial.classList.contains('minimizado');
         document.body.classList.toggle('tutorial-aberto', !!modoDoTutorial && !minimizado);
         const passo = modoDoTutorial === 'convite' || !modoDoTutorial ? null : PASSOS_DO_TUTORIAL[passoDoTutorial];
         const alvo = passo && passo.destaque && !minimizado ? passo.destaque() : null, retangulo = alvo ? alvo.getBoundingClientRect() : null;
         const mostrar = !!retangulo && retangulo.width > 0 && retangulo.height > 0;
-        molduraDoTutorial.hidden = !mostrar;
-        if (mostrar) Object.assign(molduraDoTutorial.style, { left: (retangulo.left - 6) + 'px', top: (retangulo.top - 6) + 'px', width: (retangulo.width + 12) + 'px', height: (retangulo.height + 12) + 'px' });
+        if (molduraDoTutorial.hidden !== !mostrar) molduraDoTutorial.hidden = !mostrar;
+        if (mostrar) escreverEstilos(molduraDoTutorial, { left: (retangulo.left - 6) + 'px', top: (retangulo.top - 6) + 'px', width: (retangulo.width + 12) + 'px', height: (retangulo.height + 12) + 'px' });
         const estreita = innerWidth < 720, noAlto = estreita && mostrar && retangulo.top + retangulo.height / 2 > innerHeight / 2;
-        cartaoDoTutorial.classList.toggle('no-alto', noAlto);
-        if (!estreita) { cartaoDoTutorial.style.bottom = cartaoDoTutorial.style.maxHeight = ''; return; }
-        const topoDaGaveta = selecionar('#lista-cards').getBoundingClientRect().top, topoLivre = selecionar('#barra-topo').getBoundingClientRect().bottom + 8;
-        cartaoDoTutorial.style.bottom = noAlto ? '' : Math.max(8, innerHeight - topoDaGaveta + 8) + 'px';
-        cartaoDoTutorial.style.maxHeight = Math.max(140, topoDaGaveta - 8 - topoLivre) + 'px';
+        if (cartaoDoTutorial.classList.contains('no-alto') !== noAlto) cartaoDoTutorial.classList.toggle('no-alto', noAlto);
+        if (!estreita) { escreverEstilos(cartaoDoTutorial, { top: '', bottom: '', maxHeight: '' }); return; }   // telas largas: a altura máxima fica no CSS (08-tutorial.css)
+        // Etapa 4 — telas estreitas: o cartão usa o espaço que está LIVRE de verdade e nunca passa do alto da tela nem da borda de baixo.
+        //  • preferido: abaixo dos botões da esquerda (inventário, objetivos, diário) e acima da gaveta;
+        //  • sem espaço (gaveta aberta numa tela baixa): sobe até logo abaixo da barra de XP e, se ainda faltar, fica por cima da gaveta.
+        // O texto rola dentro do cartão; o cabeçalho, o progresso e os botões ficam sempre visíveis (08-tutorial.css).
+        const ALTURA_CONFORTAVEL = 220, margem = 8;
+        const topoDaGaveta = selecionar('#lista-cards').getBoundingClientRect().top, topoLivre = selecionar('#barra-topo').getBoundingClientRect().bottom + margem;
+        const botaoMaisBaixo = selecionar('#botao-diario') || selecionar('#botao-objetivos'), abaixoDosBotoes = botaoMaisBaixo && botaoMaisBaixo.offsetParent ? botaoMaisBaixo.getBoundingClientRect().bottom + margem : topoLivre;
+        const limiteDeBaixo = innerHeight - margem, alturaMaxima = Math.max(120, limiteDeBaixo - topoLivre);
+        let topo = null, base = null, altura;
+        if (noAlto) {   // o elemento apontado está embaixo: o cartão fica no alto, sem cobri-lo quando possível
+          const fimLivre = Math.min(limiteDeBaixo, retangulo.top - margem);
+          topo = fimLivre - abaixoDosBotoes >= ALTURA_CONFORTAVEL ? abaixoDosBotoes : topoLivre;
+          altura = Math.max(Math.min(ALTURA_CONFORTAVEL, alturaMaxima), fimLivre - topo);
+        } else if (topoDaGaveta - margem - abaixoDosBotoes >= ALTURA_CONFORTAVEL) { base = innerHeight - topoDaGaveta + margem; altura = topoDaGaveta - margem - abaixoDosBotoes; }
+        else if (topoDaGaveta - margem - topoLivre >= ALTURA_CONFORTAVEL) { base = innerHeight - topoDaGaveta + margem; altura = topoDaGaveta - margem - topoLivre; }
+        else { topo = topoLivre; altura = Math.min(alturaMaxima, Math.max(ALTURA_CONFORTAVEL, Math.round(innerHeight * 0.5))); }   // por cima da gaveta
+        altura = Math.min(altura, alturaMaxima, Math.max(ALTURA_CONFORTAVEL, Math.round(innerHeight * 0.6)));   // nunca cobre a tela toda: o texto rola
+        escreverEstilos(cartaoDoTutorial, { top: topo === null ? 'auto' : Math.round(topo) + 'px', bottom: base === null ? 'auto' : Math.round(base) + 'px', maxHeight: Math.round(altura) + 'px' });
       };
       const atualizarTarefaDoTutorial = function atualizarTarefaDoTutorial() {
         const passo = modoDoTutorial === 'convite' || !modoDoTutorial ? null : PASSOS_DO_TUTORIAL[passoDoTutorial];
@@ -183,6 +201,7 @@
         acoesDoTutorial.replaceChildren(voltar, Object.assign(document.createElement('span'), { className: 'contagem-do-tutorial', textContent: (posicao + 1) + ' / ' + passos.length }), avancar);
         if (modoDoTutorial === 'tutorial') salvarProgressoDoTutorial('andamento', indice);
         tarefaDoTutorial.textContent = ''; atualizarTarefaDoTutorial(); atualizarMolduraDoTutorial();
+        rolagemDoTutorial.scrollTop = 0;   // Etapa 4: cada passo começa do início do texto
         if (navegandoPeloTeclado) avancar.focus({ preventScroll: true });
       };
       const abrirCartaoDoTutorial = function abrirCartaoDoTutorial(modo) {
@@ -217,7 +236,8 @@
       // Chamada pela seção 33 ao abrir: oferece o tutorial se ele nunca foi oferecido neste navegador, depois da janela do nome.
       const oferecerTutorial = function oferecerTutorial() {
         if (progressoDoTutorial) return;
-        const tentar = () => { if (progressoDoTutorial || modoDoTutorial) return; if (!selecionar('#janela-nome-da-fazenda').hidden || !selecionar('#janela-ajuda').hidden) { setTimeout(tentar, 800); return; } mostrarConviteDoTutorial(); };
+        // finalização das invasões: o convite também espera uma invasão em curso terminar (ou a janela da defesa ser fechada)
+        const tentar = () => { if (progressoDoTutorial || modoDoTutorial) return; if (!selecionar('#janela-nome-da-fazenda').hidden || !selecionar('#janela-ajuda').hidden || !selecionar('#janela-defesa').hidden || invasaoAtivaOuIminente()) { setTimeout(tentar, 800); return; } mostrarConviteDoTutorial(); };
         setTimeout(tentar, 2200);
       };
 

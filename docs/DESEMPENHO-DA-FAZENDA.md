@@ -241,3 +241,84 @@ Mesmas condições de antes: Microsoft Basic Render Driver, Chrome sem janela, 1
 ## Etapa 1 — FPS só no Modo Desenvolvedor
 
 O selo do seletor de qualidade mostra o FPS **só com o Modo Desenvolvedor ligado** (lê `modoDesenvolvedorAtivo`, o mesmo estado do modo; sem configuração própria). Para o aluno aparece só o nível ("Baixa", "Média"…), sem espaço vazio. A medição interna (média móvel) e o monitor da qualidade Automática continuam funcionando com o contador escondido. O Modo Desenvolvedor começa desligado a cada carregamento (comportamento já existente), então o FPS nunca aparece depois de recarregar.
+
+## Etapa 4 — Clima dinâmico e vida ambiente (seção 30g)
+
+**Arquitetura.** Cada efeito é **uma** chamada de desenho, e todo o movimento é calculado na placa de vídeo a partir de um único uniforme de tempo compartilhado:
+* chuva: linhas;
+* vaga-lumes e vento: pontos;
+* borboletas e pássaros: geometria instanciada.
+
+Por quadro, o processador só atualiza alguns números. Nenhum objeto, geometria ou material é criado durante o jogo. A atualização entra no laço existente (`animacoesDoCenario`), sem outro laço nem temporizador. O clima ajusta o céu por um gancho na seção 17 (`ajustarCeuPeloClima`): não existe relógio próprio.
+
+**Limites rígidos por qualidade** (`AMBIENTE_POR_QUALIDADE`; os buffers têm o máximo do Alto e a qualidade só muda quantos são desenhados):
+
+| Qualidade | Gotas de chuva | Vaga-lumes | Vento | Borboletas | Pássaros |
+|---|---|---|---|---|---|
+| Baixa | 120 | 0 | 0 | 4 | 3 |
+| Média | 360 | 24 | 18 | 10 | 6 |
+| Alta | 700 | 48 | 36 | 16 | 10 |
+
+Nunca aparecem todos juntos:
+* chuva só chovendo;
+* vaga-lumes só à noite e sem chuva;
+* vento, borboletas e pássaros só de dia e sem chuva;
+* borboletas só com a câmera perto e a área das plantações na tela (corte do Three.js por esfera de contorno).
+
+Na chuva, a intensidade muda **quantas gotas são desenhadas** (intervalo de desenho), não a transparência de todas.
+
+**Resultados** (Chrome headless, mesmo renderizador por software "Microsoft Basic Render" da Etapa 0, save de referência, 1400×900, 15 s por cena; antes = backup da Etapa 4, depois = código atual com o clima forçado; medições intercaladas):
+
+| Cena | FPS antes | FPS depois | Chamadas (máx.) antes → depois |
+|---|---|---|---|
+| Baixa, dia, sol | 41,2 | 40,7 | 585 → 587 |
+| Baixa, noite, sol | 33,1 | 33,5 | 683 → 712 |
+| Baixa, dia, chuva | 38,0 | 37,6 | 585 → 586 |
+| Baixa, noite, chuva | 32,6 | 32,0 | 717 → 712 |
+| Média, dia, sol | 27,0 | 27,8 | 585 → 560 |
+| Média, noite, sol | 19,7 | 20,5 | 705 → 712 |
+| Alta, dia, sol | 26,4 | 25,8 | 585 → 588 |
+| Alta, noite, sol | 19,5 | 18,7 | 672 → 686 |
+| Alta, dia, chuva | 26,5 | 25,6 | 585 → 586 |
+| Alta, noite, chuva | 19,0 | 19,8 | 672 → 690 |
+
+* As diferenças ficam dentro do ruído da medição (±4%).
+* A primeira versão da chuva (160/420/900 gotas, descarte na placa) custava até 6,6% no Baixo e foi simplificada antes da entrega.
+* Programas de shader: +5 (compilados junto com os demais na seção 33, para a primeira chuva ou noite não travar).
+
+**Sessão longa e aba escondida:**
+* 150 s trocando o clima a cada 2,5 s: objetos na cena, geometrias, texturas, programas, nós do DOM e ouvintes ficaram iguais; o heap variou +0,5 MB depois da coleta de lixo.
+* Com a aba escondida o laço para (0 quadros) e o tempo dos efeitos congela. Ao voltar, os mesmos objetos continuam (nada é recriado).
+* Trocar a qualidade várias vezes e passar pela noite faz o número de programas e geometrias crescer. Isso já acontecia **antes** da Etapa 4, na mesma medida (sombras trocadas por material e monstros noturnos), e não foi alterado aqui.
+
+## Invasões: teto de 5 criaturas
+
+**Condições da medição:** Chrome headless, qualidade Baixa, renderizador por software (Microsoft Basic Render Driver), 10 s por cenário, com a câmera na instalação atacada.
+
+| Criaturas | CPU normal | CPU 4× mais lenta (FPS · quadro p95) |
+|---|---|---|
+| 0 | 58 FPS | 29–31 FPS · 33–50 ms |
+| 3 | 50 FPS | 25 FPS · 50 ms |
+| 5 | — | 22 FPS · 50 ms |
+| 6 | 50 FPS | **19–20 FPS** · 67 ms |
+
+- **Chamadas de desenho:** cada criatura acrescenta cerca de 40 (modelo com várias peças e barra de vida).
+- **Memória do JavaScript:** estável em 42,6 MB.
+
+**Decisão:** o teto ficou em **5** (`INVASOES_CONFIG.mobsPorInvasao[1]` e `maximoDeMobsSimultaneos`). Com 6 criaturas, o computador fraco cai abaixo de 20 FPS, e a partir daí o relógio do jogo (passo máximo de 0,05 s por quadro) atrasa.
+
+## Missão final (18/11): invasões à noite
+
+As invasões agora acontecem só à noite, quando os lampiões e as luzes noturnas estão acesos. Medido no Chrome de teste, qualidade
+Baixa, renderizador por software (Microsoft Basic Render Driver) e **CPU 4× mais lenta**, 10 s por cenário, às 22h do jogo:
+
+| Cenário | FPS | Quadro p95 | Memória (heap) |
+|---|---|---|---|
+| Noite, sem invasão | 24,7 | 50 ms | 51 MB |
+| Noite, invasão com 5 criaturas (o teto) | 23,1 | 50 ms | 51 MB (sem variação) |
+
+- Continua acima de 20 FPS, o ponto em que o relógio do jogo começa a atrasar.
+- Durante uma invasão **não surgem monstros noturnos novos** (seção 30a), então o número de criaturas na cena não passa do teto de 5
+  da invasão mais os monstros que já estavam em campo (normalmente nenhum: eles começam a surgir 4 s depois do anoitecer e a invasão
+  começa em até 1 s).
+- Não testado em aparelho fraco de verdade nem em GPU real nesta etapa.

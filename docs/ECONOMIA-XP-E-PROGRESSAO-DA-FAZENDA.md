@@ -45,6 +45,7 @@ Tudo usa um único saldo (`estado.xp`), uma única função de crédito (`credit
 | Outras 8 poções | **0** | — | — | **nenhuma** | `usarPocaoDeEfeito` |
 | Produção dos animais | 1 por item coletado | ao coletar (painel 🌾) | animais alimentados | Criação | `coletarProducao` |
 | Monstro derrotado (noturno ou de invasão) | 5 | quando morre | trabalhador em campo | Defesa | `ferirMonstro` |
+| **Invasão repelida** (real; não vale para teste nem ronda) | **+10** | ao derrotar todas as criaturas | guarda contratado e vivo | **nenhuma** (fora da cota de Defesa) | `repelirInvasao` |
 | Atividades escolares | definido pelo instrutor | quando o back-end chamar | integração | **sem limite** | `window.adicionarXP` (sem chamador) |
 | Devolução da dispensa | 40% do investido (mín. 10) | ao dispensar | XP investido | sem limite | `dispensarTrabalhador` |
 | Teste | 5000 | modo desenvolvedor | — | sem limite | só teste |
@@ -103,7 +104,7 @@ Composição de referência (Juca + 1 fazendeiro + 2 guardas): 950 + 6.500 = **7
 |---|---|---|
 | Repor animal morto | 60 XP | só sem alimentar |
 | Recuperar fazendeiro / guarda | 125 / 175 XP | após cair em combate |
-| Reparar instalação (nv 1/2/3) | 100 / 250 / 450 XP | calendário de invasões **pausado** |
+| Reparar instalação (nv 1/2/3) | 100 / 250 / 450 XP | invasões pelo calendário a cada 2 dias úteis (ver seção "Finalização das invasões") |
 | Alimentar animais | colheitas | trigo 12, milho 15, cenoura 15, abóbora 30 de comida (moinho: +25%/nível em trigo e milho) |
 | Poções | minérios | tabela da seção 11 |
 
@@ -464,3 +465,27 @@ Médias de XP por dia tiradas da simulação acima (XP total ÷ dias até a faze
 * As 21 conquistas dão só **reconhecimento**: medalha, data e registro no Diário. Não dão XP, madeira nem minério, e não existe moeda nova.
 * As conquistas são avaliadas só depois das ações do jogo (o mesmo aviso único do quadro de objetivos, com espera de 300 ms). Não há verificação por quadro.
 * Saves antigos: na primeira abertura, as conquistas que já tinham sido cumpridas são desbloqueadas **sem aviso** e registradas como "antes do Diário".
+
+## Etapa 4 — Clima (impacto econômico)
+
+**Nenhum.** O clima e a vida ambiente são só visuais (seção 30g, que não lê nem grava o estado do jogo). Crescimento, produção, XP, custos, limites e construções não mudam com o tempo que faz. A suíte de regressão deu o mesmo resultado antes e depois da Etapa 4.
+
+## Finalização das invasões (impacto econômico)
+
+As regras completas estão em `docs/INVASOES-DA-FAZENDA.md`.
+
+**O que mudou na economia:**
+
+- **Calendário ligado na versão de entrega:** `calendarioPausado: false`, com uma invasão a cada 2 dias úteis. Na média, são 2,5 por semana para quem joga todo dia ou seg/qua/sex, 2,0 para ter/qui e 1,0 para uma visita por semana.
+- **Liberação:** só na primeira evolução 1 → 2 de uma instalação atacável (celeiro, estábulo, ovelhal, curral, galinheiro, chiqueiro ou maquinário).
+- **Sem guarda contratado e vivo:** só **ronda**, sem custo nenhum. O iniciante não perde XP nem produção até contratar o primeiro guarda (casa nível 1 + guarda = 500 XP).
+- **Quantidade de criaturas:** acompanha a força dos guardas e fica entre 3 e 5.
+- **Recompensa:** **+10 XP por invasão real repelida**, fora da cota de Defesa.
+- **Reparo:** 100 / 250 / 450 XP, como antes.
+
+**Saldo estimado com 1 guarda** (2,5 invasões por semana; vitória medida no jogo; o estábulo passou de 3 de 8 para 8 de 8 com o ajuste do estábulo, sem mudar nenhum custo ou recompensa):
+
+- **Perdas:** a maioria das invasões é repelida. A perda média fica concentrada no chiqueiro (12 de 16 vitórias no ajuste do estábulo), menos de 1 reparo a cada 2 semanas para quem o tem.
+- **Ganhos:** +24 XP por semana de recompensa (+8% para o iniciante com guarda, +4% para o intermediário e +3% para o avançado).
+
+**XP no histórico do servidor:** a recompensa entra na origem `fazenda` de `estado.xpPorOrigem`, que o servidor registra como "XP de colheitas, mina e monstros". Por isso não houve mudança no backend.

@@ -353,10 +353,19 @@
       const ouvintesDosObjetivos = [];
       const avisarObjetivos = function avisarObjetivos(tipo, detalhe) { for (const ouvir of ouvintesDosObjetivos) { try { ouvir(tipo, detalhe || {}); } catch (erro) { console.error("[FarmEdu] Quadro de objetivos:", erro); } } };
       // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
+      // CONTRATO (correção de 17/11): devolve true quando o estado foi ACEITO — gravado no localStorage (sem servidor) ou posto na
+      // fila de envio ao servidor (com servidor). true NÃO significa "gravado no banco": o envio é assíncrono (~5 s depois) e a
+      // confirmação fica na seção 34. Devolve false quando o localStorage recusou a gravação (ex.: cota cheia) ou quando esta aba
+      // não salva mais (sincronia bloqueada por 409 — fazenda aberta em outra aba — ou 401 — sessão expirada). Quem desfaz a
+      // ação em caso de falha (poções 28b, lenhador 29b, abdução e ET 30c) depende deste retorno; as demais chamadas o ignoram.
+      // O envio continua sendo agendado exatamente como antes, qualquer que seja o retorno.
       const salvarProgresso = function salvarProgresso() {
-        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); } catch (erro) { return false; }
-        if (window.FarmEduSincronia) window.FarmEduSincronia.agendar();
-        return true;
+        let aceito = true;
+        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); }
+        catch (erro) { aceito = false; console.error('[FarmEdu] Não foi possível salvar o progresso no navegador:', erro); }
+        const sincronia = window.FarmEduSincronia;
+        if (sincronia) { sincronia.agendar(); if (sincronia.bloqueada) aceito = false; }
+        return aceito;
       };
       salvarProgresso();   // grava os campos novos de saves antigos uma única vez
 

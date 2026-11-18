@@ -183,6 +183,7 @@
       '30d-desempenho.js',                     // Etapa 0 (desempenho): mesclagem vigiada das malhas, qualidade automática e medições
       '30e-objetivos.js',                      // Etapa 2: quadro de objetivos (principais, atividades e descobertas)
       '30f-conquistas-e-diario.js',            // Etapa 3: conquistas (medalhas) e Diário da Fazenda
+      '30g-clima-e-vida-ambiente.js',          // Etapa 4: clima dinâmico (só visual) e vida ambiente
       '31-loop-principal.js',                 [93, 'Montando a interface...'],
       '32-interface.js',
       '32b-tutorial.js',                      // Fazenda 8.4.1: tutorial interativo e janela de ajuda (seção 32b)

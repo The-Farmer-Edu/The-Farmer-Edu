@@ -549,3 +549,38 @@ body.em-evento-especial :is(#barra-topo, #lista-cards, #barra-ferramentas, #tuto
   .paginas-do-diario { padding: 12px 12px 16px }
   .medalhas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px }
 }
+
+/* ===== Etapa 4: CORREÇÕES DE RESPONSIVIDADE ===== */
+/* Tutorial: o cartão é uma coluna. Cabeçalho, barra de progresso e botões ficam sempre visíveis; só o texto rola
+   (#tutorial-rolagem). Em telas largas a altura máxima vem daqui; nas estreitas, a seção 32b calcula o espaço livre. */
+#tutorial { display: flex; flex-direction: column; overflow-wrap: break-word;
+  max-height: calc(100vh - env(safe-area-inset-top, 0px) - 188px); max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 188px) }
+#tutorial .tutorial-cabecalho, #tutorial .tutorial-progresso, #tutorial .tutorial-acoes { flex: none }
+.tutorial-cabecalho > span:first-child { min-width: 0 }
+#tutorial-corpo { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0 }
+#tutorial-corpo[hidden] { display: none }
+.tutorial-rolagem { flex: 1 1 auto; min-height: 56px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--gaveta-madeira) transparent }
+.tutorial-acoes { flex-wrap: wrap; row-gap: 6px }
+.tutorial-acoes .botao-pequeno { min-width: 0; white-space: normal }
+@media (max-width: 719px) { #tutorial { max-height: none } }   /* a seção 32b define a altura em telas estreitas */
+
+/* Cartões da gaveta: a regra dos requisitos (acima) redefinia a grade de todos os cartões depois do ajuste para telas estreitas,
+   e o botão ficava na mesma linha da trilha mesmo sem espaço, saindo do cartão. Agora:
+   • a coluna mínima do cartão é 400 px (no desktop de 1400 px continuam 3 colunas, de ~411 px; abaixo disso, menos colunas);
+   • até 560 px de largura, o botão ocupa uma linha própria, na largura toda do cartão;
+   • proteção final: o botão pode quebrar o texto em duas linhas em vez de passar da borda. */
+.cartoes-do-grupo { grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)) }
+.card { grid-template-columns: 44px minmax(84px, 1fr) auto }
+.card button { max-width: 100%; white-space: normal; overflow-wrap: break-word }
+@media (max-width: 560px) {
+  .card { grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-areas: "medalhao titulo" "medalhao trilha" "estado estado" "requisitos requisitos" "botao botao" }
+  .card button { width: 100%; margin-top: 4px }
+}
+
+/* Barra superior em telas muito estreitas (320 px): o botão do menu saía pela direita */
+@media (max-width: 360px) {
+  #barra-topo { padding-left: 6px; padding-right: 6px; gap: 4px }
+  #barra-topo > * { padding: 6px 8px }
+  #recursos-resumo { margin-left: 4px; font-size: 10.5px }
+}

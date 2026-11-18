@@ -142,6 +142,8 @@
         for (const idDaAreaAnimal in ANIMAIS_DAS_AREAS) {
           const informacao = ANIMAIS_DAS_AREAS[idDaAreaAnimal], situacao = estado.animais[idDaAreaAnimal];
           if (!estado.niveis[idDaAreaAnimal]) { partes.push(`<div class="linha-painel apagada">${informacao.icone} ${nomeDaArea(idDaAreaAnimal)} · não construído</div>`); continue; }
+          // finalização das invasões: instalação destruída não alimenta, não coleta e não repõe (os animais ficam parados até o reparo)
+          if (instalacaoDestruida(idDaAreaAnimal)) { partes.push(`<div class="linha-painel apagada">${informacao.icone} ${nomeDaArea(idDaAreaAnimal)} · 💥 destruído: repare no cartão (${custoDeReparo(idDaAreaAnimal)} XP)</div>`); continue; }
           const vivos = animaisVivosDaArea(idDaAreaAnimal), total = totalDeAnimais(idDaAreaAnimal), alerta = situacao.comida < ALIMENTACAO_CONFIG.avisoDeFomeAbaixoDe || situacao.saude < 50;
           partes.push(`<div class="linha-painel${alerta ? ' alerta' : ''}"><span>${informacao.icone} ${vivos}/${total}<br><small>come ${informacao.come.map(recurso => CULTURAS[recurso].icone).join('')}</small></span>
             <span>🍽 ${barrinha(situacao.comida, '#e67e22')}<br>❤ ${barrinha(situacao.saude, '#e74c3c')}</span>

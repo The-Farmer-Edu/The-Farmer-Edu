@@ -29,6 +29,19 @@
       //   · Trabalhador derrotado fica "morto" como nos combates noturnos (recuperação no menu Equipe).
       //   · Fechar a página no meio: a invasão continua ao reabrir, com as criaturas que restavam e o dano já acumulado
       //     (estado.invasao.emAndamento.derrotados / .progresso). Antes da defesa, ela era dada como perdida ao reabrir.
+      // FINALIZAÇÃO DAS INVASÕES (regras completas em docs/INVASOES-DA-FAZENDA.md):
+      //   · Liberação: só a primeira evolução 1 → 2 de uma instalação atacável (INVASOES_CONFIG.instalacoesElegiveis).
+      //   · Quantidade: N = floor(0,95 × √(F / 230)), de 3 a 5 (teto por desempenho), com F = (Σ dano/s) × (Σ vida) dos guardas vivos.
+      //   · Sem guarda contratado e vivo: RONDA (fase 'rondando'): as criaturas olham a instalação e vão embora, sem combate,
+      //     sem dano e sem recompensa; o dia conta como cumprido (estado.invasao.rondas) e a ronda não fica salva em andamento.
+      //   · Repelir uma invasão real dá INVASOES_CONFIG.recompensaPorRepelir XP fora da cota de Defesa, uma vez por invasão
+      //     (estado.invasao.recompensadaId; contada em estado.xpPorOrigem.fazenda). Invasão de teste não dá recompensa.
+      //   · Resultado só aparece salvo: aplicarDestruicao, repelirInvasao e encerrarSemDestruicao desfazem tudo e devolvem false se
+      //     salvarProgresso() recusar; a sequência tenta de novo a cada 2 s.
+      //   · Sem caminho até o alvo (ou criaturas travadas longe, sem bater nem lutar, por segundosAteDesistirSemChegar): as criaturas
+      //     desistem e nada é destruído (estado.invasao.semAtaque).
+      //   · A invasão espera (sem perder o dia) enquanto houver cena especial, tutorial, painel do Guardião ou janela aberta.
+      //   · O deslocamento de teste do calendário é desfeito ao desligar o Modo desenvolvedor e ao abrir a fazenda.
       const registrarAtividade = function registrarAtividade() { estado.atividade.ultima = Date.now(); salvarProgresso(); };
       // Verdadeiro se a instalação está marcada como destruída em estado.danos.
       const instalacaoDestruida = idDaArea => !!(estado.danos[idDaArea] && estado.danos[idDaArea].destruida);
@@ -36,6 +49,52 @@
       const nomeDaArea = idDaArea => AREAS.find(areaDaLista => areaDaLista.id === idDaArea).nome;
       // Custo em XP para reparar uma instalação, conforme o nível que ela tinha ao ser destruída.
       const custoDeReparo = idDaArea => INVASOES_CONFIG.custoDeReparoPorNivel[Math.min(NIVEL_MAXIMO, estado.niveis[idDaArea]) - 1];
+      // ---- Finalização das invasões: alvos, força dos guardas, quantidade de criaturas e proteções ----
+      // Instalação que pode ser atacada (e cuja primeira evolução 1 → 2 libera as invasões).
+      const ehAlvoDeInvasao = idDaArea => INVASOES_CONFIG.instalacoesElegiveis.includes(idDaArea) && AREAS.some(areaDaLista => areaDaLista.id === idDaArea);
+      const temInstalacaoAtacavelEvoluida = () => INVASOES_CONFIG.instalacoesElegiveis.some(idDaArea => ehAlvoDeInvasao(idDaArea) && estado.niveis[idDaArea] >= 2);
+      // Guardas contratados e vivos (inclusive os mandados para casa: mandar todos para casa não diminui a invasão). Derrotados
+      // ainda não recuperados não contam.
+      const guardasDaDefesa = () => estado.trabalhadores.filter(dados => dados.classe === 'guarda' && dados.estado === 'ativo');
+      // F = (soma do dano por segundo) × (soma da vida máxima) dos guardas, com as melhorias (atributosDoTrabalhador, seção 29).
+      // Dano por segundo = dano × precisão / intervalo entre golpes (o mesmo golpe da seção 29: acerta com a precisão, dano médio = dano).
+      const forcaDosGuardas = function forcaDosGuardas() {
+        let danoPorSegundo = 0, vida = 0;
+        for (const dados of guardasDaDefesa()) {
+          const atributos = atributosDoTrabalhador(dados);
+          danoPorSegundo += atributos.dano * atributos.precisao / 100 / CLASSES_DE_TRABALHADORES.guarda.segundosEntreAtaques; vida += atributos.vidaMaxima;
+        }
+        return danoPorSegundo * vida;
+      };
+      // N = floor(fator × √(F / força de uma criatura)), limitado a mobsPorInvasao e ao teto de desempenho.
+      const quantidadeDeCriaturas = function quantidadeDeCriaturas() {
+        const { forcaDeUmaCriatura, fatorDaFormula } = INVASOES_CONFIG.formulaDaDificuldade, [minimo, maximo] = INVASOES_CONFIG.mobsPorInvasao;
+        const calculada = Math.floor(fatorDaFormula * Math.sqrt(forcaDosGuardas() / forcaDeUmaCriatura));
+        return Math.max(minimo, Math.min(maximo, INVASOES_CONFIG.maximoDeMobsSimultaneos, calculada));
+      };
+      // Motivo para a invasão ESPERAR antes de começar (vazio = pode começar): cena especial, tutorial, painel do Guardião, janelas de
+      // tela cheia ou aba escondida. A invasão não é perdida: a conferência roda de novo a cada segundo (atualizarInvasao).
+      const motivoParaAdiarInvasao = function motivoParaAdiarInvasao() {
+        try { if (eventoEspecialEmAndamento()) return 'cena especial'; } catch (erro) { }   // seção 30c (carregada depois desta)
+        for (const seletor of ['#tutorial', '#painel-do-guardiao', '#janela-nome-da-fazenda', '#janela-defesa']) { const elemento = document.querySelector(seletor); if (elemento && !elemento.hidden) return seletor; }
+        return document.hidden ? 'aba escondida' : '';
+      };
+      // Missão final: as criaturas só aparecem à noite (INVASOES_CONFIG.somenteANoite). Usa o ciclo existente (seção 17) com a mesma
+      // definição de noite dos monstros noturnos (ehNoiteParaMonstros, seção 30a, carregada depois desta: chamada só durante o jogo).
+      const esperandoANoite = function esperandoANoite() {
+        if (!INVASOES_CONFIG.somenteANoite) return false;
+        try { return !ehNoiteParaMonstros(); } catch (erro) { return false; }
+      };
+      // Invasão acontecendo agora ou prestes a começar (salva em andamento e já é noite). Uma invasão salva que espera a noite NÃO
+      // conta: durante o dia ela não bloqueia a Poção Misteriosa, a cena do céu nem o convite do tutorial (seções 28b, 30c e 32b);
+      // se uma cena estiver rodando ao anoitecer, é a invasão que espera a cena terminar (motivoParaAdiarInvasao).
+      const invasaoAtivaOuIminente = () => INVASAO_EM_CURSO.fase !== 'nenhuma' || (!!estado.invasao.emAndamento && !esperandoANoite());
+      // Faixa "a invasão acontece ao anoitecer", uma vez por dia de invasão (ou por invasão salva) nesta sessão; não vai para o save.
+      const avisarQueEsperaANoite = function avisarQueEsperaANoite(chave, texto) {
+        if (INVASAO_EM_CURSO.avisoDaNoite === chave) return;
+        INVASAO_EM_CURSO.avisoDaNoite = chave;
+        mostrarFaixaDeInvasao('🌙 Invasão ao anoitecer', texto, 10000);
+      };
       // Mostra a faixa de aviso das invasões (título e texto) por alguns segundos; um clique a fecha.
       const mostrarFaixaDeInvasao = function mostrarFaixaDeInvasao(titulo, texto, duracaoEmMilissegundos = 9000) {
         const faixa = selecionar('#faixa-invasao'); selecionar('#faixa-titulo').textContent = titulo; selecionar('#faixa-texto').textContent = texto;
@@ -63,11 +122,14 @@
         }
         return INVASAO_EM_CURSO.grade;
       };
-      // pontos ao redor da instalação onde cada criatura ficará para atacar (distribuídos pelo perímetro)
+      // pontos ao redor da instalação onde cada criatura ficará para atacar (distribuídos pelo perímetro; nas instalações de
+      // INVASOES_CONFIG.ladoDeAtaquePorAlvo, concentrados num arco de um lado só — ajuste do estábulo)
       const posicoesDeAtaque = function posicoesDeAtaque(idDaArea, quantidadeDeMobs, grade) {
         const area = AREAS.find(areaDaLista => areaDaLista.id === idDaArea), [metadeX, metadeZ] = METADE_DO_TAMANHO_DA_AREA[idDaArea], deslocamentoInicial = Math.random() * 6.28, pontos = [];
+        const lado = (INVASOES_CONFIG.ladoDeAtaquePorAlvo || {})[idDaArea];
         for (let indice = 0; indice < quantidadeDeMobs; indice++) {
-          const angulo = deslocamentoInicial + indice / quantidadeDeMobs * 6.28, cosseno = Math.cos(angulo), seno = Math.sin(angulo), distanciaAteABorda = Math.min((metadeX + 1.3) / Math.max(Math.abs(cosseno), 0.001), (metadeZ + 1.3) / Math.max(Math.abs(seno), 0.001));
+          const angulo = lado ? (lado.anguloCentral + (quantidadeDeMobs > 1 ? indice / (quantidadeDeMobs - 1) - 0.5 : 0) * lado.abertura) * Math.PI / 180
+            : deslocamentoInicial + indice / quantidadeDeMobs * 6.28, cosseno = Math.cos(angulo), seno = Math.sin(angulo), distanciaAteABorda = Math.min((metadeX + 1.3) / Math.max(Math.abs(cosseno), 0.001), (metadeZ + 1.3) / Math.max(Math.abs(seno), 0.001));
           const livre = grade.maisProxima(area.posicao.x + cosseno * distanciaAteABorda, area.posicao.z + seno * distanciaAteABorda);
           pontos.push(grade.centro(livre));
         }
@@ -185,7 +247,16 @@
             mob.recarga -= segundosDesdeUltimoFrame;
             if (mob.recarga <= 0) { mob.recarga = noturnos.segundosEntreAtaques; tocarEfeito(mob.tipo + 'Ataque', [mob.x, mob.z]); if (Math.random() < atributos.precisao) ferirTrabalhador(alvo, Math.round(sortearReal(...atributos.dano)), mob); }
           } else andarMob(mob, segundosDesdeUltimoFrame, grade);
-        } else if (!mob.chegou) { mob.chegou = andarMob(mob, segundosDesdeUltimoFrame, grade); if (mob.chegou) situacao = 'batendo'; }
+        } else if (!mob.chegou) {
+          mob.chegou = andarMob(mob, segundosDesdeUltimoFrame, grade);
+          // Finalização: "chegou" ao fim de um caminho que não leva ao ponto de ataque (sem caminho ao replanejar) não conta como
+          // chegada: a criatura não bate de longe; tenta um caminho novo a cada 3 s.
+          if (mob.chegou && Math.hypot(mob.ataque[0] - mob.x, mob.ataque[1] - mob.z) > 3) {
+            mob.chegou = false; mob.replanejar = (mob.replanejar || 0) - segundosDesdeUltimoFrame;
+            if (mob.replanejar <= 0) { mob.replanejar = 3; const novo = grade.acharCaminho(mob.x, mob.z, mob.ataque[0], mob.ataque[1]); if (novo) { mob.caminho = novo; mob.indice = 0; } }
+          }
+          if (mob.chegou) situacao = 'batendo';
+        }
         else situacao = 'batendo';
         if (situacao === 'batendo') {                                                  // no ponto de ataque: encara a instalação
           mob.velAlvo = 0; golpeando = invasao.fase === 'atacando';
@@ -196,14 +267,47 @@
         return situacao;
       };
       // Todas as criaturas derrotadas: nada é destruído. A invasão conta como cumprida (estado.invasao.repelidas).
+      // Finalização: recompensa de INVASOES_CONFIG.recompensaPorRepelir XP (fora da cota de Defesa) só em invasão REAL (não de teste,
+      // não ronda), uma vez por invasão (estado.invasao.recompensadaId). O resultado e a recompensa são gravados num único salvamento;
+      // se ele for recusado, nada muda (devolve false) e quem chamou tenta de novo depois — a vitória não é anunciada sem estar salva.
       const repelirInvasao = function repelirInvasao() {
-        const invasao = INVASAO_EM_CURSO, idDaArea = invasao.dados.alvo, area = AREAS.find(areaDaLista => areaDaLista.id === idDaArea);
+        const invasao = INVASAO_EM_CURSO, dados = invasao.dados, idDaArea = dados.alvo, area = AREAS.find(areaDaLista => areaDaLista.id === idDaArea);
+        const registro = estado.invasao, antes = { emAndamento: registro.emAndamento, total: registro.total, repelidas: registro.repelidas, ultima: registro.ultima, recompensadaId: registro.recompensadaId, xp: estado.xp };
+        const recompensa = !dados.teste && !dados.ronda && registro.recompensadaId !== dados.id ? INVASOES_CONFIG.recompensaPorRepelir : 0;
+        registro.emAndamento = null; registro.total = (registro.total | 0) + 1; registro.repelidas = (registro.repelidas | 0) + 1; registro.ultima = Date.now();
+        if (recompensa) { registro.recompensadaId = dados.id; estado.xp += recompensa; registrarOrigemDoXP('fazenda', recompensa); }
+        if (!salvarProgresso()) {
+          Object.assign(registro, { emAndamento: antes.emAndamento, total: antes.total, repelidas: antes.repelidas, ultima: antes.ultima, recompensadaId: antes.recompensadaId });
+          if (recompensa) { estado.xp = antes.xp; registrarOrigemDoXP('fazenda', -recompensa); }
+          if (!invasao.avisouFalhaAoSalvar) { invasao.avisouFalhaAoSalvar = true; mostrarAviso('⚠️ Não foi possível salvar o resultado da invasão. Tentando de novo...'); }
+          return false;
+        }
         grupoDaArea[idDaArea].position.set(area.posicao.x, 0, area.posicao.z);
-        estado.invasao.emAndamento = null; estado.invasao.total = (estado.invasao.total | 0) + 1; estado.invasao.repelidas = (estado.invasao.repelidas | 0) + 1; estado.invasao.ultima = Date.now();
-        salvarProgresso();
-        invasao.fase = 'repelida'; invasao.relogio = 0;
-        mostrarFaixaDeInvasao('🛡️ Invasão repelida!', 'A equipe derrotou todas as criaturas. ' + nomeDaArea(idDaArea) + ' não foi destruído.', 12000);
+        invasao.fase = 'repelida'; invasao.relogio = 0; invasao.avisouFalhaAoSalvar = false;
+        mostrarFaixaDeInvasao('🛡️ Invasão repelida!', 'A equipe derrotou todas as criaturas. ' + nomeDaArea(idDaArea) + ' não foi destruído.' + (recompensa ? ' +' + recompensa + ' XP pela defesa da fazenda!' : dados.teste ? ' (Invasão de teste: sem recompensa.)' : ''), 12000);
         desenharCards(); atualizarPaineisDaMark82(true); trocarMusicaDeFundo('normal');   // 8.4.1: efeito sonoro
+        return true;
+      };
+      // Finalização: as criaturas não chegaram (sem caminho até a instalação, ou travadas por segundosAteDesistirSemChegar): nada é
+      // destruído, sem recompensa; a invasão conta como concluída. Devolve false se o salvamento for recusado (nada muda).
+      const encerrarSemDestruicao = function encerrarSemDestruicao() {
+        const invasao = INVASAO_EM_CURSO, dados = invasao.dados, registro = estado.invasao;
+        if (registro.emAndamento && registro.emAndamento.id === dados.id) {
+          const antes = { emAndamento: registro.emAndamento, total: registro.total, semAtaque: registro.semAtaque, ultima: registro.ultima };
+          registro.emAndamento = null; registro.total = (registro.total | 0) + 1; registro.semAtaque = (registro.semAtaque | 0) + 1; registro.ultima = Date.now();
+          if (!salvarProgresso()) { Object.assign(registro, antes); return false; }
+        }
+        const area = AREAS.find(areaDaLista => areaDaLista.id === dados.alvo); grupoDaArea[dados.alvo].position.set(area.posicao.x, 0, area.posicao.z);
+        mostrarFaixaDeInvasao('🌲 As criaturas desistiram', 'As criaturas da floresta não conseguiram chegar a ' + nomeDaArea(dados.alvo) + ' e voltaram para a mata. Nada foi destruído.', 10000);
+        mandarCriaturasEmbora();
+        return true;
+      };
+      // Todas as criaturas vivas voltam para a entrada da floresta (fase 'saindo'); sem criaturas, a invasão acaba na hora.
+      const mandarCriaturasEmbora = function mandarCriaturasEmbora() {
+        const invasao = INVASAO_EM_CURSO;
+        invasao.mobs.forEach(mob => { if (mob.morto) { removerMobDaInvasao(mob); return; } mob.alvo = null; mob.estado = 'saindo'; mob.chegou = false; mob.indice = 0; mob.caminho = invasao.grade.acharCaminho(mob.x, mob.z, mob.entrada[0], mob.entrada[1]); mob.parado = 0; });
+        if (invasao.mobs.some(mob => !mob.removido)) { invasao.fase = 'saindo'; invasao.relogio = 0; }
+        else { removerTodosOsMobs(); invasao.fase = 'nenhuma'; invasao.dados = null; trocarMusicaDeFundo('normal'); }
       };
       // Texto da invasão em curso para o painel Equipe (vazio sem combate).
       const textoDaInvasaoEmCurso = function textoDaInvasaoEmCurso() {
@@ -216,18 +320,31 @@
       const iniciarInvasao = function iniciarInvasao(dados, retomada) {
         INVASAO_EM_CURSO.dados = dados; INVASAO_EM_CURSO.fase = 'aguardando'; INVASAO_EM_CURSO.relogio = -INVASOES_CONFIG.atrasoAposCarregarSegundos; // dá tempo de o jogador ver o aviso antes das criaturas surgirem
         INVASAO_EM_CURSO.total = Math.min(INVASOES_CONFIG.maximoDeMobsSimultaneos, dados.tipos.length); INVASAO_EM_CURSO.progresso = dados.progresso || 0;
+        INVASAO_EM_CURSO.proximaTentativa = 0; INVASAO_EM_CURSO.semBater = 0; INVASAO_EM_CURSO.avisouFalhaAoSalvar = false;
+        if (dados.ronda) {   // sem guarda: só uma ronda, sem combate (o resultado já foi salvo em comecarInvasao)
+          mostrarFaixaDeInvasao('👀 Criaturas rondando a fazenda', (dados.teste ? 'Invasão de teste. ' : 'Hoje era dia de invasão. ') + 'Como a fazenda não tem nenhum guarda, as criaturas da floresta só vão rondar ' + nomeDaArea(dados.alvo) + ' e voltar para a mata, sem atacar. Contrate um guarda no menu 👷 Equipe para defender a fazenda (e ganhar XP ao repelir as invasões).', 14000);
+          focarCameraNaArea(dados.alvo); return;
+        }
         if (retomada) mostrarFaixaDeInvasao('🧟 A invasão continua!', 'As criaturas que restavam voltaram para: ' + nomeDaArea(dados.alvo) + ' (dano ' + Math.floor(INVASAO_EM_CURSO.progresso * 100) + '%). Defenda a instalação!', 12000);
-        else mostrarFaixaDeInvasao('🧟 A fazenda está sob ataque!', (dados.teste ? 'Invasão de teste. ' : 'Hoje é dia de invasão. ') + 'Criaturas da floresta estão indo para: ' + nomeDaArea(dados.alvo) + '. Guardas em campo vão defender.', 12000);
+        else mostrarFaixaDeInvasao('🧟 A fazenda está sob ataque!', (dados.teste ? 'Invasão de teste. ' : 'Hoje é dia de invasão. ') + dados.tipos.length + ' criaturas da floresta estão indo para: ' + nomeDaArea(dados.alvo) + '. Os guardas em campo vão defender.', 12000);
         focarCameraNaArea(dados.alvo); trocarMusicaDeFundo('invasao');   // 8.4.1: efeito sonoro
       };
-      // aplica o resultado no estado salvo (a destruição é registrada separadamente de nível e XP)
+      // aplica o resultado no estado salvo (a destruição é registrada separadamente de nível e XP). Finalização: devolve false, sem
+      // mudar nada, se o salvamento for recusado (a ruína não aparece sem estar salva; quem chamou tenta de novo depois).
       const aplicarDestruicao = function aplicarDestruicao(idDaArea, mensagemDeRetorno) {
+        const registro = estado.invasao, antes = { dano: estado.danos[idDaArea], emAndamento: registro.emAndamento, total: registro.total, ultima: registro.ultima };
         estado.danos[idDaArea] = { destruida: true, em: Date.now(), nivel: estado.niveis[idDaArea] };
-        estado.invasao.emAndamento = null; estado.invasao.total = (estado.invasao.total | 0) + 1; estado.invasao.ultima = Date.now();
-        salvarProgresso();
+        registro.emAndamento = null; registro.total = (registro.total | 0) + 1; registro.ultima = Date.now();
+        if (!salvarProgresso()) {
+          if (antes.dano) estado.danos[idDaArea] = antes.dano; else delete estado.danos[idDaArea];
+          Object.assign(registro, { emAndamento: antes.emAndamento, total: antes.total, ultima: antes.ultima });
+          if (!INVASAO_EM_CURSO.avisouFalhaAoSalvar) { INVASAO_EM_CURSO.avisouFalhaAoSalvar = true; mostrarAviso('⚠️ Não foi possível salvar o resultado da invasão. Tentando de novo...'); }
+          return false;
+        }
         reconstruirArea(idDaArea); tocarEfeito('desabamento');   // 8.4.1: efeito sonoro
         desenharCards();
         mostrarFaixaDeInvasao('💥 ' + nomeDaArea(idDaArea) + ' foi destruído!', (mensagemDeRetorno ? 'Enquanto você estava fora, criaturas atacaram a fazenda. ' : '') + 'O nível ' + estado.niveis[idDaArea] + ' foi preservado: repare por ' + custoDeReparo(idDaArea) + ' XP.', 14000);
+        return true;
       };
       // Máquina de estados da invasão, chamada a cada quadro: aguardando → chegando → atacando → colapsando →
       // saindo. Com nenhuma invasão ativa, confere o calendário a cada 30 s.
@@ -235,31 +352,51 @@
         PoeiraDeAtaque.atualizar(segundosDesdeUltimoFrame);
         const configuracao = INVASOES_CONFIG, invasao = INVASAO_EM_CURSO;
         if (invasao.fase === 'nenhuma') {                                              // conferência periódica do calendário (aba aberta na virada do dia)
-          invasao.checagem += segundosDesdeUltimoFrame; if (invasao.checagem >= configuracao.intervaloDeVerificacaoSegundos) { invasao.checagem = 0; verificarInvasao(); }
+          invasao.checagem += segundosDesdeUltimoFrame; invasao.checagemRapida = (invasao.checagemRapida || 0) + segundosDesdeUltimoFrame;
+          // Finalização: uma invasão salva em andamento (retomada adiada) ou um dia de invasão adiado por cena, tutorial ou painel é
+          // conferido de novo a cada segundo, assim que o jogador estiver livre.
+          if (invasao.checagemRapida >= 1) { invasao.checagemRapida = 0; if (estado.invasao.emAndamento) retomarInvasaoSalva(); else if (invasao.adiada) verificarInvasao(); }
+          if (invasao.fase === 'nenhuma' && invasao.checagem >= configuracao.intervaloDeVerificacaoSegundos) { invasao.checagem = 0; verificarInvasao(); }
         } else if (invasao.fase === 'aguardando') {
           invasao.relogio += segundosDesdeUltimoFrame;
           if (invasao.relogio >= 0) {
             invasao.relogio = 0; gerarMobs();
-            if (invasao.mobs.length) invasao.fase = 'chegando';
-            else if ((invasao.dados.derrotados || []).length >= invasao.total) repelirInvasao();   // retomada sem criaturas restantes
-            else invasao.fase = 'colapsando';                                                     // nenhuma entrada com caminho: comportamento original
+            if (invasao.dados.ronda) { if (invasao.mobs.length) invasao.fase = 'rondando'; else { invasao.fase = 'nenhuma'; invasao.dados = null; } }   // ronda: o resultado já está salvo
+            else if (invasao.mobs.length) invasao.fase = 'chegando';
+            else if ((invasao.dados.derrotados || []).length >= invasao.total) { if (!repelirInvasao()) invasao.relogio = -2; }   // retomada sem criaturas restantes
+            else if (!encerrarSemDestruicao()) invasao.relogio = -2;                                // nenhuma entrada com caminho: nada é destruído
           }
+        } else if (invasao.fase === 'rondando') {
+          // Ronda (sem guarda): as criaturas vão até a instalação, olham por segundosDaRonda e voltam para a mata. Sem combate
+          // (invasaoComCombate() é falso nesta fase: ninguém ataca e ninguém é atacado) e sem dano.
+          invasao.relogio += segundosDesdeUltimoFrame; let andando = 0;
+          for (const mob of invasao.mobs) {
+            if (!mob.chegou) { mob.chegou = andarMob(mob, segundosDesdeUltimoFrame, invasao.grade); if (!mob.chegou) andando++; }
+            if (mob.chegou) { mob.velAlvo = 0; mob.rot += Math.max(-4 * segundosDesdeUltimoFrame, Math.min(4 * segundosDesdeUltimoFrame, normalizarAngulo(Math.atan2(invasao.centro[0] - mob.x, invasao.centro[1] - mob.z) - mob.rot))); }
+            passoDoMob(mob, segundosDesdeUltimoFrame, invasao.grade); animarMob(mob, segundosDesdeUltimoFrame, tempo, false);
+            posicionarBarraDeVida(mob.barra, mob.x, 2.15, mob.z, 1);
+          }
+          if (!andando || invasao.relogio > configuracao.tempoMaximoDeChegadaSegundos) { invasao.olhando = (invasao.olhando || 0) + segundosDesdeUltimoFrame; if (invasao.olhando >= configuracao.segundosDaRonda) { invasao.olhando = 0; mandarCriaturasEmbora(); } }
         } else if (invasao.fase === 'chegando' || invasao.fase === 'atacando') {
           // defesa: cada criatura luta, anda até a instalação ou bate nela; o dano só avança com criaturas batendo
           invasao.relogio += segundosDesdeUltimoFrame; invasao.dica = (invasao.dica || 0) - segundosDesdeUltimoFrame;
           const grupoDaInstalacao = grupoDaArea[invasao.dados.alvo], area = AREAS.find(areaDaLista => areaDaLista.id === invasao.dados.alvo), batendo = [];
-          let andando = 0;
+          let andando = 0, lutando = 0;
           for (const mob of invasao.mobs) {
             if (mob.morto) { animarQuedaDoMob(mob, segundosDesdeUltimoFrame); continue; }
             const situacao = atualizarMobDaInvasao(mob, segundosDesdeUltimoFrame, tempo, invasao);
-            if (situacao === 'batendo') batendo.push(mob); else if (situacao === 'andando') andando++;
+            if (situacao === 'batendo') batendo.push(mob); else if (situacao === 'andando') andando++; else lutando++;
           }
-          if (!criaturasRestantesDaInvasao()) repelirInvasao();
+          if (!criaturasRestantesDaInvasao()) { if (invasao.relogio >= invasao.proximaTentativa && !repelirInvasao()) invasao.proximaTentativa = invasao.relogio + 2; }   // salvamento recusado: tenta de novo em 2 s
           else {
             if (invasao.fase === 'chegando' && (!andando || invasao.relogio > configuracao.tempoMaximoDeChegadaSegundos)) {
-              invasao.fase = 'atacando'; invasao.relogio = 0; invasao.dica = 0;
-              for (const mob of invasao.mobs) if (!mob.morto && !mob.alvo && !mob.chegou) { mob.chegou = true; mob.velAlvo = 0; }   // travada no caminho: ataca de onde está (como antes)
+              invasao.fase = 'atacando'; invasao.relogio = 0; invasao.dica = 0; invasao.proximaTentativa = 0; invasao.semBater = 0;
+              // Finalização: a criatura travada só passa a bater se estiver junto do seu ponto de ataque (antes batia de onde estivesse,
+              // até de longe); as outras continuam tentando chegar.
+              for (const mob of invasao.mobs) if (!mob.morto && !mob.alvo && !mob.chegou && Math.hypot(mob.ataque[0] - mob.x, mob.ataque[1] - mob.z) <= 3) { mob.chegou = true; mob.velAlvo = 0; }
             }
+            // Finalização: sem nenhuma criatura batendo nem lutando por segundosAteDesistirSemChegar, elas desistem (nada é destruído).
+            if (invasao.fase === 'atacando') { invasao.semBater = batendo.length || lutando ? 0 : invasao.semBater + segundosDesdeUltimoFrame; if (invasao.semBater > configuracao.segundosAteDesistirSemChegar && invasao.relogio >= invasao.proximaTentativa && !encerrarSemDestruicao()) invasao.proximaTentativa = invasao.relogio + 2; }
             if (invasao.fase === 'atacando') {
               invasao.progresso = Math.min(1, invasao.progresso + segundosDesdeUltimoFrame / configuracao.duracaoDoAtaqueSegundos * batendo.length / invasao.total);
               if (estado.invasao.emAndamento) { estado.invasao.emAndamento.progresso = invasao.progresso; marcarParaSalvar(); }
@@ -269,7 +406,7 @@
               }
               const tremor = batendo.length ? 0.04 * Math.min(1, invasao.relogio / 2) : 0;
               grupoDaInstalacao.position.x = area.posicao.x + Math.sin(tempo * 45) * tremor; grupoDaInstalacao.position.z = area.posicao.z + Math.cos(tempo * 38) * tremor;
-              if (invasao.progresso >= 1) { invasao.fase = 'colapsando'; invasao.relogio = 0; invasao.estourou = false; }
+              if (invasao.progresso >= 1) { invasao.fase = 'colapsando'; invasao.relogio = 0; invasao.estourou = false; invasao.proximaTentativa = 0.9; }
             }
           }
         } else if (invasao.fase === 'repelida') {                                        // as derrotadas terminam de cair; depois a invasão acaba
@@ -282,12 +419,14 @@
           if (!invasao.estourou) { invasao.estourou = true; for (let indice = 0; indice < 8; indice++) PoeiraDeAtaque.emitir(area.posicao.x + (Math.random() - 0.5) * metadeX * 1.4, 0.3, area.posicao.z + (Math.random() - 0.5) * metadeZ * 1.4, 4, 1.4); }
           grupoDaInstalacao.scale.y = Math.max(0.15, 1 - invasao.relogio / 0.9 * 0.85); grupoDaInstalacao.position.x = area.posicao.x + Math.sin(tempo * 60) * 0.06; grupoDaInstalacao.position.z = area.posicao.z;
           for (const mob of invasao.mobs) { if (mob.morto) { animarQuedaDoMob(mob, segundosDesdeUltimoFrame); continue; } mob.velAlvo = 0; passoDoMob(mob, segundosDesdeUltimoFrame, invasao.grade); animarMob(mob, segundosDesdeUltimoFrame, tempo, true); }
-          if (invasao.relogio >= 0.9) {
+          if (invasao.relogio >= invasao.proximaTentativa) {
             grupoDaInstalacao.position.set(area.posicao.x, 0, area.posicao.z);
-            aplicarDestruicao(invasao.dados.alvo, false);
-            grupoDaInstalacao.scale.set(1, 1, 1);                                                // a ruína já foi construída; sem "pulo" de evolução
-            invasao.mobs.forEach(mob => { if (mob.morto) { removerMobDaInvasao(mob); return; } mob.alvo = null; mob.estado = 'saindo'; mob.chegou = false; mob.indice = 0; mob.caminho = invasao.grade.acharCaminho(mob.x, mob.z, mob.entrada[0], mob.entrada[1]); mob.parado = 0; });
-            invasao.fase = 'saindo'; invasao.relogio = 0;
+            // Finalização: a ruína só aparece com a destruição salva; recusado, a instalação fica abaixada e tenta de novo em 2 s
+            if (!aplicarDestruicao(invasao.dados.alvo, false)) invasao.proximaTentativa = invasao.relogio + 2;
+            else {
+              grupoDaInstalacao.scale.set(1, 1, 1);                                                // a ruína já foi construída; sem "pulo" de evolução
+              invasao.avisouFalhaAoSalvar = false; mandarCriaturasEmbora();
+            }
           }
         } else if (invasao.fase === 'saindo') {
           invasao.relogio += segundosDesdeUltimoFrame; let restantes = 0;
@@ -357,12 +496,13 @@
       const janelaDaDefesa = selecionar('#janela-defesa');
       const textoDoAvisoDeDefesa = () => {
         const guarda = CLASSES_DE_TRABALHADORES.guarda, fazendeiro = CLASSES_DE_TRABALHADORES.fazendeiro, configuracao = INVASOES_CONFIG;
-        return `<p>A fazenda cresceu e chamou a atenção das criaturas da floresta. A cada <b>${configuracao.diasUteisEntreInvasoes} dias úteis</b>, ${configuracao.mobsPorInvasao[0]} a ${configuracao.mobsPorInvasao[1]} criaturas atacam uma instalação (criações, celeiro ou maquinário). Você é avisado no dia útil anterior.</p>`
-          + `<p>Se a instalação desabar, o nível é mantido, mas ela fica destruída até ser reparada (${configuracao.custoDeReparoPorNivel.join(' / ')} XP, conforme o nível).</p>`
+        return `<p>A fazenda cresceu e chamou a atenção das criaturas da floresta. A cada <b>${configuracao.diasUteisEntreInvasoes} dias úteis</b>, elas atacam uma instalação (criações, celeiro ou maquinário)${configuracao.somenteANoite ? ', sempre <b>à noite</b>' : ''}. Você é avisado no dia útil anterior.</p>`
+          + `<p>Quantas criaturas vêm (${configuracao.mobsPorInvasao[0]} a ${configuracao.mobsPorInvasao[1]}) depende da força dos seus <b>guardas</b>. <b>Sem nenhum guarda</b>, elas só rondam a fazenda e vão embora, sem destruir nada.</p>`
+          + `<p>Se a instalação desabar, o nível é mantido, mas ela fica destruída até ser reparada (${configuracao.custoDeReparoPorNivel.join(' / ')} XP, conforme o nível): os animais dela param e ela não pode evoluir.</p>`
           + `<h4>Como se defender</h4><ul class="tutorial-lista"><li><b>${guarda.icone} Guardas</b> (${guarda.custo} XP, no menu 👷 Equipe) correm até a instalação atacada, de qualquer ponto da fazenda.</li>`
           + `<li><b>${fazendeiro.icone} Fazendeiros</b> só lutam com criaturas que chegam perto deles.</li>`
-          + `<li>Quem for mandado <b>🏠 para casa</b> fica protegido, mas não defende.</li>`
-          + `<li>Derrote todas as criaturas e nada é destruído. Enquanto elas lutam com a equipe, não batem na instalação.</li>`
+          + `<li>Quem for mandado <b>🏠 para casa</b> fica protegido, mas não defende (e continua contando na força da invasão).</li>`
+          + `<li>Derrote todas as criaturas e nada é destruído: <b>+${configuracao.recompensaPorRepelir} XP</b> pela defesa. Enquanto elas lutam com a equipe, não batem na instalação.</li>`
           + `<li>Trabalhador derrotado pode ser recuperado com XP; melhorar vida, dano e precisão ajuda a vencer.</li></ul>`;
       };
       const abrirAvisoDeDefesa = function abrirAvisoDeDefesa() {
@@ -393,19 +533,64 @@
         if (!avisoDeDefesaVisto()) { abrirAvisoDeDefesa(); return; }
         const hoje = hojeNoCalendario();
         calendario.liberadoEm = hoje; calendario.ultimoDiaAtendido = hoje; salvarProgresso();
-        mostrarFaixaDeInvasao('🧟 Invasões liberadas', 'A fazenda cresceu e chamou a atenção das criaturas da floresta. A cada ' + INVASOES_CONFIG.diasUteisEntreInvasoes + ' dias úteis elas atacam uma instalação, com aviso no dia útil anterior. A primeira será na ' + textoDoDia(diasDeInvasaoAoRedor(hoje).proximo) + '.', 14000);
+        mostrarFaixaDeInvasao('🧟 Invasões liberadas', 'A fazenda cresceu e chamou a atenção das criaturas da floresta. A cada ' + INVASOES_CONFIG.diasUteisEntreInvasoes + ' dias úteis elas atacam uma instalação' + (INVASOES_CONFIG.somenteANoite ? ', sempre à noite' : '') + ', com aviso no dia útil anterior. A primeira será na ' + textoDoDia(diasDeInvasaoAoRedor(hoje).proximo) + '.', 14000);
       };
       // Chamado pela seção 32 sempre que uma área sobe de nível: a primeira evolução do nível 1 para o 2 libera as invasões.
-      const aoEvoluirArea = function aoEvoluirArea(idDaArea, nivelAnterior) { if (nivelAnterior === 1) liberarInvasoes(); };
+      // Finalização: só a primeira evolução 1 → 2 de uma INSTALAÇÃO ATACÁVEL libera (casa, ponte, plantações, moinho e mina não).
+      const aoEvoluirArea = function aoEvoluirArea(idDaArea, nivelAnterior) { if (nivelAnterior === 1 && ehAlvoDeInvasao(idDaArea)) liberarInvasoes(); };
       // Sorteia o alvo e as criaturas, salva a invasão ANTES da animação (recarregar não duplica nem perde) e começa a sequência.
+      // Finalização: a quantidade vem da força dos guardas (quantidadeDeCriaturas); sem guarda contratado e vivo, é uma RONDA (sem
+      // ataque, sem recompensa), dada como concluída já aqui, no mesmo salvamento. Devolve true (começou), false (nenhuma instalação
+      // para atacar) ou null (salvamento recusado: nada mudou).
       const comecarInvasao = function comecarInvasao(teste) {
-        const configuracao = INVASOES_CONFIG, agora = Date.now();
+        const configuracao = INVASOES_CONFIG, agora = Date.now(), registro = estado.invasao;
         const alvos = configuracao.instalacoesElegiveis.filter(idDaArea => AREAS.some(areaDaLista => areaDaLista.id === idDaArea) && estado.niveis[idDaArea] > 0 && !instalacaoDestruida(idDaArea));   // Mark 8.2: lotes não construídos (nível 0) não são alvo
         if (!alvos.length) { salvarProgresso(); return false; }
-        const quantidade = Math.min(configuracao.maximoDeMobsSimultaneos, sortearEntre(configuracao.mobsPorInvasao[0], configuracao.mobsPorInvasao[1]));
-        estado.invasao.emAndamento = { id: agora, alvo: sortearDaLista(alvos), tipos: Array.from({ length: quantidade }, () => sortearDaLista(configuracao.tiposDeMob)), iniciadaEm: agora, teste: !!teste, derrotados: [], progresso: 0 };
+        const ronda = !guardasDaDefesa().length, quantidade = ronda ? configuracao.mobsDaRonda : quantidadeDeCriaturas();
+        const dados = { id: agora, alvo: sortearDaLista(alvos), tipos: Array.from({ length: quantidade }, () => sortearDaLista(configuracao.tiposDeMob)), iniciadaEm: agora, teste: !!teste, derrotados: [], progresso: 0 };
+        if (ronda) {
+          const antes = { total: registro.total, rondas: registro.rondas, ultima: registro.ultima };
+          registro.total = (registro.total | 0) + 1; registro.rondas = (registro.rondas | 0) + 1; registro.ultima = agora;
+          if (!salvarProgresso()) { Object.assign(registro, antes); return null; }
+          iniciarInvasao({ ...dados, ronda: true });   // a ronda não fica salva em andamento: recarregar no meio não a repete
+          return true;
+        }
+        registro.emAndamento = dados;
+        if (!salvarProgresso()) { registro.emAndamento = null; return null; }
+        iniciarInvasao(registro.emAndamento);
+        return true;
+      };
+      // Retoma a invasão salva em andamento (página fechada no meio), assim que nada estiver ocupando a tela.
+      const retomarInvasaoSalva = function retomarInvasaoSalva() {
+        const andamento = estado.invasao.emAndamento;
+        if (!andamento || INVASAO_EM_CURSO.fase !== 'nenhuma') return false;
+        if (!(AREAS.some(areaDaLista => areaDaLista.id === andamento.alvo) && estado.niveis[andamento.alvo] > 0 && !instalacaoDestruida(andamento.alvo))) { estado.invasao.emAndamento = null; salvarProgresso(); return false; }
+        if (motivoParaAdiarInvasao()) return false;
+        // Missão final: a invasão salva continua só à noite (a conferência de cada segundo, em atualizarInvasao, a retoma ao anoitecer)
+        if (esperandoANoite()) { avisarQueEsperaANoite('retomada-' + andamento.id, 'Uma invasão ficou pela metade. As criaturas voltam quando anoitecer na fazenda.'); return false; }
+        iniciarInvasao(andamento, true); return true;
+      };
+      // Finalização: o "Avançar um dia elegível" (Modo desenvolvedor) soma dias SÓ ao calendário das invasões. Para o teste não
+      // contaminar o save, o deslocamento é desfeito ao desligar o Modo desenvolvedor e ao abrir a fazenda (o modo começa desligado):
+      // volta a 0 e os dias do calendário que ficaram no "futuro de teste" voltam para hoje (nada é cobrado nem fica pendente).
+      const limparDeslocamentoDeTeste = function limparDeslocamentoDeTeste() {
+        const calendario = estado.calendarioDasInvasoes;
+        if (!calendario.deslocamentoDeTesteDias) return false;
+        const hoje = diaDoCalendario(Date.now());
+        calendario.deslocamentoDeTesteDias = 0;
+        for (const campo of ['liberadoEm', 'ultimoDiaAtendido', 'esperaAvisadaEm', 'pausadoEm', 'avisoDeDefesaVistoEm']) if (calendario[campo] !== null && calendario[campo] > hoje) calendario[campo] = hoje;
+        calendario.avisoMostradoPara = null;
+        salvarProgresso(); atualizarInformacaoDasInvasoes();
+        return true;
+      };
+      // Finalização: save liberado pela regra antiga (qualquer área no nível 2, até casa ou ponte) sem nenhuma instalação atacável no
+      // nível 2 ou mais volta a "não liberado" (a liberação acontece de novo quando a regra for cumprida). O aviso da defesa já visto
+      // é mantido; nada é cobrado. Uma invasão já em andamento não é tocada.
+      const revalidarLiberacao = function revalidarLiberacao() {
+        const calendario = estado.calendarioDasInvasoes;
+        if (calendario.liberadoEm === null || estado.invasao.emAndamento || temInstalacaoAtacavelEvoluida()) return false;
+        Object.assign(calendario, { liberadoEm: null, ultimoDiaAtendido: null, avisoMostradoPara: null, esperaAvisadaEm: null, pausadoEm: null });
         salvarProgresso();
-        iniciarInvasao(estado.invasao.emAndamento);
         return true;
       };
       // Confere o calendário (seguro para chamar várias vezes): cumpre a invasão pendente em dia útil, adia a do fim de semana e
@@ -425,15 +610,23 @@
             }
             return false;
           }
+          // Finalização: cena especial, tutorial, painel do Guardião ou janela aberta → a invasão espera (conferida a cada segundo)
+          if (motivoParaAdiarInvasao()) { INVASAO_EM_CURSO.adiada = true; return false; }
+          // Missão final: de dia, a invasão do dia espera a noite (a data não muda; conferida a cada segundo até anoitecer)
+          if (esperandoANoite()) { INVASAO_EM_CURSO.adiada = true; avisarQueEsperaANoite('dia-' + pendente, 'Hoje é dia de invasão: as criaturas da floresta atacam quando anoitecer na fazenda. Prepare os guardas!'); return false; }
+          INVASAO_EM_CURSO.adiada = false;
+          const anterior = calendario.ultimoDiaAtendido;
           calendario.ultimoDiaAtendido = pendente;                           // cumprida (sem alvo possível, o dia passa sem ataque)
-          if (comecarInvasao(false)) return true;
+          const resultado = comecarInvasao(false);
+          if (resultado) return true;
+          if (resultado === null) { calendario.ultimoDiaAtendido = anterior; return false; }   // salvamento recusado: fica pendente
           mostrarFaixaDeInvasao('🌲 As criaturas foram embora', 'Hoje era dia de invasão, mas as criaturas da floresta não encontraram nenhuma instalação para atacar.', 9000);
           return false;
         }
         const { proximo } = diasDeInvasaoAoRedor(hoje);
         if (ehDiaUtil(hoje) && enesimoDiaUtilDepois(hoje, 1) === proximo && calendario.avisoMostradoPara !== proximo) {   // hoje é o dia útil anterior
           calendario.avisoMostradoPara = proximo; salvarProgresso();
-          mostrarFaixaDeInvasao('⚠️ Invasão a caminho', 'As criaturas da floresta vão atacar uma instalação ' + (proximo === hoje + 1 ? 'amanhã' : 'na ' + textoDoDia(proximo)) + '.', 12000);
+          mostrarFaixaDeInvasao('⚠️ Invasão a caminho', 'As criaturas da floresta vão atacar uma instalação ' + (proximo === hoje + 1 ? 'amanhã' : 'na ' + textoDoDia(proximo)) + (INVASOES_CONFIG.somenteANoite ? ', quando anoitecer na fazenda' : '') + '.', 12000);
         }
         return false;
       };
@@ -441,14 +634,15 @@
       const iniciarSistemaDeInvasoes = function iniciarSistemaDeInvasoes() {
         if (!INVASOES_CONFIG.ativas) return;           // desligado (ver INVASOES_CONFIG)
         // pausa/retomada do calendário registrada já ao abrir: o caminho da invasão em andamento (abaixo) não passa por verificarInvasao
+        limparDeslocamentoDeTeste();   // finalização: um deslocamento de teste salvo não sobrevive à reabertura
+        revalidarLiberacao();          // finalização: liberado pela regra antiga (casa/ponte) sem instalação atacável evoluída → não liberado
         if (estado.calendarioDasInvasoes.liberadoEm !== null) acompanharPausaDoCalendario(hojeNoCalendario());
-        // save de antes do calendário que já passou do nível 1 para o 2: libera a partir de hoje (sem invasões retroativas)
-        const liberarSaveAntigo = estado.calendarioDasInvasoes.liberadoEm === null && AREAS.some(areaDaLista => estado.niveis[areaDaLista.id] >= 2);
+        // save de antes do calendário que já tem uma INSTALAÇÃO ATACÁVEL no nível 2 ou mais: libera a partir de hoje (sem invasões
+        // retroativas; primeiro o aviso da defesa, e a contagem começa no dia em que ele for fechado)
+        const liberarSaveAntigo = estado.calendarioDasInvasoes.liberadoEm === null && temInstalacaoAtacavelEvoluida();
         if (liberarSaveAntigo) liberarInvasoes();
-        const andamento = estado.invasao.emAndamento;
-        if (andamento) {                                                       // a página foi fechada no meio de uma invasão: ela continua (defesa)
-          if (AREAS.some(areaDaLista => areaDaLista.id === andamento.alvo) && estado.niveis[andamento.alvo] > 0 && !instalacaoDestruida(andamento.alvo)) iniciarInvasao(andamento, true);
-          else { estado.invasao.emAndamento = null; salvarProgresso(); }
+        if (estado.invasao.emAndamento) {                                      // a página foi fechada no meio de uma invasão: ela continua (defesa)
+          retomarInvasaoSalva();   // ocupado (cena, tutorial, painel): atualizarInvasao tenta de novo a cada segundo
           return;
         }
         if (!liberarSaveAntigo) verificarInvasao();
@@ -473,9 +667,14 @@
         const calendario = estado.calendarioDasInvasoes, hoje = hojeNoCalendario(), destruidas = Object.keys(estado.danos).length;
         let texto = 'Hoje: ' + textoDoDia(hoje) + (calendario.deslocamentoDeTesteDias ? ' (+' + calendario.deslocamentoDeTesteDias + ' dia(s) de teste)' : '') + ' · ';
         if (calendarioPausado()) texto += 'calendário PAUSADO (sem invasões periódicas até a defesa; "Invasão agora" continua valendo)';
-        else if (calendario.liberadoEm === null) texto += 'invasões ainda não liberadas (primeira evolução do nível 1 para o 2)';
-        else texto += invasaoPendente(hoje) !== null ? 'invasão pendente (próximo dia útil)' : 'próxima invasão: ' + textoDoDia(diasDeInvasaoAoRedor(hoje).proximo);
-        texto += ' · destruídas: ' + destruidas + ' · repelidas: ' + (estado.invasao.repelidas | 0) + (calendarioPausado() || avisoDeDefesaVisto() ? '' : ' · aviso da defesa ainda não visto') + (INVASAO_EM_CURSO.fase !== 'nenhuma' ? ' · invasão em curso' : '');
+        else if (calendario.liberadoEm === null) texto += 'invasões ainda não liberadas (primeira evolução 1 → 2 de uma instalação atacável)';
+        else texto += invasaoPendente(hoje) !== null ? (ehDiaUtil(hoje) && esperandoANoite() ? 'invasão de hoje: espera a noite' : 'invasão pendente (próximo dia útil)') : 'próxima invasão: ' + textoDoDia(diasDeInvasaoAoRedor(hoje).proximo);
+        if (estado.invasao.emAndamento && INVASAO_EM_CURSO.fase === 'nenhuma') texto += ' · invasão salva: continua ' + (esperandoANoite() ? 'à noite' : 'agora');
+        try {   // atributosDoTrabalhador é da seção 29, carregada depois desta (a primeira chamada acontece ainda na montagem)
+          const guardas = guardasDaDefesa().length;
+          texto += ' · próxima: ' + (guardas ? quantidadeDeCriaturas() + ' criaturas (' + guardas + ' guarda' + (guardas > 1 ? 's' : '') + ')' : 'ronda (sem guarda)');
+        } catch (erro) { }
+        texto += ' · destruídas: ' + destruidas + ' · repelidas: ' + (estado.invasao.repelidas | 0) + ' · rondas: ' + (estado.invasao.rondas | 0) + (calendarioPausado() || avisoDeDefesaVisto() ? '' : ' · aviso da defesa ainda não visto') + (INVASAO_EM_CURSO.fase !== 'nenhuma' ? ' · invasão em curso' : '');
         if (texto !== INVASAO_EM_CURSO.infoTexto) { INVASAO_EM_CURSO.infoTexto = texto; selecionar('#invasao-info').textContent = texto; }
       };
       // Teste "Invasão agora": força uma invasão já, sem mexer no calendário (não cumpre nem adia o próximo dia de invasão).
@@ -493,7 +692,11 @@
         const comecou = verificarInvasao(); atualizarInformacaoDasInvasoes();
         return comecou;
       };
-      selecionar('#teste-invasao').onclick = () => { if (!modoDesenvolvedorAtivo) return; if (!invasaoAgora()) mostrarAviso(INVASAO_EM_CURSO.fase !== 'nenhuma' || estado.invasao.emAndamento ? 'Já há uma invasão em curso.' : 'Nenhuma instalação elegível para atacar.'); };
+      selecionar('#teste-invasao').onclick = () => {
+        if (!modoDesenvolvedorAtivo) return;
+        const resultado = invasaoAgora();
+        if (!resultado) mostrarAviso(INVASAO_EM_CURSO.fase !== 'nenhuma' || estado.invasao.emAndamento ? 'Já há uma invasão em curso.' : resultado === null ? 'Não foi possível salvar o início da invasão.' : 'Nenhuma instalação elegível para atacar.');
+      };
       selecionar('#teste-dia-elegivel').onclick = () => {
         if (!modoDesenvolvedorAtivo) return;
         const comecou = avancarDiaElegivel();

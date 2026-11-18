@@ -2,66 +2,92 @@
     'use strict';
 
     const maxImageSize = 5 * 1024 * 1024;
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
-    document.querySelectorAll('[data-image-input]').forEach((input) => {
-        const target = document.getElementById(input.dataset.previewTarget || 'imagePreview');
-        const label = document.querySelector(input.dataset.labelTarget || '[data-image-label]');
-        const removeCheckbox = input.form && input.form.querySelector('[name="remover_imagem"]');
-        const originalImageSrc = target ? (target.getAttribute('src') || '') : '';
-        const originalLabel = label ? label.textContent : '';
+    // Campo de imagem da turma (cadastro e edição).
+    // Estados: imagem já salva (só na edição) · arquivo novo escolhido · remoção pedida.
+    document.querySelectorAll('[data-image-field]').forEach((field) => {
+        const input = field.querySelector('[data-image-input]');
+        const dropzone = field.querySelector('[data-image-dropzone]');
+        const preview = field.querySelector('[data-image-preview]');
+        const label = field.querySelector('[data-image-label]');
+        const flag = field.querySelector('[data-image-remove-flag]');
+        const removeButton = field.querySelector('[data-image-remove]');
+        const removeText = field.querySelector('[data-image-remove-text]');
+        if (!input || !dropzone || !preview || !removeButton) return;
+
+        const currentSrc = preview.getAttribute('src') || '';
+        const hasCurrent = currentSrc !== '';
+        const defaultLabel = label ? label.textContent : '';
+        let selectedUrl = '';
+        let removed = false;
+
+        const clearSelection = () => {
+            if (selectedUrl) URL.revokeObjectURL(selectedUrl);
+            selectedUrl = '';
+            input.value = '';
+        };
+
+        const render = () => {
+            const src = selectedUrl || (hasCurrent && !removed ? currentSrc : '');
+
+            if (src) {
+                preview.src = src;
+                preview.hidden = false;
+            } else {
+                preview.removeAttribute('src');
+                preview.hidden = true;
+            }
+            dropzone.classList.toggle('has-preview', src !== '');
+
+            if (label) {
+                label.textContent = removed ? 'A imagem atual será removida ao salvar.' : defaultLabel;
+            }
+            if (flag) flag.value = removed ? '1' : '0';
+
+            // O botão aparece sempre que há algo a remover (ou a desfazer).
+            removeButton.hidden = !(src || removed);
+            removeButton.classList.toggle('btn-outline-danger', !removed);
+            removeButton.classList.toggle('btn-outline-theme', removed);
+            if (removeText) removeText.textContent = removed ? 'Desfazer remoção' : 'Remover imagem';
+        };
 
         input.addEventListener('change', () => {
             const file = input.files && input.files[0];
             if (!file) return;
-            if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            if (!allowedTypes.includes(file.type)) {
                 window.alert('Formato inválido. Escolha uma imagem JPG, PNG ou WEBP.');
-                input.value = '';
+                clearSelection();
+                render();
                 return;
             }
             if (file.size > maxImageSize) {
                 window.alert('A imagem deve ter no máximo 5 MB.');
-                input.value = '';
+                clearSelection();
+                render();
                 return;
             }
 
-            // Selecionar um arquivo novo cancela a opção de remover a imagem.
-            if (removeCheckbox) removeCheckbox.checked = false;
-
-            if (target) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    target.src = event.target.result;
-                    target.classList.remove('d-none');
-                    const placeholder = target.parentElement.querySelector('[data-image-placeholder]');
-                    if (placeholder) placeholder.classList.add('d-none');
-                };
-                reader.readAsDataURL(file);
-            }
-            if (label) label.textContent = file.name;
+            if (selectedUrl) URL.revokeObjectURL(selectedUrl);
+            selectedUrl = URL.createObjectURL(file);
+            removed = false; // Escolher um arquivo novo cancela o pedido de remoção.
+            render();
         });
 
-        if (removeCheckbox) {
-            removeCheckbox.addEventListener('change', () => {
-                if (removeCheckbox.checked) {
-                    // Remoção explícita: não envia simultaneamente um arquivo novo.
-                    input.value = '';
-                    if (target) {
-                        target.removeAttribute('src');
-                        target.classList.add('d-none');
-                    }
-                    if (label) label.textContent = 'A imagem atual será removida ao salvar.';
-                    return;
-                }
+        removeButton.addEventListener('click', () => {
+            if (removed) {
+                // Desfazer: volta a exibir a imagem que já estava salva.
+                removed = false;
+            } else {
+                // Descarta o arquivo escolhido e, se já havia imagem salva,
+                // pede a remoção dela ao salvar.
+                clearSelection();
+                removed = hasCurrent;
+            }
+            render();
+        });
 
-                if (target && originalImageSrc) {
-                    target.src = originalImageSrc;
-                    target.classList.remove('d-none');
-                } else if (target) {
-                    target.classList.add('d-none');
-                }
-                if (label) label.textContent = originalLabel;
-            });
-        }
+        render();
     });
 
     const modalId = document.body.dataset.openModal;

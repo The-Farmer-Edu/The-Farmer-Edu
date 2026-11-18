@@ -1,11 +1,17 @@
 (function () {
+    /**
+     * Módulo de bootstrapping da atividade.
+     *
+     * A lógica aqui converte os dados do banco em um objeto JavaScript pronto para uso pela UI.
+     * Em vez de consultar a API toda vez que a tela montada, a página recebe um bloco JSON no HTML
+     * e esse script transforma esse payload em `window.FarmAtividade`.
+     */
     const PHP_ABRE = '<' + '?php\n\n';
 
     /* LINGUAGENS */
     const LINGUAGENS = {
         web: {
             id: 'web', nome: 'HTML + CSS + JS', rotulo: 'Web', modo: 'web', judge0: 63,
-            badges: ['HTML5', 'CSS3', 'JS'],
             arquivos: [
                 { nome: 'index.html', lang: 'html', rotulo: 'HTML' },
                 { nome: 'style.css', lang: 'css', rotulo: 'CSS' },
@@ -19,22 +25,29 @@
         },
         71: {
             id: 71, nome: 'Python (3.8.1)', rotulo: 'Python', modo: 'terminal', judge0: 71,
-            badges: ['Python'],
             arquivos: [{ nome: 'main.py', lang: 'py', rotulo: 'Python' }],
             inicial: { py: '# Escreva seu código Python abaixo\n' }
         },
         63: {
             id: 63, nome: 'JavaScript (Node.js)', rotulo: 'JavaScript', modo: 'terminal', judge0: 63,
-            badges: ['JS'],
             arquivos: [{ nome: 'main.js', lang: 'js', rotulo: 'JavaScript' }],
             inicial: { js: '// Escreva seu código JavaScript abaixo\n' }
         },
         68: {
             id: 68, nome: 'PHP', rotulo: 'PHP', modo: 'terminal', judge0: 68,
-            badges: ['PHP'],
             arquivos: [{ nome: 'main.php', lang: 'php', rotulo: 'PHP' }],
             inicial: { php: PHP_ABRE }
-        }
+        },
+        sql: {
+             id: 'sql', nome: 'SQL', rotulo: 'SQL', modo: 'terminal', judge0: 82,
+             arquivos: [{ nome: 'main.sql', lang: 'sql', rotulo: 'SQL' }],
+             inicial: { sql: '-- Escreva seu comando SQL abaixo\n' }
+        },
+        texto: {
+             id: 'texto', nome: 'Texto', rotulo: 'Texto', modo: 'texto', judge0: null,
+             arquivos: [{ nome: 'Resposta', lang: 'txt', rotulo: 'Texto' }],
+             inicial: { txt: '' }
+},
     };
 
     /* DADOS DA ATIVIDADE */
@@ -48,62 +61,19 @@
     let lido = {};
     if (bloco) {
         try {
-            lido = JSON.parse(bloco.textContent);
-        } catch (e) {
-            console.error('Bloco #dadosAtividade inválido:', e);
+            dadosDoBanco = JSON.parse(blocoDadosAtividade.textContent) || {};
+        } catch (erro) {
+            console.error('Bloco #dadosAtividade inválido:', erro);
         }
     }
 
-    // TESTE Atividades
-    const TESTES = {
-        web: {
-            id: 1,
-            chave: 'teste-web',
-            titulo: '[TESTE] Web — Minha Fazenda',
-            descricao: 'Turma, vocês vão criar uma página simples para a fazenda: um título, um parágrafo e um botão que reage ao clique.',
-            requisitos: [
-                'Criar um título h1 com o texto "Minha Fazenda" e um parágrafo de apresentação',
-                'Adicionar um botão com id "btn" e o texto "Clique aqui"',
-                'Estilizar o fundo da página e o botão no CSS',
-                'Ao clicar, trocar o texto do botão para "Cocoricó!" e escrever uma mensagem no console'
-            ],
-            objetivo: "Criar uma página 'Minha Fazenda' com título, parágrafo e um botão que, ao ser clicado, muda o texto para 'Cocoricó!' e registra uma mensagem no console.",
-            idLinguagem: 'web',
-            entrada: ''
-        },
-        php: {
-            id: 1,
-            chave: 'teste-php',
-            titulo: '[TESTE] PHP — saudação da fazenda',
-            descricao: 'Atividade de teste do Judge0 com PHP. Leia um nome e mostre uma saudação.',
-            requisitos: [
-                'Ler uma linha da entrada com fgets(STDIN)',
-                'Remover a quebra de linha com trim()',
-                'Mostrar com echo no formato "Bem-vindo, <nome>!"'
-            ],
-            objetivo: 'Ler um nome da entrada e imprimir "Bem-vindo, <nome>!".',
-            idLinguagem: 68,
-            entrada: 'Maria\n',
-            saidaEsperada: 'Bem-vindo, Maria!',
-            codigoInicial: { php: PHP_ABRE + '// Leia o nome com fgets(STDIN) e mostre "Bem-vindo, <nome>!"\n' }
-        },
-        python: {
-            id: 1,
-            chave: 'teste-python',
-            titulo: '[TESTE] Python — soma de dois números',
-            descricao: 'Atividade de teste do Judge0 com Python. Leia dois números inteiros, some e mostre o resultado.',
-            requisitos: [
-                'Ler dois números inteiros com input(), um por linha',
-                'Somar os dois números',
-                'Mostrar o resultado com print no formato "Soma: <resultado>"'
-            ],
-            objetivo: 'Ler dois números inteiros, somá-los e imprimir "Soma: <resultado>".',
-            idLinguagem: 71,
-            entrada: '3\n5\n',
-            saidaEsperada: 'Soma: 8',
-            codigoInicial: { py: '# Leia dois números inteiros (um por linha), some e mostre "Soma: <resultado>"\n' }
-        }
-    };
+    // Junta os valores do banco com os defaults do sistema para garantir campos sempre presentes.
+    const atividade = Object.assign({}, ATIVIDADE_PADRAO, dadosDoBanco);
+    const linguagem = LINGUAGENS[atividade.idLinguagem] || LINGUAGENS.web;
+    atividade.linguagem = Object.assign({}, linguagem, {
+        inicial: Object.assign({}, linguagem.inicial, atividade.codigoInicial)
+    });
+    atividade.chave = String(atividade.chave || atividade.id);
 
     (function aplicarTeste() {
         try {

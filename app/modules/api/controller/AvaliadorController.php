@@ -32,8 +32,8 @@ class AvaliadorController {
             $statusJudge0 = $respostaJudge0['status'];
             $saidaJudge0 = $respostaJudge0['saida'];
 
-            $ollamaModel = new Ollama();
-            $feedbackIA_String = $ollamaModel->obterResultadoOllama(
+            $ollamaModel = new Sophia();
+            $feedbackIA_String = $ollamaModel->obterResultadoSophia(
                 $linguagem,
                 $objetivoAtividade,
                 $notaMax,
@@ -59,6 +59,48 @@ class AvaliadorController {
                     "status" => $statusJudge0,
                     "saida_terminal" => $saidaJudge0
                 ],
+                "avaliacao" => $feedbackIA_Objeto
+            ]);
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(["erro" => "Falha no servidor: " . $e->getMessage()]);
+        }
+    }
+
+    public function avaliarSophiaCopilot(mixed $data){
+        if (!isset($data['linguagem']) || !isset($data['objetivo_atividade']) || !isset($data['leitura_codigo'])) {
+            http_response_code(400);
+            echo json_encode(["erro" => "Parâmetros linguagem, objetivo_atividade e leitura_codigo são obrigatórios."]);
+            return;
+        }
+        // Extraindo variáveis
+        $leituraCodigo = $data['leitura_codigo'];
+        $linguagem = $data['linguagem'];
+        $objetivoAtividade = $data['objetivo_atividade'];
+        $errosCodigo = $data['erros_codigo'] ?? [""];
+
+
+        try {
+            $ollamaModel = new sophiaCopilot();
+            $feedbackIA_String = $ollamaModel->obterResultadoSophia(
+                $linguagem,
+                $objetivoAtividade,
+                $leituraCodigo,
+                $errosCodigo
+            );
+
+            // Como pedimos para o Llama retornar um JSON no Model, vamos garantir
+            // que decodificamos a string dele para anexar no nosso retorno limpo.
+            $feedbackIA_Objeto = json_decode($feedbackIA_String, true);
+            
+            // Se o Llama alucinar e não mandar um JSON válido, retornamos a string pura
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                 $feedbackIA_Objeto = ["feedback_geral" => $feedbackIA_String, "alerta" => "IA não formatou como JSON"];
+            }
+
+            echo json_encode([
+                "sucesso" => true,
                 "avaliacao" => $feedbackIA_Objeto
             ]);
 

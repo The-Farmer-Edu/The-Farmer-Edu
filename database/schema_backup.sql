@@ -142,6 +142,25 @@ CREATE TABLE atividades (
   INDEX idx_atividades_turma (id_turma)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE arquivos_indexados ( 
+  id_arquivo_indexado INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_atividade INT UNSIGNED NOT NULL,
+  id_aluno INT UNSIGNED NOT NULL,
+  caminho_arquivo VARCHAR(255) NOT NULL,
+
+  CONSTRAINT fk_arquivos_indexados_atividade
+    FOREIGN KEY (id_atividade) REFERENCES atividades(id_atividade)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+    --
+  CONSTRAINT fk_arquivos_indexados_aluno
+    FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+
+  INDEX idx_arquivos_indexados_atividade (id_atividade)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+
 -- ---------------------------------------------------------------------
 -- 8. SUBMISSÕES  [Submissao]
 -- Uma linha por tentativa — é aqui (e não em Atividade) que mora a

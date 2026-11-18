@@ -4,22 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>The Farm Edu - Execução da Resposta</title>
+
+    <!-- Fontes do projeto: padronizam a leitura e a identidade visual da experiência de coding. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="submissoes/file?type=css&file=iniciaratv.css">
+
+    <!-- CSS do editor/IDE, servido pelo controller de assets do módulo. -->
+    <link rel="stylesheet" href="file?type=css&file=iniciaratv.css">
 </head>
-<body>
+<body data-pagina="iniciaratv">
+    <!-- Topbar do editor: em uma só linha, o aluno vê o fluxo de navegação, status e ações. -->
     <header class="topbar">
         <div class="brand">
             <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
             <span class="logo">
-                <img src="submissoes/file?type=img&file=logo_icone.png" alt="The Farm Edu">
+                <img src="file?type=img&file=logo_icone.png" alt="The Farm Edu">
             </span>
             <span class="nome">The Farm <b>Edu</b></span>
             <span class="modulo">Escrever código</span>
         </div>
 
+        <!-- Chips de estado: entregou ou prazo encerrado. O JS decide se aparecem e qual texto exibem. -->
         <span class="chip-entrega" id="chipEntrega" hidden></span>
         <span class="chip-prazo" id="chipPrazo" hidden></span>
 
@@ -43,11 +49,13 @@
         </details>
     </section>
 
+    <!-- Abas de navegação do mobile; no celular, o layout se transforma para exibir código e resultado alternadamente. -->
     <nav class="abas-mobile" id="abasMobile" aria-label="Alternar painel">
         <button class="aba on" type="button" data-aba="codigo">Código</button>
         <button class="aba" type="button" data-aba="resultado" id="abaResultado" disabled>Resultado</button>
     </nav>
 
+    <!-- IDE principal: painel de arquivos + editor + preview de saída. -->
     <main class="ide" id="ide" data-aba="codigo">
 
         <aside class="explorer">
@@ -71,7 +79,8 @@
                     <textarea id="ed" spellcheck="false" wrap="off" aria-label="Editor de código"></textarea>
                 </div>
             </div>
-            <!-- Celular: volta ao início da linha quando o texto rolou para o lado -->
+
+            <!-- Permite voltar ao início da linha quando o texto for rolado para lateral. -->
             <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤ Início</button>
             <div class="status">
                 <span id="stLang">HTML</span>
@@ -102,13 +111,15 @@
 
     </main>
 
+    <!-- Mascote da IA com balão de conversa. A lógica de falas fica em sophia.js. -->
     <div class="sophia">
         <div class="balao" id="balao"></div>
         <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
-            <img src="submissoes/file?type=img&file=sophia_ia.webp" alt="Sophia">
+            <img src="file?type=img&file=sophia_ia.webp" alt="Sophia">
         </button>
     </div>
 
+    <!-- Modal de confirmação de entrega. O usuário vê resumo dos arquivos e decide confirmar ou cancelar. -->
     <div class="modal-overlay" id="modalEntrega" role="dialog" aria-modal="true" aria-labelledby="tituloEntrega">
         <div class="modal-card">
             <h3 id="tituloEntrega">Entregar atividade?</h3>

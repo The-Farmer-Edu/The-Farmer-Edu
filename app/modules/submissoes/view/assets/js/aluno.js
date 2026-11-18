@@ -6,39 +6,31 @@ function renderizarAtividade() {
         document.querySelectorAll('.atv-sub, .atv-meta').forEach(e => e.style.display = 'none');
         return;
     }
-    const el = id => document.getElementById(id);
-    // Se um elemento não existir no HTML, ele é simplesmente ignorado (não quebra a página)
-    const escrever = (id, valor) => { const e = el(id); if (e) e.textContent = valor; };
 
-    escrever('atvTitulo', A.titulo);
-    escrever('atvDescricao', A.descricao);
-    escrever('atvLinguagem', A.linguagem.nome);
-    escrever('atvNota', `de 0 a ${A.notaMax} (mínima para aprovação: ${A.notaMin})`);
+    const obterElemento = id => document.getElementById(id);
+    const escreverTexto = (id, valor) => {
+        const elemento = obterElemento(id);
+        if (elemento) elemento.textContent = valor;
+    };
 
-    const lista = el('atvRequisitos');
-    if (lista) {
-        lista.innerHTML = '';
-        A.requisitos.forEach(r => {
-            const li = document.createElement('li');
-            li.textContent = r;
-            lista.appendChild(li);
+    escreverTexto('atvTitulo', atividadeAtual.titulo);
+    escreverTexto('atvDescricao', atividadeAtual.descricao);
+    escreverTexto('atvLinguagem', atividadeAtual.linguagem.nome);
+    escreverTexto('atvNota', `de 0 a ${atividadeAtual.notaMax} (mínima para aprovação: ${atividadeAtual.notaMin})`);
+
+    const listaRequisitos = obterElemento('atvRequisitos');
+    if (listaRequisitos) {
+        listaRequisitos.innerHTML = '';
+        atividadeAtual.requisitos.forEach(requisito => {
+            const item = document.createElement('li');
+            item.textContent = requisito;
+            listaRequisitos.appendChild(item);
         });
     }
 
-    const inputId = el('atvInputId');
-    if (inputId) inputId.value = A.id;
-
-    const box = el('atvBadges');
-    if (box) {
-        const cores = { HTML5: 'badge-html', CSS3: 'badge-css', JS: 'badge-js' };
-        box.innerHTML = '';
-        A.linguagem.badges.forEach(b => {
-            const sp = document.createElement('span');
-            sp.className = 'badge-padrao ' + (cores[b] || 'badge-outra');
-            sp.textContent = b;
-            box.appendChild(sp);
-        });
-    }
+    // O id da atividade é repassado ao formulário da próxima tela para que o editor carregue a atividade correta.
+    const campoIdAtividade = obterElemento('atvInputId');
+    if (campoIdAtividade) campoIdAtividade.value = atividadeAtual.id;
 }
 renderizarAtividade();
 
@@ -48,65 +40,63 @@ const CHAVE_ENTREGA = 'farmedu:entrega:' + window.FarmAtividade.chave;
 const status = document.querySelector('.status');
 const texto = document.getElementById('texto');
 const botaoComecar = document.getElementById('comecar');
-const prazoEl = document.getElementById('atvPrazo');
+const elementoPrazo = document.getElementById('atvPrazo');
 
 function lerEntrega() {
-    try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (e) { return null; }
+    try { return JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) { return null; }
 }
 
 function atualizarStatus() {
-    const A = window.FarmAtividade;
-    if (A.vazia) {
-        // sem atividade: nada de status, prazo, texto nem botão
-        status.style.display = 'none';
-        prazoEl.hidden = true;
-        texto.style.display = 'none';
+    if (atividadeAtual.vazia) {
+        elementoStatus.style.display = 'none';
+        elementoPrazo.hidden = true;
+        textoOrientacao.style.display = 'none';
         botaoComecar.style.display = 'none';
         return;
     }
-    const entrega = lerEntrega();
-    const data = entrega && new Date(entrega.data);
-    const entregue = !!data && !isNaN(data);
-    const encerrado = A.prazoExcedido();
 
-    const ponto = document.createElement('span');
-    ponto.className = 'ponto';
-    status.textContent = '';
+    const entrega = lerEntrega();
+    const dataEntrega = entrega && new Date(entrega.data);
+    const entregue = !!dataEntrega && !isNaN(dataEntrega);
+    const prazoEncerrado = atividadeAtual.prazoExcedido();
+
+    const pontoStatus = document.createElement('span');
+    pontoStatus.className = 'ponto';
+    elementoStatus.textContent = '';
 
     if (entregue) {
-        const quando = data.toLocaleString('pt-BR', {
-            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-        });
-        status.append(ponto, ' Entregue em ' + quando);
+        elementoStatus.append(pontoStatus, ' Entregue em ' + atividadeAtual.formatarDataHora(entrega.data));
     } else {
-        status.append(ponto, ' Não entregue');
+        elementoStatus.append(pontoStatus, ' Não entregue');
     }
-    status.classList.toggle('entregue', entregue);
+    elementoStatus.classList.toggle('entregue', entregue);
 
-    // Botão e texto: Começar, Revisar, Visualizar
-    botaoComecar.classList.toggle('visualizar', encerrado);
-    if (encerrado) {
+    // A mesma CTA é reutilizada para três estados: começar, revisar e visualizar.
+    // O texto muda conforme o tipo: atividade de texto fala em "resposta", as demais em "código".
+    const conteudo = atividadeAtual.idLinguagem === 'texto' ? 'sua resposta' : 'seu código';
+    botaoComecar.classList.toggle('visualizar', prazoEncerrado);
+    if (prazoEncerrado) {
         botaoComecar.textContent = 'Visualizar';
-        texto.textContent = entregue
-            ? 'O prazo acabou. Clique em "Visualizar" para ver o código que você entregou.'
+        textoOrientacao.textContent = entregue
+            ? `O prazo acabou. Clique em "Visualizar" para ver ${conteudo} entregue.`
             : 'O prazo de entrega acabou. Você pode apenas visualizar a atividade.';
     } else if (entregue) {
         botaoComecar.textContent = 'Revisar';
-        texto.textContent = 'Atividade entregue! Clique em "Revisar" para ver o seu código.';
+        textoOrientacao.textContent = `Atividade entregue! Clique em "Revisar" para ver ${conteudo}.`;
     } else {
         botaoComecar.textContent = 'Começar';
-        texto.textContent = 'Escreva seu código direto na plataforma clicando em "Começar".';
+        textoOrientacao.textContent = `Escreva ${conteudo} direto na plataforma clicando em "Começar".`;
     }
 
-    // Limite de entrega
-    if (A.limite) {
-        prazoEl.hidden = false;
-        prazoEl.classList.toggle('encerrado', encerrado);
-        prazoEl.textContent = encerrado
-            ? 'Prazo encerrado em ' + A.limiteTexto()
-            : 'Prazo de entrega até ' + A.limiteTexto();
+    // Exibe o prazo da atividade, se existir, com estilo diferente quando acabou.
+    if (atividadeAtual.limite) {
+        elementoPrazo.hidden = false;
+        elementoPrazo.classList.toggle('encerrado', prazoEncerrado);
+        elementoPrazo.textContent = prazoEncerrado
+            ? 'Prazo encerrado em ' + atividadeAtual.limiteTexto()
+            : 'Prazo de entrega até ' + atividadeAtual.limiteTexto();
     } else {
-        prazoEl.hidden = true;
+        elementoPrazo.hidden = true;
     }
 }
 

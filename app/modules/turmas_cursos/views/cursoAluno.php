@@ -7,6 +7,7 @@ require __DIR__ . '/partials/head.php';
         <div><span class="page-kicker">Meus cursos</span>
             <h1><?= e($curso['nome_curso']) ?></h1><?php if (!empty($curso['descricao'])): ?><p><?= e($curso['descricao']) ?></p><?php else: ?><p>Turmas em que você está matriculado neste curso.</p><?php endif; ?>
         </div><a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/cursos"><i class="bi bi-arrow-left me-2"></i>Voltar aos cursos</a>
+        <a class="btn btn-outline-theme" href="<?= $base ?>/turmas_cursos/<?= e($u['perfilAcesso']) ?>"><i class="bi bi-collection me-2"></i>Voltar às turmas</a>
     </div>
     <div class="card-grid">
         <?php foreach ($turmas as $t): ?>

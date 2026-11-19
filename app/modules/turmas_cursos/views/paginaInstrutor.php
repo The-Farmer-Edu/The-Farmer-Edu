@@ -15,11 +15,13 @@ require __DIR__ . '/partials/head.php';
         <div class="card-grid">
             <?php foreach ($turmas as $t): ?>
                 <article class="course-card">
-                    <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
-                    <div class="course-card__cover">
-                        <?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma <?= e($t['nome_turma']) ?>">
-                        <?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?>
-                    </div>
+                    <a class="course-card__link" href="<?= $base ?>/atividades/instrutor" title="Abrir atividades">
+                        <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
+                        <div class="course-card__cover">
+                            <?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma <?= e($t['nome_turma']) ?>">
+                            <?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($t['nome_curso']) ?></span></div><?php endif; ?>
+                        </div>
+                    </a>
                     <div class="course-card__body">
                         <div class="course-card__meta"><span><i class="bi bi-journal-bookmark"></i><?= e($t['nome_curso']) ?></span><span><i class="bi bi-people"></i><?= (int) $t['total_alunos'] ?> aluno(s)</span><span><i class="bi bi-clock"></i><?= e(TurmaModel::TURNOS[$t['turno']] ?? $t['turno']) ?></span></div>
                         <div class="course-card__actions">

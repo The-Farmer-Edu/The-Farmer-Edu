@@ -69,9 +69,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             <div id="lista-realizadas" class="feed"></div>
         </section>
 
-        <section>
-            <button class="primary" type="submit">Postar Atividade </button>
-        </section>
+        
 
     </main>
 </div>

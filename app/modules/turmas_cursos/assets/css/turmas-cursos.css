@@ -897,3 +897,68 @@ textarea.form-control {
     line-height: 1.5;
     margin: -8px 0 18px;
 }
+
+/* Título e capa da turma levam às atividades (os botões do rodapé do card ficam fora do link) */
+.course-card__link {
+    display: block;
+    color: inherit;
+}
+
+.course-card__link:hover {
+    color: inherit;
+}
+
+.course-card__link:hover .course-card__cover img {
+    filter: brightness(.94);
+}
+
+/* Botão de acesso à fazenda — canto inferior direito de todas as telas */
+.btn-acessar-fazenda {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #8d4b20;
+    border: 4px solid #5d2e13;
+    border-radius: 6px;
+    color: #ffe0a3;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    image-rendering: pixelated;
+    box-shadow: 0 5px 0 #3e210f;
+    transition: transform .15s;
+}
+
+.btn-acessar-fazenda img {
+    display: block;
+    width: 60px;
+    height: 60px;
+    image-rendering: pixelated;
+}
+
+.btn-acessar-fazenda:hover {
+    color: #ffe0a3;
+    transform: translateY(-3px);
+    filter: brightness(1.15);
+}
+
+.btn-acessar-fazenda:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #3e210f;
+}
+
+@media (max-width: 650px) {
+    .btn-acessar-fazenda {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .btn-acessar-fazenda img {
+        width: 44px;
+        height: 44px;
+    }
+}

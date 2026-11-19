@@ -75,6 +75,7 @@ class atividadesSub {
      *
      * O front-end usa URLs do tipo:
      * file?type=js&file=main.js
+     * submissoes/file?type=js&file=main.js
      *
      * Isso centraliza a entrega desses recursos e impede leitura de arquivos arbitrários.
      */

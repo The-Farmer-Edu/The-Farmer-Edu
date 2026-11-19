@@ -21,23 +21,23 @@ let usosSophia = 0;
 const REGRAS_DESTAQUE = {
     html: [['c', '<!--[\\s\\S]*?-->'], ['t', '<\\/?[a-zA-Z!][\\w-]*|\\/?>'], ['s', '"[^"]*"|\'[^\']*\''], ['a', '[\\w-]+(?==)']],
     css: [['c', '\\/\\*[\\s\\S]*?\\*\/'], ['s', '"[^"]*"|\'[^\']*\''], ['k', '@[\\w-]+'],
-          ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
-       js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\/'],
-         ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
-         ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
-         ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
+    ['n', '#[0-9a-fA-F]{3,8}\\b|-?\\d*\\.?\\d+(?:px|rem|em|%|vh|vw|s|ms|deg)?'], ['p', '[\\w-]+(?=\\s*:)']],
+    js: [['c', '\\/\\/.*|\\/\\*[\\s\\S]*?\\*\/'],
+    ['s', '`(?:[^`\\\\]|\\\\.)*`|"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
+    ['k', '\\b(?:const|let|var|function|return|if|else|for|while|class|new|import|from|export|default|async|await|try|catch|throw|switch|case|break|continue|true|false|null|undefined|this)\\b'],
+    ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_$][\\w$]*(?=\\()']],
     py: [['c', '#.*'], ['s', '"""[\\s\\S]*?"""|"(?:[^"\\\\\\n]|\\\\.)*"|\'(?:[^\'\\\\\\n]|\\\\.)*\''],
-         ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
-         ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']],
+    ['k', '\\b(?:def|return|if|elif|else|for|while|in|not|and|or|is|class|import|from|as|try|except|finally|raise|with|pass|break|continue|lambda|True|False|None)\\b'],
+    ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_][\\w]*(?=\\()']],
     php: [['c', '\\/\\/.*|#.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '"(?:[^"\\\\]|\\\\.)*"|\'(?:[^\'\\\\]|\\\\.)*\''],
-          ['a', '\\$[a-zA-Z_]\\w*'],
-          ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
-          ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']],
+    ['a', '\\$[a-zA-Z_]\\w*'],
+    ['k', '\\b(?:function|return|if|else|elseif|foreach|for|while|echo|print|class|new|true|false|null|fgets|trim)\\b'],
+    ['n', '\\b\\d+(?:\\.\\d+)?\\b'], ['f', '\\b[a-zA-Z_]\\w*(?=\\()']],
     sql: [['c', '--.*|\\/\\*[\\s\\S]*?\\*\/'], ['s', '\'(?:[^\'\\\\]|\\\\.)*\''],
-          ['k', '\\b(?:SELECT|FROM|WHERE|CREATE|TABLE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|PRIMARY|KEY|NOT|NULL|AUTO_INCREMENT|INT|VARCHAR|DECIMAL|TEXT|DEFAULT|AND|OR)\\b'],
-          ['n', '\\b\\d+(?:\\.\\d+)?\\b']],
-    txt: [] 
-        };
+    ['k', '\\b(?:SELECT|FROM|WHERE|CREATE|TABLE|INSERT|INTO|VALUES|UPDATE|SET|DELETE|PRIMARY|KEY|NOT|NULL|AUTO_INCREMENT|INT|VARCHAR|DECIMAL|TEXT|DEFAULT|AND|OR)\\b'],
+    ['n', '\\b\\d+(?:\\.\\d+)?\\b']],
+    txt: []
+};
 
 /* Elementos da página */
 const porId = id => document.getElementById(id);
@@ -71,9 +71,9 @@ try {
 if (atividadeAtual.vazia) ARQUIVOS.forEach(arquivo => { dadosDosArquivos[arquivo.lang] = ''; });
 
 let entrega = null;
-try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) {}
+try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) { }
 let cancelamentos = 0;
-try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) {}
+try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) { }
 
 let arquivoAtual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
@@ -95,7 +95,7 @@ function aviso(mensagem) {
 }
 
 function salvar() {
-    try { localStorage.setItem(CHAVE_CODIGO, JSON.stringify(dadosDosArquivos)); } catch (erro) {}
+    try { localStorage.setItem(CHAVE_CODIGO, JSON.stringify(dadosDosArquivos)); } catch (erro) { }
 }
 
 /* Informações da atividade na tela (vindas do atividade.js) */
@@ -172,18 +172,43 @@ function montarAbas() {
         porId('stLang').textContent = 'Texto';
         return;
     }
-    }
+}
 
-    ARQUIVOS.forEach(arquivo => {
-        const item = document.createElement('li');
-        if (arquivo.lang === arquivoAtual) item.className = 'on';
-        const bolinha = document.createElement('span');
-        bolinha.className = 'dot dot-' + arquivo.lang;
-        item.append(bolinha, arquivo.nome);
-        item.onclick = () => trocar(arquivo.lang);
-        porId('arquivos').appendChild(item);
-    });
-    porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
+ARQUIVOS.forEach(arquivo => {
+    const item = document.createElement('li');
+    if (arquivo.lang === arquivoAtual) item.className = 'on';
+    const bolinha = document.createElement('span');
+    bolinha.className = 'dot dot-' + arquivo.lang;
+    item.append(bolinha, arquivo.nome);
+    item.onclick = () => trocar(arquivo.lang);
+    porId('arquivos').appendChild(item);
+});
+porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
+
+// Sem atividade: seção de arquivos vazia
+if (atividadeAtual.vazia) {
+    porId('stLang').textContent = '—';
+    // -----------------------incerteza
+    // return;
+}
+// Atividade de texto: lista de arquivos vazia
+if (modoExecucao === 'texto') {
+    porId('stLang').textContent = 'Texto';
+    // -----------------------incerteza
+    // return;
+}
+
+ARQUIVOS.forEach(arquivo => {
+    const item = document.createElement('li');
+    if (arquivo.lang === arquivoAtual) item.className = 'on';
+    const bolinha = document.createElement('span');
+    bolinha.className = 'dot dot-' + arquivo.lang;
+    item.append(bolinha, arquivo.nome);
+    item.onclick = () => trocar(arquivo.lang);
+    porId('arquivos').appendChild(item);
+});
+
+porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
 
 function trocar(lang) {
     // Sem atividade: editor vazio, desativado e sem arquivos
@@ -426,7 +451,7 @@ porId('btnRodar').onclick = () => {
 };
 
 // Voltar sempre leva à página do aluno.
-porId('btnVoltar').onclick = () => { location.href = 'aluno'; };
+porId('btnVoltar').onclick = () => { location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id); };
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
     const semImagem = () => imagem.parentElement.classList.add('sem-img');

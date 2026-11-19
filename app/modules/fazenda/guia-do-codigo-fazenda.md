@@ -180,6 +180,10 @@ estado = {
 ### 4.3 `salvarProgresso()` (linha 44)
 Converte o `estado` em texto (`JSON.stringify`) e guarda no navegador. É chamada sempre que o XP ou um nível muda. O `try/catch` evita erro caso o navegador bloqueie o armazenamento.
 
+Com o servidor (aberta pela aplicação PHP), não grava no navegador: agenda o envio ao banco (`FarmEduSincronia.agendar()`, seção 34).
+
+**Retorno (contrato):** `true` quando o estado foi **aceito** (gravado no `localStorage` sem servidor, ou posto na fila de envio com servidor). `false` quando o `localStorage` recusou a gravação ou quando a aba parou de salvar (sincronia bloqueada por HTTP 409 ou 401). `true` **não** significa "gravado no banco": o envio é assíncrono, e a confirmação do servidor fica na seção 34. As poções (28b), o lenhador (29b) e a abdução e o ET (30c) desfazem a ação quando recebem `false`.
+
 ### 4.4 Bloco `try { ... JSON.parse ... }` (linhas 40–43)
 Na abertura da página, tenta **ler** o progresso salvo. Se existir, substitui o `estado` inicial; se não existir ou der erro, mantém o inicial.
 
@@ -560,3 +564,33 @@ Os valores de produção ficam em `LENHADOR_CONFIG`, em `01-configuracoes-gerais
 `madeira` é normalizada junto dos recursos existentes em `05-progresso-e-salvamento.js`; saves antigos recebem 0 sem perder os demais dados. O estado opcional `arvoresColetaveis` guarda os instantes de reaparecimento, sem exigir troca de versão ou reestruturação do save. A madeira aparece na barra e no painel Fazenda.
 
 Os dois diálogos usam a moldura de papel e madeira da interface existente (`fazenda.html` e `05-paineis.css`). O loop de `30b-integracao-e-paineis.js` atualiza a troca, o lenhador e os temporizadores das árvores.
+
+## 19. Invasões pelo calendário
+
+As regras completas, os valores e os testes estão em `docs/INVASOES-DA-FAZENDA.md`. Este resumo diz onde cada parte fica no código.
+
+- **`04-configuracao-das-invasoes.js` (`INVASOES_CONFIG`):** todos os valores ajustáveis. Inclui `calendarioPausado` (a chave que liga e desliga o calendário), as instalações atacáveis, a fórmula da dificuldade, de 3 a 5 criaturas, a ronda sem guarda, a recompensa de 10 XP por repelir, os custos de reparo (100 / 250 / 450 XP) e os tempos da sequência.
+- **`26-invasoes.js`:** liberação, calendário de dias úteis, aviso da defesa, sorteio da invasão (`comecarInvasao`) e a máquina de estados (`atualizarInvasao`).
+  - Fases: `aguardando` → `chegando` → `atacando` → `colapsando` → `saindo`, e também `rondando` (sem guarda) e `repelida`.
+  - Destruição (`aplicarDestruicao`), vitória (`repelirInvasao`), desistência (`encerrarSemDestruicao`) e reparo (`repararArea`).
+- **Equipe e combate:** `29-trabalhadores.js` (guardas e fazendeiros) e `30a-monstros-noturnos.js` (`ferirMonstro`, comum às noites e às invasões).
+- **O que muda com uma instalação destruída:**
+  - cotas, alimentação, coleta e reposição: `27-recursos-lavoura-e-animais.js`;
+  - painel 🌾 Fazenda: `30b-integracao-e-paineis.js`;
+  - modelo de ruínas: `13-demarcacoes-e-ruinas.js` e `14-areas-e-reconstrucao.js`.
+- **Convivência com outros sistemas:**
+  - a abdução e o ET esperam a invasão terminar (`30c`);
+  - a Poção Misteriosa fica bloqueada durante a invasão (`28b`);
+  - o convite do tutorial espera a invasão terminar (`32b`);
+  - o deslocamento de teste do calendário é desfeito ao desligar o Modo desenvolvedor (`32`).
+- **Salvamento:** os dados ficam em `estado.danos`, `estado.invasao` e `estado.calendarioDasInvasoes`, normalizados em `05-progresso-e-salvamento.js`. Os campos novos (`rondas`, `semAtaque`, `recompensadaId`) são opcionais e saves antigos funcionam sem eles.
+- **Só à noite (missão final):** `INVASOES_CONFIG.somenteANoite`. Em `26`, `esperandoANoite()` usa `ehNoiteParaMonstros()` (`30a`, ciclo da seção 17). O ponto de espera é o mesmo das cenas e do tutorial: `verificarInvasao` (invasão do dia) e `retomarInvasaoSalva` (invasão salva) devolvem sem começar, e a conferência de 1 s em `atualizarInvasao` tenta de novo. `invasaoAtivaOuIminente()` substitui as checagens de "invasão salva" em `28b`, `30c` e `32b`, para que uma invasão esperando a noite não bloqueie nada de dia. Em `30a`, monstros noturnos novos não surgem com `INVASAO_EM_CURSO.fase !== 'nenhuma'`.
+- **Estábulo:** `INVASOES_CONFIG.ladoDeAtaquePorAlvo` concentra os pontos de ataque num arco (`posicoesDeAtaque`, `26`) e, com `guardasEsperamNoPontoDeAtaque`, os guardas esperam a criatura no ponto de ataque dela (`decidirTrabalhador`, `29`).
+
+## 20. Missão final (18/11): integração e áudio
+
+- **Integração das branches da equipe** (sem merge do Git: aplicada na cópia de trabalho, nada foi commitado):
+  - `origin/squad-1/fazenda-ajustesaudios` (áudio): `02b`, `23`, `27b`, `28b`, `28c`, `29b`, `30c`, `30e` mesclados em 3 vias sem conflito, e 20 arquivos de áudio novos conferidos pelo hash do Git. Os arquivos que essa branch apaga ou renomeia (`Theme_songs/noite_.mp3` → `musica1.mp3` etc.) ficaram também com o nome antigo na cópia de trabalho: nada os usa mais, e eles saem quando a branch for mesclada pelo Git.
+  - `origin/squad-7/fazenda-mesclagens`: `fazenda.js` sem o cabeçalho antigo todo comentado e o ícone novo do botão de acesso. O `salvarProgresso` dessa branch não foi trazido: a versão atual já devolve `true`/`false` e ainda trata 409/401 (sincronia bloqueada).
+- **`24-paineis-de-tempo-e-audio.js`:** `fecharMenuEPaineis(silencioso)`: com `true` (só o booleano), fecha sem o som "Fecha". A branch de áudio já chamava assim ao abrir o inventário e os objetivos; os botões, que passam o evento do clique, continuam com som.
+- **`23-audio.js` (`enderecoDoAudio`):** aberto pelo arquivo (`file://`), o áudio é lido de `views/assets/audio` (antes o endereço virava `assets/js/arquivo?type=...`, que não existe, e o modo local ficava mudo). Pelo servidor nada mudou: a rota é `fazenda/arquivo?type=audio/<pasta>&file=<nome>` (`Controller::sendFile`).

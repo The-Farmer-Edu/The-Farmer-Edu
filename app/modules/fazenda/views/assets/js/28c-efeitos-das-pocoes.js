@@ -99,6 +99,7 @@
           if (efeitoAtivo(tipo)) continue;
           if (tipo === 'crescimento') aplicarCrescimentoAcelerado();   // aplica até o último instante antes de encerrar
           delete estado.efeitosDasPocoes[tipo]; salvarProgresso();
+          tocarEfeito('pocaoEfeitoFim');
           mostrarAviso(POCOES_DO_GUARDIAO[tipo].icone + ' O efeito de ' + POCOES_DO_GUARDIAO[tipo].nome + ' terminou.');
         }
         const html = efeitosAtivosAgora().map(tipo => {

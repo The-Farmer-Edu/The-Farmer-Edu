@@ -41,17 +41,23 @@ function usuarioLogado(): ?array {
     return dadosUsuarioLogado() ?? null;
 }
 
-function solicitarLogin(): void {
+function solicitarLogin($perfil): void {
     if(!usuarioLogado()){
-        header('Location: ../auth/loginAluno');
+        $uri = $_SERVER['REQUEST_URI'];
+        $rota = "/auth/login" . ucfirst($perfil) . "?redirect=$uri";
+        if (str_contains($uri, "public")){
+            $uri = explode('/public/', $uri)[0] . '/public' . $rota;
+        } else {
+            $uri = $rota;
+        }
+        header("Location: $uri");
         exit();
     }
 }
 
-function solicitarPerfilDeAcesso(string $perfil): void {
-    solicitarLogin();
-
-    if ($_SESSION['perfilAcesso'] !== $perfil){
+function solicitarPerfilDeAcesso(string $perfil = "aluno"): void {
+    solicitarLogin($perfil);
+    if (usuarioLogado()['perfilAcesso'] !== $perfil){
         http_response_code(403);
         echo "Você não tem acesso a essa página!";
         exit();
@@ -61,16 +67,18 @@ function solicitarPerfilDeAcesso(string $perfil): void {
 const SESSAO_INATIVIDADE_SEGUNDOS = 60 * 60  * 4;
 function registrarAtividadeSessao(): void {
     iniciarSessao();
-    $_SESSION['ultimaAtividade'] = time();
+    usuarioLogado()['ultimaAtividade'] = time();
 }
+
 function sessaoExpirouPorInatividade(): bool {
     iniciarSessao();
     if (!isset($_SESSION['usuario'])) return false;
-    $ultima = (int) ($_SESSION['ultimaAtividade'] ?? 0);
+    $ultima = (int) (usuarioLogado()['ultimaAtividade'] ?? 0);
     if ($ultima > 0 && (time() - $ultima) > SESSAO_INATIVIDADE_SEGUNDOS) {
     logout();
     return true;
 }
+
 registrarAtividadeSessao();
     return false;
 }

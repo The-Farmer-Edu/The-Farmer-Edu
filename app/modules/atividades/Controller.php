@@ -112,23 +112,23 @@ class AtividadesController
         readfile($caminho);
     }
 
-    public function cursosAluno(): void
+    public function turmasAluno(): void
     {
         $this->api('aluno', function (array $usuario): array {
-            return ['cursos' => Atividade::cursosDoAluno(iniciarPDO(), (int) $usuario['idUsuario'])];
+            return ['turmas' => Atividade::turmasDoAluno(iniciarPDO(), (int) $usuario['idUsuario'])];
         });
     }
 
     public function listaAluno(): void
     {
         $this->api('aluno', function (array $usuario): array {
-            $idCurso = (int) ($_GET['curso'] ?? 0);
+            $idTurma = (int) ($_GET['turma'] ?? 0);
 
-            if ($idCurso <= 0) {
-                throw new InvalidArgumentException('Escolha um curso.');
+            if ($idTurma <= 0) {
+                throw new InvalidArgumentException('Escolha uma turma.');
             }
 
-            return Atividade::atividadesDoAluno(iniciarPDO(), (int) $usuario['idUsuario'], $idCurso);
+            return Atividade::atividadesDoAluno(iniciarPDO(), (int) $usuario['idUsuario'], $idTurma);
         });
     }
 
@@ -136,15 +136,21 @@ class AtividadesController
     {
         $type = $_GET['type'] ?? null;
         $file = basename((string) ($_GET['file'] ?? ''));
+        $botaoFazenda = [
+            'botao-acesso-fazenda.css'  => __DIR__ . '/../fazenda/botao-acesso-fazenda/botao-acesso-fazenda.css',
+            'icone-acesso-fazenda.png'  => __DIR__ . '/../fazenda/botao-acesso-fazenda/icone-acesso-fazenda.png',
+        ];
 
-        if (!in_array($type, ['css', 'js'], true) || $file === '') {
+        if ($type === 'fazenda') {
+            $caminhoArquivo = $botaoFazenda[$file] ?? null;
+        } elseif (in_array($type, ['css', 'js'], true) && $file !== '') {
+            $caminhoArquivo = __DIR__ . "/views/assets/$type/$file";
+        } else {
             http_response_code(404);
             return;
         }
 
-        $caminhoArquivo = __DIR__ . "/views/assets/$type/$file";
-
-        if (is_file($caminhoArquivo)) {
+        if ($caminhoArquivo !== null && is_file($caminhoArquivo)) {
             header("Content-Type: " . $this->mimeType($caminhoArquivo));
             header("X-Content-Type-Options: nosniff");
             header("Content-Length: " . filesize($caminhoArquivo));
@@ -160,6 +166,7 @@ class AtividadesController
         $conhecidos = [
             'css' => 'text/css',
             'js'  => 'application/javascript',
+            'png' => 'image/png',
         ];
 
         $extensao = strtolower(pathinfo($caminho, PATHINFO_EXTENSION));

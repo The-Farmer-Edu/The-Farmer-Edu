@@ -712,8 +712,7 @@ class Atividade
             @unlink($arquivo);
         }
     }
-
-    /** A turma precisa ser do instrutor e estar ativa (turma e curso). */
+    
     private static function exigirTurma(PDO $pdo, int $idTurma, int $idInstrutor): void
     {
         $stmt = $pdo->prepare(
@@ -856,28 +855,28 @@ class Atividade
         }, $linhas);
     }
 
-    public static function cursosDoAluno(PDO $pdo, int $idAluno): array
+    public static function turmasDoAluno(PDO $pdo, int $idAluno): array
     {
         $stmt = $pdo->prepare(
-            'SELECT DISTINCT c.id_curso, c.nome_curso
+            'SELECT t.id_turma, t.nome_turma, c.nome_curso
                FROM matriculas m
                JOIN turmas t ON t.id_turma = m.id_turma
                JOIN cursos c ON c.id_curso = t.id_curso
               WHERE m.id_aluno = ? AND t.ativo = 1 AND c.ativo = 1
-              ORDER BY c.nome_curso'
+              ORDER BY c.nome_curso, t.nome_turma'
         );
         $stmt->execute([$idAluno]);
 
         return $stmt->fetchAll();
     }
 
-    public static function atividadesDoAluno(PDO $pdo, int $idAluno, int $idCurso): array
+    public static function atividadesDoAluno(PDO $pdo, int $idAluno, int $idTurma): array
     {
         $stmt = $pdo->prepare(
             <<<'SQL'
             SELECT a.id_atividade, a.titulo, a.tipo_atividade, a.linguagem, a.data_entrega,
                    (a.data_entrega < NOW()) AS atrasada,
-                   t.nome_turma,
+                   t.nome_turma, c.nome_curso,
                    s.id_submissao, s.tentativa_num, s.status, s.data_envio,
                    CASE WHEN n.origem = 'instrutor' THEN n.valor END AS nota
               FROM atividades a
@@ -890,11 +889,11 @@ class Atividade
                                             FROM submissoes s2
                                            WHERE s2.id_atividade = a.id_atividade AND s2.id_aluno = ?)
               LEFT JOIN notas n ON n.id_submissao = s.id_submissao
-             WHERE t.id_curso = ? AND t.ativo = 1 AND c.ativo = 1
+             WHERE t.id_turma = ? AND t.ativo = 1 AND c.ativo = 1
              ORDER BY a.data_entrega ASC
             SQL
         );
-        $stmt->execute([$idAluno, $idAluno, $idAluno, $idCurso]);
+        $stmt->execute([$idAluno, $idAluno, $idAluno, $idTurma]);
 
         $pendentes  = [];
         $realizadas = [];

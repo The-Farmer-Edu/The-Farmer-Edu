@@ -49,12 +49,11 @@ class NotasController
     public function verNotasAluno(): void
     {
         // Garante que o usuario esta logado
-        solicitarLogin();
+        solicitarPerfilDeAcesso();
 
         // Obtém os dados do usuário atualmente autenticado
         $usuario = usuarioLogado();
 
-        // Se for instrutor, redireciona para o painel certo
         if ($usuario['perfilAcesso'] === 'instrutor') {
             header('Location: /notas/instrutor');
             exit;
@@ -87,7 +86,7 @@ class NotasController
     public function painelInstrutor(): void
     {
         // Garante que o usuário esteja logado
-        solicitarLogin();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 
@@ -124,7 +123,7 @@ class NotasController
     public function verTurma(): void
     {
         // Garante autenticação
-        solicitarLogin();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 
@@ -155,7 +154,7 @@ class NotasController
     }
 
     // -----------------------------------------------------------------
-    // SALVAR NOTA — POST /notas/salvar
+    // SALVAR NOTA OU CONSULTAR HISTÓRICO — POST /notas/salvar
     // -----------------------------------------------------------------
     /**
      * Processa a gravação ou atualização da nota de uma submissão.
@@ -170,7 +169,7 @@ class NotasController
     public function salvarNota(): void
     {
         // Garante que o usuário esteja logado
-        solicitarLogin();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 
@@ -181,8 +180,22 @@ class NotasController
             exit;
         }
 
-        // Leitura dos dados enviados via POST (formulario ou fetch/AJAX)
-        $idSubmissao = (int)   ($_POST['id_submissao'] ?? 0);
+        $acao        = $_POST['acao'] ?? 'salvar';
+        $idSubmissao = (int) ($_POST['id_submissao'] ?? 0);
+
+        // Consulta de histórico vindo do modal
+        if ($acao === 'historico') {
+            ob_clean();
+            header('Content-Type: application/json');
+            if ($idSubmissao <= 0) {
+                echo json_encode(['sucesso' => false, 'historico' => []]);
+                exit;
+            }
+            $historico = $this->model->buscarHistoricoNota($idSubmissao);
+            echo json_encode(['sucesso' => true, 'historico' => $historico]);
+            exit;
+        }
+
         $valor       = (float) ($_POST['valor']        ?? -1);
         $idTurma     = (int)   ($_POST['id_turma']     ?? 0);
         $idInstrutor = (int)   $usuario['idUsuario'];
@@ -199,7 +212,6 @@ class NotasController
 
         // Se houver erros, interrompe e retorna resposta adequada
         if (!empty($erros)) {
-            // Se for AJAX retorna JSON; se nao, redireciona com erro na URL
             if ($this->isAjax()) {
                 header('Content-Type: application/json');
                 echo json_encode(['sucesso' => false, 'mensagem' => implode(' ', $erros)]);
@@ -216,7 +228,7 @@ class NotasController
             $sucesso  = true;
         } catch (Throwable $e) {
             error_log($e->getMessage());
-            $mensagem = "Erro ao salvar nota." . $e->getMessage();
+            $mensagem = "Erro ao salvar nota: " . $e->getMessage();
             $sucesso  = false;
         }
 
@@ -231,26 +243,6 @@ class NotasController
         }
         exit;
     }
-
-    // -----------------------------------------------------------------
-    // LOGOUT — GET /notas/logout
-    // -----------------------------------------------------------------
-    /**
-     * Encerra a sessão do usuário e redireciona para a página de login de alunos.
-     *
-     * @return void
-     */
-    public function logout(): void
-    {
-        // Destrói a sessão atual
-        logout();
-
-        // Determina o caminho base relativo para redirecionar corretamente
-        $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-        header('Location: ' . $base . '/auth/loginAluno');
-        exit;
-    }
-
     // -----------------------------------------------------------------
     // Helpers privados
     // -----------------------------------------------------------------

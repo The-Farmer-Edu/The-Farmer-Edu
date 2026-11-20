@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/Model.php';
+require_once __DIR__ . '/../auth/Model.php';
 require_once __DIR__ . '/../../core/session.php';
 
 class CursosController
@@ -19,7 +20,7 @@ class CursosController
 
     public function inicio(): void
     {
-        solicitarLogin();
+        // solicitarLogin();
         $this->ir('turmas_cursos/' . usuarioLogado()['perfilAcesso']);
     }
 
@@ -41,7 +42,7 @@ class CursosController
     // cursos que possuem turmas em que ele está matriculado.
     public function cursos(): void
     {
-        solicitarLogin();
+        // solicitarLogin();
         $u = usuarioLogado();
         solicitarPerfilDeAcesso($u['perfilAcesso']);
         $instrutor = $u['perfilAcesso'] === 'instrutor';
@@ -396,13 +397,22 @@ class CursosController
         $permitidos = [
             'turmas-cursos.css' => __DIR__ . '/assets/css/turmas-cursos.css',
             'turmas-cursos.js'  => __DIR__ . '/assets/js/turmas-cursos.js',
+            'logo_icone.ico'    => __DIR__ . '/assets/img/logo_icone.ico',
+            'icone-acesso-fazenda.png' => __DIR__ . '/assets/img/icone-acesso-fazenda.png',
         ];
         if (!isset($permitidos[$nome]) || !is_file($permitidos[$nome])) {
             http_response_code(404);
             exit;
         }
+        $tipos = [
+            'css'  => 'text/css; charset=utf-8',
+            'js'   => 'application/javascript; charset=utf-8',
+            'ico'  => 'image/x-icon',
+            'png'  => 'image/png',
+        ];
         $ext = pathinfo($nome, PATHINFO_EXTENSION);
-        header('Content-Type: ' . ($ext === 'css' ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8'));
+        header('Content-Type: ' . $tipos[$ext]);
+        header('X-Content-Type-Options: nosniff');
         header('Cache-Control: public, max-age=3600');
         readfile($permitidos[$nome]);
         exit;
@@ -410,7 +420,7 @@ class CursosController
 
     public function imagemTurma(): void
     {
-        solicitarLogin();
+        // solicitarLogin();
         $u = usuarioLogado();
         solicitarPerfilDeAcesso($u['perfilAcesso']);
         $idTurma = (int) ($_GET['id'] ?? 0);

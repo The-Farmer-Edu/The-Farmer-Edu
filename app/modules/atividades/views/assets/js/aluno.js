@@ -72,7 +72,12 @@ async function carregarCursos() {
             lista.append(botao);
         });
 
-        selecionarCurso(dados.cursos[0]);
+        const url_params = new Proxy(new URLSearchParams(window.location.search), {
+            get: (searchParams, prop) => searchParams.get(prop),
+        });
+        let url_id = url_params.id > 0 ? url_params.id - 1 : 0;
+
+        selecionarCurso(dados.cursos[url_id]);
     } catch (erro) {
         mostrarAviso(erro.message);
     }
@@ -105,7 +110,7 @@ function descricaoDaAtividade(atividade) {
 
 function criarItem(atividade, detalhe, selo) {
     const item = criar('a', 'feed-item');
-    item.href = 'aluno?atividade=' + encodeURIComponent(atividade.id_atividade);
+    item.href = 'submissoes/aluno?id=' + encodeURIComponent(atividade.id_atividade);
 
     const info = criar('div', 'feed-info');
     info.append(

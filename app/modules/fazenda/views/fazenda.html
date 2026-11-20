@@ -266,6 +266,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onload="window.THREE_CARREGADO = true" onerror="window.FALHA_AO_CARREGAR_THREE = true"></script>
   <!-- Script principal do jogo (seções 00 a 33). Script clássico, sem módulos, para abrir também direto pelo arquivo (file://). -->
   <script src="assets/js/fazenda.js"></script>
+  <!-- Biblioteca bcrypt.js, usada para proteger o modo desenvolvedor. O script é carregado no final para não atrasar o carregamento do jogo. -->
+  <script src="https://cdn.jsdelivr.net/npm/bcryptjs@3.0.3/umd/index.min.js"></script>
 </body>
 
 </html>

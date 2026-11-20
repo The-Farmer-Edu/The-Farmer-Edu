@@ -81,6 +81,7 @@ $logado = usuarioLogado();
         </section>
 
         <aside class="painel-imagem">
+            <img class="logo" id="logo" src="/assets/img/png/logo_icone.png" alt="Logo The Farm Edu">
             <h2 class="nome-marca" id="nome-marca">The Farm Edu</h2>
             <p class="subtitulo" id="subtitulo">Aluno</p>
         </aside>

@@ -9,7 +9,8 @@
     --borda-input: #5f7f86;
     --amarelo: #f2dc50;
     --link: #0a64d8;
-    --erro: #d93025;
+    --sucesso: #25d92e;
+    --sucesso-back: #57ff6038;
     --borda-btn: #ff966e80;
 }
 
@@ -55,8 +56,8 @@ body {
     margin-bottom: 14px;
     padding: 8px 10px;
     font-size: 13px;
-    color: var(--erro);
-    background: rgba(217, 48, 37, 0.08);
+    color: var(--sucesso);
+    background: var(--sucesso-back);
     border-radius: 6px;
     text-align: center;
 }
@@ -189,7 +190,7 @@ body {
     justify-content: center;
     image-rendering: pixelated;
     flex: 1 1 0%;
-    background: url(file?type=images&file=tarde.png) center / cover no-repeat;
+    background: url(file?type=images&file=tarde.webp) center / cover no-repeat;
     height: 100vh;
 }
 

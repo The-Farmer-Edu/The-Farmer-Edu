@@ -116,4 +116,5 @@ window.addEventListener('pageshow', atualizarStatus);
 window.addEventListener('storage', atualizarStatus);
 setInterval(atualizarStatus, 30000);
 
-document.getElementById('btnVoltar').addEventListener('click', () => history.back());
+//  + encodeURIComponent(turmaAtual.id) 
+document.getElementById('btnVoltar').addEventListener('click',  () => { location.href = '../atividades/aluno?id='});

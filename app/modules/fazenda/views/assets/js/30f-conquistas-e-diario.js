@@ -183,8 +183,11 @@
       const dataDoRegistro = quando => quando ? new Date(quando).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'antes do Diário';
       const registrosDaCategoria = categoria => Object.entries(estado.diario.registros).filter(([, registro]) => registro.categoria === categoria)
         .sort(([, a], [, b]) => (b.quando || 0) - (a.quando || 0));
-      const htmlDoRegistro = ([chave, registro], extra = '') => `<li class="registro-do-diario" data-registro="${chave}"><span class="icone-do-registro" aria-hidden="true">${registro.icone}</span>
-        <div><span class="data-do-registro">${dataDoRegistro(registro.quando)}</span><b>${registro.titulo}</b>${registro.texto ? `<p>${registro.texto}</p>` : ''}${extra}</div></li>`;
+      // Segurança (auditoria final): os registros vêm do save (que o navegador envia) e alguns citam o NOME DA FAZENDA, digitado
+      // pelo aluno. Tudo é escapado antes de entrar no HTML — antes, um nome como <img src onerror=…> era executado ao abrir o diário.
+      const escaparHtml = texto => String(texto ?? '').replace(/[&<>"']/g, caractere => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[caractere]);
+      const htmlDoRegistro = ([chave, registro], extra = '') => `<li class="registro-do-diario" data-registro="${escaparHtml(chave)}"><span class="icone-do-registro" aria-hidden="true">${escaparHtml(registro.icone)}</span>
+        <div><span class="data-do-registro">${dataDoRegistro(registro.quando)}</span><b>${escaparHtml(registro.titulo)}</b>${registro.texto ? `<p>${escaparHtml(registro.texto)}</p>` : ''}${extra}</div></li>`;
       const paginaVazia = texto => `<p class="pagina-vazia">${texto}</p>`;
       const desenharDiario = function desenharDiario() {
         const assinatura = JSON.stringify([abaDoDiario, Object.keys(estado.diario.registros).length, estado.conquistas.desbloqueadas, estado.eventosEspeciais.alienigena.abducoes, estado.eventosEspeciais.et.vezes,
@@ -196,7 +199,7 @@
         let html = '';
         if (abaDoDiario === 'fazenda') {
           const registros = registrosDaCategoria('fazenda');
-          html = `<h3 class="titulo-da-pagina">🏡 Minha Fazenda</h3><p class="subtitulo-da-pagina">Construções, evoluções e marcos de ${nomeDaFazendaNoDiario()}.</p>`
+          html = `<h3 class="titulo-da-pagina">🏡 Minha Fazenda</h3><p class="subtitulo-da-pagina">Construções, evoluções e marcos de ${escaparHtml(nomeDaFazendaNoDiario())}.</p>`
             + (registros.length ? `<ol class="registros-do-diario">${registros.map(item => htmlDoRegistro(item)).join('')}</ol>` : paginaVazia('Nada construído ainda. A primeira plantação é grátis: comece por ela!'));
         } else if (abaDoDiario === 'descobertas') {
           const vezes = { 'descoberta:abducao': estado.eventosEspeciais.alienigena.abducoes, 'descoberta:et': estado.eventosEspeciais.et.vezes };

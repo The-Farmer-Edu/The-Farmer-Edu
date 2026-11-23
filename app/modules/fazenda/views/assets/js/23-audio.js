@@ -474,7 +474,7 @@ canvas.addEventListener('pointerup', evento => {
     if (acerto) abrirPainelDaFazenda(idDaArea, acerto.instanceId);
     return !!acerto;
   })) { /* painel aberto */ }
-  else if (estado.niveis.mina && raioDeClique.intersectObject(grupoDaArea.mina, true).length) { abrirPainelDaFazenda(); mostrarAviso(textoDoEstadoDaMina()); }
+  else if (estado.niveis.mina && !(window.farmEduCaverna && window.farmEduCaverna.acertaEntrada(raioDeClique)) && raioDeClique.intersectObject(grupoDaArea.mina, true).length) { abrirPainelDaFazenda(); mostrarAviso(textoDoEstadoDaMina()); }   // edição pessoal (30j): clique na boca da caverna abre a caverna secreta, não o painel da mina
 });
 // Reage ao clique na pedra secreta: faz os cristais pulsarem e toca o som secreto (se o arquivo existir;
 // senão só registra no console).

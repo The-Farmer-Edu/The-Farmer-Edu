@@ -65,6 +65,9 @@
       addEventListener('beforeunload', evento => { if (descendoComCtrl()) { evento.preventDefault(); evento.returnValue = ''; } });
 
       const frente = new THREE.Vector3(), direita = new THREE.Vector3(), deslocamento = new THREE.Vector3();
+      // Entrada ANALÓGICA do joystick de toque (seção 19b): avanco/lateral entre −1 e 1, já com zona morta aplicada. Soma com o
+      // teclado no mesmo movimento abaixo (não existe um segundo sistema de movimento); quando ninguém toca, fica em 0.
+      const entradaDoJoystick = { avanco: 0, lateral: 0 };
 
       // Move o alvo da câmera com as teclas (setas giram, WASD andam, Espaço/Ctrl sobem/descem), respeitando o
       // limite do mapa e acelerando com Shift.
@@ -74,16 +77,20 @@
         const vertical = (teclas.Space ? 1 : 0) - ((teclas.ControlLeft || teclas.ControlRight || teclas.KeyC) ? 1 : 0);
         if (vertical) for (const alvo of [alvoDestinoDaCamera, alvoAtualDaCamera]) // altura do alvo ≥ 0: a câmera nunca desce abaixo do chão
           alvo.y = Math.max(0, Math.min(ALTURA_MAXIMA_DO_ALVO, alvo.y + vertical * VELOCIDADE_VERTICAL * (shift ? VELOCIDADE_COM_SHIFT : 1) * segundosDesdeUltimoFrame));
-        let avanco = (teclas.KeyW ? 1 : 0) - (teclas.KeyS ? 1 : 0);
-        let lateral = (teclas.KeyD ? 1 : 0) - (teclas.KeyA ? 1 : 0);
+        let avanco = (teclas.KeyW ? 1 : 0) - (teclas.KeyS ? 1 : 0) + entradaDoJoystick.avanco;
+        let lateral = (teclas.KeyD ? 1 : 0) - (teclas.KeyA ? 1 : 0) + entradaDoJoystick.lateral;
         if (!avanco && !lateral) return;
 
         // A câmera fica em (sin h, cos h) em relação ao alvo, então "para frente" é o oposto disso
         frente.set(-Math.sin(anguloHorizontal), 0, -Math.cos(anguloHorizontal));
         direita.set(Math.cos(anguloHorizontal), 0, -Math.sin(anguloHorizontal));
 
+        // A intensidade fica entre 0 e 1: a diagonal do teclado (1, 1) não fica mais rápida, e o joystick pouco inclinado anda
+        // mais devagar que a velocidade máxima. Só com teclado o resultado é o mesmo de antes (todo vetor de tecla tem
+        // comprimento ≥ 1 e vira 1).
+        const intensidade = Math.min(1, Math.hypot(avanco, lateral));
         deslocamento.set(0, 0, 0).addScaledVector(frente, avanco).addScaledVector(direita, lateral);
-        deslocamento.normalize(); // diagonal não fica mais rápida
+        deslocamento.normalize().multiplyScalar(intensidade);
 
         // Quanto mais longe a câmera, mais rápido anda (sensação constante na tela)
         const velocidade = distanciaDaCamera * VELOCIDADE_BASE * (shift ? VELOCIDADE_COM_SHIFT : 1);

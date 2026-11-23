@@ -1,0 +1,191 @@
+# VENOM — pixel art (fan art, uso pessoal). 44×56, de frente. Versão 3 (correção): postura curvada (ombros altos, cabeça
+# baixa e à frente), cabeça grande separada por um pescoço escuro, olhos brancos enormes, bocarra com gengiva vermelha e dentes
+# irregulares, contraste dentro do sprite (realce frio quase branco só nos pontos altos), membros longos, garras, joelhos dobrados.
+# Montada com ferramenta de autoria (metade esquerda + espelho + passada de sombra à direita; luz vinda da esquerda).
+paleta
+k #020205
+v #07080f
+V #11152a
+w #1f2745
+W #354278
+B #5868b0
+C #a9b6e8
+e #f6f6f2
+E #c4c8d8
+t #f0ead6
+T #b9ad8c
+r #3a0510
+R #c41c46
+L #ff5a7e
+l #b0224a
+x #ffb0c0
+fim
+base 44 56
+............................................
+............................................
+............................................
+................kkkkkkkkkkkk................
+..............kkVwwWWBWwwVVVkk..............
+.............kVwWWBBBBWWWWwwVVk.............
+.......kkkkkkVweeWWBBWwWWwwEEVVkkkkkk.......
+.....kkvVwWkkVeeeeWWBWwWwwEEEEVkkwVVvkk.....
+...kkvVwWWBkkVeeeeeWWVVwwEEEEEVkkWwwVVvkk...
+..kvVwWBBCBkkVEeeeeeWVVwEEEEEEVkkWBWWwVVvk..
+.kvVwWBBCBWkkVVEEeeeeVVEEEEEEVVkkwWBWWwVVvk.
+.kvVwWBBBWWkkVkkkkkkkkkkkkkkkkVkkwwWWWwVVvk.
+.kvVwWWBWWwkkVkRRRRRRRRRRRRRRkVkkVwwWwwVVvk.
+.kvVwwWWWwVkkktTttTttTTTTTTTTTkkkVVwwwVVVvk.
+.kvVVwwwwVvkkVktrtktrtTrTkTrTkVkkvVVVVVVVvk.
+.kvvVVwwVVvkkVkrrrrrrrrrrrrrrkVkkvVVVVVVvvk.
+.kvVwWBWVk..kVkrrrrrrrrrrrrrrkVk..kVwWwVVvk.
+.kvVwWBWVk...kVktrktktTkTkrTkVk...kVwWwVVvk.
+.kvVwWWWVk...kVkTttTtTTTTTTTkVk...kVwwwVVvk.
+.kvVwWBWVk...kVkRRRRRRRRRRRRkVk...kVwWwVVvk.
+.kvVwWBWVk....kkkkkkkkkkkkkkkk....kVwWwVVvk.
+.kvVwWWWVk.kVwWBeewVvvvvVVEEWwVVk.kVwwwVVvk.
+.kvVwWBWVk.kVwWeBCeWwVVVwEBWEwVVk.kVwWwVVvk.
+.kvVwWBWVk.kVwWBBeWeeeEEEwEWWwVVk.kVwWwVVvk.
+.kvVwWWWVk.kVwWWBWEeeeEEEEwWwwVVk.kVwwwVVvk.
+.kvVwwWVvk.kvVwWWwweeeEEEVVwwVVvk.kvVwVVVvk.
+.kvvVwwVvk..kvVwewewWVVwVEVEVVvk..kvVVVVvvk.
+.kvVwWBVvk..kvVeWeVwWVVwVVEwEVvk..kvVWwVVvk.
+..kvVVVvk...kvVvEvVvVvvVvVvEvVvk...kvVVVvk..
+kvVwWBBWVk...kvVwWVwWVVwVVwVVvk...kVwWWwVVvk
+kvVwWBCBVk...kvVwWVwWVVwVVwVVvk...kVWBWwVVvk
+kvVwWBBWVk...kvvVvVvVvvVvVvVvvk...kVwWWwVVvk
+kvVwWWWVvk...kvVwWVwWVVwVVwVVvk...kvVwwwVVvk
+kvVwwWVVvk..kvVwWWVwwVVVVVwwVVvk..kvVVwVVVvk
+.kvVwwVVvk..kvVwWWVVkkkkVVwwVVvk..kvVVVVVvk.
+.kvvVVVvvk.kvVwWBWVk....kVwWwVVvk.kvvVVVvvk.
+kvVwWBWWVk.kvVwWBWVk....kVwWwVVvk.kVwwWwVVvk
+kvVwWBBWVk.kvVwWWWVk....kVwwwVVvk.kVwWWwVVvk
+kvkWkWkVkk.kvVwWWVvk....kvVwwVVvk.kkVkwkwkvk
+kWkwkWkwk..kvVwwWVvk....kvVwVVVvk..kVkwkVkwk
+kWkwkWkwk..kvVVwwVvk....kvVVVVVvk..kVkwkVkwk
+kWkVkWkVk.kvVwWWVvk......kvVwwVVvk.kVkwkVkwk
+kekekekek.kvVWBWVvk......kvVwWwVvk.kEkEkEkEk
+.e.e.e.e..kvVwWWVvk......kvVwwVVvk..E.E.E.E.
+...........kvVwWVvk......kvVwVVvk...........
+...........kvVwWVvk......kvVwVVvk...........
+...........kvVwVVvk......kvVVVVvk...........
+............kvVwVvk......kvVVVvk............
+............kvVVvvk......kvvVVvk............
+............kvvVvvk......kvvVvvk............
+...........kvVwWWVvk....kvVwwVVvk...........
+..........kvVwWBWVvk....kvVwWwVVvk..........
+.........kvVwWWWWVvk....kvVwwwwVVvk.........
+.........kvkVkVkVkvk....kvkVkVkVkvk.........
+.........kEkEkEkEkvk....kvkEkEkEkEk.........
+.........kkkkkkkkkkk....kkkkkkkkkkk.........
+# mandíbula (recortada primeiro): 1 = cai 1 px, 2 = cai 2 px
+regiao mandibula 13 17 18 4
+quadro mandibula 13 17
+VkrrrrrrrrrrrrrrkV
+kVktrktktTkTkrTkVk
+kVkTttTtTTTTTTTkVk
+kVkRRRRRRRRRRRRkVk
+.kkkkkkkkkkkkkkkk.
+quadro mandibula 13 17
+VkrrrrrrrrrrrrrrkV
+VkrrrrrrrrrrrrrrkV
+kVktrktktTkTkrTkVk
+kVkTttTtTTTTTTTkVk
+kVkRRRRRRRRRRRRkVk
+.kkkkkkkkkkkkkkkk.
+# cabeça sem a mandíbula: 1 = caça (olhos estreitados)
+regiao cabeca 12 3 20 14
+quadro cabeca 12 3
+....kkkkkkkkkkkk....
+..kkVwwWWBWwwVVVkk..
+.kVwWWBBBBWWWWwwVVk.
+kVwVVWWBBWwWWwwVVVVk
+kVwwwwWWBWwWwwwwwwVk
+kVeeeeeWWVVwwEEEEEVk
+kVEeeeeeWVVwEEEEEEVk
+kVVEEeeeeVVEEEEEEVVk
+kVkkkkkkkkkkkkkkkkVk
+kVkRRRRRRRRRRRRRRkVk
+kktTttTttTTTTTTTTTkk
+kVktrtktrtTrTkTrTkVk
+kVkrrrrrrrrrrrrrrkVk
+kVkrrrrrrrrrrrrrrkVk
+# língua (parte extra): 0 curta, 1 média, 2 enrolando à esquerda, 3 enrolando à direita
+quadro lingua 19 16
+.kLLk.
+kLxLLk
+klLLlk
+.kllk.
+quadro lingua 19 16
+.kLLk.
+kLxLLk
+kLxLlk
+klLLlk
+.klLk.
+.klLk.
+..kk..
+quadro lingua 17 16
+...kLLk.
+..kLxLLk
+..kLxLlk
+..klLLlk
+..klLlk.
+.klLlk..
+klLLk...
+kLlk....
+kLk.....
+.k......
+quadro lingua 19 16
+.kLLk...
+kLxLLk..
+kLxLlk..
+klLLlk..
+.klLlk..
+..klLlk.
+...kLLlk
+....klLk
+.....kLk
+......k.
+# mãos (antes dos antebraços): 1 = garras fechando, 2 = garras abertas
+regiao maoE 0 36 10 8
+quadro maoE 0 36
+kvVwWBWWVk
+kvVwWBBWVk
+kvVwWWWVvk
+kvkWkWkVkk
+kekekekek.
+.e.e.e.e..
+..........
+..........
+quadro maoE 0 36
+kvVwWBWWVk
+kvVwWBBWVk
+kWkWkWkVkk
+kWk.kWk.kw
+Wk..Wk..kW
+Wk..Vk..kV
+ek..ek..ke
+e...e....e
+regiao maoD 34 36 10 8
+quadro maoD 34 36
+kVwwWwVVvk
+kVwWWwVVvk
+kvVwwwVVvk
+kkVkwkwkvk
+.kEkEkEkEk
+..E.E.E.E.
+..........
+..........
+quadro maoD 34 36
+kVwwWwVVvk
+kVwWWwVVvk
+kkVkwkwkwk
+Vk.kwk.kwk
+wk..kw..kw
+Vk..kV..kw
+Ek..kE..kE
+E....E...E
+# antebraços
+regiao antebracoE 0 29 10 7
+regiao antebracoD 34 29 10 7
+# tronco (ombros altos, peito, aranha, abdômen, braço de cima): respiração
+regiao tronco 0 6 44 23

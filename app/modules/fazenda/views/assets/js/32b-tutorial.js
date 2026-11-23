@@ -131,6 +131,103 @@
       //    baixo, no alto; a altura máxima acompanha o espaço livre (o texto rola dentro do cartão).
       // Etapa 4: o vigia do tutorial chama a função abaixo a cada 400 ms; só escreve no estilo o que mudou (sem recalcular o layout à toa).
       const escreverEstilos = function escreverEstilos(elemento, estilos) { for (const nome in estilos) if (elemento.style[nome] !== estilos[nome]) elemento.style[nome] = estilos[nome]; };
+      // Margens seguras do aparelho (entalhe, cantos arredondados, barra de gestos), em px: um elemento invisível recebe
+      // env(safe-area-inset-*) como preenchimento e o navegador devolve os valores já resolvidos.
+      const medidorDeMargensSeguras = document.createElement('div');
+      medidorDeMargensSeguras.setAttribute('aria-hidden', 'true');
+      medidorDeMargensSeguras.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none;' +
+        'padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)';
+      document.body.appendChild(medidorDeMargensSeguras);
+      const lerMargensSeguras = function lerMargensSeguras() {
+        const estilo = getComputedStyle(medidorDeMargensSeguras);
+        return { esquerda: parseFloat(estilo.paddingLeft) || 0, direita: parseFloat(estilo.paddingRight) || 0, baixo: parseFloat(estilo.paddingBottom) || 0 };
+      };
+      // Faixa vertical LIVRE para o cartão quando ele fica ao lado do joystick (celular deitado), entre as bordas horizontais
+      // esquerdaDoCartao e direitaDoCartao:
+      //  • começa abaixo da barra do topo e de cada botão da esquerda (inventário, objetivos, diário) que estiver na mesma faixa
+      //    horizontal — o 🎯 Objetivos, com o texto do próximo objetivo, costuma ser o mais largo;
+      //  • termina acima da gaveta de construções FECHADA (o rótulo "Construções", o resumo e a seta ▲) quando ela estiver na mesma
+      //    faixa e acima da margem segura de baixo (barra de gestos). Aberta, a gaveta já desvia do cartão (08-tutorial.css).
+      // Devolve { topo, altura } ou null se a faixa livre for mais baixa que ALTURA_MINIMA_AO_LADO_DO_JOYSTICK — a altura em que
+      // cabeçalho, uma linha de texto, progresso e botões ainda cabem sem o cartão ganhar barra de rolagem própria nem cortar os
+      // botões (medido na emulação: com 153 e 162 px os botões ficavam cortados; com 183 px, inteiros).
+      const ALTURA_MINIMA_AO_LADO_DO_JOYSTICK = 180, MARGEM_AO_LADO_DO_JOYSTICK = 8;
+      const BOTOES_DA_ESQUERDA = ['#botao-inventario', '#botao-objetivos', '#botao-diario'];
+      const caixasDosBotoesDaEsquerda = function caixasDosBotoesDaEsquerda() {
+        const caixas = [];
+        for (const seletor of BOTOES_DA_ESQUERDA) {
+          const botao = selecionar(seletor);
+          if (!botao || !botao.offsetParent) continue;
+          const caixa = botao.getBoundingClientRect();
+          if (caixa.width) caixas.push(caixa);
+        }
+        return caixas;
+      };
+      const direitaDosBotoesDaEsquerda = () => Math.max(0, ...caixasDosBotoesDaEsquerda().map(caixa => caixa.right));
+
+      // ---- Gaveta de construções ABERTA numa tela estreita, com o cartão visível ----
+      // A gaveta aberta ocupa quase a tela toda; antes o cartão ficava POR CIMA do cabeçalho dela e dos botões da esquerda. Agora
+      // os dois se acomodam (classes no body + variáveis lidas por 08-tutorial.css):
+      //  1º empilhados (celular em pé): o cartão logo abaixo dos botões da esquerda, na largura toda; a gaveta embaixo dele, com a
+      //     área de rolagem encurtada (--altura-do-conteudo-da-gaveta);
+      //  2º lado a lado (celular deitado, tela baixa): o cartão numa coluna à DIREITA, abaixo da barra do topo; a gaveta à esquerda,
+      //     mais estreita (--centro-da-gaveta, --largura-da-gaveta), com a altura de sempre;
+      //  senão, fica como antes (o cartão passa por cima da gaveta).
+      const ALTURA_DO_CARTAO_COM_A_GAVETA = 220, ALTURA_MINIMA_DO_CARTAO_COM_A_GAVETA = 180, ALTURA_MINIMA_DA_GAVETA_ABERTA = 170, LARGURA_MINIMA_DA_GAVETA_AO_LADO = 260;
+      const VARIAVEIS_DA_GAVETA = ['--altura-do-conteudo-da-gaveta', '--centro-da-gaveta', '--largura-da-gaveta'];
+      const definirAcomodacaoDaGaveta = function definirAcomodacaoDaGaveta(modo, variaveis) {
+        const corpo = document.body;
+        if (corpo.classList.contains('gaveta-empilhada-com-o-tutorial') !== (modo === 'empilhada')) corpo.classList.toggle('gaveta-empilhada-com-o-tutorial', modo === 'empilhada');
+        if (corpo.classList.contains('gaveta-ao-lado-do-tutorial') !== (modo === 'ao-lado')) corpo.classList.toggle('gaveta-ao-lado-do-tutorial', modo === 'ao-lado');
+        for (const nome of VARIAVEIS_DA_GAVETA) {
+          const valor = variaveis[nome] || '';
+          if (corpo.style.getPropertyValue(nome) !== valor) { if (valor) corpo.style.setProperty(nome, valor); else corpo.style.removeProperty(nome); }
+        }
+      };
+      const desfazerAcomodacaoDaGaveta = () => definirAcomodacaoDaGaveta(null, {});
+      // Devolve true quando posicionou o cartão (e acomodou a gaveta); false = gaveta fechada ou sem espaço (segue o caminho normal).
+      const acomodarGavetaAbertaComOCartao = function acomodarGavetaAbertaComOCartao(margensSeguras, minimizado) {
+        if (!selecionar('#lista-cards').classList.contains('aberta')) { desfazerAcomodacaoDaGaveta(); return false; }
+        const margem = 8, larguraUtil = innerWidth - margensSeguras.esquerda - margensSeguras.direita - 2 * margem;
+        const topoLivre = selecionar('#barra-topo').getBoundingClientRect().bottom + margem;
+        const abaixoDosBotoes = Math.max(topoLivre, ...caixasDosBotoesDaEsquerda().map(caixa => caixa.bottom + margem));
+        const baseDaGaveta = innerHeight - margensSeguras.baixo - 10;                                                       // 02-interface.css: área segura + 10 px
+        // tudo o que a gaveta tem além da área de rolagem (tábua do cabeçalho, bordas, espaçamentos), medido ao vivo: não muda
+        // quando a área de rolagem encolhe
+        const alturaFixaDaGaveta = selecionar('#lista-cards').getBoundingClientRect().height - selecionar('#conteudo-da-gaveta').getBoundingClientRect().height;
+        // 1º empilhados
+        const alturaDoCartao = minimizado ? cartaoDoTutorial.getBoundingClientRect().height
+          : Math.min(ALTURA_DO_CARTAO_COM_A_GAVETA, baseDaGaveta - abaixoDosBotoes - margem - ALTURA_MINIMA_DA_GAVETA_ABERTA);
+        if (minimizado || alturaDoCartao >= ALTURA_MINIMA_DO_CARTAO_COM_A_GAVETA) {
+          const topoDaGaveta = abaixoDosBotoes + alturaDoCartao + margem, alturaDoConteudo = Math.floor(baseDaGaveta - topoDaGaveta - alturaFixaDaGaveta);
+          if (baseDaGaveta - topoDaGaveta >= ALTURA_MINIMA_DA_GAVETA_ABERTA && alturaDoConteudo > 0) {
+            escreverEstilos(cartaoDoTutorial, { top: Math.round(abaixoDosBotoes) + 'px', bottom: 'auto', maxHeight: minimizado ? '' : Math.floor(alturaDoCartao) + 'px', left: (margensSeguras.esquerda + margem) + 'px', width: larguraUtil + 'px' });
+            definirAcomodacaoDaGaveta('empilhada', { '--altura-do-conteudo-da-gaveta': alturaDoConteudo + 'px' });
+            return true;
+          }
+        }
+        // 2º lado a lado
+        const larguraDoCartao = Math.min(360, Math.floor(larguraUtil * 0.5)), esquerdaDoCartao = innerWidth - margensSeguras.direita - margem - larguraDoCartao;
+        const esquerdaDaGaveta = margensSeguras.esquerda + 12, larguraDaGaveta = esquerdaDoCartao - margem - esquerdaDaGaveta;
+        const alturaDaColuna = Math.floor(innerHeight - margensSeguras.baixo - margem - topoLivre);
+        if (larguraDaGaveta >= LARGURA_MINIMA_DA_GAVETA_AO_LADO && (minimizado || alturaDaColuna >= ALTURA_MINIMA_DO_CARTAO_COM_A_GAVETA)) {
+          escreverEstilos(cartaoDoTutorial, { top: Math.round(topoLivre) + 'px', bottom: 'auto', maxHeight: minimizado ? '' : alturaDaColuna + 'px', left: esquerdaDoCartao + 'px', width: larguraDoCartao + 'px' });
+          definirAcomodacaoDaGaveta('ao-lado', { '--centro-da-gaveta': Math.round(esquerdaDaGaveta + larguraDaGaveta / 2) + 'px', '--largura-da-gaveta': larguraDaGaveta + 'px' });
+          return true;
+        }
+        desfazerAcomodacaoDaGaveta();
+        return false;
+      };
+      const espacoAoLadoDoJoystick = function espacoAoLadoDoJoystick(esquerdaDoCartao, direitaDoCartao, margensSeguras) {
+        const margem = MARGEM_AO_LADO_DO_JOYSTICK, mesmaFaixa = caixa => caixa.right > esquerdaDoCartao - margem && caixa.left < direitaDoCartao + margem;
+        let topo = selecionar('#barra-topo').getBoundingClientRect().bottom + margem;
+        for (const caixa of caixasDosBotoesDaEsquerda()) if (mesmaFaixa(caixa)) topo = Math.max(topo, caixa.bottom + margem);
+        let fim = innerHeight - margensSeguras.baixo - margem;
+        const gaveta = selecionar('#lista-cards'), caixaDaGaveta = gaveta.getBoundingClientRect();
+        if (!gaveta.classList.contains('aberta') && caixaDaGaveta.height && mesmaFaixa(caixaDaGaveta)) fim = Math.min(fim, caixaDaGaveta.top - margem);
+        const altura = Math.floor(fim - topo);
+        return altura >= ALTURA_MINIMA_AO_LADO_DO_JOYSTICK ? { topo: Math.ceil(topo), altura } : null;
+      };
       const atualizarMolduraDoTutorial = function atualizarMolduraDoTutorial() {
         const minimizado = cartaoDoTutorial.classList.contains('minimizado');
         document.body.classList.toggle('tutorial-aberto', !!modoDoTutorial && !minimizado);
@@ -141,26 +238,114 @@
         if (mostrar) escreverEstilos(molduraDoTutorial, { left: (retangulo.left - 6) + 'px', top: (retangulo.top - 6) + 'px', width: (retangulo.width + 12) + 'px', height: (retangulo.height + 12) + 'px' });
         const estreita = innerWidth < 720, noAlto = estreita && mostrar && retangulo.top + retangulo.height / 2 > innerHeight / 2;
         if (cartaoDoTutorial.classList.contains('no-alto') !== noAlto) cartaoDoTutorial.classList.toggle('no-alto', noAlto);
-        if (!estreita) { escreverEstilos(cartaoDoTutorial, { top: '', bottom: '', maxHeight: '' }); return; }   // telas largas: a altura máxima fica no CSS (08-tutorial.css)
+        // Joystick de toque (seção 19b): o cartão fica FORA da área que ele reserva no canto inferior esquerdo, para os dois
+        // continuarem utilizáveis ao mesmo tempo (sem nenhum dos dois passar por cima do outro). null = sem joystick.
+        const reservaDoJoystick = window.farmEduJoystick ? farmEduJoystick.areaReservada() : null;
+        const margensSeguras = lerMargensSeguras();
+        if (!estreita) {
+          // telas largas: posição e altura máxima vêm do CSS (08-tutorial.css e 09-…: topo fixo; coluna à esquerda, depois da
+          // margem segura, que a gaveta aberta respeita). Se o cartão puder alcançar o joystick:
+          //  1º) encurta até o topo dele (o texto rola), se sobrarem ao menos 150 px;
+          //  2º) senão (celular deitado, tela baixa), vai para o LADO do joystick, na faixa livre entre os botões da esquerda e a
+          //      gaveta fechada (espacoAoLadoDoJoystick: sem cobrir o rótulo "Construções"); a coluna do cartão
+          //      (--coluna-do-tutorial, que a gaveta aberta respeita — 08-tutorial.css) cresce junto, até 60% da largura.
+          // O topo é medido com o topo do CSS (sem o valor escrito numa chamada anterior), para a escolha não oscilar.
+          desfazerAcomodacaoDaGaveta();   // a acomodação da gaveta aberta é só das telas estreitas
+          if (cartaoDoTutorial.style.top) cartaoDoTutorial.style.top = '';
+          const topoDoCartao = cartaoDoTutorial.getBoundingClientRect().top, alturaMaximaDoCss = innerHeight - 188;
+          const esquerdaPadrao = margensSeguras.esquerda + 12, colunaPadrao = margensSeguras.esquerda + 384;
+          let estilos = { top: '', bottom: '', left: '', width: '', maxHeight: '' }, coluna = '';
+          if (reservaDoJoystick && reservaDoJoystick.left < esquerdaPadrao + 360 && topoDoCartao + alturaMaximaDoCss > reservaDoJoystick.top - 8) {
+            const espacoAteOJoystick = Math.floor(reservaDoJoystick.top - 8 - topoDoCartao), esquerdaAoLado = Math.ceil(reservaDoJoystick.right + 8);
+            const larguraAoLado = Math.min(360, Math.floor(innerWidth * 0.6) - esquerdaAoLado - 12);
+            if (espacoAteOJoystick >= 150) estilos.maxHeight = 'min(calc(100dvh - env(safe-area-inset-top, 0px) - 188px), ' + espacoAteOJoystick + 'px)';
+            else if (larguraAoLado >= 240) {
+              // a coluna (que a gaveta ABERTA respeita) é sempre a desta posição junto ao joystick
+              coluna = Math.max(colunaPadrao, esquerdaAoLado + larguraAoLado + 12) + 'px';
+              let esquerdaDoCartao = esquerdaAoLado, larguraDoCartao = larguraAoLado;
+              let espaco = espacoAoLadoDoJoystick(esquerdaAoLado, esquerdaAoLado + larguraAoLado, margensSeguras);
+              // faixa baixa demais (o 🎯 Objetivos, largo, empurra o topo para baixo) e gaveta FECHADA: o cartão passa para a
+              // direita dos botões da esquerda e sobe até a barra do topo. Ao abrir a gaveta, ele volta para junto do joystick
+              // (lá a faixa vai até a margem de baixo), e a gaveta abre ao lado dele.
+              if (!espaco && !selecionar('#lista-cards').classList.contains('aberta')) {
+                const depoisDosBotoes = Math.max(esquerdaAoLado, Math.ceil(direitaDosBotoesDaEsquerda() + 8));
+                const larguraDepoisDosBotoes = Math.min(360, innerWidth - depoisDosBotoes - 12 - margensSeguras.direita);
+                const espacoDepoisDosBotoes = depoisDosBotoes > esquerdaAoLado && larguraDepoisDosBotoes >= 240
+                  ? espacoAoLadoDoJoystick(depoisDosBotoes, depoisDosBotoes + larguraDepoisDosBotoes, margensSeguras) : null;
+                if (espacoDepoisDosBotoes) { esquerdaDoCartao = depoisDosBotoes; larguraDoCartao = larguraDepoisDosBotoes; espaco = espacoDepoisDosBotoes; }
+              }
+              estilos.left = esquerdaDoCartao + 'px'; estilos.width = larguraDoCartao + 'px';
+              if (espaco) { estilos.top = espaco.topo + 'px'; estilos.maxHeight = espaco.altura + 'px'; }
+            }
+          }
+          escreverEstilos(cartaoDoTutorial, estilos);
+          if (document.body.style.getPropertyValue('--coluna-do-tutorial') !== coluna) {
+            if (coluna) document.body.style.setProperty('--coluna-do-tutorial', coluna); else document.body.style.removeProperty('--coluna-do-tutorial');
+          }
+          return;
+        }
         // Etapa 4 — telas estreitas: o cartão usa o espaço que está LIVRE de verdade e nunca passa do alto da tela nem da borda de baixo.
-        //  • preferido: abaixo dos botões da esquerda (inventário, objetivos, diário) e acima da gaveta;
+        //  • preferido: abaixo dos botões da esquerda (inventário, objetivos, diário) e acima da gaveta (e do joystick);
         //  • sem espaço (gaveta aberta numa tela baixa): sobe até logo abaixo da barra de XP e, se ainda faltar, fica por cima da gaveta.
         // O texto rola dentro do cartão; o cabeçalho, o progresso e os botões ficam sempre visíveis (08-tutorial.css).
-        const ALTURA_CONFORTAVEL = 220, margem = 8;
+        if (acomodarGavetaAbertaComOCartao(margensSeguras, minimizado)) return;   // gaveta aberta: cartão e gaveta sem sobreposição
+        const ALTURA_CONFORTAVEL = 220, ALTURA_ABAIXO_DOS_BOTOES = 180, ALTURA_MINIMA = 120, LARGURA_MINIMA_AO_LADO = 280, margem = 8;
         const topoDaGaveta = selecionar('#lista-cards').getBoundingClientRect().top, topoLivre = selecionar('#barra-topo').getBoundingClientRect().bottom + margem;
         const botaoMaisBaixo = selecionar('#botao-diario') || selecionar('#botao-objetivos'), abaixoDosBotoes = botaoMaisBaixo && botaoMaisBaixo.offsetParent ? botaoMaisBaixo.getBoundingClientRect().bottom + margem : topoLivre;
-        const limiteDeBaixo = innerHeight - margem, alturaMaxima = Math.max(120, limiteDeBaixo - topoLivre);
-        let topo = null, base = null, altura;
-        if (noAlto) {   // o elemento apontado está embaixo: o cartão fica no alto, sem cobri-lo quando possível
-          const fimLivre = Math.min(limiteDeBaixo, retangulo.top - margem);
-          topo = fimLivre - abaixoDosBotoes >= ALTURA_CONFORTAVEL ? abaixoDosBotoes : topoLivre;
-          altura = Math.max(Math.min(ALTURA_CONFORTAVEL, alturaMaxima), fimLivre - topo);
-        } else if (topoDaGaveta - margem - abaixoDosBotoes >= ALTURA_CONFORTAVEL) { base = innerHeight - topoDaGaveta + margem; altura = topoDaGaveta - margem - abaixoDosBotoes; }
-        else if (topoDaGaveta - margem - topoLivre >= ALTURA_CONFORTAVEL) { base = innerHeight - topoDaGaveta + margem; altura = topoDaGaveta - margem - topoLivre; }
-        else { topo = topoLivre; altura = Math.min(alturaMaxima, Math.max(ALTURA_CONFORTAVEL, Math.round(innerHeight * 0.5))); }   // por cima da gaveta
-        altura = Math.min(altura, alturaMaxima, Math.max(ALTURA_CONFORTAVEL, Math.round(innerHeight * 0.6)));   // nunca cobre a tela toda: o texto rola
-        escreverEstilos(cartaoDoTutorial, { top: topo === null ? 'auto' : Math.round(topo) + 'px', bottom: base === null ? 'auto' : Math.round(base) + 'px', maxHeight: Math.round(altura) + 'px' });
+        const limiteDeBaixo = innerHeight - margem, alturaMaxima = Math.max(ALTURA_MINIMA, limiteDeBaixo - topoLivre);
+        // obstaculoDeBaixo: o y acima do qual o cartão deve terminar além da gaveta (o topo do joystick, ou Infinity)
+        const calcularPosicaoVertical = function calcularPosicaoVertical(obstaculoDeBaixo) {
+          const fimDoEspaco = Math.min(topoDaGaveta, obstaculoDeBaixo);
+          let topo = null, base = null, altura;
+          if (noAlto) {   // o elemento apontado está embaixo: o cartão fica no alto, sem cobri-lo quando possível
+            const fimLivre = Math.min(limiteDeBaixo, retangulo.top - margem, obstaculoDeBaixo - margem);
+            topo = fimLivre - abaixoDosBotoes >= ALTURA_CONFORTAVEL ? abaixoDosBotoes : topoLivre;
+            altura = Math.max(Math.min(ALTURA_CONFORTAVEL, alturaMaxima), fimLivre - topo);
+          } else if (fimDoEspaco - margem - abaixoDosBotoes >= ALTURA_CONFORTAVEL) { base = innerHeight - fimDoEspaco + margem; altura = fimDoEspaco - margem - abaixoDosBotoes; }
+          // quem limita é o joystick (não a gaveta): melhor um cartão um pouco mais baixo, com o texto rolando, do que cobrir os
+          // botões da esquerda (inventário, objetivos, diário), que o próprio tutorial aponta
+          else if (obstaculoDeBaixo < topoDaGaveta && fimDoEspaco - margem - abaixoDosBotoes >= ALTURA_ABAIXO_DOS_BOTOES) { base = innerHeight - fimDoEspaco + margem; altura = fimDoEspaco - margem - abaixoDosBotoes; }
+          else if (fimDoEspaco - margem - topoLivre >= ALTURA_CONFORTAVEL) { base = innerHeight - fimDoEspaco + margem; altura = fimDoEspaco - margem - topoLivre; }
+          else { topo = topoLivre; altura = Math.min(alturaMaxima, Math.max(ALTURA_CONFORTAVEL, Math.round(innerHeight * 0.5))); }   // por cima da gaveta
+          altura = Math.min(altura, alturaMaxima, Math.max(ALTURA_CONFORTAVEL, Math.round(innerHeight * 0.6)));   // nunca cobre a tela toda: o texto rola
+          return { topo, base, altura };
+        };
+        // extensão vertical que o cartão PODE ocupar (pela altura máxima: o cartão real pode ser menor)
+        const extensaoDoCartao = posicao => posicao.base === null ? { de: posicao.topo, ate: posicao.topo + posicao.altura } : { de: innerHeight - posicao.base - posicao.altura, ate: innerHeight - posicao.base };
+        let posicao = calcularPosicaoVertical(reservaDoJoystick ? reservaDoJoystick.top : Infinity), esquerda = '', largura = '';
+        if (reservaDoJoystick) {
+          const extensao = extensaoDoCartao(posicao);
+          if (extensao.ate > reservaDoJoystick.top - margem + 0.5 && extensao.de < reservaDoJoystick.bottom) {
+            // não coube acima do joystick (tela baixa, por exemplo o celular deitado):
+            //  1º) ao lado dele, com a altura de sempre, se sobrar largura para ler;
+            //  2º) senão, encurtado até o topo do joystick (o texto rola), se ainda sobrar altura;
+            //  3º) senão, fica como estava — o joystick confere o toque e se esconde enquanto o cartão o cobrir.
+            //  Ao lado, o cartão usa a faixa livre entre os botões da esquerda e a gaveta fechada (espacoAoLadoDoJoystick); se ela
+            //  for baixa demais (o 🎯 Objetivos, largo, empurra o topo para baixo), o cartão passa também para a DIREITA dos botões
+            //  da esquerda e sobe até a barra do topo — sem cobrir botões, rótulo da gaveta nem joystick.
+            const larguraAPartirDe = esquerdaDoCartao => innerWidth - esquerdaDoCartao - margem - margensSeguras.direita;
+            const faixaLivre = esquerdaDoCartao => larguraAPartirDe(esquerdaDoCartao) >= LARGURA_MINIMA_AO_LADO
+              ? espacoAoLadoDoJoystick(esquerdaDoCartao, esquerdaDoCartao + larguraAPartirDe(esquerdaDoCartao), margensSeguras) : null;
+            let esquerdaAoLado = Math.ceil(reservaDoJoystick.right + margem), espaco = faixaLivre(esquerdaAoLado);
+            if (!espaco) {
+              const depoisDosBotoes = Math.max(esquerdaAoLado, Math.ceil(direitaDosBotoesDaEsquerda() + margem));
+              const espacoDepoisDosBotoes = depoisDosBotoes > esquerdaAoLado ? faixaLivre(depoisDosBotoes) : null;
+              if (espacoDepoisDosBotoes) { esquerdaAoLado = depoisDosBotoes; espaco = espacoDepoisDosBotoes; }
+            }
+            if (larguraAPartirDe(esquerdaAoLado) >= LARGURA_MINIMA_AO_LADO) {
+              posicao = espaco ? { topo: espaco.topo, base: null, altura: espaco.altura } : calcularPosicaoVertical(Infinity);
+              esquerda = esquerdaAoLado + 'px'; largura = larguraAPartirDe(esquerdaAoLado) + 'px';
+            }
+            else if (reservaDoJoystick.top - margem - extensao.de >= ALTURA_MINIMA) posicao = { topo: extensao.de, base: null, altura: reservaDoJoystick.top - margem - extensao.de };
+          }
+        }
+        escreverEstilos(cartaoDoTutorial, { top: posicao.topo === null ? 'auto' : Math.round(posicao.topo) + 'px', bottom: posicao.base === null ? 'auto' : Math.round(posicao.base) + 'px', maxHeight: Math.floor(posicao.altura) + 'px', left: esquerda, width: largura });
       };
+      // o joystick apareceu, sumiu ou mudou de lugar (gaveta, giro da tela): reposiciona o cartão na hora
+      addEventListener('farmedu-joystick-area', () => { if (modoDoTutorial) atualizarMolduraDoTutorial(); });
+      // a gaveta abriu ou fechou: reposiciona o cartão na hora (com a gaveta aberta, ele volta para junto do joystick e a gaveta
+      // abre ao lado dele — sem esperar o vigia de 400 ms)
+      new MutationObserver(() => { if (modoDoTutorial) atualizarMolduraDoTutorial(); }).observe(selecionar('#lista-cards'), { attributes: true, attributeFilter: ['class'] });
       const atualizarTarefaDoTutorial = function atualizarTarefaDoTutorial() {
         const passo = modoDoTutorial === 'convite' || !modoDoTutorial ? null : PASSOS_DO_TUTORIAL[passoDoTutorial];
         tarefaDoTutorial.hidden = !(passo && passo.tarefa);
@@ -177,6 +362,7 @@
       const fecharTutorial = function fecharTutorial() {
         modoDoTutorial = null; cartaoDoTutorial.hidden = true; molduraDoTutorial.hidden = true; vigiarTutorial(false);
         document.body.classList.remove('tutorial-aberto');   // a gaveta volta à largura normal
+        desfazerAcomodacaoDaGaveta();                         // e, nas telas estreitas, à altura e à posição normais
       };
       const mostrarPassoDoTutorial = function mostrarPassoDoTutorial(indice) {
         const passos = passosDoModo(), posicao = Math.max(0, passos.indexOf(indice)), passo = PASSOS_DO_TUTORIAL[indice];

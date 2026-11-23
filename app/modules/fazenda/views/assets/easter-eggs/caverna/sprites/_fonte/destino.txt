@@ -1,0 +1,212 @@
+# DOUTOR DESTINO — pixel art (fan art, uso pessoal). 36×58, de frente. Versão 3: luz vinda da esquerda; capa de tecido
+# pesado que nasce atrás das ombreiras e cai RETA (sem abrir como asa), aparecendo ao lado dos braços e atrás das pernas;
+# máscara rígida com fendas horizontais, ponte do nariz, rebites e fenda reta na boca; ombreiras de metal; braço que se ergue.
+# Fonte com linhas inteiras (montada com ferramenta de autoria: metade esquerda + espelho + passada de sombra à direita).
+paleta
+k #06080a
+q #0a1e11
+f #12381c
+F #1d5629
+L #2c7a3c
+G #4a9e57
+d #15181c
+s #3a4149
+S #6a737d
+Z #a6afb8
+W #e0e6eb
+y #4a3214
+Y #b8862a
+X #f0cf72
+b #2a1d10
+fim
+base 36 58
+..............kkkkkkkk..............
+............kkfLLGLFFqkk............
+...........kfLLGGGLLLFFqk...........
+..........kfLLGGGGLLLLFFqk..........
+..........kfLkkkkkkkkkkFqk..........
+..........kfLkSZZWZSSskFqk..........
+..........kfLkSZZZSSSskFqk..........
+..........kfLkkkkZSkkkkFqk..........
+..........kfLkSZSZSsSskFqk..........
+..........kfLksZZWZSSskFqk..........
+..........kfLkSZZSsSSskFqk..........
+..........kfLkskkkkkkskFqk..........
+..........kfLkSZSSssSskFqk..........
+.........kfFLLkkkkkkkkFFfqk.........
+....kkkkkfFLLkkSsSssskkFFfqkkkkk....
+..kkSZZWSkfFLkYksSsskykFfqksZSSskk..
+..kfSZWWZSkfFkYXYssyYykfqksSZZSsqk..
+..kfSZZZZSkfFLkYkLFkykFfqksSSSSsqk..
+..kfsSZZSskfFFkLLGLFFkffqkssSSssqk..
+..kfkssssskkfFkFLLFFfkfqkkssssskqk..
+..kfkSZWSkkFFLLLGLFLFFFffkksZSskqk..
+..kfkSZZSkkFFLLLGLFLFFFffkksSSskqk..
+..kfkSZZSkkfFFLLLLFFFFffqkksSSskqk..
+..kfksSZSkkfFFLLGLFLFFffqkksSsskqk..
+..kfkdSSdkkfFFFLLLFFFfffqkkdssdkqk..
+..kfkSZWSkkbbbbbYYyybbbbbkksZSskqk..
+..kfkSZZSkkbbbbYXXYYybbbbkksSSskqk..
+..kfkSZZSkkbbbbbYYyybbbbbkksSSskqk..
+..kfkSZWZSkFLFFLFLFfFffFfksSZSskqk..
+..kfkSZZZSkFLFFLFLFfFffFfksSSSskqk..
+..kfksSZSskFLFFLFLFfFffFfkssSsskqk..
+..kfkkSSSkkFLFFLFLFfFffFfkkssskkqk..
+..kfkSZSZSkfLFFLFLFfFffFqksSsSskqk..
+..kfkZSZSZkfLfFLfkkqFfqFqkSsSsSkqk..
+..kfkkSkSkkkkkkkkkkkkkkkkkkskskkqk..
+..kfFffqqqqkSZZSkqqksSSskqqqqqqfqk..
+..kfFffFfqqksZZSkqqksSSskqqqfqqfqk..
+..kfFffFfqqksSZSkqqksSsskqqqfqqfqk..
+..kfFffFfqqksSZskqqksSsskqqqfqqfqk..
+..kfFffFfqqkdSSdkqqkdssdkqqqfqqfqk..
+..kfFffFfqqkSZWSkqqksZSskqqqfqqfqk..
+..kfFffFfqqksZZskqqksSSskqqqfqqfqk..
+..kfFffFfqqkLGGLkqqkFLLFkqqqfqqfqk..
+..kfFffFfqqkfFFfkqqkqffqkqqqfqqfqk..
+..kfFffFfqqkfFLfkqqkqFfqkqqqfqqfqk..
+..kfFffFfqqkfFLfkqqkqFfqkqqqfqqfqk..
+..kfFffFfqqkfFLfkqqkqFfqkqqqfqqfqk..
+..kfFffFfqqkfFLfkqqkqFfqkqqqfqqfqk..
+..kfFffFfqqkfFFfkqqkqffqkqqqfqqfqk..
+..kfFffFfqkfFFLfkqqkqFffqkqqfqqfqk..
+..kfFffFfqkfFFLFkqqkfFffqkqqfqqfqk..
+..kfFffFfqkfFFFFkqqkffffqkqqfqqfqk..
+...kfFffqqkfffffkqqkqqqqqkqqqqfqk...
+...kkfFfqqkfFFLFkqqkfFffqkqqqfqkk...
+....kkkkkkkfFFFFkkkkffffqkkkkkkk....
+..........kfFFFFk..kffffqk..........
+.........kffffffk..kqqqqqqk.........
+.........kkkkkkkk..kkkkkkkk.........
+# capuz e máscara: 1 = olha para a esquerda de quem vê, 2 = para a direita (a máscara anda dentro do capuz)
+regiao cabeca 10 0 16 14
+quadro cabeca 10 0
+....kkkkkkkk....
+..kkfLLGLFFqkk..
+.kfLLGGGLLLFFqk.
+kfLLGGGGLLLLFFqk
+kfLkkkkkkkkkkFqk
+kfLkZZWZSSsqkFqk
+kfLkZZZSSSsqkFqk
+kfLkkkZSkkkqkFqk
+kfLkZSZSsSsqkFqk
+kfLkZZWZSSsqkFqk
+kfLkZZSsSSsqkFqk
+kfLkkkkkkksqkFqk
+kfLkZSSssSsqkFqk
+fFLLkkkkkkkkFFfq
+quadro cabeca 10 0
+....kkkkkkkk....
+..kkfLLGLFFqkk..
+.kfLLGGGLLLFFqk.
+kfLLGGGGLLLLFFqk
+kfLkkkkkkkkkkFqk
+kfLkqSZZWZSSkFqk
+kfLkqSZZZSSSkFqk
+kfLkqkkkZSkkkFqk
+kfLkqSZSZSsSkFqk
+kfLkqsZZWZSSkFqk
+kfLkqSZZSsSSkFqk
+kfLkqskkkkkkkFqk
+kfLkqSZSSssSkFqk
+fFLLkkkkkkkkFFfq
+# braço direito de quem vê (do ombro à mão): 1 = subindo, 2 = erguido com a palma aberta (o brilho verde é luz da cena)
+regiao bracoD 25 20 11 15
+quadro bracoD 25 13
+......kSkSk
+.....kkSkSk
+.....kSZWZk
+.....kSWWZk
+.....ksSSsk
+.....kSZSSk
+....kSZWSsk
+kSZSkSZZSsk
+kSZZSkSZSsk
+kqSZZSkSSk.
+kqqSZZSSsk.
+kqqqSZZSsk.
+kqqqkdSSdk.
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+quadro bracoD 25 4
+......kSkSk
+.....kkSkSk
+.....kSSSSk
+.....kSZWZk
+.....kSWWZk
+.....ksSSsk
+.....kSZSSk
+....kSZWSSk
+....kSZZSsk
+....kssSSsk
+.....kSZSsk
+.....kSZSsk
+.....kSZSsk
+.....kSSSsk
+.....kdSSdk
+...kkkSSSsk
+kSZZZSSSssk
+ksSSSSSsssk
+kqkkkkkkkk.
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+kqqqffFfk..
+# capa: as dobras andam devagar; a borda de fora continua reta e o alto preso aos ombros
+regiao capaE 0 35 10 19
+quadro capaE 0 35
+..kfFffqqq
+..kfFffFfq
+..kfFffFfq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kffFffFq
+..kfFffFfq
+..kkfFffqq
+...kkfFfqq
+regiao capaD 26 35 10 19
+quadro capaD 26 35
+qqqqqfqk..
+qqfqqfqk..
+qqfqqfqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qfqqfqqk..
+qqfqqfqk..
+qqqqfqkk..
+qqqfqkk...

@@ -21,7 +21,8 @@ Guia curto para **rodar, testar, liberar e apresentar** a Fazenda. Os detalhes d
 
 1. XAMPP com Apache e MySQL ligados; o projeto em `htdocs/The-Farmer-Edu-main`.
 2. Criar `app/core/.env` a partir de `app/core/.env.example` (DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_CHARSET) e importar o banco
-   (`database/`).
+   (`database/`). Passo a passo e cuidados (o `schema.sql` APAGA o banco `the_farmer_edu` antes de recriá-lo):
+   `docs/INSTALACAO-E-EXECUCAO.md`.
 3. Entrar como **aluno** e abrir a Fazenda. Endereço local: `http://localhost/The-Farmer-Edu-main/public/fazenda`.
    - O save fica no banco (`window.FARMEDU_SERVIDOR`, seção 34 do código); o XP das atividades chega pela rota `fazenda/xp-pendente`.
 
@@ -81,7 +82,7 @@ Com `true`, nenhuma invasão do calendário acontece em nenhum save; "Invasão a
 
 | Prioridade | Pendência | O que falta |
 |---|---|---|
-| Alta | **Teste com servidor e banco** | Não havia `app/core/.env` nesta máquina: login, save no banco, respostas 401/409 reais e XP das atividades não foram testados de ponta a ponta (os 401/409 foram simulados no navegador). |
+| ~~Alta~~ feito em 23/11 | **Teste com servidor e banco** | Testado de ponta a ponta com um banco de homologação isolado (`docs/ENCERRAMENTO-TECNICO-2026-11-23.md`): cadastro e login, Fazenda aberta pelo PHP, save no banco (objetos `{}` preservados), conflito de abas 409, 401 sem login, 403 para instrutor, XP de atividade chegando ao jogo e marcado como entregue, limite de tamanho do save (413). |
 | Média | `riacho.mp3` é um WAV | Converter para MP3 de verdade (veja o LEIA-ME dos áudios). |
 | Média | `segredos.unicornio` sem arquivo | Enviar `SFX/segredos/unicornio.mp3` ou remover a entrada (não é tocada). |
 | Média | Licença dos áudios | Registrar origem e licença no LEIA-ME dos áudios. |

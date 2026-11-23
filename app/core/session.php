@@ -51,7 +51,9 @@ function solicitarLogin(): void {
 function solicitarPerfilDeAcesso(string $perfil): void {
     solicitarLogin();
 
-    if ($_SESSION['perfilAcesso'] !== $perfil){
+    // o perfil fica dentro de $_SESSION['usuario'] (ver login()); ler $_SESSION['perfilAcesso'] direto dava sempre
+    // "índice inexistente" e barrava TODO mundo, inclusive quem tinha o perfil certo
+    if ((usuarioLogado()['perfilAcesso'] ?? null) !== $perfil){
         http_response_code(403);
         echo "Você não tem acesso a essa página!";
         exit();

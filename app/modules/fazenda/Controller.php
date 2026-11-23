@@ -19,6 +19,9 @@
             'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'webp' => 'image/webp', 'gif' => 'image/gif', 'svg' => 'image/svg+xml',
             'json' => 'application/json', 'txt' => 'text/plain; charset=utf-8',
         ];
+        // Backend: tamanho máximo do corpo de /fazenda/salvar (512 KB ≈ 100 vezes um save real; abaixo do max_allowed_packet
+        // de 1 MB do MySQL do XAMPP, para o banco nunca receber um pacote que ele recusaria com erro 500).
+        private const TAMANHO_MAXIMO_DO_SAVE = 512 * 1024;
 
         public function showFazenda(): void {
             $usuario = $this->exigirAluno();   // Backend: só aluno logado abre a fazenda
@@ -212,7 +215,12 @@
                 if (stripos($_SERVER['CONTENT_TYPE'] ?? '', 'application/json') === false) {
                     throw new InvalidArgumentException('Formato de envio inválido.');
                 }
-                $bruto = (string) file_get_contents('php://input');
+                // Limite de tamanho: um save real tem poucos KB (≈5 KB no save de referência, com 32 registros no diário). Sem
+                // limite, um envio enorme gastava memória do PHP e esbarrava no max_allowed_packet do MySQL (1 MB no XAMPP).
+                $bruto = (string) file_get_contents('php://input', false, null, 0, self::TAMANHO_MAXIMO_DO_SAVE + 1);
+                if (strlen($bruto) > self::TAMANHO_MAXIMO_DO_SAVE) {
+                    $this->json(['mensagem' => 'O save da fazenda passou do tamanho permitido.'], 413);
+                }
                 $dados = json_decode($bruto, true);
                 if (!is_array($dados) || !isset($dados['estado']) || !is_array($dados['estado'])) {
                     throw new InvalidArgumentException('Save da fazenda ausente.');

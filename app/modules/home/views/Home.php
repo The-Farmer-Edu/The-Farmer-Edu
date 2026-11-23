@@ -19,10 +19,12 @@ $usuario = usuarioLogado();
     <h1>The Farmer Edu 🌱</h1>
 
     <?php if ($usuario): ?>
-        <p>Olá, <?= htmlspecialchars($usuario['nome']) ?>! (<?= htmlspecialchars($usuario['tipo_usuario']) ?>)</p>
+        <?php /* o perfil fica em 'perfilAcesso' (core/session.php: login()); 'tipo_usuario' não existe na sessão */ ?>
+        <p>Olá, <?= htmlspecialchars($usuario['nome']) ?>! (<?= htmlspecialchars($usuario['perfilAcesso'] ?? '') ?>)</p>
         <p><a href="auth/logout">Sair</a></p>
     <?php else: ?>
-        <p><a href="auth/login">Entrar</a></p>
+        <?php /* não existe a rota auth/login: o acesso é por auth/loginAluno ou auth/loginInstrutor */ ?>
+        <p><a href="auth/loginAluno">Entrar como aluno</a> · <a href="auth/loginInstrutor">Entrar como instrutor</a></p>
     <?php endif; ?>
 </body>
 </html>

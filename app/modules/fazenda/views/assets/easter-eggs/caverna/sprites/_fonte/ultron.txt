@@ -1,0 +1,110 @@
+# ULTRON — pixel art (fan art, uso pessoal). 38×58, de frente. Versão 3: luz vinda da esquerda (o lado direito tem um tom a
+# menos por material), ombreiras em duas placas sobrepostas, peitoral largo, abdômen em placas que afinam até a cintura,
+# braços e antebraços largos, cotovelos e joelhos articulados, mãos com nós e quatro dedos, crânio com crista e mandíbula.
+# Fonte com linhas inteiras (montada com ferramenta de autoria: metade esquerda + espelho + passada de sombra à direita).
+paleta
+k #07080c
+d #171a22
+m #2b303b
+M #464d5c
+n #687183
+N #919bad
+Z #c3cbd7
+W #eef2f7
+R #7a0d08
+r #e3261a
+o #ff7a5c
+fim
+base 38 58
+.................kkkk.................
+...............kkmZNdkk...............
+..............kmMNZNnmdk..............
+..............kMnNWZnMmk..............
+..............kdMnNnMmdk..............
+..............kdkkNnkkdk..............
+..............kRrkNnkrRk..............
+..............kmRrkkrRdk..............
+..............kmnNNnnMdk..............
+...............kdrrrrdk...............
+...............kdmNnddk...............
+................kMNnmk................
+...........kkk...kkkk...kkk...........
+.......kkkkmMNkkdmMmddkknmdkkkk.......
+....kkMNZNkkMNZNkdnMdknNnmkknNnmkk....
+..kkMNZWZNkkmMNZNNRRnnNnmdkknNZNnmkk..
+.kMNZWWZNnkkmMNZZZRRNNNnmdkkMnNZZNnmk.
+.kmNZZZNnmkkmMnNZZRRNNnMmdkkdMnNNNndk.
+.kdmNNNnmdkkdmMnNNrrnnMmddkkddMnnnddk.
+.kMNZNNnmMkkdmMnNNoonnMmddkkmdMnnNnmk.
+.kmMNnnmmdkkddmMmmRRddmdddkkdddMMnmdk.
+..kddddddk.kdmmmmmddddddddk.kddddddk..
+..kmMNNnmk..kmNZNmmddnNndk..kdMnnmdk..
+..kmMNZnmk..kmMNNmmddnnmdk..kdMNnmdk..
+..kmMNZnmk..kdmmmdmddddddk..kdMNnmdk..
+..kmMNNnmk...kNZNmmddnNnk...kdMnnmdk..
+..kdmMNmdk...kMNNmmddnnmk...kddnmddk..
+..kmZWWZmk...kdmmdmdddddk...kdNZZNdk..
+..kdmNNmdk...kMNNmmddnnmk...kddnnddk..
+..kddkkddk....kMNmmddnmk....kddkkddk..
+.kmMNNNnmk....kddddddddk....kdMnnnmdk.
+.kmMNZZnmk...kMNZZNnNNnmk...kdMNNnmdk.
+.kmMNZNnmk..kmMNNNnMnnnmdk..kdMnNnmdk.
+.kMnNNnmMk..kmMNNkkkknnmdk..kmdMnnMmk.
+.kmMNNnmmk.kmMNNnk..kMnnmdk.kddMnnmdk.
+.kmMNnnmdk.kmMNZnk..kMNnmdk.kddMMnmdk.
+..kmMnnmdk.kmMNZnk..kMNnmdk.kddMMmdk..
+..kddddddk.kmMNNnk..kMnnmdk.kddddddk..
+.kmMNNNmmk.kdmmmdk..kdddddk.kddnnnmdk.
+.kMNZZNnMk.kmMNnmk..kdMnmdk.kmMnNNnmk.
+.kmkNkNkmk.kmMNnmk..kdMnmdk.kdknknkdk.
+.kNkNkNkmk..kMNnmk..kdMnmk..kdknknknk.
+..k.k.k.k...kMNnmk..kdMnmk...k.k.k.k..
+............kdmmdk..kddddk............
+............kNZWNk..knZNnk............
+............kmNZmk..kdNndk............
+............kdmmdk..kddddk............
+............kmMNmk..kdnmdk............
+............kmMNNk..knnmdk............
+.............kMNmk..kdnmk.............
+.............kMNmk..kdnmk.............
+.............kMNmk..kdnmk.............
+.............kmNmk..kdndk.............
+.............kdddk..kdddk.............
+............kmMNmk..kdnmdk............
+...........kmMNZNk..knNnmdk...........
+..........kmmmmmmk..kddddddk..........
+..........kkkkkkkk..kkkkkkkk..........
+# cabeça inteira: trancos mecânicos e varredura
+regiao cabeca 14 0 10 13
+# mãos (antes dos antebraços): 1 = punho fechado, 2 = dedos abertos
+regiao maoE 1 38 9 5
+quadro maoE 1 38
+kmMNNNmmk
+kMNZZZNMk
+kmMNNNnmk
+kdmmmmmdk
+.kkkkkkk.
+quadro maoE 1 38
+kmMNNNmmk
+kMnNNnnMk
+kNkNkNkNk
+kNkNkNkNk
+k.k.k.k.k
+regiao maoD 28 38 9 5
+quadro maoD 28 38
+kddnnnmdk
+kmnNNNnmk
+kdMnnnmdk
+kdddddddk
+.kkkkkkk.
+quadro maoD 28 38
+kddnnnmdk
+kmMMnnMmk
+knknknknk
+knknknknk
+k.k.k.k.k
+# antebraços (do cotovelo ao pulso): erguem a partir do cotovelo
+regiao antebracoE 1 30 9 8
+regiao antebracoD 28 30 9 8
+# tronco (trapézio, ombreiras, peitoral, abdômen, braço de cima, cotovelo): os ombros descem nos ajustes de postura
+regiao tronco 0 13 38 17

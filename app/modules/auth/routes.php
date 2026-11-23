@@ -21,7 +21,10 @@ Router::post('/auth/editarConta', [UsuarioController::class, 'editarConta']);
 Router::get('/auth/desativarConta', [UsuarioController::class, 'showDesativarConta']);
 Router::post('/auth/desativarConta', [UsuarioController::class, 'desativarConta']);
 
-Router::get('/auth/testeEmail', [UsuarioController::class, 'showTesteEmail']);
+// DESATIVADA (auditoria de segurança): a página de teste enviava um e-mail REAL, pela API paga do Mailtrap, a um endereço de
+// aluno fixo no código a cada visita — sem login (qualquer visitante ou robô de busca disparava e-mails). Para testar o envio,
+// use o fluxo "Esqueci minha senha" ou reative a rota só no ambiente local, nunca em produção.
+// Router::get('/auth/testeEmail', [UsuarioController::class, 'showTesteEmail']);
 
 Router::get('/auth/esqueciSenha', [UsuarioController::class, 'showEsqueciSenha']);
 Router::post('/auth/esqueciSenha', [UsuarioController::class, 'solicitarCodigo']);

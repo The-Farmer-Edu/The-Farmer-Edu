@@ -1,0 +1,122 @@
+# CORINGA — rascunho PROVISÓRIO de pixel art (fan art, uso pessoal). 24×46, de frente.
+# Leitura: cabelo verde penteado para trás, rosto branco, olheiras escuras, sorriso vermelho enorme, terno roxo com
+# lapelas, colete laranja, camisa verde, calça roxa listrada, mãos brancas. Segura uma carta (curinga) na mão direita.
+paleta
+k #0a0610
+w #f1f0ea
+W #c4c2ba
+g #2f8a2e
+G #5cc23d
+e #2a2433
+r #d8202a
+R #8c0f17
+t #fff8e8
+p #3b1757
+P #6f2fa0
+Q #9a5bd0
+o #e07a1c
+O #a8520f
+v #3f9a46
+c #f7f4ec
+fim
+base-espelhada 24 46
+......kkkkkk
+....kkGGGGgg
+...kgGGgGGGg
+...kgGgggGgg
+....kgkwwwww
+....kgweeeww
+....kgwekeww
+.....kwwwwww
+.....kRwwwwW
+.....kwRwwww
+.....kwwRrrr
+.....kwwRttt
+......kwwRrr
+.......kwwww
+........kkkk
+....kkkPPkvv
+...kPPPPQkov
+..kPPPPQPkoO
+..kPPPPQkooo
+..kPPkPQkoOo
+..kPPkPPkooo
+..kPPkPPkoOo
+..kPPkPPPkoo
+..kPPkPPPkOo
+..kPPkPPPPko
+..kPPkPPPPkk
+..kwwkPPPPPk
+..kwwkPPPPpk
+...kk.kPPPpk
+......kPPPpk
+......kPPPpk
+......kkPpkk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+.......kpQpk
+......keeeek
+.....keeeeek
+.....kkkkkkk
+# cabeça: inclina para o lado (imprevisível) e a gargalhada (boca aberta, olhos espremidos)
+regiao cabeca 2 0 20 15
+quadro cabeca 2 0
+.....kkkkkkkkkkkk...
+...kkGGGGggggGGGGkk.
+..kgGGgGGGggGGGgGGgk
+..kgGgggGggggGgggGgk
+...kgkwwwwwwwwwwkgk.
+..kgweeewwwweeewgk..
+..kgwekewwwwekewgk..
+...kwwwwwwwwwwwwk...
+...kRwwwwWWwwwwRk...
+...kwRwwwwwwwwRwk...
+...kwwRrrrrrrRwwk...
+...kwwRttttttRwwk...
+....kwwRrrrrRwwk....
+.....kwwwwwwwwk.....
+......kkkkkkkk......
+quadro cabeca 2 0
+....kkkkkkkkkkkk....
+..kkGGGGggggGGGGkk..
+.kgGGgGGGggGGGgGGgk.
+.kgGgggGggggGgggGgk.
+..kgkwwwwwwwwwwkgk..
+..kgweeewwwweeewgk..
+..kgweeewwwweeewgk..
+...kwwwwwwwwwwwwk...
+...kRwwwwWWwwwwRk...
+...kRRwwwwwwwwRRk...
+...kwRRrrrrrrRRwk...
+...kwRttttttttRwk...
+....kRkkkkkkkkRk....
+.....kRttttttRk.....
+......kkkkkkkk......
+# mão direita de quem vê: gira a carta de baralho entre os dedos
+regiao maoD 18 26 4 2
+quadro maoD 18 22
+.kkk
+kccRk
+kcRck
+kRcck
+kccck
+kwwk.
+kwwk.
+quadro maoD 18 22
+kkk.
+kcck
+kccck
+kcRck
+kccck
+kwwkk
+kwwk.
+# colete e tronco: ombros que sobem (gargalhada contida)
+regiao tronco 0 15 24 13

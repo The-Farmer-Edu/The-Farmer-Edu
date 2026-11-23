@@ -1,0 +1,161 @@
+# HULK — pixel art (fan art, uso pessoal). 50×56, de frente. Versão 3 (correção): anatomia por planos de tom, quase sem
+# contorno interno; cabeça saindo dos ombros com pescoço visível, sobrancelha franzida e rosnado; trapézio, deltoides, peitoral
+# em dois volumes, abdômen em planos afinando até a cintura (tronco em V); vão entre braço e tronco; bíceps, cotovelo e
+# antebraço com curvas na silhueta; punhos com nós; calça com dobras e barra rasgada; pernas separadas com panturrilha.
+# Montada com ferramenta de autoria (metade esquerda + espelho + passada de sombra à direita; luz vinda da esquerda).
+paleta
+k #0d1a0a
+n #111a0c
+N #2a3a1e
+g #1f4116
+G #2f6322
+h #46882d
+H #63a83a
+J #8fcc55
+e #f2f4d6
+t #ece3b8
+r #3a0c0c
+p #2a1840
+P #4a2b72
+Q #6c45a3
+fim
+base 50 56
+....................kkkk..kkkk....................
+..................kknkNnkknNknkk..................
+.................knNnNNnnnnNNnNnk.................
+.................knnNnnnnnnnnNnnk.................
+.................kngGhhhhGGGGggnk.................
+.................kgGkkkkGgkkkkggk.................
+.................kghHekkhGkkehGgk.................
+.................kghHHhHJHhGhhGgk.................
+.................kghHhGhHhGgGhGgk.................
+.................kgGkkkkkkkkkkggk.................
+.................kgGkttttttttkggk.................
+.................kgGhkkkkkkkkGggk.................
+.............kkkkkgGhHHHHhhhhGggkkkkk.............
+..........kkgGhhhkkgGhhhhGGGGggkkGGGggkk..........
+.......kkgGhhHHhGgghHHHHhGhhhhGgggGhhGGggkk.......
+....kkgGhhHHJHhGGghhHHHHHhhhhhGGgggGhHhhGGggkk....
+..kgGhHHJJJHhGGghhHHHJJJHhHHHhhhGGgggGhHHHhhGggk..
+.kgGhHJJJJHhGGghHHJJJJJHHhhHHHHHhhGgggGhHHHHhGggk.
+.kgGhHJJJHHhGGghHHJJJJHHhGhhHHHHhhGgggGhhHHHhGggk.
+.kgGhHHJHHhGgGghHHHJJHHhhGGhhHHhhhGggggGhhHhhGggk.
+.kgGhhHHHhhGgGghhHHHHHhhGgGGhhhhhGGggggGGhhhGGggk.
+.kgGhhhhhhGggGgghhHHHhhGGggGGhhhGGggggggGGGGGGggk.
+.kggGGhhGGggkgGgghhhhhGGggggGGGGGggggkggggGGggggk.
+.kkggGGGGggkkgGgggggggGGgggggggggggggkkggggggggkk.
+.kgGhHHhGk..kgGhHHhGhHHhGgGhhGgGhhGggk..kgGhhGggk.
+kgGhHJJhGk..kgGhhhhGhhhhGgGGGGgGGGGggk..kgGHHhGggk
+kgGhHJJhGk..kgGGGGGgGGGGgggggggggggggk..kgGHHhGggk
+kgGhHHHhGk...kGhHHhGhHHhGgGhhGgGhhGgk...kgGhhhGggk
+kggGhhhGgk...kGhhhhGhhhhGgGGGGgGGGGgk...kggGGGgggk
+.kgGGGGggk...kGGGGGgGGGGggggggggggggk...kgggggggk.
+..kgGhhGgk....khHHhGhHHhGgGhhGgGhhGk....kggGGggk..
+.kgGhHHhGk....khhhhGhhhhGgGGGGgGGGGk....kgGhhGggk.
+kgGhHJJhGk....kGhhhGhhhhGgGGGGgGGGgk....kgGHHhGggk
+kgGhHJHhGk...kpPQQPPPPPPppPPPPPPPPPpk...kgGhHhGggk
+kgGhHHhhGk..kpPQQPPPPPPPppPPPPPPPPPPpk..kgGGhhGggk
+kggGhhhGgk..kpPQPPPpPPPPppPPPPpPPPPPpk..kggGGGgggk
+.kgGGhhGgk..kpPQPPPPpPPPPPPPPpPPPPPPpk..kggGGgggk.
+.kggGGGggk..kpPQPPPPPpPPPPPPpPPPPPPPpk..kgggggggk.
+kgGhHHHhGk..kpPQPPPPPPpkkkkpPPPPPPPPpk..kgGhhhGggk
+kgHJJJHhGk..kpPQPPPpPPk....kPPpPPPPPpk..kgGhHHHhgk
+kGhkhkhkgk..kpPQPPPPpPk....kPpPPPPPPpk..kgkGkGkGgk
+kGHkHkHkgk..kpPPPPpPPPk....kPPPpPPPPpk..kgkhkhkhgk
+kgGgGgGggk..kpPQPPPPPpk....kpPPPPPPPpk..kggggggggk
+.kkkkkkkk...kpPpPPpPPpk....kpPPpPPpPpk...kkkkkkkk.
+............kpkPpkPpkpk....kpkpPkpPkpk............
+............kGhkghkHhgk....kgGhkGgkGgk............
+............kgGhHHhhGk......kgGGhhGggk............
+............kgGhHJHhGk......kgGhHhGggk............
+............kgGhHHhhGk......kgGGhhGggk............
+.............kgGhHhGgk......kggGhGggk.............
+.............kggGhhGgk......kggGGgggk.............
+............kgGhhhhhGk......kgGGGGGggk............
+...........kgGhHHHhhGk......kgGGhhhGggk...........
+...........kgGhkhkhkGk......kgkGkGkGggk...........
+...........kgggggggggk......kgggggggggk...........
+...........kkkkkkkkkkk......kkkkkkkkkkk...........
+# cabeça: 1 = rosnado, 2 = olhar de lado
+regiao cabeca 17 0 16 14
+quadro cabeca 17 0
+...kkkk..kkkk...
+.kknkNnkknNknkk.
+knNnNNnnnnNNnNnk
+knnNnnnnnnnnNnnk
+kngGhhhhGGGGggnk
+kgGkkkkGgkkkkggk
+kghkkekkkkekkGgk
+kghHHhHJHhGhhGgk
+kghHhGhHhGgGhGgk
+kgGkkkkkkkkkkggk
+kgGttkttttkttggk
+kgGrrrrrrrrrrggk
+kgGtkttkkttktggk
+kkgkkkkkkkkkkgkk
+quadro cabeca 17 0
+...kkkk..kkkk...
+.kknkNnkknNknkk.
+knNnNNnnnnNNnNnk
+knnNnnnnnnnnNnnk
+kngGhhhhGGGGggnk
+kgGkkkkGgkkkkggk
+kghHekkhGkekhGgk
+kghHHhHJHhGhhGgk
+kghHhGhHhGgGhGgk
+kgGkkkkkkkkkkggk
+kgGkttttttttkggk
+kgGhkkkkkkkkGggk
+kgGhHHHHhhhhGggk
+kkgGhhhhGGGGggkk
+# antebraço de baixo e punho (recortados antes do tronco): 1 = apertado
+regiao punhoE 0 33 10 11
+quadro punhoE 0 33
+kgGHJJHhGk
+kgGHJHhhGk
+kgGhHhhGgk
+.kgGhhhGgk
+.kggGGGggk
+kgGhHHHhGk
+kgHJJJJHGk
+kgHkHkHkGk
+kggggggggk
+.kkkkkkkk.
+..........
+regiao punhoD 40 33 10 11
+quadro punhoD 40 33
+kgGhHHhggk
+kgGGhHhggk
+kggGGhGggk
+kggGGGggk.
+kgggggggk.
+kgGhhhGggk
+kghHHHHhgk
+kgkhkhkhgk
+kggggggggk
+.kkkkkkkk.
+..........
+# tronco (pescoço, trapézio, deltoides, peitoral, abdômen, braço até o cotovelo): 1 = inspiração
+regiao tronco 0 12 50 21
+quadro tronco 0 12
+..........kkgGhhh................GGGggkk..........
+.......kkgGhhHHhGgghHHHHhGhhhhGgggGhhGGggkk.......
+....kkgGhhHHJHhGGghhHHHHHhhhhhGGgggGhHhhGGggkk....
+..kgGhHHJJJHhGGghhHHHJJJHhHHHhhhGGgggGhHHHhhGggk..
+.kgGhHJJJJHhGGghHHJJJJJHHhhHHHHHhhGgggGhHHHHhGggk.
+.kgGhHJJJHHhGGghHHJJJJHHhGhhHHHHhhGgggGhhHHHhGggk.
+.kgGhHHJHHhGgGghHHHJJHHhhGGhhHHhhhGggggGhhHhhGggk.
+.kgGhhHHHhhGgGghhHHHHHhhGgGGhhhhhGGggggGGhhhGGggk.
+.kgGhhhhhhGggGgghhHHHhhGGggGGhhhGGggggggGGGGGGggk.
+.kggGGhhGGggkgGgghhhhhGGggggGGGGGggggkggggGGggggk.
+.kkggGGGGggkkgGgggggggGGgggggggggggggkkggggggggkk.
+.kgGhHHhGk..kgGhHHhGhHHhGgGhhGgGhhGggk..kgGhhGggk.
+.kgGhHHhGk..kgGhHHhGhHHhGgGhhGgGhhGggk..kgGhhGggk.
+kgGhHJJhGk..kgGhhhhGhhhhGgGGGGgGGGGggk..kgGHHhGggk
+kgGhHJJhGk..kgGGGGGgGGGGgggggggggggggk..kgGHHhGggk
+kgGhHHHhGk...kGhHHhGhHHhGgGhhGgGhhGgk...kgGhhhGggk
+kggGhhhGgk...kGhhhhGhhhhGgGGGGgGGGGgk...kggGGGgggk
+.kgGGGGggk...kGGGGGgGGGGggggggggggggk...kgggggggk.
+..kgGhhGgk....khHHhGhHHhGgGhhGgGhhGk....kggGGggk..
+.kgGhHHhGk....khhhhGhhhhGgGGGGgGGGGk....kgGhhGggk.
+kgGhHJJhGk....kGhhhGhhhhGgGGGGgGGGgk....kgGHHhGggk

@@ -163,6 +163,7 @@
       '17-ciclo-do-dia-e-da-noite.js',        [80, 'Ajustando câmera e iluminação...'],
       '18-camera-e-controles.js',
       '19-movimento-pelo-teclado.js',
+      '19b-joystick-movel.js',                 // joystick virtual de movimento nas telas de toque (preenche entradaDoJoystick da seção 19)
       '20-iluminacao-noturna.js',             [84, 'Chamando os fazendeiros...'],
       '21-modo-leve.js',
       '22-fazendeiros-e-navegacao.js',        [88, 'Preparando sons e painéis...'],
@@ -184,6 +185,8 @@
       '30e-objetivos.js',                      // Etapa 2: quadro de objetivos (principais, atividades e descobertas)
       '30f-conquistas-e-diario.js',            // Etapa 3: conquistas (medalhas) e Diário da Fazenda
       '30g-clima-e-vida-ambiente.js',          // Etapa 4: clima dinâmico (só visual) e vida ambiente
+      '30i-cena-do-celeiro.js',                // Edição pessoal: clicar no celeiro abre a cena 2D (Homem de Ferro e Nick Fury); arte em easter-eggs/vingadores/
+      '30j-caverna-secreta.js',                // Edição pessoal: clicar na boca da caverna abre o esconderijo dos personagens; arte em easter-eggs/caverna/
       '31-loop-principal.js',                 [93, 'Montando a interface...'],
       '32-interface.js',
       '32b-tutorial.js',                      // Fazenda 8.4.1: tutorial interativo e janela de ajuda (seção 32b)

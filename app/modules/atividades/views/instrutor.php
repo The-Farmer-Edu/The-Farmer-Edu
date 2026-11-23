@@ -37,7 +37,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                 <small>Instrutor</small>
             </p>
             <a role="menuitem" href="turmas_cursos/instrutor">Cursos e turmas</a>
-            <a role="menuitem" href="turmas_cursos/minhaConta">Minha conta</a>
+            <a role="menuitem" href="auth/editarConta">Minha conta</a>
             <a role="menuitem" class="sair" href="auth/logout">Sair</a>
         </div>
     </div>
@@ -64,6 +64,13 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             </span>
             Pessoas
         </button>
+
+        <a class="menu-item" id="botao-notas" href="notas/instrutor">
+            <span class="icone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            </span>
+            Notas
+        </a>
 
         <a class="menu-item back" href="turmas_cursos/instrutor">
             <span class="icone">

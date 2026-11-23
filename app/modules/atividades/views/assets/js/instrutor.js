@@ -126,6 +126,17 @@ function atualizarCabecalho(turmas) {
     }
 }
 
+function atualizarBotaoNotas(turmas) {
+    const botao = document.getElementById('botao-notas');
+    if (!botao) {
+        return;
+    }
+
+    botao.href = turmas.length === 1
+        ? 'notas/turma?id=' + encodeURIComponent(turmas[0].id_turma)
+        : 'notas/instrutor';
+}
+
 async function carregarDados() {
     try {
         const dados = await pedir('atividades/instrutor/dados');
@@ -133,6 +144,7 @@ async function carregarDados() {
 
         preencherCampos(dados);
         atualizarCabecalho(dados.turmas);
+        atualizarBotaoNotas(dados.turmas);
         desenharLista();
         desenharReutilizar();
         desenharPessoas(dados.pessoas || []);

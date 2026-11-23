@@ -37,7 +37,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                 <small>Aluno</small>
             </p>
             <a role="menuitem" href="turmas_cursos/aluno">Meus cursos e turmas</a>
-            <a role="menuitem" href="turmas_cursos/minhaConta">Minha conta</a>
+            <a role="menuitem" href="auth/editarConta">Minha conta</a>
             <a role="menuitem" class="sair" href="auth/logout">Sair</a>
         </div>
     </div>

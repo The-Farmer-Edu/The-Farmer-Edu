@@ -86,7 +86,7 @@ class SubmissoesModel
         return (bool) $st->fetchColumn();
     }
 
-    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array
+    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array //<3
     {
         $this->pdo->beginTransaction();
         try {

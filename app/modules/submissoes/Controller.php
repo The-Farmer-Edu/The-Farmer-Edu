@@ -1,5 +1,8 @@
 <?php
 require_once __DIR__ . '/Model.php';
+require_once __DIR__ . '../api/model/Ollama.php';
+require_once __DIR__ . '../feedback_ia/model.php';
+
 
 /**
  * Controlador do módulo de submissões.
@@ -111,23 +114,28 @@ class atividadesSub {
         $extensao = strtolower(pathinfo($caminhoArquivo, PATHINFO_EXTENSION));
         return self::MIME_TYPES[$extensao] ?? 'application/octet-stream';
     }
+
+    // public function presenteDoGustavin(): void {
+    //         //     Presente para o grupo de Submissões,
+    //     $resultadoIA = (new SIAE())->obterResultadoSIAE(
+    //         $linguagem,
+    //         $objetivoAtividade,
+    //         $codigoAluno
+    //     );
+
+
+    //     FeedbackIAModel::salvarProbabilidadeIA(
+    //         $pdo,
+    //         $idSubmissao,
+    //         $resultadoIA['probabilidade_ia'],
+    //         $resultadoIA['motivo']
+    //     );
+
+    //     $aviso = FeedbackIAModel::mensagemAvisoAluno(
+    //         $resultadoIA['probabilidade_ia']
+    //     );
+    // }
 }
 
- $resultadoIA = (new SIAE())->obterResultadoSIAE(
-        $linguagem,
-        $objetivoAtividade,
-        $codigoAluno
-    );
-
-
-    FeedbackIAModel::salvarProbabilidadeIA(
-        $pdo,
-        $idSubmissao,
-        $resultadoIA['probabilidade_ia'],
-        $resultadoIA['motivo']
-    );
-
-    $aviso = FeedbackIAModel::mensagemAvisoAluno(
-        $resultadoIA['probabilidade_ia']
-    );
+    
 

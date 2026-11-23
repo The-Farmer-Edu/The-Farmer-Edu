@@ -214,8 +214,11 @@ function iniciarSophia() {
         //     return;
         // }
 
+
+
+        // --------------------------------------------------------------
         if (typeof atualizarBotoes === 'function') {
-            window._usosSophia = (window._usosSophia || 0) + 1;
+            usosSophia = (usosSophia || 0) + 1;
             atualizarBotoes();
         }
 

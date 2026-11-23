@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/Model.php';
+
 /**
  * Controlador do módulo de submissões.
  *
@@ -44,7 +45,6 @@ class atividadesSub {
     public function processarSubmisssao() {
         require_once __DIR__ . '/view/processar_submissao.php';
     }
-
     /**
      * Lê ?id= da URL e busca a atividade no banco.
      * Sem id válido ou sem registro, devolve null (a tela fica vazia e bloqueada).
@@ -112,4 +112,22 @@ class atividadesSub {
         return self::MIME_TYPES[$extensao] ?? 'application/octet-stream';
     }
 }
+
+ $resultadoIA = (new SIAE())->obterResultadoSIAE(
+        $linguagem,
+        $objetivoAtividade,
+        $codigoAluno
+    );
+
+
+    FeedbackIAModel::salvarProbabilidadeIA(
+        $pdo,
+        $idSubmissao,
+        $resultadoIA['probabilidade_ia'],
+        $resultadoIA['motivo']
+    );
+
+    $aviso = FeedbackIAModel::mensagemAvisoAluno(
+        $resultadoIA['probabilidade_ia']
+    );
 

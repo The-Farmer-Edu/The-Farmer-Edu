@@ -452,6 +452,7 @@ porId('btnRodar').onclick = () => {
 
 // Voltar sempre leva à página do aluno.
 porId('btnVoltar').onclick = () => { location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id); };
+// -----------------------------------------------------------------^
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
     const semImagem = () => imagem.parentElement.classList.add('sem-img');

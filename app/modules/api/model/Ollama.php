@@ -2,6 +2,7 @@
     require_once "Config.php";
     require_once __DIR__ . "/../../../core/database.php";
 
+    //////
     class Ollama {
         protected string $host;
         protected string $prompt;

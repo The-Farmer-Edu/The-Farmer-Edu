@@ -31,6 +31,12 @@ class NotificacoesModel
 return $stmt->rowCount() > 0;
 
 }
+public static function marcarTodasComoLidas(PDO $pdo, int $idUsuario): bool
+{
+    $stmt = $pdo->prepare('UPDATE notificacoes SET lida = 1 WHERE id_usuario = :usuario AND lida = 0');
+    return $stmt->execute(['usuario' => $idUsuario]);
+}
+
 public static function criar($pdo, $idUsuario, $tipo, $mensagem)
 {
     $sql = "INSERT INTO notificacoes (id_usuario, tipo, mensagem)

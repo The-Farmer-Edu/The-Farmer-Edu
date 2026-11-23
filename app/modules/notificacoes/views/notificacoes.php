@@ -385,187 +385,134 @@ input:focus-visible {
 
 </main>
 
+<style>
+#avisos-laterais{position:fixed;right:16px;top:18px;z-index:9999;display:grid;gap:10px;width:min(350px,calc(100vw - 32px));pointer-events:none}
+.aviso-lateral{pointer-events:auto;background:#fff;border-left:5px solid #2f9e61;border-radius:12px;box-shadow:0 8px 30px #0003;padding:14px;display:flex;gap:10px;align-items:flex-start;animation:entrarAviso .25s ease}
+.aviso-lateral strong{display:block;margin-bottom:5px}.aviso-lateral p{margin:0;overflow-wrap:anywhere}.aviso-lateral button{margin-left:auto;padding:4px 8px}
+@keyframes entrarAviso{from{transform:translateX(35px);opacity:0}to{transform:translateX(0);opacity:1}}
+</style>
+<div id="avisos-laterais" role="status" aria-live="polite"></div>
 <script>
+const API_NOTIFICACOES = '/notificacoes';
 let filtroAtual = 'todas';
-const chaveArmazenamento = 'farmerEduNotificacoesLidas';
+let primeiraConsulta = true;
+let idsConhecidos = new Set();
+let consultaEmAndamento = false;
+const lista = document.getElementById('lista');
 
-function obterLidas() {
-    try {
-        const dados = JSON.parse(
-            localStorage.getItem(chaveArmazenamento) || '[]'
-        );
-
-        return Array.isArray(dados) ? dados : [];
-    } catch (erro) {
-        return [];
-    }
+function criarElemento(tag, classe, texto) {
+    const el = document.createElement(tag);
+    if (classe) el.className = classe;
+    if (texto !== undefined) el.textContent = String(texto);
+    return el;
 }
-
-function salvarLidas(lidas) {
-    try {
-        localStorage.setItem(
-            chaveArmazenamento,
-            JSON.stringify(lidas)
-        );
-    } catch (erro) {
-        console.warn('Não foi possível salvar as notificações.');
-    }
+function statusDaNotificacao(n) {
+    if (['entregue','pendente','atrasado'].includes(n.status)) return n.status;
+    if (n.tipo === 'atividade_atrasada') return 'atrasado';
+    if (['atividade_entregue','nota_atribuida','atividade_publicada'].includes(n.tipo)) return 'entregue';
+    return 'pendente';
 }
-
-function atualizarResumo() {
-    const cards = document.querySelectorAll('.notificacao');
-
-    document.getElementById('total').textContent =
-        cards.length;
-
-    document.getElementById('contador').textContent =
-        document.querySelectorAll('.notificacao:not(.lida)').length;
-
-    document.getElementById('quantidadePendentes').textContent =
-        document.querySelectorAll('.notificacao.pendente').length;
+function criarCard(n) {
+    const status = statusDaNotificacao(n);
+    const card = criarElemento('article', 'notificacao ' + status + (Number(n.lida) ? ' lida' : ''));
+    card.dataset.id = String(n.id_notificacao);
+    card.dataset.status = status;
+    card.dataset.lida = String(Number(n.lida) ? 1 : 0);
+    const topo = criarElemento('div','notificacao-topo');
+    topo.append(criarElemento('span','status',({entregue:'Entregue',pendente:'Pendente',atrasado:'Atrasado'})[status]));
+    topo.append(criarElemento('span','indicador','● Nova'));
+    card.append(topo, criarElemento('h3','',n.tipo || 'Notificação'), criarElemento('p','mensagem',n.mensagem || ''), criarElemento('p','data','📅 ' + (n.criado_em || '')));
+    const botao = criarElemento('button','botao-leitura');
+    botao.type = 'button';
+    botao.addEventListener('click', () => alternarLeitura(botao));
+    card.append(botao);
+    atualizarBotao(card);
+    return card;
 }
-
 function atualizarBotao(card) {
-    const botao = card.querySelector('.botao-leitura');
     const lida = card.classList.contains('lida');
-
-    botao.textContent = lida
-        ? '↩ Marcar como não lida'
-        : '✓ Marcar como lida';
-
+    const botao = card.querySelector('.botao-leitura');
+    botao.textContent = lida ? '↩ Marcar como não lida' : '✓ Marcar como lida';
     botao.classList.toggle('btn-verde', !lida);
     botao.classList.toggle('btn-cinza', lida);
 }
-
-function alternarLeitura(botao) {
-    const card = botao.closest('.notificacao');
-
-    if (!card) return;
-
-    card.classList.toggle('lida');
-
-    const chave = card.dataset.chave;
-    let lidas = obterLidas();
-
-    if (card.classList.contains('lida')) {
-        if (!lidas.includes(chave)) {
-            lidas.push(chave);
-        }
-    } else {
-        lidas = lidas.filter(item => item !== chave);
-    }
-
-    const idNotificacao = Number(card.dataset.id);
-const lida = card.classList.contains('lida') ? 1 : 0;
-
-if (Number.isInteger(idNotificacao) && idNotificacao > 0) {
-    fetch('/notificacoes/marcar-lida', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-            id_notificacao: idNotificacao,
-            lida: lida
-        })
-    })
-    .then(resposta => resposta.json())
-    .then(dados => {
-        if (!dados.sucesso) {
-            console.error('Não foi possível salvar a leitura.');
-        }
-    })
-    .catch(erro => console.error(erro));
+function atualizarResumo() {
+    const cards = [...lista.querySelectorAll('.notificacao')];
+    document.getElementById('total').textContent = cards.length;
+    document.getElementById('contador').textContent = cards.filter(c => !c.classList.contains('lida')).length;
+    document.getElementById('quantidadePendentes').textContent = cards.filter(c => c.dataset.status === 'pendente').length;
 }
-
-    atualizarBotao(card);
-    atualizarResumo();
-    aplicarFiltro();
-}
-
-function marcarTodas() {
-    const lidas = obterLidas();
-
-    document.querySelectorAll('.notificacao').forEach(card => {
-        card.classList.add('lida');
-
-        const chave = card.dataset.chave;
-
-        if (!lidas.includes(chave)) {
-            lidas.push(chave);
-        }
-
-        atualizarBotao(card);
-    });
-
-    salvarLidas(lidas);
-    atualizarResumo();
-    aplicarFiltro();
-}
-
 function aplicarFiltro() {
+    const pesquisa = document.getElementById('pesquisa').value.toLowerCase().trim();
     let visiveis = 0;
-
-    const pesquisa = document.getElementById('pesquisa')
-        .value.toLowerCase().trim();
-
-    document.querySelectorAll('.notificacao').forEach(card => {
-        const correspondeFiltro =
-            filtroAtual === 'todas' ||
-            card.dataset.status === filtroAtual ||
-            (filtroAtual === 'nao-lidas' &&
-                !card.classList.contains('lida'));
-
-        const titulo = card.querySelector('h3')
-            .textContent.toLowerCase();
-
-        const mensagem = card.querySelector('.mensagem')
-            .textContent.toLowerCase();
-
-        const correspondePesquisa =
-            titulo.includes(pesquisa) ||
-            mensagem.includes(pesquisa);
-
-        const mostrar = correspondeFiltro && correspondePesquisa;
-
-        card.hidden = !mostrar;
-
-        if (mostrar) visiveis++;
+    lista.querySelectorAll('.notificacao').forEach(card => {
+        const texto = (card.querySelector('h3').textContent + ' ' + card.querySelector('.mensagem').textContent).toLowerCase();
+        const filtro = filtroAtual === 'todas' || card.dataset.status === filtroAtual || (filtroAtual === 'nao-lidas' && !card.classList.contains('lida'));
+        card.hidden = !(filtro && texto.includes(pesquisa));
+        if (!card.hidden) visiveis++;
     });
-
     document.getElementById('vazio').hidden = visiveis > 0;
 }
-
 function filtrar(tipo, botao) {
     filtroAtual = tipo;
-
-    document.querySelectorAll('.filtros button')
-        .forEach(item => {
-            const ativo = item === botao;
-
-            item.classList.toggle('ativo', ativo);
-            item.setAttribute('aria-pressed', String(ativo));
-        });
-
-    aplicarFiltro();
-}
-
-function iniciar() {
-    const lidas = obterLidas();
-
-    document.querySelectorAll('.notificacao').forEach(card => {
-        if (card.dataset.lida === '1') {
-            card.classList.add('lida');
-        }
-
-        atualizarBotao(card);
+    document.querySelectorAll('.filtros button').forEach(b => {
+        b.classList.toggle('ativo', b === botao);
+        b.setAttribute('aria-pressed', String(b === botao));
     });
-
-    atualizarResumo();
     aplicarFiltro();
 }
-
-iniciar();
+function mostrarAviso(n) {
+    const aviso = criarElemento('div','aviso-lateral');
+    const conteudo = criarElemento('div');
+    conteudo.append(criarElemento('strong','','🔔 ' + (n.tipo || 'Nova notificação')), criarElemento('p','',n.mensagem || ''));
+    const fechar = criarElemento('button','','×');
+    fechar.type = 'button';
+    fechar.setAttribute('aria-label','Fechar aviso');
+    fechar.addEventListener('click', () => aviso.remove());
+    aviso.append(conteudo,fechar);
+    document.getElementById('avisos-laterais').prepend(aviso);
+    setTimeout(() => aviso.remove(), 8000);
+}
+async function consultarNotificacoes() {
+    if (consultaEmAndamento) return;
+    consultaEmAndamento = true;
+    try {
+        const resposta = await fetch(API_NOTIFICACOES + '/consultar', {credentials:'same-origin',cache:'no-store'});
+        if (!resposta.ok) throw new Error('Consulta HTTP ' + resposta.status);
+        const dados = await resposta.json();
+        const notificacoes = dados.notificacoes || [];
+        const novosIds = new Set(notificacoes.map(n => String(n.id_notificacao)));
+        if (!primeiraConsulta) notificacoes.filter(n => !idsConhecidos.has(String(n.id_notificacao)) && !Number(n.lida)).slice().reverse().forEach(mostrarAviso);
+        idsConhecidos = novosIds;
+        primeiraConsulta = false;
+        lista.replaceChildren(...notificacoes.map(criarCard));
+        atualizarResumo();
+        aplicarFiltro();
+    } catch (erro) { console.warn('Falha ao consultar notificações:',erro); }
+    finally { consultaEmAndamento = false; }
+}
+async function alterarLeitura(id,lida) {
+    const resposta = await fetch(API_NOTIFICACOES + '/marcar-lida', {method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({id_notificacao:id,lida:lida ? 1 : 0})});
+    const dados = await resposta.json();
+    if (!resposta.ok || !dados.sucesso) throw new Error('Não foi possível salvar a leitura');
+}
+async function alternarLeitura(botao) {
+    const card = botao.closest('.notificacao');
+    botao.disabled = true;
+    try { await alterarLeitura(card.dataset.id, !card.classList.contains('lida')); await consultarNotificacoes(); }
+    catch (erro) { alert(erro.message); }
+    finally { botao.disabled = false; }
+}
+async function marcarTodas() {
+    try {
+        const resposta = await fetch(API_NOTIFICACOES + '/marcar-todas',{method:'POST',credentials:'same-origin'});
+        const dados = await resposta.json();
+        if (!resposta.ok || !dados.sucesso) throw new Error('Não foi possível marcar todas');
+        await consultarNotificacoes();
+    } catch (erro) { alert(erro.message); }
+}
+consultarNotificacoes();
+setInterval(consultarNotificacoes, 3000);
 </script>
 
 </body>

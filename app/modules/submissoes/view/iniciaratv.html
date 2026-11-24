@@ -20,14 +20,11 @@
     <?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
     <!-- Barra do editor: navegação da atividade, status e ações. A marca fica no cabeçalho oficial. -->
     <div class="topbar">
-        <div class="brand">
-            <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
-            <span class="modulo">Escrever código</span>
+        <div>
+            <!-- Chips de estado: entregou ou prazo encerrado. O JS decide se aparecem e qual texto exibem. -->
+            <span class="chip-entrega" id="chipEntrega" hidden></span>
+            <span class="chip-prazo" id="chipPrazo" hidden></span>
         </div>
-
-        <!-- Chips de estado: entregou ou prazo encerrado. O JS decide se aparecem e qual texto exibem. -->
-        <span class="chip-entrega" id="chipEntrega" hidden></span>
-        <span class="chip-prazo" id="chipPrazo" hidden></span>
 
         <div class="acoes">
             <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
@@ -138,6 +135,8 @@
         </div>
     </div>
     <div class="toast" id="toast" role="status"></div>
+
+    <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
 
     <!-- A mesma estratégia de JSON em bloco permite ao JS montar a atividade sem nova chamada de API. -->
     <script type="application/json"

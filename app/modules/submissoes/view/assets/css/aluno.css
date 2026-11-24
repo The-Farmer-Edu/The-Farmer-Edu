@@ -216,6 +216,7 @@ main {
     color: var(--Texto);
     transition: background 0.2s, transform 0.1s;
     width: fit-content;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .btn-voltar:hover {

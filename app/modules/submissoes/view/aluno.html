@@ -15,53 +15,8 @@
 </head>
 
 <body data-pagina="aluno">
-    <!-- Cabeçalho principal da tela do aluno: logo, título do módulo e avatar do usuário. -->
-    <header>
-        <button id="botaoIconi" class="botao-iconi" type="button" aria-expanded="false" aria-controls="menuIconi">
-            <img src="file?type=img&file=logo_icone.png" alt="iconiEDU" height="55px" width="55px">
-        </button>
-
-        <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
-
-        <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário" aria-expanded="false" aria-controls="menuUsuario">
-            <img class="usuario-avatar" src="file?type=img&file=icone_user.png" alt="iconiEDU">
-        </button>
-    </header>
-
-    <!-- Menu lateral/overlay do ícone principal. Ele é do tipo “dropdown” e aparece ao clique. -->
-    <div id="menuIconi" class="menu-iconi" role="menu" aria-hidden="true">
-        <div class="menu-coluna">
-            <button class="menu-item" type="button">
-                <i class="fa-regular fa-calendar"></i>
-                calendario
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-medal"></i>
-                visão geral
-            </button>
-        </div>
-    </div>
-
-    <!-- Menu do usuário: acessórios de perfil e logout. -->
-    <div id="menuUsuario" class="menu-usuario" role="menu" aria-hidden="true">
-        <div class="menu-coluna">
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-gear"></i>
-                configurações
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                logout
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-regular fa-envelope"></i>
-                meus dados
-            </button>
-        </div>
-    </div>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
+    <p class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</p>
 
     <main>
         <!-- Bloco principal para exibir os detalhes da atividade da turma. -->

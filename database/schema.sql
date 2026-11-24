@@ -189,6 +189,8 @@ CREATE TABLE submissoes (
 CREATE TABLE feedback_ia (
   id_feedback        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_submissao       INT UNSIGNED  NOT NULL,
+  percentual_ia      DECIMAL(5,2)  NOT NULL,
+  motivo_ia          TEXT          NULL,
   pontos_positivos   TEXT          NULL,
   pontos_negativos   TEXT          NULL,
   sugestao_resposta  TEXT          NULL,
@@ -227,7 +229,7 @@ CREATE TABLE historico_notas (
   id_instrutor           INT UNSIGNED                 NOT NULL,
   nota_anterior          INT DEFAULT                  NULL,
   nota_nova              INT                          NOT NULL,
-  data_alteracao         DATE                         NOT NULL DEFAULT current_timestamp(),
+  data_alteracao         DATETIME                     NOT NULL DEFAULT current_timestamp(),
   CONSTRAINT fk_id_instrutor 
     FOREIGN KEY (id_instrutor) REFERENCES instrutores (id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,

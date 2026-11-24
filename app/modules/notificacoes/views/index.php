@@ -5,6 +5,7 @@
     <title>Notificações - The Farmer Edu</title>
 </head>
 <body>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
     <h1>Notificações</h1>
 
     <?php foreach (($notificacoes ?? []) as $n): ?>

@@ -189,6 +189,8 @@ CREATE TABLE submissoes (
 CREATE TABLE feedback_ia (
   id_feedback        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_submissao       INT UNSIGNED  NOT NULL,
+  percentual_ia      DECIMAL(5,2)  NOT NULL,
+  motivo_ia          TEXT          NULL,
   pontos_positivos   TEXT          NULL,
   pontos_negativos   TEXT          NULL,
   sugestao_resposta  TEXT          NULL,

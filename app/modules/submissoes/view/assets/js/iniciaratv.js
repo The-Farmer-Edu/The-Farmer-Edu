@@ -168,10 +168,10 @@ function montarAbas() {
         porId('stLang').textContent = '—';
         return;
     }
-    if (modoExecucao === 'texto') {   // atividade de texto: lista de arquivos vazia
+    // Atividade de texto: lista de arquivos vazia
+    if (modoExecucao === 'texto') {
         porId('stLang').textContent = 'Texto';
         return;
-    }
     }
 
     ARQUIVOS.forEach(arquivo => {
@@ -184,7 +184,7 @@ function montarAbas() {
         porId('arquivos').appendChild(item);
     });
     porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
-
+}
 function trocar(lang) {
     // Sem atividade: editor vazio, desativado e sem arquivos
     if (atividadeAtual.vazia) {
@@ -426,7 +426,7 @@ porId('btnRodar').onclick = () => {
 };
 
 // Voltar sempre leva à página do aluno.
-porId('btnVoltar').onclick = () => { location.href = 'aluno'; };
+porId('btnVoltar').onclick = () => { location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id); };
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
     const semImagem = () => imagem.parentElement.classList.add('sem-img');

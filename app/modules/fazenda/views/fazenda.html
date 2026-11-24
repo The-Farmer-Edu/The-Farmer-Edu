@@ -5,6 +5,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Minha Fazenda 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Estilos (Fase 1 da refatoração): antes ficavam num bloco <style> aqui. Caminhos relativos ao HTML, para funcionar
        também abrindo o arquivo direto (file://). A ORDEM dos arquivos é a ordem original da cascata: não reordene. -->
   <link rel="stylesheet" href="assets/css/01-base.css">
@@ -269,6 +272,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" onload="window.THREE_CARREGADO = true" onerror="window.FALHA_AO_CARREGAR_THREE = true"></script>
   <!-- Script principal do jogo (seções 00 a 33). Script clássico, sem módulos, para abrir também direto pelo arquivo (file://). -->
   <script src="assets/js/fazenda.js"></script>
+  <!-- Biblioteca bcrypt.js, usada para proteger o modo desenvolvedor. O script é carregado no final para não atrasar o carregamento do jogo. -->
+  <script src="https://cdn.jsdelivr.net/npm/bcryptjs@3.0.3/umd/index.min.js"></script>
 </body>
 
 </html>

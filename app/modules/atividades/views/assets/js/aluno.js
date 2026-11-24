@@ -53,41 +53,50 @@ function esconderAviso() {
     document.getElementById('aviso').className = 'aviso hidden';
 }
 
-async function carregarCursos() {
+async function carregarTurmas() {
     try {
-        const dados = await pedir('atividades/aluno/cursos');
-        const lista = document.getElementById('lista-cursos');
+        const dados = await pedir('atividades/aluno/turmas');
+        const lista = document.getElementById('lista-turmas');
         lista.replaceChildren();
 
-        if (!dados.cursos.length) {
-            lista.append(criar('p', 'vazio', 'Você ainda não está matriculado em nenhum curso.'));
+        if (!dados.turmas.length) {
+            lista.append(criar('p', 'vazio', 'Você ainda não está matriculado em nenhuma turma.'));
             return;
         }
 
-        dados.cursos.forEach(curso => {
-            const botao = criar('button', 'menu-item', curso.nome_curso);
+        dados.turmas.forEach(turma => {
+            const botao = criar('button', 'menu-item', turma.nome_turma);
             botao.type = 'button';
-            botao.dataset.curso = curso.id_curso;
-            botao.addEventListener('click', () => selecionarCurso(curso));
+            botao.title = turma.nome_curso;
+            botao.dataset.turma = turma.id_turma;
+            botao.addEventListener('click', () => selecionarTurma(turma));
             lista.append(botao);
         });
 
-        selecionarCurso(dados.cursos[0]);
+        const idDaUrl = Number(new URLSearchParams(window.location.search).get('id'));
+        const turmaDaUrl = dados.turmas.find(turma => Number(turma.id_turma) === idDaUrl);
+
+        selecionarTurma(turmaDaUrl || dados.turmas[0]);
     } catch (erro) {
         mostrarAviso(erro.message);
     }
 }
 
-async function selecionarCurso(curso) {
+async function selecionarTurma(turma) {
     esconderAviso();
 
-    document.querySelectorAll('#lista-cursos .menu-item').forEach(botao => {
-        botao.classList.toggle('active', Number(botao.dataset.curso) === Number(curso.id_curso));
+    document.querySelectorAll('#lista-turmas .menu-item').forEach(botao => {
+        botao.classList.toggle('active', Number(botao.dataset.turma) === Number(turma.id_turma));
     });
-    document.getElementById('titulo-curso').textContent = curso.nome_curso.toUpperCase();
+    document.getElementById('titulo-turma').textContent = turma.nome_turma.toUpperCase();
+
+    // mantém a URL com o id da turma selecionada (sem recarregar a página)
+    const url = new URL(window.location.href);
+    url.searchParams.set('id', turma.id_turma);
+    window.history.replaceState(null, '', url);
 
     try {
-        const dados = await pedir('atividades/aluno/lista?curso=' + encodeURIComponent(curso.id_curso));
+        const dados = await pedir('atividades/aluno/lista?turma=' + encodeURIComponent(turma.id_turma));
         desenharPendentes(dados.pendentes);
         desenharRealizadas(dados.realizadas);
     } catch (erro) {
@@ -96,7 +105,7 @@ async function selecionarCurso(curso) {
 }
 
 function descricaoDaAtividade(atividade) {
-    let texto = `${atividade.nome_turma} · ${rotuloDoTipo[atividade.tipo_atividade]}`;
+    let texto = `${atividade.nome_curso} · ${rotuloDoTipo[atividade.tipo_atividade]}`;
     if (atividade.linguagem) {
         texto += ` (${nomeDaLinguagem[atividade.linguagem] || atividade.linguagem})`;
     }
@@ -105,7 +114,7 @@ function descricaoDaAtividade(atividade) {
 
 function criarItem(atividade, detalhe, selo) {
     const item = criar('a', 'feed-item');
-    item.href = 'aluno?atividade=' + encodeURIComponent(atividade.id_atividade);
+    item.href = 'submissoes/aluno?id=' + encodeURIComponent(atividade.id_atividade);
 
     const info = criar('div', 'feed-info');
     info.append(
@@ -124,7 +133,7 @@ function desenharPendentes(pendentes) {
     document.getElementById('total-pendentes').textContent = pendentes.length;
 
     if (!pendentes.length) {
-        lista.append(criar('p', 'vazio', 'Nenhuma atividade pendente neste curso.'));
+        lista.append(criar('p', 'vazio', 'Nenhuma atividade pendente nesta turma.'));
         return;
     }
 
@@ -144,7 +153,7 @@ function textoDoSelo(atividade) {
     if (atividade.nota !== null) {
         return 'Nota ' + formatarNota(atividade.nota);
     }
-    // corrigida pela IA, mas a nota ainda não foi confirmada pelo instrutor
+
     if (atividade.status === 'corrigida') {
         return 'Aguardando revisão';
     }
@@ -157,7 +166,7 @@ function desenharRealizadas(realizadas) {
     document.getElementById('total-realizadas').textContent = realizadas.length;
 
     if (!realizadas.length) {
-        lista.append(criar('p', 'vazio', 'Você ainda não enviou nenhuma atividade neste curso.'));
+        lista.append(criar('p', 'vazio', 'Você ainda não enviou nenhuma atividade nesta turma.'));
         return;
     }
 
@@ -169,4 +178,4 @@ function desenharRealizadas(realizadas) {
     });
 }
 
-carregarCursos();
+carregarTurmas();

@@ -40,18 +40,6 @@
           if (evento.code === 'Space') {
             evento.preventDefault();
           }
-        } else {
-          s = s + evento.key;
-          setTimeout(() => {
-            if (s != "pitufo"){
-              s = '';
-              return;
-            } else {
-              definirModoDesenvolvedor(true);
-              mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
-            }
-          }, 2000)
-
         }
       });
       addEventListener('blur', () => { for (const tecla in teclas) teclas[tecla] = false; }); // evita tecla "presa" ao trocar de aba

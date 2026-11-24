@@ -28,8 +28,21 @@ CREATE TABLE usuarios (
   email          VARCHAR(150)    NOT NULL,
   senha_hash     VARCHAR(255)    NOT NULL,   -- gerado com password_hash() do PHP
   tipo_usuario   ENUM('instrutor', 'aluno') NOT NULL,
+  tentativas_login INT NOT NULL DEFAULT 0,
+  bloqueado_ate DATETIME NULL,
   criado_em      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ativo TINYINT(1) NOT NULL DEFAULT 1,
   UNIQUE KEY uq_usuarios_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE recuperacao_senha (
+    id_recuperacao INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_usuario     INT UNSIGNED NOT NULL,
+    codigo_hash    VARCHAR(255) NOT NULL,
+    expira_em      DATETIME NOT NULL,
+    tentativas     INT NOT NULL DEFAULT 0,
+    criado_em      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -79,7 +92,8 @@ CREATE TABLE alunos (
 CREATE TABLE cursos (
   id_curso       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   nome_curso     VARCHAR(150)    NOT NULL,
-  descricao      TEXT            NULL
+  descricao      TEXT            NULL,
+  ativo          TINYINT(1)      NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -88,10 +102,12 @@ CREATE TABLE cursos (
 -- ---------------------------------------------------------------------
 CREATE TABLE turmas (
   id_turma       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  nome_turma     VARCHAR(100)    NOT NULL,
+  nome_turma     VARCHAR(100)                    NOT NULL,
   turno          ENUM('manha', 'tarde', 'noite') NOT NULL,
-  id_curso       INT UNSIGNED    NOT NULL,
-  id_instrutor   INT UNSIGNED    NOT NULL,
+  id_curso       INT UNSIGNED                    NOT NULL,
+  id_instrutor   INT UNSIGNED                    NOT NULL,
+  image_turma    VARCHAR(255)                    NULL         DEFAULT NULL,
+  ativo          TINYINT(1)                      NOT NULL     DEFAULT 1,
   CONSTRAINT fk_turmas_curso
     FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)
     ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -141,6 +157,25 @@ CREATE TABLE atividades (
     ON DELETE RESTRICT ON UPDATE CASCADE,
   INDEX idx_atividades_turma (id_turma)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE arquivos_indexados ( 
+  id_arquivo_indexado INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  id_atividade INT UNSIGNED NOT NULL,
+  id_aluno INT UNSIGNED NOT NULL,
+  caminho_arquivo VARCHAR(255) NOT NULL,
+
+  CONSTRAINT fk_arquivos_indexados_atividade
+    FOREIGN KEY (id_atividade) REFERENCES atividades(id_atividade)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+    --
+  CONSTRAINT fk_arquivos_indexados_aluno
+    FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+
+  INDEX idx_arquivos_indexados_atividade (id_atividade)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 
 -- ---------------------------------------------------------------------
 -- 8. SUBMISSÕES  [Submissao]
@@ -205,6 +240,20 @@ CREATE TABLE notas (
   CONSTRAINT chk_notas_valor CHECK (valor >= 0 AND valor <= 10)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE historico_notas (
+  id_historico           INT UNSIGNED AUTO_INCREMENT  NOT NULL PRIMARY KEY,
+  id_submissao           INT UNSIGNED                 NOT NULL,
+  id_instrutor           INT UNSIGNED                 NOT NULL,
+  nota_anterior          INT DEFAULT                  NULL,
+  nota_nova              INT                          NOT NULL,
+  data_alteracao         DATE                         NOT NULL DEFAULT current_timestamp(),
+  CONSTRAINT fk_id_instrutor 
+    FOREIGN KEY (id_instrutor) REFERENCES instrutores (id_usuario)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_id_submissao 
+    FOREIGN KEY (id_submissao) REFERENCES submissoes (id_submissao)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- ---------------------------------------------------------------------
 -- 11. FAZENDAS  [Fazenda]  — 1:1 com Aluno
 -- ---------------------------------------------------------------------
@@ -213,6 +262,12 @@ CREATE TABLE fazendas (
   id_aluno        INT UNSIGNED  NOT NULL,
   nivel           INT UNSIGNED  NOT NULL DEFAULT 1,
   estado_visual   VARCHAR(50)   NOT NULL DEFAULT 'inicial',
+  -- [Fazenda/backend] save do jogo no banco (ver sql/fazenda_alteracoes.sql)
+  nome_fazenda    VARCHAR(60)   NOT NULL DEFAULT 'FarmEdu',
+  estado          LONGTEXT      NULL,
+  versao_estado   INT UNSIGNED  NOT NULL DEFAULT 0,
+  revisao         INT UNSIGNED  NOT NULL DEFAULT 0,
+  sessao_ativa    VARCHAR(40)   NULL,       -- [Fazenda/backend] código da página aberta por último (só ela salva)
   atualizado_em   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
                                   ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_fazendas_aluno
@@ -230,34 +285,38 @@ CREATE TABLE fazendas (
 CREATE TABLE elementos_fazenda (
   id_elemento    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_fazenda     INT UNSIGNED  NOT NULL,
+  codigo         VARCHAR(40)   NOT NULL,   -- [Fazenda/backend] id da área no jogo (casa, celeiro, curral, mina...)
   tipo           ENUM('construcao', 'plantacao', 'animal') NOT NULL,
   nivel          INT UNSIGNED  NOT NULL DEFAULT 1,
   criado_em      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_elementos_fazenda
     FOREIGN KEY (id_fazenda) REFERENCES fazendas(id_fazenda)
     ON DELETE CASCADE ON UPDATE CASCADE,
-  INDEX idx_elementos_fazenda (id_fazenda)
+  INDEX idx_elementos_fazenda (id_fazenda),
+  UNIQUE KEY uq_elementos_fazenda_codigo (id_fazenda, codigo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 -- 13. HISTÓRICO DE XP  [XPLog]
 -- quantidade aceita valores negativos para representar retrocesso
--- (RF19). id_submissao é opcional pois nem todo XP vem de uma atividade.
+-- (RF19). id_nota é opcional pois nem todo XP vem de uma atividade.
 -- ---------------------------------------------------------------------
 CREATE TABLE xp_logs (
   id_xp          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_aluno       INT UNSIGNED  NOT NULL,
   quantidade     INT           NOT NULL,
   motivo         VARCHAR(255)  NOT NULL,
-  id_submissao   INT UNSIGNED  NULL,
+  id_nota        INT UNSIGNED  NULL,
   data           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  entregue_em    DATETIME      NULL,       -- [Fazenda/backend] NULL = ainda não aplicado no jogo do aluno
   CONSTRAINT fk_xplogs_aluno
     FOREIGN KEY (id_aluno) REFERENCES alunos(id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT fk_xplogs_submissao
-    FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)
+  CONSTRAINT fk_xplogs_nota
+    FOREIGN KEY (id_nota) REFERENCES notas(id_nota)
     ON DELETE SET NULL ON UPDATE CASCADE,
-  INDEX idx_xplogs_aluno (id_aluno)
+  INDEX idx_xplogs_aluno (id_aluno),
+  INDEX idx_xplogs_pendentes (id_aluno, entregue_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -285,4 +344,4 @@ CREATE TABLE arquivos (
   caminho             VARCHAR(255) NOT NULL,
   FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
   INDEX id_arquivo_atividade (id_atividade)
-);
+)

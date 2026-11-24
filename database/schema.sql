@@ -106,7 +106,7 @@ CREATE TABLE turmas (
   turno          ENUM('manha', 'tarde', 'noite') NOT NULL,
   id_curso       INT UNSIGNED                    NOT NULL,
   id_instrutor   INT UNSIGNED                    NOT NULL,
-  image_turma    VARCHAR(255)                    NULL, 
+  image_turma    VARCHAR(255)                    NULL         DEFAULT NULL,
   ativo          TINYINT(1)                      NOT NULL     DEFAULT 1,
   CONSTRAINT fk_turmas_curso
     FOREIGN KEY (id_curso) REFERENCES cursos(id_curso)
@@ -189,6 +189,8 @@ CREATE TABLE submissoes (
 CREATE TABLE feedback_ia (
   id_feedback        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_submissao       INT UNSIGNED  NOT NULL,
+  percentual_ia      DECIMAL(5,2)  NOT NULL,
+  motivo_ia          TEXT          NULL,
   pontos_positivos   TEXT          NULL,
   pontos_negativos   TEXT          NULL,
   sugestao_resposta  TEXT          NULL,
@@ -221,6 +223,20 @@ CREATE TABLE notas (
   CONSTRAINT chk_notas_valor CHECK (valor >= 0 AND valor <= 10)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE historico_notas (
+  id_historico           INT UNSIGNED AUTO_INCREMENT  NOT NULL PRIMARY KEY,
+  id_submissao           INT UNSIGNED                 NOT NULL,
+  id_instrutor           INT UNSIGNED                 NOT NULL,
+  nota_anterior          INT DEFAULT                  NULL,
+  nota_nova              INT                          NOT NULL,
+  data_alteracao         DATETIME                     NOT NULL DEFAULT current_timestamp(),
+  CONSTRAINT fk_id_instrutor 
+    FOREIGN KEY (id_instrutor) REFERENCES instrutores (id_usuario)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_id_submissao 
+    FOREIGN KEY (id_submissao) REFERENCES submissoes (id_submissao)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 -- ---------------------------------------------------------------------
 -- 11. FAZENDAS  [Fazenda]  — 1:1 com Aluno
 -- ---------------------------------------------------------------------

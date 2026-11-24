@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 05-progresso-e-salvamento.js (Fase 3B da refatoração: seção 05)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA); não é aberto sozinho. É um trecho do
       // antigo corpo de iniciarFarmEdu(), copiado sem alterações, exceto que cada função de nível superior foi escrita como

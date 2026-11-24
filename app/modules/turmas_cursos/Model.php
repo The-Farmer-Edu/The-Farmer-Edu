@@ -193,12 +193,21 @@ class TurmaModel
         return $stmt->fetchAll();
     }
 
-    public static function criar(string $nome, string $turno, int $idCurso, int $idInstrutor, ?string $imagem = null): void
+    /** Cria a turma sem imagem e devolve o ID gerado (a imagem é salva com o nome "<id>.<ext>"). */
+    public static function criar(string $nome, string $turno, int $idCurso, int $idInstrutor): int
     {
-        iniciarPDO()->prepare(
-            'INSERT INTO turmas (nome_turma, turno, id_curso, id_instrutor, image_turma)
-             VALUES (?, ?, ?, ?, ?)'
-        )->execute([$nome, $turno, $idCurso, $idInstrutor, $imagem]);
+        $pdo = iniciarPDO();
+        $pdo->prepare(
+            'INSERT INTO turmas (nome_turma, turno, id_curso, id_instrutor)
+             VALUES (?, ?, ?, ?)'
+        )->execute([$nome, $turno, $idCurso, $idInstrutor]);
+        return (int) $pdo->lastInsertId();
+    }
+
+    public static function definirImagem(int $idTurma, ?string $imagem): void
+    {
+        iniciarPDO()->prepare('UPDATE turmas SET image_turma = ? WHERE id_turma = ?')
+            ->execute([$imagem, $idTurma]);
     }
 
     public static function atualizar(int $idTurma, int $idInstrutor, string $nome, string $turno, ?string $imagem): bool
@@ -247,8 +256,6 @@ class TurmaModel
         $stmt->execute([$idTurma]);
         return $stmt->fetchAll();
     }
-
-
 }
 
 class MatriculaModel
@@ -305,35 +312,5 @@ class AlunoModel
         $stmt = iniciarPDO()->prepare("SELECT 1 FROM alunos a JOIN usuarios u ON u.id_usuario = a.id_usuario WHERE a.id_usuario = ? AND u.ativo = 1");
         $stmt->execute([$idAluno]);
         return (bool) $stmt->fetchColumn();
-    }
-}
-
-class ContaModel
-{
-    public static function estaAtiva(int $idUsuario): bool
-    {
-        $stmt = iniciarPDO()->prepare('SELECT ativo FROM usuarios WHERE id_usuario = ?');
-        $stmt->execute([$idUsuario]);
-        return (int) $stmt->fetchColumn() === 1;
-    }
-
-    public static function definirAtivo(int $idUsuario, int $ativo): void
-    {
-        iniciarPDO()->prepare('UPDATE usuarios SET ativo = ? WHERE id_usuario = ?')->execute([$ativo, $idUsuario]);
-    }
-
-    public static function definirAtivoAluno(int $idAluno, int $ativo): bool
-    {
-        $stmt = iniciarPDO()->prepare("UPDATE usuarios SET ativo = ? WHERE id_usuario = ? AND tipo_usuario = 'aluno'");
-        $stmt->execute([$ativo, $idAluno]);
-        return $stmt->rowCount() > 0;
-    }
-
-    public static function senhaConfere(int $idUsuario, string $senha): bool
-    {
-        $stmt = iniciarPDO()->prepare('SELECT senha_hash FROM usuarios WHERE id_usuario = ?');
-        $stmt->execute([$idUsuario]);
-        $hash = $stmt->fetchColumn();
-        return is_string($hash) && password_verify($senha, $hash);
     }
 }

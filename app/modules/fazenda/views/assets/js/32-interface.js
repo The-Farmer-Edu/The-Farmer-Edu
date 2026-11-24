@@ -310,7 +310,6 @@
       // Fazenda 8.4.1: começa desligado e escondido a cada carregamento; liga ao digitar a palavra abaixo com o jogo em foco (fora de
       // campos de texto), sem janela de senha. O botão do menu só aparece com o modo ligado e serve para desligá-lo. É só uma
       // conveniência da interface: quem lê este código vê a palavra.
-      const PALAVRA_DO_MODO_DESENVOLVEDOR = 'pitufo';
       const CONTROLES_DE_TESTE = '#botao-teste-xp, #botao-teste-madeira, #botao-teste-minerios, #botao-teste-abducao, #painel-tempo [data-modo], #teste-invasao, #teste-dia-elegivel, #teste-reparar, #teste-monstros, #teste-avancar';
       let modoDesenvolvedorAtivo = false;
       const botaoDoModoDesenvolvedor = selecionar('#botao-modo-desenvolvedor');
@@ -334,10 +333,21 @@
       addEventListener('keydown', evento => {
         if (evento.ctrlKey || evento.metaKey || evento.altKey || evento.key.length !== 1) return;
         if (evento.target && evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]')) return;   // ex.: nome da fazenda
-        letrasDigitadas = (letrasDigitadas + evento.key.toLowerCase()).slice(-PALAVRA_DO_MODO_DESENVOLVEDOR.length);
-        if (letrasDigitadas !== PALAVRA_DO_MODO_DESENVOLVEDOR || modoDesenvolvedorAtivo) return;
-        letrasDigitadas = ''; tocarEfeito('desenvolvedor'); definirModoDesenvolvedor(true);
-        mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
+
+        letrasDigitadas = (letrasDigitadas + evento.key.toLowerCase()).slice(-6);
+        let devHash = '$2b$10$pxY99Vv6BOlrxBPMbRcNEuP0LgoyvoPWRKwuOQ8vC7.uZA99F9TjW';
+        if(letrasDigitadas.length === 6) {
+          bcrypt.compare(letrasDigitadas, devHash, function(err, result) {
+              if(result){
+                letrasDigitadas = '';
+                tocarEfeito('desenvolvedor');
+                definirModoDesenvolvedor(true);
+                mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
+              } else {
+                return
+              }
+          });
+        }
       });
       // Com o modo desligado, um clique (ou Enter) num controle de teste para aqui, antes do handler original: além de escondidos,
       // eles não funcionam pelos caminhos da interface (e cada handler de tempo também confere o modo, para chamadas diretas).

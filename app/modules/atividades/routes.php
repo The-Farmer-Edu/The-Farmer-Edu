@@ -10,7 +10,7 @@ Router::post('/atividades/instrutor/remover', [AtividadesController::class, 'rem
 Router::get('/atividades/gabarito', [AtividadesController::class, 'baixarGabarito']);
 
 Router::get('/atividades/aluno', [AtividadesController::class, 'showAluno']);
-Router::get('/atividades/aluno/cursos', [AtividadesController::class, 'cursosAluno']);
+Router::get('/atividades/aluno/turmas', [AtividadesController::class, 'turmasAluno']);
 Router::get('/atividades/aluno/lista', [AtividadesController::class, 'listaAluno']);
 
 Router::get('/atividades/file', [AtividadesController::class, 'sendFile']);

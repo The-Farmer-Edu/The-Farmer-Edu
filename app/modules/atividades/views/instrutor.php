@@ -1,6 +1,3 @@
-<?php
-$inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
-?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -17,31 +14,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 </head>
 <body class="tema-instrutor" data-instrutor="<?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?>">
 
-<header>
-    <img src="assets/img/svg/logo_icone.svg" alt="The Farmer Edu">
-    <div class="titulo-header">
-        <h2 id="cabecalho-titulo">MINHAS TURMAS</h2>
-        <p id="cabecalho-sub">The Farmer Edu</p>
-    </div>
-
-    <div>
-        <h4>Bem-Vindo!</h4> <span><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></span>
-    </div>
-
-    <div class="menu-perfil">
-        <button type="button" class="avatar" id="botao-perfil" aria-haspopup="true"
-                aria-expanded="false" aria-controls="menu-perfil-lista" title="Menu do perfil"><?= htmlspecialchars($inicial, ENT_QUOTES, 'UTF-8') ?></button>
-        <div class="menu-perfil-lista hidden" id="menu-perfil-lista" role="menu">
-            <p class="menu-perfil-nome">
-                <span><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></span>
-                <small>Instrutor</small>
-            </p>
-            <a role="menuitem" href="turmas_cursos/instrutor">Cursos e turmas</a>
-            <a role="menuitem" href="turmas_cursos/minhaConta">Minha conta</a>
-            <a role="menuitem" class="sair" href="auth/logout">Sair</a>
-        </div>
-    </div>
-</header>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
 <div class="layout">
 
@@ -65,6 +38,13 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             Pessoas
         </button>
 
+        <a class="menu-item" id="botao-notas" href="notas/instrutor">
+            <span class="icone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            </span>
+            Notas
+        </a>
+
         <a class="menu-item back" href="turmas_cursos/instrutor">
             <span class="icone">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>
@@ -75,6 +55,11 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
         </aside>
 
     <main>
+
+        <div class="titulo-header">
+            <h2 id="cabecalho-titulo">MINHAS TURMAS</h2>
+            <p id="cabecalho-sub">The Farmer Edu</p>
+        </div>
 
         <p id="aviso" class="aviso hidden" role="alert"></p>
 

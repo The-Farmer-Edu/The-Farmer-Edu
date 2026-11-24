@@ -229,7 +229,7 @@ CREATE TABLE historico_notas (
   id_instrutor           INT UNSIGNED                 NOT NULL,
   nota_anterior          INT DEFAULT                  NULL,
   nota_nova              INT                          NOT NULL,
-  data_alteracao         DATE                         NOT NULL DEFAULT current_timestamp(),
+  data_alteracao         DATETIME                     NOT NULL DEFAULT current_timestamp(),
   CONSTRAINT fk_id_instrutor 
     FOREIGN KEY (id_instrutor) REFERENCES instrutores (id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,

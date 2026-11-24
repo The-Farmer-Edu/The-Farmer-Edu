@@ -14,14 +14,11 @@
     <link rel="stylesheet" href="file?type=css&file=iniciaratv.css">
 </head>
 <body data-pagina="iniciaratv">
-    <!-- Topbar do editor: em uma só linha, o aluno vê o fluxo de navegação, status e ações. -->
-    <header class="topbar">
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
+    <!-- Barra do editor: navegação da atividade, status e ações. A marca fica no cabeçalho oficial. -->
+    <div class="topbar">
         <div class="brand">
             <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
-            <span class="logo">
-                <img src="file?type=img&file=logo_icone.png" alt="The Farm Edu">
-            </span>
-            <span class="nome">The Farm <b>Edu</b></span>
             <span class="modulo">Escrever código</span>
         </div>
 
@@ -33,7 +30,7 @@
             <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
             <button class="btn btn-verde" id="btnEntregar">Entregar atividade</button>
         </div>
-    </header>
+    </div>
 
     <!-- Bloco resumo da atividade; os dados são preenchidos pelo JS com base na atividade carregada. -->
     <section class="atividade" id="atividade" aria-label="Informações da atividade">

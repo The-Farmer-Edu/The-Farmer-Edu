@@ -144,7 +144,7 @@ button::after {
             font-size: 28px;
         }
 
-        header {
+        header:not(.tfe-topbar) {
             background-color: #A0FDA3;
             display: flex;
             width: 100%;
@@ -304,17 +304,7 @@ button::after {
 </head>
 
 <body>
-    <header>
-        <div id="esquerda_cabecalho">
-            <img src="/The-Farmer-Edu-Tarde/public/assets/img/png/logo_icone.png" alt="Logo" id="logo_cabecalho">
-            <p id="nome_cabecalho">The Farmer Edu</p>
-        </div>
-        
-        <div id="direita_cabecalho">
-            <p>Bem vindo, PiorAinda</p>
-            <img src="file?type=img&file=simbolo_usuario.webp" alt="Logo" id="logo_cabecalho">
-        </div>
-    </header>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
     <main>
     <div id="desafio">
         <h1>Desafio de Lógica</h1>

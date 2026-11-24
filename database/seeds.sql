@@ -25,7 +25,7 @@ VALUES (
         1,
         'Carlos Alberto Silva',
         'carlos.instrutor@senai.br',
-        '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe139Cg1s7I3B6wUo73sQ5t6zXyjpJS7P',
+        '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae',
         'instrutor',
         0,
         NULL,
@@ -35,7 +35,7 @@ VALUES (
         2,
         'Mariana Costa Rocha',
         'mariana.instrutor@senai.br',
-        '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe139Cg1s7I3B6wUo73sQ5t6zXyjpJS7P',
+        '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae',
         'instrutor',
         0,
         NULL,
@@ -45,7 +45,7 @@ VALUES (
         3,
         'Lucas Andrade Pereira',
         'lucas.aluno@aluno.senai.br',
-        '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe139Cg1s7I3B6wUo73sQ5t6zXyjpJS7P',
+        '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae',
         'aluno',
         0,
         NULL,
@@ -55,7 +55,7 @@ VALUES (
         4,
         'Beatriz Souza Lima',
         'beatriz.aluno@aluno.senai.br',
-        '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe139Cg1s7I3B6wUo73sQ5t6zXyjpJS7P',
+        '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae',
         'aluno',
         0,
         NULL,
@@ -65,7 +65,7 @@ VALUES (
         5,
         'Gabriel Ferreira Santos',
         'gabriel.aluno@aluno.senai.br',
-        '$2y$10$e0MYzXyjpJS7Pd0RVvHwHe139Cg1s7I3B6wUo73sQ5t6zXyjpJS7P',
+        '$2y$10$MgPnRIFwpozxQkKXwYR.mOGTH9WaYQdNjrKcQaOobyF8n.WsKAxae',
         'aluno',
         1,
         NULL,
@@ -154,7 +154,7 @@ VALUES (
         'manha',
         1,
         1,
-        'uploads/turmas/webdev_2026_1.png',
+        NULL,
         1
     ),
     (
@@ -163,7 +163,7 @@ VALUES (
         'tarde',
         2,
         2,
-        'uploads/turmas/tecds_2026_1.png',
+        NULL,
         1
     );
 -- ---------------------------------------------------------------------

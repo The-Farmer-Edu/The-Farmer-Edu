@@ -116,7 +116,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             --texto-principal:  #002D38;
             --texto-preto:      #000000;
             --texto-secundario: #727272;
-            --bg-pagina:        #F5F7F0;
+            --bg-pagina:        #FFFFFF;
             --bg-card:          #FFFFFF;
             --borda-card:       #E6E6E6;
             --cinza-50:         #F5F7F0;
@@ -611,7 +611,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             transition: background .15s;
         }
 
-        tbody tr:hover { background: rgba(160, 253, 163, 0.12); }
+        tbody tr:hover { background: #efefef; }
 
         tbody td {
             padding: 14px 16px;
@@ -937,29 +937,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 </head>
 <body>
 
-<!-- TOPBAR: Barra de navegação com menu de usuário docente -->
-<nav class="topbar">
-    <a class="topbar-logo" href="<?= $base ?>/notas/instrutor">🌱 <span>The Farmer</span>Edu</a>
-    <div class="topbar-right">
-        <!-- Gatilho do menu suspenso -->
-        <div class="topbar-user" id="userMenuBtn" tabindex="0">
-            <div class="avatar"><?= strtoupper(substr($usuario['nome'] ?? 'IN', 0, 2)) ?></div>
-            <span><?= htmlspecialchars($usuario['nome'] ?? 'Instrutor') ?></span>
-            <svg class="seta-user" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            <div class="user-dropdown">
-                <div class="user-dropdown-header">
-                    <strong><?= htmlspecialchars($usuario['nome'] ?? '') ?></strong>
-                    <span>👨‍🏫 Instrutor</span>
-                </div>
-                <div class="user-dropdown-divider"></div>
-                <a href="<?= $base ?>/auth/logout" class="item-logout">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                    <span>Sair da conta</span>
-                </a>
-            </div>
-        </div>
-    </div>
-</nav>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
 <div class="container">
 

@@ -99,6 +99,19 @@ function atualizarStatus() {
         textoOrientacao.textContent = `Escreva ${conteudo} direto na plataforma clicando em "Começar".`;
     }
 
+    // Atividade do tipo anexo: mostra "Anexar" e o botão vira "Entregar".
+    const ehAnexo = atividadeAtual.tipo === 'anexo';
+    const anexoAberto = ehAnexo && !prazoEncerrado;
+    document.getElementById('opcaoArquivo').style.display = anexoAberto ? '' : 'none';
+    document.getElementById('listaAnexos').style.display = anexoAberto ? '' : 'none';
+    if (ehAnexo) {
+        botaoComecar.style.display = prazoEncerrado ? 'none' : ''; // não há o que "visualizar"
+        if (!prazoEncerrado) {
+            botaoComecar.textContent = entregue ? 'Reenviar' : 'Entregar';
+            textoOrientacao.textContent = `Anexe seu(s) arquivo(s) e clique em "${botaoComecar.textContent}".`;
+        }
+    }
+
     // Exibe o prazo da atividade, se existir, com estilo diferente quando acabou.
     if (atividadeAtual.limite) {
         elementoPrazo.hidden = false;
@@ -117,4 +130,4 @@ window.addEventListener('storage', atualizarStatus);
 setInterval(atualizarStatus, 30000);
 
 //  + encodeURIComponent(turmaAtual.id) 
-document.getElementById('btnVoltar').addEventListener('click',  () => { location.href = '../atividades/aluno?id='});
+document.getElementById('btnVoltar').addEventListener('click', () => { location.href = '../atividades/aluno?id=' });

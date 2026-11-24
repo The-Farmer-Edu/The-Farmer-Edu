@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/Model.php';
-require_once __DIR__ . '../api/model/Ollama.php';
-require_once __DIR__ . '../feedback_ia/model.php';
+// require_once __DIR__ . '../api/model/Ollama.php';
+// require_once __DIR__ . '../feedback_ia/model.php';
 
 
 /**
@@ -12,6 +12,13 @@ require_once __DIR__ . '../feedback_ia/model.php';
  * (CSS, JS e imagens) sem expor diretórios do sistema.
  */
 class atividadesSub {
+
+    // adicionado 24/11 ¬
+    private const EXT_ANEXOS = ['pdf', 'png', 'jpg', 'jpeg', 'zip', 'txt', 'doc', 'docx'];
+    private const MAX_ARQUIVOS = 5;
+    private const MAX_BYTES = 10 * 1024 * 1024;
+    private const PASTA_UPLOADS = __DIR__ . '/../../../storage/submissoes';
+    // adicionado 24/11 ^
 
     /**
      * Permite apenas os tipos de asset que o front-end realmente usa.
@@ -114,6 +121,86 @@ class atividadesSub {
         $extensao = strtolower(pathinfo($caminhoArquivo, PATHINFO_EXTENSION));
         return self::MIME_TYPES[$extensao] ?? 'application/octet-stream';
     }
+
+    // adicionado 24/11 ¬
+    public function enviarAnexo(): void{
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $idAluno = (int) ($_SESSION['id_usuario'] ?? 0); // ajuste para a chave real da sua sessão
+        $idAtividade = filter_var($_POST['id_atividade'] ?? null, FILTER_VALIDATE_INT);
+        if ($idAluno < 1 || !$idAtividade) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Requisição inválida.'], 400);
+        }
+
+        $model = new SubmissoesModel();
+        $atividade = $model->buscarAtividade($idAtividade);
+        if (!$atividade || $atividade['tipo_atividade'] !== 'anexo') {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Atividade não aceita anexos.'], 404);
+        }
+        if (!$model->alunoMatriculado($idAluno, (int) $atividade['id_turma'])) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Você não está matriculado nesta turma.'], 403);
+        }
+        $fuso = new DateTimeZone('America/Sao_Paulo');
+        if (new DateTime($atividade['data_entrega'], $fuso) < new DateTime('now', $fuso)) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'O prazo de entrega acabou.'], 403);
+        }
+
+        $enviados = $_FILES['arquivos'] ?? null;
+        if (!$enviados || !is_array($enviados['name'])) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Nenhum arquivo enviado.'], 400);
+        }
+        $total = count($enviados['name']);
+        if ($total < 1 || $total > self::MAX_ARQUIVOS) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Envie de 1 a ' . self::MAX_ARQUIVOS . ' arquivos.'], 400);
+        }
+
+        $pasta = self::PASTA_UPLOADS . "/$idAtividade/$idAluno";
+        if (!is_dir($pasta) && !mkdir($pasta, 0755, true)) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao preparar a pasta.'], 500);
+        }
+
+        $salvos = [];
+        $limpar = function () use (&$salvos) {
+            foreach ($salvos as $s) { @unlink(self::PASTA_UPLOADS . '/' . $s['caminho']); }
+        };
+
+        for ($i = 0; $i < $total; $i++) {
+            $nome = basename((string) $enviados['name'][$i]);
+            $ext  = strtolower(pathinfo($nome, PATHINFO_EXTENSION));
+
+            if ($enviados['error'][$i] !== UPLOAD_ERR_OK
+                || $enviados['size'][$i] > self::MAX_BYTES
+                || !in_array($ext, self::EXT_ANEXOS, true)
+                || !is_uploaded_file($enviados['tmp_name'][$i])) {
+                $limpar();
+                $this->responderJson(['sucesso' => false, 'erro' => "Arquivo inválido: $nome"], 400);
+            }
+
+            $fisico = bin2hex(random_bytes(16)) . '.' . $ext;
+            if (!move_uploaded_file($enviados['tmp_name'][$i], "$pasta/$fisico")) {
+                $limpar();
+                $this->responderJson(['sucesso' => false, 'erro' => 'Falha ao salvar o arquivo.'], 500);
+            }
+            $salvos[] = ['caminho' => "$idAtividade/$idAluno/$fisico", 'nome_original' => $nome];
+        }
+
+        try {
+            $r = $model->criarSubmissaoAnexo($idAtividade, $idAluno, $salvos);
+        } catch (Throwable $e) {
+            $limpar();
+            error_log('[submissoes] ' . $e->getMessage());
+            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao registrar a entrega.'], 500);
+        }
+
+        $this->responderJson(['sucesso' => true, 'id_submissao' => $r['id_submissao'], 'tentativa' => $r['tentativa']]);
+    }
+
+    private function responderJson(array $corpo, int $status = 200): void{
+        http_response_code($status);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode($corpo, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    //adicionado 24/11 ^
 
     // public function presenteDoGustavin(): void {
     //         //     Presente para o grupo de Submissões,

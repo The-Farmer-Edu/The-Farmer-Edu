@@ -63,7 +63,7 @@ class SubmissoesModel
 
         // Atividade do tipo "texto" não usa linguagem de programação.
         $tipo = $a['tipo_atividade'] ?? 'codigo';
-        $idLinguagem = $tipo === 'texto' ? 'texto' : (self::MAPA_LINGUAGEM[$lang] ?? 'web');
+        $idLinguagem = in_array($tipo, ['texto', 'anexo'], true) ? 'texto' : (self::MAPA_LINGUAGEM[$lang] ?? 'web');
 
         return [
             'id'            => (int) $a['id_atividade'],
@@ -116,5 +116,40 @@ class SubmissoesModel
     {
         $st = $this->pdo->prepare('UPDATE submissoes SET status = ?, resultado_execucao = ? WHERE id_submissao = ?');
         $st->execute([$status, $resultadoExecucao, $idSubmissao]);
+    }
+    
+    public function criarSubmissaoAnexo(int $idAtividade, int $idAluno, array $arquivos): array {
+        $this->pdo->beginTransaction();
+        try {
+            $st = $this->pdo->prepare(
+                'SELECT COALESCE(MAX(tentativa_num), 0) + 1 FROM submissoes
+                 WHERE id_atividade = ? AND id_aluno = ? FOR UPDATE'
+            );
+            $st->execute([$idAtividade, $idAluno]);
+            $tentativa = (int) $st->fetchColumn();
+    
+            $resumo = json_encode(array_column($arquivos, 'nome_original'), JSON_UNESCAPED_UNICODE);
+            $st = $this->pdo->prepare(
+                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status)
+                 VALUES (?, ?, ?, ?, 'enviada')"
+            );
+            $st->execute([$idAtividade, $idAluno, $resumo, $tentativa]);
+            $idSubmissao = (int) $this->pdo->lastInsertId();
+    
+            $st = $this->pdo->prepare(
+                'INSERT INTO arquivos_indexados
+                   (id_atividade, id_aluno, id_submissao, caminho_arquivo, nome_original)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            foreach ($arquivos as $a) {
+                $st->execute([$idAtividade, $idAluno, $idSubmissao, $a['caminho'], $a['nome_original']]);
+            }
+    
+            $this->pdo->commit();
+            return ['id_submissao' => $idSubmissao, 'tentativa' => $tentativa];
+        } catch (Throwable $e) {
+            $this->pdo->rollBack();
+            throw $e;
+        }
     }
 }

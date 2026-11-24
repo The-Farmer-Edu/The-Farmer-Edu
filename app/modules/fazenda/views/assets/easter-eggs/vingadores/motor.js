@@ -1,18 +1,26 @@
 // ====================================================================================================
 // EDIÇÃO PESSOAL — CENA DO CELEIRO · motor.js
-// Roda a cena 2D: UM único laço requestAnimationFrame, ativo só enquanto a cena está aberta (parado ao sair, retomado ao
-// voltar, sem duplicar). Compõe as camadas (fundo → meio animado → personagens → 1º plano/partículas/luzes), faz a "câmera"
-// assentar na entrada e dirige a conversa (diretor de diálogo: poses, gestos de quem fala, reações de quem ouve, digitação,
-// tempo de leitura e pausas naturais). A tela da cena tem 384×216 pixels e é ampliada em escala inteira pelo CSS.
-// Interface usada pela porta (js/30i-cena-do-celeiro.js): CenaDoCeleiro.motor.iniciar / retomar / suspender (+ consultas).
 // ====================================================================================================
 (() => {
   const cenaDoCeleiro = window.CenaDoCeleiro, LARGURA = cenaDoCeleiro.LARGURA, ALTURA = cenaDoCeleiro.ALTURA;
   let iniciado = false, ativo = false, quadroPedido = 0, ultimoInstante = 0, tempo = 0, tempoDesdeAEntrada = 0;
   let tela, contexto, camadas, tony, fury, balao, nomeDoBalao, textoDoBalao;
-  // estados do diretor: pausa (entre conversas) → preparando (poses antes da fala) → digitando → lendo → respiro (entre falas)
   const diretor = { estado: 'pausa', espera: 2.2, conversa: null, indice: 0, fala: null, digitado: 0, leitura: 0, ultimaConversa: -1, reacaoDisparada: false, ordem: [] };
-  const VELOCIDADE_DE_DIGITACAO = 34;   // caracteres por segundo
+  const VELOCIDADE_DE_DIGITACAO = 34;
+
+  const tocarFalaDoPersonagem = quem => {
+    if (typeof tocarSegredo !== 'function') return;
+    const chave = quem === 'tony' ? 'tonyFala' : 'furyFala';
+    pararSegredo('tonyFala');
+    pararSegredo('furyFala');
+    tocarSegredo(chave);
+  };
+
+  const pararFalasDosPersonagens = () => {
+    if (typeof pararSegredo !== 'function') return;
+    pararSegredo('tonyFala');
+    pararSegredo('furyFala');
+  };
 
   const iniciar = elementos => {
     if (iniciado) return; iniciado = true;
@@ -24,8 +32,6 @@
   };
   const atorChamado = quem => quem === 'tony' ? tony : fury, outroAtor = quem => quem === 'tony' ? fury : tony;
 
-  // ---------------------------------------------------------------- diretor da conversa
-  // ordem embaralhada das conversas; a última que passou não abre a próxima rodada
   const proximaConversa = () => {
     if (!diretor.ordem.length) {
       diretor.ordem = cenaDoCeleiro.conversas.map((_, indice) => indice).sort(() => Math.random() - 0.5);
@@ -51,13 +57,19 @@
         quemFala.falando = true; if (fala.gesto) quemFala.fazerGesto(fala.gesto);
         if (fala.evento === 'vaca') cenaDoCeleiro.cenario.chamarVaca(6);
         mostrarBalao(fala);
+        tocarFalaDoPersonagem(fala.quem);
       }
     } else if (diretor.estado === 'digitando') {
       const fala = diretor.fala; diretor.digitado += segundosDoQuadro * VELOCIDADE_DE_DIGITACAO;
       textoDoBalao.textContent = fala.texto.slice(0, Math.floor(diretor.digitado));
-      // quem ouve reage no meio da fala (está escutando)
       if (!diretor.reacaoDisparada && diretor.digitado > fala.texto.length * 0.45) { diretor.reacaoDisparada = true; if (fala.reacao) outroAtor(fala.quem).fazerGesto(fala.reacao); }
-      if (diretor.digitado >= fala.texto.length) { textoDoBalao.textContent = fala.texto; atorChamado(fala.quem).falando = false; diretor.estado = 'lendo'; diretor.espera = 1.3 + fala.texto.length * 0.045; }
+      if (diretor.digitado >= fala.texto.length) {
+        textoDoBalao.textContent = fala.texto;
+        atorChamado(fala.quem).falando = false;
+        pararFalasDosPersonagens();
+        diretor.estado = 'lendo';
+        diretor.espera = 1.3 + fala.texto.length * 0.045;
+      }
     } else if (diretor.estado === 'lendo') {
       if (diretor.espera <= 0) {
         esconderBalao(); const fala = diretor.fala;
@@ -69,10 +81,8 @@
       if (diretor.espera <= 0) comecarFala();
     }
   };
-  // entre as conversas cada um volta ao que estava fazendo (Tony à bancada, Fury aos monitores ou de braços cruzados)
   const voltarAsAtividades = () => { tony.mudarPoseBase('trabalhando', 0.8); fury.mudarPoseBase(Math.random() < 0.5 ? 'analisando' : 'bracosCruzados', 0.9); };
 
-  // balão de fala: DOM por cima da tela (texto nítido e legível), posicionado sobre a cabeça de quem fala
   let escala = 3, cantoDaTela = [0, 0];
   const mostrarBalao = fala => {
     balao.dataset.quem = fala.quem; nomeDoBalao.textContent = fala.quem === 'tony' ? 'TONY STARK' : 'NICK FURY'; textoDoBalao.textContent = '';
@@ -86,7 +96,6 @@
     balao.style.left = Math.round(balaoX) + 'px'; balao.style.top = Math.round(balaoY) + 'px';
     balao.classList.toggle('a-esquerda', diretor.fala.quem === 'tony');
   };
-  // ajuste de tamanho: escala inteira que cabe na janela (nearest-neighbor, sem borrar)
   const ajustarTamanho = () => {
     escala = Math.max(1, Math.floor(Math.min(innerWidth / LARGURA, innerHeight / ALTURA)));
     tela.style.width = LARGURA * escala + 'px'; tela.style.height = ALTURA * escala + 'px';
@@ -95,13 +104,11 @@
     posicionarBalao();
   };
 
-  // ---------------------------------------------------------------- laço (um só)
   const quadro = instante => {
     if (!ativo) return;
     quadroPedido = requestAnimationFrame(quadro);
     const segundosDoQuadro = Math.min(0.1, (instante - ultimoInstante) / 1000 || 0); ultimoInstante = instante; tempo += segundosDoQuadro; tempoDesdeAEntrada += segundosDoQuadro;
     cenaDoCeleiro.cenario.atualizar(segundosDoQuadro, tempo); tony.atualizar(segundosDoQuadro, tempo); fury.atualizar(segundosDoQuadro, tempo); atualizarDiretor(segundosDoQuadro);
-    // a "câmera" assenta: começa 6 px abaixo e sobe em degraus inteiros (revela a composição completa)
     const deslocamentoDaCamera = Math.round(Math.max(0, 1 - tempoDesdeAEntrada / 1.6) ** 2 * 6);
     contexto.fillStyle = '#000'; contexto.fillRect(0, 0, LARGURA, ALTURA);
     contexto.save(); contexto.translate(0, deslocamentoDaCamera);
@@ -122,8 +129,8 @@
   const suspender = () => {
     if (!ativo) return; ativo = false; cancelAnimationFrame(quadroPedido); cenaDoCeleiro.estatisticas.lacosAtivos--;
     removeEventListener('resize', ajustarTamanho);
+    pararFalasDosPersonagens();
     balao.hidden = true;
-    // se saiu no meio de uma fala, ela recomeça limpa na volta (nada fica "falando" sozinho)
     if (diretor.estado === 'digitando' || diretor.estado === 'lendo') { atorChamado(diretor.fala.quem).falando = false; diretor.estado = 'respiro'; diretor.espera = 0.8; }
   };
   cenaDoCeleiro.motor = {

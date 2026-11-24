@@ -109,7 +109,7 @@ efeitos: {
     pocaoUsar:      { arquivo: 'assets/audio/SFX/pocoes/usar.mp3', volume: 0.9, intervaloMinimo: 0.3 },
     pocaoEfeitoFim: { arquivo: 'assets/audio/SFX/pocoes/fimefeito.mp3', volume: 0.75, intervaloMinimo: 0.5 },
     pocaoSecreta: { arquivo: 'assets/audio/SFX/pocoes/pocaosecreta.mp3', volume: 0.75, intervaloMinimo: 0.5 },
-    guardiao:       { arquivo: 'assets/audio/SFX/pocoes/guardiao.mp3', volume: 0.9, intervaloMinimo: 0.5, distanciaMaxima: 45 },
+    guardiao:       { arquivo: 'assets/audio/SFX/pocoes/guardiao.mp3', volume: 1.5, intervaloMinimo: 0.5, distanciaMaxima: 45 },
       
     
     // --- FAZENDEIROS / DEFENSORES ---
@@ -148,16 +148,26 @@ efeitos: {
  
 
   segredos: {
-    pedraSecreta: { arquivo: 'assets/audio/SFX/segredos/pedra-secreta.mp3', volume: 0.9 },
-    unicornio:    { arquivo: 'assets/audio/SFX/segredos/unicornio.mp3', volume: 0.9 },
-    unicornioTrilha:   { arquivo: 'assets/audio/SFX/segredos/temaunicornio.mp3', volume: 0.95, intervaloMinimo: 1.0 },
+    cavernaTema:      { arquivo: 'assets/audio/SFX/segredos/caverna-tema.mp3', volume: 0.65 },
+    cavernaFala:      { arquivo: 'assets/audio/SFX/segredos/caverna-fala.mp3', volume: 0.85 },
+    vingadoresTema:   { arquivo: 'assets/audio/SFX/segredos/vingadores-tema.mp3', volume: 0.65 },
+    vingadoresFala:   { arquivo: 'assets/audio/SFX/segredos/vingadores-fala.mp3', volume: 0.85 },
+      pedraSecreta: { arquivo: 'assets/audio/SFX/segredos/pedra-secreta.mp3', volume: 0.9 },
+/*     unicornio:    { arquivo: 'assets/audio/SFX/segredos/temaunicornio.mp3', volume: 0.9 },
+ */    unicornioTrilha:   { arquivo: 'assets/audio/SFX/segredos/unicornio.mp3', volume: 0.95, intervaloMinimo: 1.0 },
     discoVoador:    { arquivo: 'assets/audio/SFX/segredos/nave.mp3', volume: 0.9, intervaloMinimo: 1.0, distanciaMaxima: 90 },
     naveindoembora:    { arquivo: 'assets/audio/SFX/segredos/nave_indo_embora.mp3', volume: 0.9, intervaloMinimo: 1.0, distanciaMaxima: 90 },
     abducao:        { arquivo: 'assets/audio/SFX/segredos/pegavaca.mp3', volume: 0.95, intervaloMinimo: 1.0, distanciaMaxima: 90 },
     trilha:             { arquivo: 'assets/audio/SFX/segredos/temaaliens.mp3', volume: 0.9, intervaloMinimo: 0.5, distanciaMaxima: 70 },
     pegarvaca:  { arquivo: 'assets/audio/SFX/vacas/mugido1.mp3', volume: 0.85, intervaloMinimo: 1.0, distanciaMaxima: 90 },
-  },
 
+   // --- EASTER EGGS (CELEIRO E CAVERNA) ---
+    celeiroTema:     { arquivo: 'assets/audio/SFX/segredos/celeiro-tema.mp3', volume: 0.7 },
+    tonyFala:        { arquivo: 'assets/audio/SFX/segredos/tony-fala.mp3', volume: 0.85 },
+    furyFala:        { arquivo: 'assets/audio/SFX/segredos/fury-fala.mp3', volume: 0.85 },
+    cavernaTema:     { arquivo: 'assets/audio/SFX/segredos/caverna-tema.mp3', volume: 0.7 },
+    cavernaFala:     { arquivo: 'assets/audio/SFX/segredos/caverna-fala.mp3', volume: 0.85 },
+  },
   volumesIniciais: { musica: 0.5, animais: 0.7, cachoeira: 0.6, fonte: 0.6, trator: 0.5, riacho: 0.5, efeitos: 0.7 }
 };
 

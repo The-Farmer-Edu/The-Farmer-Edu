@@ -7,7 +7,7 @@
 // evento por um peso de 0 a 1, então, quando o peso volta a 0, o jogador está exatamente onde estava.
 //  • Cena do céu (poção misteriosa): a câmera sobe suavemente até enquadrar o céu da própria fazenda, um unicórnio montado com
 //    peças 3D atravessa o céu soltando um arco-íris (faixas de 7 cores que ficam no céu por alguns segundos) e a câmera volta.
-//    Música opcional: AUDIO_CONFIG.segredos.unicornioTrilha (seção 02b).
+//    Música opcional: AUDIO_CONFIG.segredos.unicornioTrilha (seção 02b) + som de proximidade AUDIO_CONFIG.segredos.unicornio.
 //  • Abdução: um disco voador com um alienígena verde chega, acende o feixe sobre uma vaca do curral, a puxa para dentro e vai
 //    embora. Etapa 1: a vaca sai por 20 s (estado.eventosEspeciais.alienigena.vacaAusente, salvo) e o disco a traz de volta, sem custo.
 // Todos os objetos temporários são criados aqui e descartados no fim (geometrias, materiais e texturas próprias).
@@ -258,8 +258,9 @@
         estrelas.material.opacity = 0;
         for (let indice = 0; indice < 140; indice++) estrelas.soltar(focoDoCeu.clone().addScaledVector(direita, (Math.random() - 0.5) * 150).addScaledVector(CIMA, (Math.random() - 0.5) * 70), 4, 0.4, 999, [0xffffff, 0xfff1b0, 0xd9c8ff][indice % 3]);
         const traseiro = new THREE.Vector3(), anterior = new THREE.Vector3(), atual = new THREE.Vector3();
-        let tempo = 0, musicaIniciada = false, encerrado = false;
+        let tempo = 0, musicaIniciada = false, somUnicornioIniciado = false, encerrado = false;
         const musica = FONTES_DE_SOM.segredos.unicornioTrilha;
+        const somUnicornio = FONTES_DE_SOM.segredos.unicornio;
         entrarNoModoDeCena('cena-do-ceu');
         tocarSegredo('unicornioTrilha');
         const encerrar = function encerrar(porErro = false) {
@@ -267,6 +268,8 @@
           recursos.descartar();
           cameraDoEvento.peso = 0; eventoEmAndamento = null;
           pararSegredo('unicornioTrilha');
+          if (somUnicornio) somUnicornio.el.loop = false;
+          pararSegredo('unicornio');
           sairDoModoDeCena();
           if (!opcoes.teste) {
             const registro = estado.eventosEspeciais.misterio;
@@ -297,7 +300,27 @@
               for (let vezes = 0; vezes < 3; vezes++) brilhos.soltar(traseiro, 1.6, 2.5, 1.6 + Math.random());
               // a câmera acompanha um pouco o unicórnio (sem perder o céu)
               cameraDoEvento.alvo.copy(focoDoCeu).lerp(atual, 0.22);
+
+              // Musiquinha do unicórnio por proximidade (surge gradualmente na entrada e some gradualmente na saída)
+              if (somUnicornio && AUDIO_CONFIG.segredos.unicornio && ESTADO_DO_AUDIO.efeitos.ligado) {
+                ESTADO_DO_AUDIO.liberado = true;
+                if (!somUnicornioIniciado) {
+                  somUnicornioIniciado = true;
+                  if (somUnicornio.estado === 'erro') reiniciarFonteDeSom(somUnicornio);
+                  somUnicornio.el.loop = true;
+                  somUnicornio.el.muted = ESTADO_DO_AUDIO.silenciado;
+                  try { somUnicornio.el.currentTime = 0; } catch (erro) { }
+                  tocarSom(somUnicornio, 0.01);
+                }
+                const proximidade = Math.sin(Math.PI * s); // 0 na entrada esquerda -> 1 no centro -> 0 na saída direita
+                const curvaSuave = suavizarNoEvento(proximidade);
+                somUnicornio.el.volume = limitarVolume(ESTADO_DO_AUDIO.efeitos.volume * AUDIO_CONFIG.segredos.unicornio.volume * curvaSuave);
+              }
             } else if (tempo >= fimDoVoo) {
+              if (somUnicornio && !somUnicornio.el.paused) {
+                somUnicornio.el.loop = false;
+                pararSegredo('unicornio');
+              }
               if (unicornio.raiz.parent) recursos.tirarDaCena(unicornio.raiz);   // saiu do enquadramento
               cameraDoEvento.alvo.lerp(focoDoCeu, Math.min(1, segundos * 1.5));
               if (Math.random() < 0.5) brilhos.soltar(caminho(Math.random()), 3, 0.8, 1.2);   // o arco-íris ainda cintila

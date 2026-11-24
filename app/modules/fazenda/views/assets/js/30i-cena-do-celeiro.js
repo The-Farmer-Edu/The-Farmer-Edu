@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 30i-cena-do-celeiro.js (EDIÇÃO PESSOAL: a cena viva dentro do celeiro)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA), depois da seção 30g e antes do loop.
       // ====================================================================================================
@@ -84,6 +84,27 @@
         return '';
       };
 
+      // ---- controle de áudio da cena do celeiro ----
+      const tocarMusicaDoCeleiro = function tocarMusicaDoCeleiro() {
+        const fonte = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos.celeiroTema;
+        const cfg = AUDIO_CONFIG && AUDIO_CONFIG.segredos && AUDIO_CONFIG.segredos.celeiroTema;
+        if (!fonte || !cfg) { console.warn('[Celeiro] "celeiroTema" não registrado em 02b-configuracao-dos-audios.js'); return; }
+        if (!ESTADO_DO_AUDIO.musica.ligado) return;
+        ESTADO_DO_AUDIO.liberado = true;
+        if (fonte.estado === 'erro') reiniciarFonteDeSom(fonte);
+        fonte.el.loop = true;
+        fonte.el.muted = ESTADO_DO_AUDIO.silenciado;
+        try { fonte.el.currentTime = 0; } catch (e) { }
+        tocarSom(fonte, limitarVolume(ESTADO_DO_AUDIO.musica.volume * cfg.volume));
+      };
+      const pararMusicaDoCeleiro = function pararMusicaDoCeleiro() {
+        const fonte = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos.celeiroTema;
+        if (fonte) fonte.el.loop = false;
+        pararSegredo('celeiroTema');
+        pararSegredo('tonyFala');
+        pararSegredo('furyFala');
+      };
+
       // ---- entrar e sair ----
       const pausarSonsDaFazenda = function pausarSonsDaFazenda() { for (const nome of ['musica', 'cachoeira', 'fonte', 'trator']) if (FONTES_DE_SOM[nome]) pararSom(FONTES_DE_SOM[nome]); };
       const retomarSonsDaFazenda = function retomarSonsDaFazenda() { try { sincronizarMusica(); for (const nome of ['cachoeira', 'fonte', 'trator']) sincronizarAmbiente(nome); } catch (erro) { } };
@@ -92,12 +113,14 @@
         if (motivo) { if (motivo.startsWith('Agora')) mostrarAviso('🧟 ' + motivo); return false; }
         CENA_DO_CELEIRO.estado = 'abrindo'; CENA_DO_CELEIRO.entradas++;
         registrarAtividade(); fecharPainelDaEstrutura && fecharPainelDaEstrutura(false);
+        pausarSonsDaFazenda();
+        tocarMusicaDoCeleiro();                                             // inicia imediatamente no gesto de clique do jogador
         const carregando = carregarCenaDoCeleiro();                         // começa a baixar enquanto a íris fecha
         CENA_DO_CELEIRO.centroDoCeleiro = centroDoCeleiroNaTela();
         await animarIris(CENA_DO_CELEIRO.centroDoCeleiro, 1, 0, CENA_DO_CELEIRO_CONFIG.segundosDaIrisFechando);
-        FAZENDA_SUSPENSA.ativa = true; FAZENDA_SUSPENSA.motivo = 'celeiro'; pausarSonsDaFazenda();
+        FAZENDA_SUSPENSA.ativa = true; FAZENDA_SUSPENSA.motivo = 'celeiro';
         try { await carregando; }
-        catch (erro) { FAZENDA_SUSPENSA.ativa = false; retomarSonsDaFazenda(); await animarIris(CENA_DO_CELEIRO.centroDoCeleiro, 0, 1, 0.6); irisDoCeleiro.hidden = true; CENA_DO_CELEIRO.estado = 'fechada'; mostrarAviso('Não foi possível abrir o celeiro agora.'); return false; }
+        catch (erro) { pararMusicaDoCeleiro(); FAZENDA_SUSPENSA.ativa = false; retomarSonsDaFazenda(); await animarIris(CENA_DO_CELEIRO.centroDoCeleiro, 0, 1, 0.6); irisDoCeleiro.hidden = true; CENA_DO_CELEIRO.estado = 'fechada'; mostrarAviso('Não foi possível abrir o celeiro agora.'); return false; }
         camadaDoCeleiro.hidden = false; document.body.classList.add('dentro-do-celeiro');
         window.CenaDoCeleiro.motor.retomar();
         const caixaDaCena = selecionar('#tela-do-celeiro').getBoundingClientRect();
@@ -109,6 +132,7 @@
       const sairDoCeleiro = async function sairDoCeleiro() {
         if (CENA_DO_CELEIRO.estado !== 'aberta') return false;
         CENA_DO_CELEIRO.estado = 'fechando';
+        pararMusicaDoCeleiro();
         const caixaDaCena = selecionar('#tela-do-celeiro').getBoundingClientRect();
         await animarIris([caixaDaCena.left + caixaDaCena.width / 2, caixaDaCena.top + caixaDaCena.height * 0.62], 1, 0, CENA_DO_CELEIRO_CONFIG.segundosDaIrisNaVolta);
         window.CenaDoCeleiro.motor.suspender();

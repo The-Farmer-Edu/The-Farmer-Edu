@@ -417,13 +417,23 @@
       painelDoGuardiao.addEventListener('click', evento => {
         const cartao = evento.target.closest('[data-pocao]'), acao = evento.target.closest('[data-acao-guardiao]');
         const aba = evento.target.closest('[data-aba-guardiao]'), usarDaLista = evento.target.closest('[data-usar-pocao]');
-        if (aba) { abaDoGuardiao = aba.dataset.abaGuardiao; confirmandoPreparo = false; definirMensagemDoGuardiao('', ''); }
+        if (aba) {
+          abaDoGuardiao = aba.dataset.abaGuardiao; confirmandoPreparo = false; definirMensagemDoGuardiao('', '');
+          tocarEfeito('Enter');
+        }
         else if (usarDaLista) { if (!usarDaLista.disabled) usarPocao(usarDaLista.dataset.usarPocao); }   // usarPocao revalida a cota
-        else if (cartao) { pocaoSelecionada = cartao.dataset.pocao; confirmandoPreparo = false; definirMensagemDoGuardiao('', ''); }
+        else if (cartao) {
+          pocaoSelecionada = cartao.dataset.pocao; confirmandoPreparo = false; definirMensagemDoGuardiao('', '');
+          tocarEfeito('Enter');
+        }
         else if (acao && !acao.disabled) {
           const nome = acao.dataset.acaoGuardiao;
-          if (nome === 'preparar') { const motivo = motivoParaNaoPreparar(pocaoSelecionada); if (motivo) definirMensagemDoGuardiao(motivo); else { confirmandoPreparo = true; definirMensagemDoGuardiao('', ''); } }
-          else if (nome === 'voltar') confirmandoPreparo = false;
+          if (nome === 'preparar') {
+            const motivo = motivoParaNaoPreparar(pocaoSelecionada);
+            if (motivo) definirMensagemDoGuardiao(motivo);
+            else { confirmandoPreparo = true; definirMensagemDoGuardiao('', ''); tocarEfeito('Enter'); }
+          }
+          else if (nome === 'voltar') { confirmandoPreparo = false; tocarEfeito('Fecha'); }
           else if (nome === 'confirmar-preparo') prepararPocao(pocaoSelecionada);
           else if (nome === 'usar') usarPocao(pocaoSelecionada);
         } else return;

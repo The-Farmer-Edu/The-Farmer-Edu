@@ -4,6 +4,7 @@ require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
 require_once __DIR__ . '/../notificacoes/Model.php';
+require_once __DIR__ . '/../notificacoes/Notificacoes.php';
 
 class AtividadesController
 {
@@ -59,7 +60,11 @@ class AtividadesController
 
             if ($criando) {
                 try {
-                    NotificacoesModel::notificarTurma($pdo, $atividade->idTurma, $atividade->titulo);
+                    Notificacoes::enviarParaTurma(
+    $atividade->idTurma,
+    Notificacoes::TIPO_ATIVIDADE_PENDENTE,
+    'Nova atividade disponível: ' . $atividade->titulo
+);
                 } catch (Throwable $e) {
                     error_log('Falha ao notificar a turma: ' . $e->getMessage());
                 }

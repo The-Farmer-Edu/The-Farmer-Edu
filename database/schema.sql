@@ -168,7 +168,8 @@ CREATE TABLE submissoes (
   id_submissao        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_atividade         INT UNSIGNED  NOT NULL,
   id_aluno             INT UNSIGNED  NOT NULL,
-  conteudo_resposta    LONGTEXT      NOT NULL,
+  conteudo_resposta    LONGTEXT       NULL,
+  caminho_arquivo VARCHAR(255)  NULL,
   tentativa_num        INT UNSIGNED  NOT NULL DEFAULT 1,
   status               ENUM('enviada', 'processando', 'corrigida', 'erro') NOT NULL DEFAULT 'enviada',
   resultado_execucao   TEXT          NULL,     -- stdout/stderr/veredito retornados pelo Judge0

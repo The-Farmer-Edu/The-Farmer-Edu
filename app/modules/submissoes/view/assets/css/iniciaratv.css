@@ -51,14 +51,13 @@ button { font-family: var(--fonte-ui); cursor: pointer; }
 /*Header*/
 .topbar {
     flex: none;
-    background: var(--verde-claro);
-    color: var(--titulo);
+    background: none;
+    color: var(--verde-claro);
     padding: 8px 14px;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 10px 14px;
-    box-shadow: var(--brilho-header);
     position: relative;
     z-index: 10;
 }

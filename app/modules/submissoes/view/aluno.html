@@ -15,8 +15,7 @@
 </head>
 
 <body data-pagina="aluno">
-<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
-    <p class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</p>
+    <?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
     <main>
         <!-- Bloco principal para exibir os detalhes da atividade da turma. -->
@@ -85,7 +84,8 @@
     </footer>
 
     <!-- JSON serializado no HTML: o JavaScript usa esse bloco para montar a tela sem outra requisição. -->
-   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script type="application/json"
+        id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="file?type=js&file=main.js"></script>
 </body>
 

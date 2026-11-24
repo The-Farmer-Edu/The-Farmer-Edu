@@ -116,6 +116,9 @@ function configurarGabarito(config) {
 function atualizarCabecalho(turmas) {
     const titulo = document.getElementById('cabecalho-titulo');
     const sub = document.getElementById('cabecalho-sub');
+    if (!titulo || !sub) {
+        return;
+    }
 
     if (turmas.length === 1) {
         titulo.textContent = turmas[0].nome_curso.toUpperCase();

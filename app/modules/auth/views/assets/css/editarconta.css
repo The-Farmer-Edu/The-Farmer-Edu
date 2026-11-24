@@ -15,9 +15,10 @@
     --vermelho-borda: #7a1f14;
 }
 
-html,
-body {
-    min-height: 100vh;
+/* html,
+body, */
+#editar-conta {
+    min-height: calc(100vh - 64px);
     font-family: "Poppins", sans-serif;
     background-color: var(--fundo-pagina);
     display: flex;
@@ -100,6 +101,7 @@ body {
     align-items: center;
     margin-top: 14px;
     flex-wrap: wrap;
+    justify-content: center;
 }
 
 #btn-salvar {

@@ -5,13 +5,13 @@ body.tema-instrutor {
     --menu-fundo: #90BDF0;
 }
 
-header>div>span {
+header:not(.tfe-topbar)>div>span {
     padding: 0px 20px;
     color: black;
     font-size: 15px;
 }
 
-header>div>h4 {
+header:not(.tfe-topbar)>div>h4 {
     font-weight: bold;
     color: black;
     font-size: 15px;

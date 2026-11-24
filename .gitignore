@@ -5,3 +5,5 @@ create_squads_gh.js
 .vscode
 conf_model_ia/*
 *.pptx
+/app/modules/notificacoes/vendor/
+/app/modules/notificacoes/push_config.php

@@ -7,9 +7,9 @@
 <body>
     <h1>Notificações</h1>
 
-    <?php foreach ($notificacoes as $mensagem): ?>
+    <?php foreach (($notificacoes ?? []) as $n): ?>
         <p>
-            <?= htmlspecialchars($mensagem, ENT_QUOTES, 'UTF-8') ?>
+            <?= htmlspecialchars((string) ($n['mensagem'] ?? ''), ENT_QUOTES, 'UTF-8') ?>
         </p>
     <?php endforeach; ?>
 </body>

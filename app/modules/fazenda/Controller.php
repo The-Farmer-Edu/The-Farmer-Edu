@@ -278,6 +278,7 @@
             $dados = [
                 'idUsuario'  => $idAluno,
                 'estado'     => $carga['estado'],
+                'revisao'    => $carga['revisao'],
                 'sessao'     => $carga['sessao'],
                 'xpPendente' => $carga['xpPendente'],
                 'urls'       => ['salvar' => $base . '/fazenda/salvar', 'xpPendente' => $base . '/fazenda/xp-pendente'],

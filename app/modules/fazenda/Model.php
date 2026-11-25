@@ -91,7 +91,7 @@ class FazendaModel
         $this->garantirFazenda($idAluno);
         $this->pdo->beginTransaction();
         try {
-            $st = $this->pdo->prepare('SELECT estado, nome_fazenda FROM fazendas WHERE id_aluno = ? FOR UPDATE');
+            $st = $this->pdo->prepare('SELECT estado, nome_fazenda, revisao FROM fazendas WHERE id_aluno = ? FOR UPDATE');
             $st->execute([$idAluno]);
             $linha = $st->fetch();
 
@@ -115,6 +115,7 @@ class FazendaModel
 
             $resultado = [
                 'estado'     => $estado,
+                'revisao'    => (int) $linha['revisao'],
                 'sessao'     => $sessao,
                 'xpPendente' => $this->xpPendente($idAluno),
             ];

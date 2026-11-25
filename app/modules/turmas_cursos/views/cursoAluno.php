@@ -11,7 +11,7 @@ require __DIR__ . '/partials/head.php';
     </div>
     <div class="card-grid">
         <?php foreach ($turmas as $t): ?>
-            <a class="course-card" href="<?= $base ?>/turmas_cursos/turmaAluno?id=<?= (int) $t['id_turma'] ?>">
+            <a class="course-card" href="<?= $base ?>/atividades/aluno?idgi=<?= (int) $t['id_turma'] ?>">
                 <article class="course-card">
                     <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
                     <div class="course-card__cover"><?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma"><?php else: ?><div class="course-placeholder"><i class="bi bi-mortarboard"></i><span><?= e($t['nome_instrutor']) ?></span></div><?php endif; ?></div>

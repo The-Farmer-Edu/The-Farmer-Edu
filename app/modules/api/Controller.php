@@ -31,7 +31,7 @@ class ApiController {
         require_once __DIR__ . '/model/Config.php';
 
         if ($_SERVER['SERVER_NAME'] !== 'the-farmer-edu.pedrotech.com.br') {
-            $url = (new InitConfig())->mainHost . "/api/WOL";
+            $url = (new InitConfig())->mainHost . "api/WOL";
             $method = 'GET';
             $options = [
                 'http' => [

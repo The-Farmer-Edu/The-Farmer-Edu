@@ -41,7 +41,7 @@ class WakeOnLan {
                 foreach ($targets as $targetIp) {
                     foreach ($ports as $targetPort) {
                         $bytesSent = @socket_sendto($sock, $packet, strlen($packet), 0, $targetIp, $targetPort);
-                        if ($bytesSent !== false) {
+                        if ($bytesSent === strlen($packet)) {
                             $sentSuccessfully = true;
                         }
                     }
@@ -58,7 +58,7 @@ class WakeOnLan {
                     if ($fp) {
                         $bytesWritten = @fwrite($fp, $packet);
                         @fclose($fp);
-                        if ($bytesWritten !== false && $bytesWritten > 0) {
+                        if ($bytesWritten === strlen($packet)) {
                             $sentSuccessfully = true;
                         }
                     }

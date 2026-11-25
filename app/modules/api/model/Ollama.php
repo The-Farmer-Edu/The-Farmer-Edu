@@ -50,7 +50,7 @@
 
             // 2. Ollama indisponível, offline ou com erro:
             // Disparar Wake-on-LAN para ligar a máquina do servidor Ollama
-            
+            self::wakeOnLan();
 
             // 3. Fallback para Google Gemini
             $geminiApiKey = $config->geminiApiKey ?? null;
@@ -123,8 +123,7 @@
         }
 
         public static function wakeOnLan(){
-            $config = new InitConfig();
-            $wolMac = $config->wolMac ?? null;
+            $wolMac = (new InitConfig())->wolMac ?? null;
             if ($wolMac) {
                 require_once __DIR__ . '/WakeOnLan.php';
                 \WakeOnLan::send($wolMac);

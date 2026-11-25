@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 30f-conquistas-e-diario.js (Etapa 3: conquistas e Diário da Fazenda)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA), depois do quadro de objetivos (30e) e
       // antes do loop (31). Mesmo padrão dos demais: declarações no escopo global compartilhado, funções como "const nome = function...".
@@ -162,6 +162,10 @@
         const classeDoGrau = conquista.tipo === 'progressiva' ? ['bronze', 'prata', 'ouro'][Math.max(0, grau - 1)] : conquista.tipo;
         return `<span class="medalha medalha-${classeDoGrau}${grau ? '' : ' bloqueada'}${revelada ? '' : ' oculta'}${tamanho ? ' ' + tamanho : ''}" aria-hidden="true"><span class="face-da-medalha">${revelada ? conquista.icone : '?'}</span></span>`;
       };
+      const tocarSomDaConquista = function tocarSomDaConquista() {
+        const nomeSom = (typeof AUDIO_CONFIG !== 'undefined' && AUDIO_CONFIG.efeitos && AUDIO_CONFIG.efeitos.conquista) ? 'conquista' : 'levelUp';
+        tocarEfeito(nomeSom);
+      };
       const mostrarProximoAvisoDeConquista = function mostrarProximoAvisoDeConquista() {
         if (avisoDeConquistaOcupado || !filaDeAvisosDeConquista.length) return;
         avisoDeConquistaOcupado = true;
@@ -169,7 +173,7 @@
         const nomeDoGrau = conquista.tipo === 'progressiva' ? ' · ' + NOMES_DOS_GRAUS[grau - 1] : '';
         avisoDeConquista.innerHTML = `${htmlDaMedalha(conquista, grau, true, 'media')}<div class="texto-do-aviso-de-conquista"><small>${conquista.tipo === 'secreta' ? '✨ Conquista secreta desbloqueada!' : '🏅 Conquista desbloqueada!'}</small><b>${conquista.nome}${nomeDoGrau}</b><span>${conquista.descricao}</span></div>`;
         avisoDeConquista.hidden = false; avisoDeConquista.classList.remove('saindo'); void avisoDeConquista.offsetWidth; avisoDeConquista.classList.add('entrando');
-        tocarEfeito('levelUp');
+        tocarSomDaConquista();
         setTimeout(() => {
           avisoDeConquista.classList.remove('entrando'); avisoDeConquista.classList.add('saindo');
           setTimeout(() => { avisoDeConquista.hidden = true; avisoDeConquista.classList.remove('saindo'); avisoDeConquistaOcupado = false; mostrarProximoAvisoDeConquista(); }, 260);

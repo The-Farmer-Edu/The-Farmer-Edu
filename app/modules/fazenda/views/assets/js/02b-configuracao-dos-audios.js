@@ -93,6 +93,7 @@ efeitos: {
     desativar:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/desativar.mp3', volume: 0.7 },
     desenvolvedor:{ arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/desenvolvedor.mp3', volume: 0.7 },
     erro:         { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/erros.mp3', volume: 0.8 },
+    conquista: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/conquista.mp3', volume: 0.75, intervaloMinimo: 0.1 },
 
     // --- AÇÕES E PROGRESSÃO ---
     construir: { arquivo: 'assets/audio/SFX/sons-do-jogo/acoes/reparar_danos.mp3', volume: 0.8 },
@@ -148,10 +149,9 @@ efeitos: {
  
 
   segredos: {
-    cavernaTema:      { arquivo: 'assets/audio/SFX/segredos/caverna-tema.mp3', volume: 0.65 },
-    cavernaFala:      { arquivo: 'assets/audio/SFX/segredos/caverna-fala.mp3', volume: 0.85 },
-    vingadoresTema:   { arquivo: 'assets/audio/SFX/segredos/vingadores-tema.mp3', volume: 0.65 },
-    vingadoresFala:   { arquivo: 'assets/audio/SFX/segredos/vingadores-fala.mp3', volume: 0.85 },
+   
+
+     // --- NO MAPA--
       pedraSecreta: { arquivo: 'assets/audio/SFX/segredos/pedra-secreta.mp3', volume: 0.9 },
 /*     unicornio:    { arquivo: 'assets/audio/SFX/segredos/temaunicornio.mp3', volume: 0.9 },
  */    unicornioTrilha:   { arquivo: 'assets/audio/SFX/segredos/unicornio.mp3', volume: 0.95, intervaloMinimo: 1.0 },
@@ -165,8 +165,21 @@ efeitos: {
     celeiroTema:     { arquivo: 'assets/audio/SFX/segredos/celeiro-tema.mp3', volume: 0.7 },
     tonyFala:        { arquivo: 'assets/audio/SFX/segredos/tony-fala.mp3', volume: 0.85 },
     furyFala:        { arquivo: 'assets/audio/SFX/segredos/fury-fala.mp3', volume: 0.85 },
-    cavernaTema:     { arquivo: 'assets/audio/SFX/segredos/caverna-tema.mp3', volume: 0.7 },
-    cavernaFala:     { arquivo: 'assets/audio/SFX/segredos/caverna-fala.mp3', volume: 0.85 },
+    cavernaTema:    { arquivo: 'assets/audio/SFX/segredos/caverna.mp3',    volume: 0.7 },
+    ultronFala:     { arquivo: 'assets/audio/SFX/segredos/ultron.mp3',     volume: 0.3 },
+    coringaFala:    { arquivo: 'assets/audio/SFX/segredos/coringa.mp3',    volume: 0.3 },
+    venomFala:      { arquivo: 'assets/audio/SFX/segredos/venom.mp3',      volume: 0.8 },
+    hulkFala:       { arquivo: 'assets/audio/SFX/segredos/hulk.mp3',       volume: 0.4 },
+    destinoFala:    { arquivo: 'assets/audio/SFX/segredos/drdestino.mp3',    volume: 0.2 },
+    batmanFala:     { arquivo: 'assets/audio/SFX/segredos/batman.mp3',     volume: 0.8 },
+    slendermanFala: { arquivo: 'assets/audio/SFX/segredos/slenderman.mp3', volume: 0.3 },
+    freddyFala:     { arquivo: 'assets/audio/SFX/segredos/freddy.mp3',     volume: 0.3 },
+
+    // --- 3 SONS ALEATÓRIOS PARA OS BALÕES DA CAVERNA ---
+    cavernaFala1:   { arquivo: 'assets/audio/SFX/segredos/cavernafala1.mp3',   volume: 0.3 },
+    cavernaFala2:   { arquivo: 'assets/audio/SFX/segredos/cavernafala2.mp3',   volume: 0.3 },
+    cavernaFala3:   { arquivo: 'assets/audio/SFX/segredos/cavernafala3.mp3',   volume: 0.3 },
+  
   },
   volumesIniciais: { musica: 0.5, animais: 0.7, cachoeira: 0.6, fonte: 0.6, trator: 0.5, riacho: 0.5, efeitos: 0.7 }
 };

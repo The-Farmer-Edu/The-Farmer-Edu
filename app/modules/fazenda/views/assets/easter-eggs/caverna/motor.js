@@ -13,12 +13,92 @@
   let tela = null, contexto = null, personagens = [], personagensDoFundo = [], personagensDaFrente = [];
   let ativo = false, pedidoDeQuadro = 0, ultimoInstante = 0, tempoDaCena = 0;
 
+  // Gesto executado quando o jogador clica em cada boneco
+  const GESTO_AO_CLICAR = {
+    batman: 'comunicador',
+    coringa: 'gargalhar',
+    destino: 'conjurar',
+    freddy: 'cantar',
+    hulk: 'rugir',
+    slenderman: 'tentaculos',
+    ultron: 'energia',
+    venom: 'lingua',
+  };
+
+  // Caixa de clique em coordenadas da cena (LARGURA x ALTURA) a partir de posição e origem do boneco
+  const caixaDoPersonagem = personagem => {
+    const def = personagem.definicao || {};
+    const largura = def.largura || 48;
+    const altura = def.altura || 60;
+    const origem = def.origem || [Math.round(largura / 2), altura];
+    const direcao = def.direcao || 1;
+    const cantoX = personagem.estado.x - (direcao < 0 ? largura - origem[0] : origem[0]);
+    const cantoY = personagem.estado.y - origem[1];
+    // Recorta as margens vazias laterais do canvas individual para o clique ser justo ao corpo
+    const folgaLateral = Math.round(largura * 0.22);
+    return {
+      x0: cantoX + folgaLateral,
+      x1: cantoX + largura - folgaLateral,
+      y0: cantoY + 4,
+      y1: cantoY + altura,
+    };
+  };
+
+  // Converte coordenadas da janela (clientX, clientY) para coordenadas internas da cena (0..LARGURA, 0..ALTURA)
+  const pontoNaCena = (clientX, clientY) => {
+    const ret = tela.getBoundingClientRect();
+    if (!ret.width || !ret.height) return null;
+    return [
+      ((clientX - ret.left) / ret.width) * LARGURA,
+      ((clientY - ret.top) / ret.height) * ALTURA,
+    ];
+  };
+
+  // Encontra o boneco mais à frente (maior Y) sob o cursor/toque
+  const personagemNoPonto = (cenaX, cenaY) => {
+    const ordenados = personagens.slice().sort((a, b) => b.estado.y - a.estado.y);
+    for (const p of ordenados) {
+      if (p.estado && p.estado.alfa !== undefined && p.estado.alfa < 0.15) continue;
+      const caixa = caixaDoPersonagem(p);
+      if (cenaX >= caixa.x0 && cenaX <= caixa.x1 && cenaY >= caixa.y0 && cenaY <= caixa.y1) {
+        return p;
+      }
+    }
+    return null;
+  };
+
+  const configurarInteracaoNosBonecos = () => {
+    tela.addEventListener('pointermove', evento => {
+      if (!ativo) return;
+      const pt = pontoNaCena(evento.clientX, evento.clientY);
+      const alvo = pt ? personagemNoPonto(pt[0], pt[1]) : null;
+      tela.style.cursor = alvo ? 'pointer' : '';
+    });
+
+    tela.addEventListener('pointerdown', evento => {
+      if (!ativo || !evento.isPrimary) return;
+      const pt = pontoNaCena(evento.clientX, evento.clientY);
+      if (!pt) return;
+      const alvo = personagemNoPonto(pt[0], pt[1]);
+      if (!alvo) return;
+
+      evento.stopPropagation();
+      if (typeof cavernaSecreta.tocarVozBoneco === 'function') {
+        cavernaSecreta.tocarVozBoneco(alvo.id);
+      }
+      const gesto = GESTO_AO_CLICAR[alvo.id];
+      if (gesto && typeof alvo.fazerGesto === 'function') {
+        alvo.fazerGesto(gesto);
+      }
+    });
+  };
+
   const desenharQuadro = segundosDoQuadro => {
     const inicio = performance.now();
     tempoDaCena += segundosDoQuadro;
     cavernaSecreta.cenario.atualizar(segundosDoQuadro, tempoDaCena);
     for (const personagem of personagens) personagem.atualizar(tempoDaCena);
-    if (cavernaSecreta.falas) cavernaSecreta.falas.atualizar(segundosDoQuadro, tempoDaCena);   // falas ocasionais (relógio da cena: só andam com a caverna aberta)
+    if (cavernaSecreta.falas) cavernaSecreta.falas.atualizar(segundosDoQuadro, tempoDaCena);
     contexto.globalCompositeOperation = 'source-over';
     contexto.globalAlpha = 1;
     cavernaSecreta.cenario.desenharFundo(contexto);
@@ -68,8 +148,9 @@
       personagensDoFundo = personagens.filter(personagem => personagem.estado.y <= cavernaSecreta.PLATAFORMA.y).sort(porProfundidade);
       personagensDaFrente = personagens.filter(personagem => personagem.estado.y > cavernaSecreta.PLATAFORMA.y).sort(porProfundidade);
       if (cavernaSecreta.falas) cavernaSecreta.falas.iniciar(tela.parentNode, tela, personagens);
+      configurarInteracaoNosBonecos();
       addEventListener('resize', ajustarTamanho);
-      desenharQuadro(0);   // primeiro quadro pronto antes da íris abrir
+      desenharQuadro(0);
     },
     retomar() {
       ajustarTamanho();
@@ -82,12 +163,12 @@
       if (pedidoDeQuadro) cancelAnimationFrame(pedidoDeQuadro);
       pedidoDeQuadro = 0;
       estatisticas.lacosAtivos = 0;
+      if (tela) tela.style.cursor = '';
       if (cavernaSecreta.falas) cavernaSecreta.falas.limpar();
     },
     ativo: () => ativo,
     personagens: () => personagens,
     tempo: () => tempoDaCena,
-    // testes: avança a cena alguns segundos sem o laço (passos de 1/60 s) e desenha
     avancar(segundos) { for (let decorrido = 0; decorrido < segundos; decorrido += 1 / 60) desenharQuadro(1 / 60); },
     ajustarTamanho,
   };

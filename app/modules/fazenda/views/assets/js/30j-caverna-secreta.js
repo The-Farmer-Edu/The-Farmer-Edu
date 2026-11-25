@@ -1,15 +1,6 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 30j-caverna-secreta.js (EDIÇÃO PESSOAL: a caverna secreta dos personagens)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA), depois da seção 30i e antes do loop.
-      // ====================================================================================================
-      // Clicar na BOCA DA CAVERNA (a entrada natural no morro a noroeste, a mesma dos trilhos da mina — seção 11a) leva a uma
-      // cena 2D em pixel art: um esconderijo subterrâneo onde oito personagens existem e se mexem, SEM diálogos.
-      // Esta seção é só a PORTA, no mesmo molde da cena do celeiro (seção 30i, da qual reaproveita a íris, a suspensão da
-      // Fazenda e a pausa dos sons, sem alterá-la): alvo de clique, condições, transições e carregamento sob demanda. A cena
-      // (sprites, cenário, personagens, luz e o laço próprio) fica em views/assets/easter-eggs/caverna/ e só é baixada na
-      // PRIMEIRA entrada (usa também easter-eggs/vingadores/pixel.js, as ferramentas de pixel art do celeiro).
-      // Estado preservado: diferente do celeiro, a Fazenda fica suspensa ANTES da íris fechar e só volta DEPOIS da íris abrir
-      // (as íris passam sobre o último quadro desenhado): o tempo do jogo não anda nada durante a visita, nem nas transições.
       // ====================================================================================================
       const CAVERNA_SECRETA_CONFIG = {
         ativa: true,
@@ -20,9 +11,9 @@
           'caverna/personagens/ultron.js', 'caverna/personagens/coringa.js', 'caverna/personagens/venom.js', 'caverna/personagens/hulk.js',
           'caverna/personagens/destino.js', 'caverna/personagens/batman.js', 'caverna/personagens/slenderman.js', 'caverna/personagens/freddy.js', 'caverna/falas.js',
           'caverna/motor.js'],
-        personagens: [],   // os oito são bonecos articulados desenhados por código (personagens/boneco.js): nenhum atlas de sprite a baixar
+        personagens: [],
       };
-      const CAVERNA_SECRETA = { estado: 'fechada', carregamento: null, centroDaEntrada: null, entradas: 0 };   // fechada | abrindo | aberta | fechando
+      const CAVERNA_SECRETA = { estado: 'fechada', carregamento: null, centroDaEntrada: null, entradas: 0 };
 
       // ---- elementos (criados aqui: o HTML da equipe não muda). Nenhum texto dentro da cena: só o botão de volta. ----
       const camadaDaCaverna = document.createElement('div'); camadaDaCaverna.id = 'caverna-secreta'; camadaDaCaverna.hidden = true;
@@ -32,20 +23,22 @@
       document.body.appendChild(camadaDaCaverna);
 
       // ---- endereço dos arquivos (servidor PHP → rota fazenda/arquivo; file:// → pasta), relativo a assets/easter-eggs/ ----
-      const enderecoDaCaverna = function enderecoDaCaverna(caminho) {
+      const enderecoDaCaverna = function enderecoDaCaverna(caminho, semCache) {
         const endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL || location.href);
-        if (endereco.protocol === 'file:' || !ENDERECO_DO_SCRIPT_PRINCIPAL) return new URL('../easter-eggs/' + caminho, endereco).href;
+        const sufixo = semCache ? (caminho.includes('?') ? '&' : '?') + 'v=' + Date.now() : '';
+        if (endereco.protocol === 'file:' || !ENDERECO_DO_SCRIPT_PRINCIPAL) return new URL('../easter-eggs/' + caminho + sufixo, endereco).href;
         const partes = ('easter-eggs/' + caminho).split('/'), arquivo = partes.pop();
-        return new URL('arquivo?type=' + encodeURIComponent(partes.join('/')) + '&file=' + encodeURIComponent(arquivo), endereco).href;
+        return new URL('arquivo?type=' + encodeURIComponent(partes.join('/')) + '&file=' + encodeURIComponent(arquivo) + (semCache ? '&v=' + Date.now() : ''), endereco).href;
       };
+
       // Baixa os arquivos UMA vez (em ordem), depois os PNGs dos sprites, e prepara a cena; chamadas seguintes reutilizam.
       const carregarCavernaSecreta = function carregarCavernaSecreta() {
         if (CAVERNA_SECRETA.carregamento) return CAVERNA_SECRETA.carregamento;
-        if (!document.querySelector('link[data-fonte-do-celeiro]')) { const fonte = document.createElement('link'); fonte.rel = 'stylesheet'; fonte.href = CENA_DO_CELEIRO_CONFIG.fonte; fonte.dataset.fonteDoCeleiro = '1'; document.head.appendChild(fonte); }   // fonte pixelada dos balões de fala (a mesma do celeiro)
+        if (!document.querySelector('link[data-fonte-do-celeiro]')) { const fonte = document.createElement('link'); fonte.rel = 'stylesheet'; fonte.href = CENA_DO_CELEIRO_CONFIG.fonte; fonte.dataset.fonteDoCeleiro = '1'; document.head.appendChild(fonte); }
         const scripts = (window.CenaDoCeleiro && window.CenaDoCeleiro.pixel ? [] : ['vingadores/pixel.js']).concat(CAVERNA_SECRETA_CONFIG.arquivos);
         (window.CavernaSecreta = window.CavernaSecreta || {}).endereco = enderecoDaCaverna;
         CAVERNA_SECRETA.carregamento = scripts.reduce((anterior, caminho) => anterior.then(() => new Promise((resolver, rejeitar) => {
-          const script = document.createElement('script'); script.src = enderecoDaCaverna(caminho); script.async = false;
+          const script = document.createElement('script'); script.src = enderecoDaCaverna(caminho, true); script.async = false;
           script.onload = resolver; script.onerror = () => rejeitar(new Error('arquivo da caverna não carregou: ' + caminho));
           document.head.appendChild(script);
         })), Promise.resolve())
@@ -55,8 +48,7 @@
         return CAVERNA_SECRETA.carregamento;
       };
 
-      // ---- alvo de clique: a abertura em arco da boca da caverna (mesmo contorno da seção 11a), um pouco à frente da rocha ----
-      // Não entra na cena 3D (não é desenhado): só serve ao raio do clique. Nada do mapa muda de lugar.
+      // ---- alvo de clique: a abertura em arco da boca da caverna ----
       const alvoDaCaverna = (() => {
         const meiaLargura = 1.35, alturaDaParede = 1.15, pontos = [new THREE.Vector2(meiaLargura, 0)];
         for (let passo = 0; passo <= 18; passo++) { const angulo = passo / 18 * Math.PI; pontos.push(new THREE.Vector2(Math.cos(angulo) * meiaLargura, alturaDaParede + Math.sin(angulo) * meiaLargura)); }
@@ -66,8 +58,8 @@
         entradaDaCaverna.updateMatrixWorld(true); malha.matrixAutoUpdate = false; malha.matrixWorld.copy(entradaDaCaverna.matrixWorld);
         return malha;
       })();
-      // Pista discreta: lá no fundo do túnel, um brilho fraco que muda de cor devagar (vermelho, verde, roxo, âmbar) — quem
-      // olha a boca da caverna percebe que há algo lá dentro, sem placa nem texto. Material próprio, sem névoa nem ciclo do dia.
+
+      // Pista discreta no fundo do túnel
       const pistaDaCaverna = (() => {
         const material = new THREE.MeshBasicMaterial({ color: 0xff3322, transparent: true, opacity: 0.0, depthWrite: false, fog: false, blending: THREE.AdditiveBlending });
         material.userData.ignorarCiclo = true;
@@ -82,9 +74,8 @@
         entradaDaCaverna.add(malha);
         return malha;
       })();
+
       const raioDaCaverna = new THREE.Raycaster(), pontoDaCaverna = new THREE.Vector2();
-      // Verdadeiro se o raio acerta a abertura e NADA clicável está na frente dela (pórtico/carrinho da mina, Guardião, pedra).
-      // A seção 23 (clique na mina) consulta esta função para não abrir o painel da mina quando o clique é na boca da caverna.
       const raioAcertaAEntradaDaCaverna = function raioAcertaAEntradaDaCaverna(raio) {
         if (!CAVERNA_SECRETA_CONFIG.ativa) return false;
         const acerto = raio.intersectObject(alvoDaCaverna, false)[0]; if (!acerto) return false;
@@ -101,11 +92,93 @@
 
       // ---- condições para entrar (vazio = pode) ----
       const motivoParaNaoEntrarNaCaverna = function motivoParaNaoEntrarNaCaverna() {
-        if (!CAVERNA_SECRETA_CONFIG.ativa || CAVERNA_SECRETA.estado !== 'fechada' || CENA_DO_CELEIRO.estado !== 'fechada') return 'ocupado';
+        if (!CAVERNA_SECRETA_CONFIG.ativa || CENA_DO_CELEIRO.estado !== 'fechada' || CAVERNA_SECRETA.estado !== 'fechada') return 'ocupado';
         if (INVASAO_EM_CURSO.fase !== 'nenhuma') return 'Agora não: há uma invasão acontecendo lá fora!';
         try { if (eventoEspecialEmAndamento()) return 'cena especial'; } catch (erro) { }
         for (const seletor of ['#tutorial', '#painel-do-guardiao', '#janela-nome-da-fazenda', '#janela-defesa', '#tela-de-carregamento']) { const elemento = document.querySelector(seletor); if (elemento && !elemento.hidden) return seletor; }
         return '';
+      };
+
+      // ---- controle de áudio da cena da caverna ----
+      const MAPA_VOZES_CAVERNA = {
+        ultron: 'ultronFala',
+        coringa: 'coringaFala',
+        venom: 'venomFala',
+        hulk: 'hulkFala',
+        destino: 'destinoFala',
+        drdestino: 'destinoFala',
+        batman: 'batmanFala',
+        slenderman: 'slendermanFala',
+        slender: 'slendermanFala',
+        freddy: 'freddyFala',
+      };
+      const CHAVES_BALOES_CAVERNA = ['cavernaFala1', 'cavernaFala2', 'cavernaFala3'];
+      let ultimoSomBalao = '';
+
+      const dispararChaveAudioCaverna = function dispararChaveAudioCaverna(chave) {
+        const fonte = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos[chave];
+        const cfg = AUDIO_CONFIG && AUDIO_CONFIG.segredos && AUDIO_CONFIG.segredos[chave];
+        if (!fonte || !cfg) { console.warn('[Caverna] Chave de áudio não registrada em 02b-configuracao-dos-audios.js:', chave); return; }
+        if (!ESTADO_DO_AUDIO.efeitos.ligado) return;
+        ESTADO_DO_AUDIO.liberado = true;
+        if (fonte.estado === 'erro') reiniciarFonteDeSom(fonte);
+        fonte.el.muted = ESTADO_DO_AUDIO.silenciado;
+        try { fonte.el.currentTime = 0; } catch (e) { }
+        tocarSom(fonte, limitarVolume(ESTADO_DO_AUDIO.efeitos.volume * cfg.volume));
+      };
+
+      // Voz exclusiva ao clicar em um personagem
+      const tocarVozBonecoCaverna = function tocarVozBonecoCaverna(id) {
+        const chave = MAPA_VOZES_CAVERNA[String(id || '').toLowerCase()] || (id + 'Fala');
+        for (const outraChave of new Set(Object.values(MAPA_VOZES_CAVERNA))) {
+          const f = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos[outraChave];
+          if (f) pararSom(f);
+        }
+        dispararChaveAudioCaverna(chave);
+      };
+
+      // Um dos 3 sons genéricos sorteado aleatoriamente para os balões de fala
+      const tocarSomBalaoCaverna = function tocarSomBalaoCaverna() {
+        const opcoes = CHAVES_BALOES_CAVERNA.filter(c => c !== ultimoSomBalao);
+        const escolhida = opcoes[Math.floor(Math.random() * opcoes.length)] || CHAVES_BALOES_CAVERNA[0];
+        ultimoSomBalao = escolhida;
+        dispararChaveAudioCaverna(escolhida);
+      };
+
+      const pararSonsBalaoCaverna = function pararSonsBalaoCaverna() {
+        for (const chave of CHAVES_BALOES_CAVERNA) {
+          const f = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos[chave];
+          if (f) pararSom(f);
+        }
+      };
+
+      window.CavernaSecreta = window.CavernaSecreta || {};
+      window.CavernaSecreta.tocarVozBoneco = tocarVozBonecoCaverna;
+      window.CavernaSecreta.tocarSomBalao = tocarSomBalaoCaverna;
+      window.CavernaSecreta.pararSonsBalao = pararSonsBalaoCaverna;
+
+      const tocarMusicaDaCaverna = function tocarMusicaDaCaverna() {
+        const fonte = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos.cavernaTema;
+        const cfg = AUDIO_CONFIG && AUDIO_CONFIG.segredos && AUDIO_CONFIG.segredos.cavernaTema;
+        if (!fonte || !cfg) { console.warn('[Caverna] "cavernaTema" não registrado em 02b-configuracao-dos-audios.js'); return; }
+        if (!ESTADO_DO_AUDIO.musica.ligado) return;
+        ESTADO_DO_AUDIO.liberado = true;
+        if (fonte.estado === 'erro') reiniciarFonteDeSom(fonte);
+        fonte.el.loop = true;
+        fonte.el.muted = ESTADO_DO_AUDIO.silenciado;
+        try { fonte.el.currentTime = 0; } catch (e) { }
+        tocarSom(fonte, limitarVolume(ESTADO_DO_AUDIO.musica.volume * cfg.volume));
+      };
+
+      const pararMusicaDaCaverna = function pararMusicaDaCaverna() {
+        const fonte = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos.cavernaTema;
+        if (fonte) fonte.el.loop = false;
+        pararSegredo('cavernaTema');
+        pararSonsBalaoCaverna();
+        for (const chave of new Set(Object.values(MAPA_VOZES_CAVERNA))) {
+          const f = FONTES_DE_SOM && FONTES_DE_SOM.segredos && FONTES_DE_SOM.segredos[chave];
+          if (f) pararSom(f);
+        }
       };
 
       // ---- entrar e sair ----
@@ -117,11 +190,12 @@
         CAVERNA_SECRETA.estado = 'abrindo'; CAVERNA_SECRETA.entradas++;
         registrarAtividade(); fecharPainelDaEstrutura && fecharPainelDaEstrutura(false);
         CAVERNA_SECRETA.centroDaEntrada = centroDaEntradaNaTela();
-        suspenderFazendaPelaCaverna();                                      // o tempo da Fazenda para JÁ (a íris passa sobre o último quadro)
-        const carregando = carregarCavernaSecreta();                         // começa a baixar enquanto a íris fecha
+        suspenderFazendaPelaCaverna();
+        tocarMusicaDaCaverna();
+        const carregando = carregarCavernaSecreta();
         await animarIris(CAVERNA_SECRETA.centroDaEntrada, 1, 0, CAVERNA_SECRETA_CONFIG.segundosDaIrisFechando);
         try { await carregando; }
-        catch (erro) { await animarIris(CAVERNA_SECRETA.centroDaEntrada, 0, 1, 0.6); irisDoCeleiro.hidden = true; retomarFazendaDepoisDaCaverna(); CAVERNA_SECRETA.estado = 'fechada'; mostrarAviso('Não foi possível abrir a caverna agora.'); return false; }
+        catch (erro) { pararMusicaDaCaverna(); await animarIris(CAVERNA_SECRETA.centroDaEntrada, 0, 1, 0.6); irisDoCeleiro.hidden = true; retomarFazendaDepoisDaCaverna(); CAVERNA_SECRETA.estado = 'fechada'; mostrarAviso('Não foi possível abrir a caverna agora.'); return false; }
         camadaDaCaverna.hidden = false; document.body.classList.add('dentro-da-caverna');
         window.CavernaSecreta.motor.retomar();
         const retanguloDaCena = selecionar('#tela-da-caverna').getBoundingClientRect();
@@ -133,17 +207,17 @@
       const sairDaCaverna = async function sairDaCaverna() {
         if (CAVERNA_SECRETA.estado !== 'aberta') return false;
         CAVERNA_SECRETA.estado = 'fechando';
+        pararMusicaDaCaverna();
         const retanguloDaCena = selecionar('#tela-da-caverna').getBoundingClientRect();
         await animarIris([retanguloDaCena.left + retanguloDaCena.width * 0.5, retanguloDaCena.top + retanguloDaCena.height * 0.55], 1, 0, CAVERNA_SECRETA_CONFIG.segundosDaIrisNaVolta);
         window.CavernaSecreta.motor.suspender();
         camadaDaCaverna.hidden = true; document.body.classList.remove('dentro-da-caverna');
-        renderizador.render(cena, camera);                                    // só redesenha (sem simular): vale se a janela mudou de tamanho
+        renderizador.render(cena, camera);
         await animarIris(centroDaEntradaNaTela(), 0, 1, CAVERNA_SECRETA_CONFIG.segundosDaIrisFechando);
         irisDoCeleiro.hidden = true; retomarFazendaDepoisDaCaverna(); CAVERNA_SECRETA.estado = 'fechada';
         return true;
       };
       selecionar('#sair-da-caverna').addEventListener('click', () => { sairDaCaverna(); });
-      // teclado: enquanto a caverna (ou uma transição dela) está na tela, nenhuma tecla chega à Fazenda; Esc sai
       const teclasDaCaverna = evento => {
         if (CAVERNA_SECRETA.estado === 'fechada') return;
         if (evento.type === 'keydown' && evento.key === 'Escape') sairDaCaverna();
@@ -151,7 +225,7 @@
       };
       addEventListener('keydown', teclasDaCaverna, true); addEventListener('keyup', teclasDaCaverna, true);
 
-      // ---- clique na boca da caverna: toque curto (sem arrastar a câmera) ----
+      // ---- clique na boca da caverna ----
       let toqueNaCaverna = null;
       canvas.addEventListener('pointerdown', evento => { toqueNaCaverna = evento.isPrimary ? { x: evento.clientX, y: evento.clientY, instante: performance.now() } : null; });
       canvas.addEventListener('pointerup', evento => {
@@ -164,4 +238,4 @@
       });
       Object.assign(window, { farmEduCaverna: { entrar: entrarNaCaverna, sair: sairDaCaverna, estado: () => CAVERNA_SECRETA.estado, motivo: motivoParaNaoEntrarNaCaverna, centro: centroDaEntradaNaTela, acertaEntrada: raioAcertaAEntradaDaCaverna, pista: pistaDaCaverna } });
 
-      arquivoDaMontagemConcluido('30j-caverna-secreta.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim
+      arquivoDaMontagemConcluido('30j-caverna-secreta.js');

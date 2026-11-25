@@ -217,10 +217,8 @@ function iniciarSophia() {
 
 
         // --------------------------------------------------------------
-        if (typeof atualizarBotoes === 'function') {
-            usosSophia = (usosSophia || 0) + 1;
-            atualizarBotoes();
-        }
+        // Conta o uso e grava no navegador (função definida em iniciaratv.js).
+        if (typeof registrarUsoSophia === 'function') registrarUsoSophia();
 
         ajuda.analisando = true;
         ajuda.assinatura = typeof assinaturaDoCodigo === 'function' ? assinaturaDoCodigo() : '';

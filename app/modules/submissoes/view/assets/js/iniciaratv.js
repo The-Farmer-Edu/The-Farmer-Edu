@@ -9,7 +9,6 @@ const LIMITE_CANCELAMENTOS = 3;
 const ID_LINGUAGEM_PYTHON = 71;
 const CONSULTA_CELULAR = '(max-width: 780px)';
 const LIMITE_SOPHIA = 10;
-let usosSophia = 0;
 
 /**
  * Regras de destaque por linguagem.
@@ -55,6 +54,16 @@ const botaoFecharEditor = porId('fecharEditor');
 const CHAVE_CODIGO = `farmedu:codigo:${atividadeAtual.chave}:${linguagemAtual.id}`;
 const CHAVE_ENTREGA = `farmedu:entrega:${atividadeAtual.chave}`;
 const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${atividadeAtual.chave}`;
+const CHAVE_EXECUCOES = `farmedu:execucoes:${atividadeAtual.chave}`;
+const CHAVE_SOPHIA = `farmedu:sophia:${atividadeAtual.chave}`;
+
+// Contadores de limite gravados no navegador, por atividade, para sobreviverem ao refresh.
+function lerContador(chave) {
+    try { return Number(localStorage.getItem(chave)) || 0; } catch (erro) { return 0; }
+}
+function gravarContador(chave, valor) {
+    try { localStorage.setItem(chave, String(valor)); } catch (erro) { }
+}
 
 /*
  * Estado da página.
@@ -92,7 +101,15 @@ let arquivoAtual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
 let executadoAtual = false;
 let executando = false;
-let usosExecutar = 0;
+let usosExecutar = lerContador(CHAVE_EXECUCOES);
+let usosSophia = lerContador(CHAVE_SOPHIA);
+
+// Chamado pelo sophia.js a cada consulta à Sophia.
+function registrarUsoSophia() {
+    usosSophia++;
+    gravarContador(CHAVE_SOPHIA, usosSophia);
+    atualizarBotoes();
+}
 
 /* Utilitários */
 const ehCelular = () => window.matchMedia(CONSULTA_CELULAR).matches;
@@ -417,7 +434,7 @@ async function executar(opcoes = {}) {
 function atualizarBotoes() {
     porId('btnRodar').disabled = atividadeAtual.vazia || executando || usosExecutar >= LIMITE_EXECUCOES;
     porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
-    porId('btnSophia').disabled = atividadeAtual.vazia;
+    porId('btnSophia').disabled = atividadeAtual.vazia || usosSophia >= LIMITE_SOPHIA;
     atualizarEntrega();
 }
 
@@ -459,6 +476,7 @@ porId('btnLimpar').onclick = () => { consoleCorpo.innerHTML = ''; };
 porId('btnRodar').onclick = () => {
     if (porId('btnRodar').disabled) return;
     usosExecutar++;
+    gravarContador(CHAVE_EXECUCOES, usosExecutar);
     atualizarContadores();
     executar({ focar: true });
 };

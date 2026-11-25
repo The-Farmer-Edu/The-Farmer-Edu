@@ -73,15 +73,15 @@
 
     </main>
 
-    <!-- Rodapé com mascote: o balão de conversa aparece conforme o JS muda o texto. -->
-    <footer>
-        <div class="mascote-container">
-            <div class="balao" id="balao"></div>
-            <button id="btnGalinha">
-                <img src="file?type=img&file=galinha.png" alt="Mascote" width="200" height="200">
-            </button>
-        </div>
-    </footer>
+<!-- Rodapé com o botão de acesso à fazenda. -->
+<footer>
+    <div class="acesso-fazenda">
+        <button id="btnFazenda" class="btn-acessar-fazenda" type="button"
+                title="Acessar a fazenda" aria-label="Acessar a fazenda">
+            <img src="file?type=img&file=icone-acesso-fazenda.png" alt="">
+        </button>
+    </div>
+</footer>
 
     <!-- JSON serializado no HTML: o JavaScript usa esse bloco para montar a tela sem outra requisição. -->
     <script type="application/json"

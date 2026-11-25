@@ -4,6 +4,18 @@
  * Esse módulo recebe o objeto global `FarmAtividade` montado por `atividade.js` e o usa para
  * preencher os campos da tela com título, descrição, linguagem e requisitos.
  */
+/*
+ * Botão de acesso à fazenda (rodapé).
+ * Fica no topo para ser registrado mesmo que o resto da página dê erro.
+ */
+const ROTA_FAZENDA = '../fazenda'; // TROCAR pela rota real da fazenda
+
+const botaoFazenda = document.getElementById('btnFazenda');
+if (botaoFazenda) {
+    botaoFazenda.addEventListener('click', () => {
+        location.href = ROTA_FAZENDA;
+    });
+}
 const atividadeAtual = window.FarmAtividade;
 
 function renderizarAtividade() {

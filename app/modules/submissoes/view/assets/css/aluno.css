@@ -406,25 +406,45 @@ aside {
     color: #000;
 }
 
-.mascote-container {
+
+/* Botão de acesso à fazenda */
+.acesso-fazenda {
     display: flex;
-    justify-content: right;
-    margin-top: -15px;
+    justify-content: flex-end;
+    padding: 0 24px 24px;
 }
 
-.mascote-container button {
-    border: none;
-    background: none;
-    border-radius: 50%;
+.btn-acessar-fazenda {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px;
+    background: #8d4b20;
+    border: 4px solid #5d2e13;
+    border-radius: 6px;
+    color: #ffe0a3;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    image-rendering: pixelated;
+    box-shadow: 0 5px 0 #3e210f;
+    transition: transform 0.15s;
 }
 
-.mascote-container button:hover {
-    transform: scale(0.93);
+.btn-acessar-fazenda img {
+    width: 60px;
+    height: 60px;
+    image-rendering: pixelated;
 }
 
-.mascote-container img {
-    -webkit-filter: drop-shadow(8px 8px 5px var(--Sombra));
-    filter: drop-shadow(8px 8px 5px var(--Sombra));
+.btn-acessar-fazenda:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.15);
+}
+
+.btn-acessar-fazenda:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #3e210f;
 }
 
 .modal-overlay {
@@ -614,6 +634,9 @@ aside {
         top: 66px;
         width: min(240px, calc(100vw - 24px));
     }
+    .acesso-fazenda {
+        padding: 0 12px 12px;
+    }
 
     .menu-iconi {
         left: 12px;
@@ -679,15 +702,6 @@ aside {
 
     .tech-badges {
         flex-wrap: wrap;
-    }
-
-    .mascote-container {
-        padding: 0 12px 12px;
-    }
-
-    .mascote-container img {
-        width: 96px;
-        height: 96px;
     }
 
     .modal-options {

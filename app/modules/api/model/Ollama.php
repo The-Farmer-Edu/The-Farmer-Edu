@@ -50,12 +50,7 @@
 
             // 2. Ollama indisponível, offline ou com erro:
             // Disparar Wake-on-LAN para ligar a máquina do servidor Ollama
-            $config = new InitConfig();
-            $wolMac = $config->wolMac ?? null;
-            if ($wolMac) {
-                require_once __DIR__ . '/WakeOnLan.php';
-                \WakeOnLan::send($wolMac);
-            }
+            
 
             // 3. Fallback para Google Gemini
             $geminiApiKey = $config->geminiApiKey ?? null;
@@ -126,6 +121,15 @@
 
             return "A IA não conseguiu gerar um feedback. Ollama indisponível (HTTP: $httpCodeOllama | $error). Fallback Gemini falhou: $lastGeminiError";
         }
+
+        public static function wakeOnLan(){
+            $config = new InitConfig();
+            $wolMac = $config->wolMac ?? null;
+            if ($wolMac) {
+                require_once __DIR__ . '/WakeOnLan.php';
+                \WakeOnLan::send($wolMac);
+            }
+        } 
     }
 
     class Sophia extends Ollama {

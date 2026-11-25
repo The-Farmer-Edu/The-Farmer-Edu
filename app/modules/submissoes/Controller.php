@@ -60,24 +60,38 @@ class atividadesSub {
      * Lê ?id= da URL e busca a atividade no banco.
      * Sem id válido ou sem registro, devolve null (a tela fica vazia e bloqueada).
      */
-    private function carregarAtividade(): ?array {
-        $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
-        if (!$id || $id < 1) return null;
+private function carregarAtividade(): ?array {
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || $id < 1) return null;
 
-        try {
-            if(isset($_GET['id_aluno'])){
-                solicitarPerfilDeAcesso('instrutor');
-                    
-            } else {
-                solicitarPerfilDeAcesso('aluno');
-            }
-            // só esta linha (antes: ->dadosParaView($id);)
-            return (new SubmissoesModel())->dadosParaView($id, $this->idAlunoDaRequisicao());
-        } catch (Throwable $e) {
-            error_log('[submissoes] ' . $e->getMessage());
-            return null;
+    try {
+        if (isset($_GET['id_aluno'])) {
+            solicitarPerfilDeAcesso('instrutor');
+
+            // NOVO: validações do acesso do instrutor
+            $idAlunoUrl = filter_var($_GET['id_aluno'], FILTER_VALIDATE_INT);
+            if (!$idAlunoUrl || $idAlunoUrl < 1) return null;
+
+            $model = new SubmissoesModel();
+            $atividade = $model->buscarAtividade($id);
+            if (!$atividade) return null;
+
+            $idTurma = (int) $atividade['id_turma'];
+            if (!$model->instrutorDaTurma($this->idUsuarioLogado(), $idTurma)) return null;
+            if (!$model->alunoMatriculado($idAlunoUrl, $idTurma)) return null;
+
+            $dados = $model->dadosParaView($id, $idAlunoUrl);
+            if ($dados) $dados['modoInstrutor'] = true; // o JS usa isso para abrir somente leitura
+            return $dados;
+        } else {
+            solicitarPerfilDeAcesso('aluno');
         }
+        return (new SubmissoesModel())->dadosParaView($id, $this->idAlunoDaRequisicao());
+    } catch (Throwable $e) {
+        error_log('[submissoes] ' . $e->getMessage());
+        return null;
     }
+}
 
     // descobre o id do usuário logado, tentando as chaves de sessão mais comuns.
     // Se nenhuma existir, grava a sessão no log do PHP para descobrir o nome real da chave.

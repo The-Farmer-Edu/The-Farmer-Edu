@@ -106,6 +106,13 @@ class SubmissoesModel
         }
         return $dados;
     }
+    // o instrutor é responsável pela turma?
+    public function instrutorDaTurma(int $idInstrutor, int $idTurma): bool
+{
+    $st = $this->pdo->prepare('SELECT 1 FROM turmas WHERE id_turma = ? AND id_instrutor = ? LIMIT 1');
+    $st->execute([$idTurma, $idInstrutor]);
+    return (bool) $st->fetchColumn();
+}
 
     public function alunoMatriculado(int $idAluno, int $idTurma): bool
     {

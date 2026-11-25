@@ -68,10 +68,23 @@ try {
 } catch (erro) {
     dadosDosArquivos = { ...linguagemAtual.inicial };
 }
+// instrutor vendo a resolução de um aluno (vem do banco, não do localStorage)
+const MODO_INSTRUTOR = !!atividadeAtual.modoInstrutor;
+if (MODO_INSTRUTOR) {
+    const submissao = atividadeAtual.submissao;
+    const conteudo = submissao ? submissao.conteudo : '';
+    if (ARQUIVOS.length === 1) {
+        dadosDosArquivos = { ...linguagemAtual.inicial, [ARQUIVOS[0].lang]: conteudo };
+    } else {
+        try { dadosDosArquivos = { ...linguagemAtual.inicial, ...JSON.parse(conteudo) }; }
+        catch (erro) { dadosDosArquivos = { ...linguagemAtual.inicial }; }
+    }
+}
 if (atividadeAtual.vazia) ARQUIVOS.forEach(arquivo => { dadosDosArquivos[arquivo.lang] = ''; });
 
 let entrega = null;
 try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) { }
+if (MODO_INSTRUTOR) entrega = null; // a entrega guardada no navegador não vale para o instrutor
 let cancelamentos = 0;
 try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) { }
 
@@ -490,13 +503,25 @@ function aplicarModoTexto() {
     editorTexto.placeholder = 'Escreva sua resposta aqui...';
     editorTexto.setAttribute('aria-label', 'Editor de texto');
 }
-
+// instrutor só visualiza (sem executar, entregar nem Sophia)
+function aplicarModoInstrutor() {
+    if (!MODO_INSTRUTOR) return;
+    porId('btnRodar').hidden = true;
+    porId('btnEntregar').hidden = true;
+    document.querySelector('.sophia').hidden = true;
+    porId('contadorLimite').hidden = true;
+    editorTexto.readOnly = true;
+    if (!atividadeAtual.submissao) {
+        editorTexto.placeholder = 'Este aluno ainda não enviou resolução para esta atividade.';
+    }
+}
 function iniciarPagina() {
     aplicarModoTexto();
+    aplicarModoInstrutor(); // NOVO
     atualizarBotoes();
     setInterval(atualizarEntrega, 30000);
     trocar(arquivoAtual);
-    if (!atividadeAtual.vazia) {
+    if (!atividadeAtual.vazia && !MODO_INSTRUTOR) { // ALTERADO: + && !MODO_INSTRUTOR
         setTimeout(() => sophiaFala('Oi, sou a Sophia! Estou aqui para ajudar. Se precisar, é só clicar em mim.', 6000), 600);
     }
 }

@@ -19,7 +19,7 @@ function atualizarEntrega() {
     const prazoEncerrado = atividadeAtual.prazoExcedido();
     const entregaFinal = entregue && cancelamentos >= LIMITE_CANCELAMENTOS;
 
-    editorTexto.readOnly = entregue || prazoEncerrado || atividadeAtual.vazia;
+   editorTexto.readOnly = entregue || prazoEncerrado || atividadeAtual.vazia || MODO_INSTRUTOR;
 
     porId('chipEntrega').hidden = !entregue;
     if (entregue) porId('chipEntrega').textContent = '✔ Entregue em ' + atividadeAtual.formatarDataHora(entrega.data);

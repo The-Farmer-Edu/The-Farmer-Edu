@@ -171,7 +171,7 @@ CREATE TABLE submissoes (
   conteudo_resposta    LONGTEXT       NULL,
   caminho_arquivo VARCHAR(255)  NULL,
   tentativa_num        INT UNSIGNED  NOT NULL DEFAULT 1,
-  status               ENUM('enviada', 'processando', 'corrigida', 'erro') NOT NULL DEFAULT 'enviada',
+  status               ENUM('enviada', 'processando', 'corrigida', 'erro', 'cancelado') NOT NULL DEFAULT 'enviada',
   resultado_execucao   TEXT          NULL,     -- stdout/stderr/veredito retornados pelo Judge0
   data_envio           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_submissoes_atividade

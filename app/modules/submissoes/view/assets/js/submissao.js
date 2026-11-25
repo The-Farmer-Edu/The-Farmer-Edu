@@ -84,9 +84,62 @@ async function iniciarEntrega() {
     abrirModalEntrega();
 }
 
-function confirmarEntrega() {
+// monta o texto que será gravado em submissoes.conteudo_resposta
+// - atividade de texto ou linguagem com 1 arquivo: o próprio conteúdo
+// - atividade Web (html/css/js): os 3 arquivos em JSON
+function montarConteudoResposta() {
+    if (ARQUIVOS.length === 1) return dadosDosArquivos[ARQUIVOS[0].lang] || '';
+    return JSON.stringify(dadosDosArquivos);
+}
+
+// envia a resolução ao servidor (rota salvarResolucao)
+// Com diagnóstico: mostra no console (F12) o status e a resposta crua do servidor.
+async function salvarResolucaoNoBanco() {
+    try {
+        const resposta = await fetch('salvarResolucao', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_atividade: atividadeAtual.id,
+                conteudo: montarConteudoResposta()
+            })
+        });
+
+        const textoBruto = await resposta.text();
+        console.log('STATUS:', resposta.status, '| RESPOSTA:', textoBruto);
+
+        let resultado;
+        try {
+            resultado = JSON.parse(textoBruto);
+        } catch (erro) {
+            aviso('O servidor não devolveu JSON (status ' + resposta.status + ')');
+            return false;
+        }
+
+        if (!resultado.sucesso) {
+            aviso(resultado.erro || 'Não foi possível salvar a entrega');
+            return false;
+        }
+        return true;
+    } catch (erro) {
+        console.error(erro);
+        aviso('Erro de conexão ao salvar a entrega');
+        return false;
+    }
+}
+
+//agora é async e só marca como entregue se o banco confirmar
+async function confirmarEntrega() {
     if (atividadeAtual.prazoExcedido()) { fecharModalEntrega(); return aviso('O prazo de entrega acabou'); }
     salvar();
+
+    // grava no banco antes de marcar como entregue
+    const botao = porId('btnConfirmar');
+    botao.disabled = true;
+    const salvou = await salvarResolucaoNoBanco();
+    botao.disabled = false;
+    if (!salvou) return; // mantém o modal aberto para tentar de novo
+
     entrega = {
         data: new Date().toISOString(),
         atividadeId: atividadeAtual.id,

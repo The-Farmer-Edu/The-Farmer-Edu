@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/Model.php';
+require_once __DIR__ . '/../../core/session.php';
 // require_once __DIR__ . '../api/model/Ollama.php';
 // require_once __DIR__ . '../feedback_ia/model.php';
 
@@ -64,12 +65,58 @@ class atividadesSub {
         if (!$id || $id < 1) return null;
 
         try {
-            return (new SubmissoesModel())->dadosParaView($id);
+            if(isset($_GET['id_aluno'])){
+                solicitarPerfilDeAcesso('instrutor');
+                    
+            } else {
+                solicitarPerfilDeAcesso('aluno');
+            }
+            // só esta linha (antes: ->dadosParaView($id);)
+            return (new SubmissoesModel())->dadosParaView($id, $this->idAlunoDaRequisicao());
         } catch (Throwable $e) {
             error_log('[submissoes] ' . $e->getMessage());
             return null;
         }
     }
+
+    // descobre o id do usuário logado, tentando as chaves de sessão mais comuns.
+    // Se nenhuma existir, grava a sessão no log do PHP para descobrir o nome real da chave.
+    private function idUsuarioLogado(): int
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+
+        $chaves = ['id_usuario', 'id', 'usuario_id', 'user_id', 'idUsuario'];
+        foreach ($chaves as $chave) {
+            if (isset($_SESSION[$chave]) && (int) $_SESSION[$chave] > 0) {
+                return (int) $_SESSION[$chave];
+            }
+        }
+
+        // Sessão guardando um array: $_SESSION['usuario']['id'] etc.
+        foreach (['usuario', 'user'] as $grupo) {
+            if (isset($_SESSION[$grupo]) && is_array($_SESSION[$grupo])) {
+                foreach ($chaves as $chave) {
+                    if (isset($_SESSION[$grupo][$chave]) && (int) $_SESSION[$grupo][$chave] > 0) {
+                        return (int) $_SESSION[$grupo][$chave];
+                    }
+                }
+            }
+        }
+
+        error_log('[submissoes] id do usuário não encontrado na sessão: ' . json_encode($_SESSION));
+        return 0;
+    }
+
+    //  define de qual aluno carregar a submissão
+    // (instrutor: id_aluno da URL | aluno: o próprio usuário logado)
+    private function idAlunoDaRequisicao(): ?int
+    {
+        if (isset($_GET['id_aluno'])) {
+            return filter_var($_GET['id_aluno'], FILTER_VALIDATE_INT) ?: null;
+        }
+        return $this->idUsuarioLogado() ?: null;
+    }
+
     public function showaluno() {
         $dadosAtividade = $this->carregarAtividade();
         require_once __DIR__ . '/view/aluno.html';
@@ -194,6 +241,62 @@ class atividadesSub {
         $this->responderJson(['sucesso' => true, 'id_submissao' => $r['id_submissao'], 'tentativa' => $r['tentativa']]);
     }
 
+    //  salva a resolução (código ou texto) do aluno na tabela "submissoes".
+    // Aceita JSON ({"id_atividade":1,"conteudo":"..."}) ou POST comum.
+    public function salvarResolucao(): void
+    {
+        solicitarPerfilDeAcesso('aluno');
+
+        // usa o auxiliar que tenta as chaves de sessão mais comuns
+        $idAluno = $this->idUsuarioLogado();
+
+        $entrada = json_decode((string) file_get_contents('php://input'), true);
+        if (!is_array($entrada)) $entrada = $_POST;
+
+        $idAtividade = filter_var($entrada['id_atividade'] ?? null, FILTER_VALIDATE_INT);
+        $conteudo    = (string) ($entrada['conteudo'] ?? '');
+
+        //a mensagem agora diz qual dado está faltando
+        if ($idAluno < 1) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Sessão inválida: usuário não identificado.'], 400);
+        }
+        if (!$idAtividade) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Atividade não informada.'], 400);
+        }
+        if (trim($conteudo) === '') {
+            $this->responderJson(['sucesso' => false, 'erro' => 'A resposta está vazia.'], 400);
+        }
+        if (mb_strlen($conteudo) > 200000) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Resposta muito grande.'], 413);
+        }
+
+        $model = new SubmissoesModel();
+        $atividade = $model->buscarAtividade($idAtividade);
+        if (!$atividade || $atividade['tipo_atividade'] === 'anexo') {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Atividade não encontrada.'], 404);
+        }
+        if (!$model->alunoMatriculado($idAluno, (int) $atividade['id_turma'])) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Você não está matriculado nesta turma.'], 403);
+        }
+        $fuso = new DateTimeZone('America/Sao_Paulo');
+        if (new DateTime($atividade['data_entrega'], $fuso) < new DateTime('now', $fuso)) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'O prazo de entrega acabou.'], 403);
+        }
+
+        try {
+            $r = $model->criarSubmissao($idAtividade, $idAluno, $conteudo);
+        } catch (Throwable $e) {
+            error_log('[submissoes] ' . $e->getMessage());
+            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao salvar a resolução.'], 500);
+        }
+
+        $this->responderJson([
+            'sucesso'      => true,
+            'id_submissao' => $r['id_submissao'],
+            'tentativa'    => $r['tentativa'],
+        ]);
+    }
+
     private function responderJson(array $corpo, int $status = 200): void{
         http_response_code($status);
         header('Content-Type: application/json; charset=UTF-8');
@@ -223,6 +326,3 @@ class atividadesSub {
     //     );
     // }
 }
-
-    
-

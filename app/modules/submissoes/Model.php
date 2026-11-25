@@ -31,11 +31,26 @@ class SubmissoesModel
         return $st->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
+    //última submissão (maior tentativa) do aluno em uma atividade
+    public function buscarUltimaSubmissao(int $idAtividade, int $idAluno): ?array
+    {
+        $st = $this->pdo->prepare(
+            'SELECT id_submissao, conteudo_resposta, tentativa_num, status, data_envio
+               FROM submissoes
+              WHERE id_atividade = ? AND id_aluno = ?
+              ORDER BY tentativa_num DESC
+              LIMIT 1'
+        );
+        $st->execute([$idAtividade, $idAluno]);
+        return $st->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     /**
      * Lê a atividade no banco e devolve o array no formato que o JS espera.
      * Não envia resposta_referencia nem pesos internos ao navegador.
      */
-    public function dadosParaView(int $idAtividade): ?array
+    // ALTERADO: acrescentado o parâmetro opcional $idAluno
+    public function dadosParaView(int $idAtividade, ?int $idAluno = null): ?array
     {
         $a = $this->buscarAtividade($idAtividade);
         if (!$a) return null;
@@ -65,7 +80,7 @@ class SubmissoesModel
         $tipo = $a['tipo_atividade'] ?? 'codigo';
         $idLinguagem = in_array($tipo, ['texto', 'anexo'], true) ? 'texto' : (self::MAPA_LINGUAGEM[$lang] ?? 'web');
 
-        return [
+        $dados = [
             'id'            => (int) $a['id_atividade'],
             'chave'         => (string) $a['id_atividade'],
             'titulo'        => (string) $a['titulo'],
@@ -77,6 +92,19 @@ class SubmissoesModel
             'notaMin'       => 6,
             'limiteEntrega' => $limite,
         ];
+
+        //resolução já salva pelo aluno
+        if ($idAluno) {
+            $s = $this->buscarUltimaSubmissao($idAtividade, $idAluno);
+            $dados['submissao'] = $s ? [
+                'id'        => (int) $s['id_submissao'],
+                'conteudo'  => (string) ($s['conteudo_resposta'] ?? ''),
+                'tentativa' => (int) $s['tentativa_num'],
+                'status'    => (string) $s['status'],
+                'dataEnvio' => (string) $s['data_envio'],
+            ] : null;
+        }
+        return $dados;
     }
 
     public function alunoMatriculado(int $idAluno, int $idTurma): bool
@@ -117,7 +145,7 @@ class SubmissoesModel
         $st = $this->pdo->prepare('UPDATE submissoes SET status = ?, resultado_execucao = ? WHERE id_submissao = ?');
         $st->execute([$status, $resultadoExecucao, $idSubmissao]);
     }
-    
+
     public function criarSubmissaoAnexo(int $idAtividade, int $idAluno, array $arquivos): array {
         $this->pdo->beginTransaction();
         try {
@@ -127,7 +155,7 @@ class SubmissoesModel
             );
             $st->execute([$idAtividade, $idAluno]);
             $tentativa = (int) $st->fetchColumn();
-    
+
             $resumo = json_encode(array_column($arquivos, 'nome_original'), JSON_UNESCAPED_UNICODE);
             $st = $this->pdo->prepare(
                 "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status)
@@ -135,7 +163,7 @@ class SubmissoesModel
             );
             $st->execute([$idAtividade, $idAluno, $resumo, $tentativa]);
             $idSubmissao = (int) $this->pdo->lastInsertId();
-    
+
             $st = $this->pdo->prepare(
                 'INSERT INTO arquivos_indexados
                    (id_atividade, id_aluno, id_submissao, caminho_arquivo, nome_original)
@@ -144,7 +172,7 @@ class SubmissoesModel
             foreach ($arquivos as $a) {
                 $st->execute([$idAtividade, $idAluno, $idSubmissao, $a['caminho'], $a['nome_original']]);
             }
-    
+
             $this->pdo->commit();
             return ['id_submissao' => $idSubmissao, 'tentativa' => $tentativa];
         } catch (Throwable $e) {

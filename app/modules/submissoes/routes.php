@@ -21,5 +21,6 @@ Router::post('/submissoes/enviarSubmissao', [atividadesSub::class, 'processarSub
 // Servidor de assets: CSS, JS e imagens internos do módulo.
 Router::get('/submissoes/file', [atividadesSub::class, 'sendFile']);
 
-
 Router::post('/submissoes/enviarAnexo', [atividadesSub::class, 'enviarAnexo']);
+
+Router::post('/submissoes/salvarResolucao', [atividadesSub::class, 'salvarResolucao']);

@@ -235,8 +235,9 @@
         selecionar('#novidade-do-diario').hidden = !(ultimo > estado.diario.vistoAte);
       };
       const abrirDiario = function abrirDiario(aba) {
-        if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis();
-        if (!janelaDosObjetivos.hidden) fecharQuadroDeObjetivos();
+        if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis(true);
+        if (typeof definirGavetaAberta === 'function') definirGavetaAberta(false, true);
+        if (!janelaDosObjetivos.hidden) fecharQuadroDeObjetivos(true);
         if (aba && ABAS_DO_DIARIO.some(([id]) => id === aba)) abaDoDiario = aba;
         avaliarConquistas(false);
         assinaturaDoDiario = ''; janelaDoDiario.hidden = false; botaoDoDiario.setAttribute('aria-expanded', 'true');
@@ -244,13 +245,23 @@
         estado.diario.vistoAte = Date.now(); salvarProgresso(); atualizarBotaoDoDiario();
         tocarEfeito('Enter'); selecionar('#fechar-diario').focus();
       };
-      const fecharDiario = function fecharDiario() { if (janelaDoDiario.hidden) return; janelaDoDiario.hidden = true; botaoDoDiario.setAttribute('aria-expanded', 'false'); botaoDoDiario.focus(); };
-      botaoDoDiario.addEventListener('click', () => { if (janelaDoDiario.hidden) abrirDiario(); else fecharDiario(); });
-      selecionar('#fechar-diario').addEventListener('click', fecharDiario);
+      const fecharDiario = function fecharDiario(silencioso = false) {
+        if (janelaDoDiario.hidden) return;
+        janelaDoDiario.hidden = true; botaoDoDiario.setAttribute('aria-expanded', 'false');
+        if (!silencioso) tocarEfeito('Fecha');
+        botaoDoDiario.focus();
+      };
+      botaoDoDiario.addEventListener('click', () => { if (janelaDoDiario.hidden) abrirDiario(); else fecharDiario(false); });
+      selecionar('#fechar-diario').addEventListener('click', () => fecharDiario(false));
       janelaDoDiario.addEventListener('click', evento => {
-        if (evento.target === janelaDoDiario) { fecharDiario(); return; }
+        if (evento.target === janelaDoDiario) { fecharDiario(false); return; }
         const fita = evento.target.closest('[data-aba-diario]');
-        if (fita) { abaDoDiario = fita.dataset.abaDiario; desenharDiario(); fita.focus(); }
+        if (fita && fita.dataset.abaDiario !== abaDoDiario) {
+          abaDoDiario = fita.dataset.abaDiario;
+          tocarEfeito('Enter');
+          desenharDiario();
+          fita.focus();
+        }
       });
       janelaDoDiario.addEventListener('keydown', evento => {   // fitas do livro: setas/Home/End (padrão de abas)
         const fitas = [...janelaDoDiario.querySelectorAll('[data-aba-diario]')], atual = fitas.indexOf(document.activeElement);
@@ -258,9 +269,15 @@
         const destino = { ArrowRight: atual + 1, ArrowLeft: atual - 1, Home: 0, End: fitas.length - 1 }[evento.key];
         if (destino === undefined) return;
         evento.preventDefault(); evento.stopPropagation();
-        const fita = fitas[(destino + fitas.length) % fitas.length]; abaDoDiario = fita.dataset.abaDiario; desenharDiario(); fita.focus();
+        const fita = fitas[(destino + fitas.length) % fitas.length];
+        if (fita.dataset.abaDiario !== abaDoDiario) {
+          abaDoDiario = fita.dataset.abaDiario;
+          tocarEfeito('Enter');
+          desenharDiario();
+        }
+        fita.focus();
       });
-      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDoDiario.hidden) fecharDiario(); });
+      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDoDiario.hidden) fecharDiario(false); });
 
       // ---- Abertura do jogo: preparação do Diário (uma vez por save) e avaliação inicial ----
       // 1ª vez neste save: o que JÁ era fato vira registro (sem data quando o save não a guarda) e as conquistas que já valiam são

@@ -29,7 +29,7 @@ const AUDIO_CONFIG = {
         'assets/audio/SFX/vacas/mugido3.mp3'
       ],
       // arquivo: 'assets/audio/SFX/vacas/mugido3.mp3',
-      volume: 1, intervaloMinimo: 3, intervaloMax: 5
+      volume: 1, intervaloMinimo: 5, intervaloMax: 7
     },
 
     galinha: {
@@ -39,7 +39,7 @@ const AUDIO_CONFIG = {
         'assets/audio/SFX/galinhas/galo.mp3'
       ],
       // arquivo: 'assets/audio/SFX/galinhas/cacarejo1.mp3',
-      volume: 1, intervaloMinimo: 3, intervaloMax: 5
+      volume: 1, intervaloMinimo: 5, intervaloMax: 7
     },
 
     ovelha: {
@@ -48,7 +48,7 @@ const AUDIO_CONFIG = {
         'assets/audio/SFX/ovelhas/balido2.mp3'
       ],
       // arquivo: 'assets/audio/SFX/ovelhas/balido1.mp3',
-      volume: 1, intervaloMinimo: 3, intervaloMax: 5
+      volume: 1, intervaloMinimo: 5, intervaloMax: 7
     },
 
     porco: {
@@ -58,7 +58,7 @@ const AUDIO_CONFIG = {
         'assets/audio/SFX/porcos/roncolongo.mp3'
       ],
       // arquivo: 'assets/audio/SFX/porcos/roncolongo.mp3',
-      volume: 1, intervaloMinimo: 3, intervaloMax: 5
+      volume: 1, intervaloMinimo: 5, intervaloMax: 7
     },
 
     cavalo: {
@@ -69,7 +69,7 @@ const AUDIO_CONFIG = {
         'assets/audio/SFX/cavalo/relincho3.mp3'
       ],
       // arquivo: 'assets/audio/SFX/cavalo/relincho1.mp3',
-      volume: 1, intervaloMinimo: 3, intervaloMax: 5
+      volume: 1, intervaloMinimo: 5, intervaloMax: 7
     },
   },
 
@@ -87,6 +87,9 @@ efeitos: {
     global: { distanciaMaxima: 80, intervaloMinimo: 0.15 },
 
     // --- BOTÕES E MENUS ---
+    tutorialPasso:     { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-passo.mp3',     volume: 0.65, intervaloMinimo: 0.08 },
+    tutorialTarefa:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-tarefa.mp3',    volume: 0.75, intervaloMinimo: 0.2 },
+    tutorialConcluido: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-concluido.mp3', volume: 0.80, intervaloMinimo: 0.5 },
     Enter:   { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaoenter.mp3', volume: 0.6, intervaloMinimo: 0.05 },
     Fecha:  { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaovoltar.mp3', volume: 0.6, intervaloMinimo: 0.05 },
     ativar:       { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/ativar.mp3', volume: 0.7 },
@@ -132,7 +135,7 @@ efeitos: {
       esqueletoAparecer:  { arquivo: 'assets/audio/SFX/mobs/esqueleto/surge.mp3', volume: 0.9, intervaloMinimo: 2.0, distanciaMaxima: 35 },
       esqueletoAtaque:    { arquivo: 'assets/audio/SFX/mobs/esqueleto/ataque.mp3', volume: 0.9, intervaloMinimo: 1.8 },
       esqueletoDano:      { arquivo: 'assets/audio/SFX/mobs/esqueleto/dano.mp3', volume: 0.8, intervaloMinimo: 0.9 },
-      esqueletoDerrotado: { arquivo: 'assets/audio/SFX/mobs/esqueleto/morte.mp3', volume: 0.9, intervaloMinimo: 0.5 },
+      esqueletoDerrotado: { arquivo: 'assets/audio/SFX/mobs/esqueleto/morte.mp3', volume: 1.5, intervaloMinimo: 0.5 },
 
       // --- ZUMBI ---
       zumbiAparecer:     { arquivo: 'assets/audio/SFX/mobs/zumbi/surge.mp3', volume: 0.6, intervaloMinimo: 2.0, distanciaMaxima: 35 },
@@ -166,12 +169,12 @@ efeitos: {
     tonyFala:        { arquivo: 'assets/audio/SFX/segredos/tony-fala.mp3', volume: 0.85 },
     furyFala:        { arquivo: 'assets/audio/SFX/segredos/fury-fala.mp3', volume: 0.85 },
     cavernaTema:    { arquivo: 'assets/audio/SFX/segredos/caverna.mp3',    volume: 0.7 },
-    ultronFala:     { arquivo: 'assets/audio/SFX/segredos/ultron.mp3',     volume: 0.3 },
+    ultronFala:     { arquivo: 'assets/audio/SFX/segredos/ultron.mp3',     volume: 0.85 },
     coringaFala:    { arquivo: 'assets/audio/SFX/segredos/coringa.mp3',    volume: 0.3 },
     venomFala:      { arquivo: 'assets/audio/SFX/segredos/venom.mp3',      volume: 0.8 },
     hulkFala:       { arquivo: 'assets/audio/SFX/segredos/hulk.mp3',       volume: 0.4 },
     destinoFala:    { arquivo: 'assets/audio/SFX/segredos/drdestino.mp3',    volume: 0.2 },
-    batmanFala:     { arquivo: 'assets/audio/SFX/segredos/batman.mp3',     volume: 0.8 },
+    batmanFala:     { arquivo: 'assets/audio/SFX/segredos/batman.mp3',     volume: 5.0 },
     slendermanFala: { arquivo: 'assets/audio/SFX/segredos/slenderman.mp3', volume: 0.3 },
     freddyFala:     { arquivo: 'assets/audio/SFX/segredos/freddy.mp3',     volume: 0.3 },
 

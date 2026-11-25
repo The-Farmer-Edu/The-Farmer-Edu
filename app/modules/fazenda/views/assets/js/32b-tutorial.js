@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 32b-tutorial.js (Fazenda 8.4.1: tutorial e ajuda)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA); não é aberto sozinho. Segue a mesma
       // convenção dos outros arquivos: cada função de nível superior é "const nome = function nome(...) {...};" e as declarações
@@ -31,7 +31,7 @@
       // ---- apoio aos passos ----
       const plantacaoJaConstruida = () => PLANTACOES_COM_CANTEIROS.find(idDaArea => estado.niveis[idDaArea] > 0) || null;
       const cartaoDaGaveta = idDaArea => { const botao = selecionar(`#conteudo-da-gaveta [data-foco="${idDaArea}"]`); return botao ? botao.closest('.card') : null; };
-      const abrirGavetaNoTutorial = () => { fecharMenuEPaineis(); definirGavetaAberta(true); };
+      const abrirGavetaNoTutorial = () => { fecharMenuEPaineis(true); definirGavetaAberta(true); };
       const abrirPainelNoTutorial = (painel, botao) => { if (painel.hidden) alternarPainel(painel, botao); atualizarPaineisDaMark82(true); };
       const visivel = seletor => { const elemento = selecionar(seletor); return !!elemento && !elemento.hidden; };
       const listaDasCulturas = () => '<ul class="tutorial-lista">' + Object.values(CULTURAS).map(cultura =>
@@ -90,7 +90,7 @@
           texto: () => `<p>À noite, monstros podem surgir perto dos trabalhadores que estão no campo. Eles atacam <b>só os trabalhadores</b>, nunca as construções.</p><p>Os trabalhadores se defendem, e cada monstro derrotado rende ${TRABALHADORES_CONFIG.xpPorMonstroDerrotado} XP (dentro da cota diária de Defesa). De dia, os feridos recuperam a vida aos poucos.</p><p>Quando a fazenda crescer, criaturas da floresta poderão atacar as instalações. Antes disso, o jogo mostra um aviso explicando como preparar a defesa.</p>` },
         { topico: 'salvamento', titulo: 'Seu progresso fica salvo',
           texto: () => `<p>A fazenda é salva sozinha a cada ação, <b>neste navegador e neste computador</b>. Use sempre o mesmo navegador para continuar de onde parou.</p><p>Limpar os dados do navegador apaga a fazenda.</p>` },
-        { topico: 'configuracoes', titulo: 'O menu', preparar: fecharMenuEPaineis, destaque: () => selecionar('#botao-menu'),
+        { topico: 'configuracoes', titulo: 'O menu', preparar: () => fecharMenuEPaineis(true), destaque: () => selecionar('#botao-menu'),
           texto: () => `<p>No menu <b>☰</b> você muda o nome da fazenda, vê o relógio e abre os painéis 🌾 Fazenda e 👷 Equipe. Em <b>🎨 Qualidade</b> você deixa o jogo mais leve em computadores mais lentos (no modo Automático ele se ajusta sozinho).</p>`,
           tarefa: { texto: 'Experimente: abra o menu.', feita: () => visivel('#menu-principal') || PAINEIS_DA_BARRA.some(([painel]) => !painel.hidden) } },
         { topico: 'configuracoes', titulo: 'Sons', destaque: () => selecionar('#botao-som-global'),
@@ -98,6 +98,13 @@
         { topico: 'ajuda', titulo: 'Ajuda sempre à mão', destaque: () => selecionar('#botao-menu'),
           texto: () => `<p>Pronto! Para rever qualquer assunto, abra o menu ☰ e escolha <b>❓ Ajuda e tutorial</b>. Lá você também pode recomeçar o tutorial.</p><p>Bom trabalho na fazenda, e nas atividades!</p>` },
       ];
+
+      // ---- apoio sonoro do tutorial (usa efeitos próprios se configurados em AUDIO_CONFIG, senão cai nos sons padrão) ----
+      const tocarSomDoTutorial = function tocarSomDoTutorial(preferido, reserva = 'Enter') {
+        if (typeof tocarEfeito !== 'function') return;
+        const temPreferido = typeof AUDIO_CONFIG !== 'undefined' && AUDIO_CONFIG.efeitos && AUDIO_CONFIG.efeitos[preferido];
+        tocarEfeito(temPreferido ? preferido : reserva);
+      };
 
       // ---- progresso salvo ----
       let progressoDoTutorial = null;   // null = o tutorial ainda não foi oferecido neste navegador
@@ -117,12 +124,13 @@
       const conteudoDoTutorial = selecionar('#tutorial-texto'), tarefaDoTutorial = selecionar('#tutorial-tarefa'), barraDoTutorial = selecionar('#tutorial-barra'), acoesDoTutorial = selecionar('#tutorial-acoes');
       const botaoMinimizarTutorial = selecionar('#tutorial-minimizar'), botaoPausarTutorial = selecionar('#tutorial-pausar');
       // modo: null (fechado) · 'convite' · 'tutorial' (sequência completa) · 'consulta' (um tópico aberto pela ajuda, sem mexer no progresso)
-      let modoDoTutorial = null, passoDoTutorial = 0, topicoEmConsulta = null, vigiaDoTutorial = null;
+      let modoDoTutorial = null, passoDoTutorial = 0, topicoEmConsulta = null, vigiaDoTutorial = null, tarefaJaAvisadaNoPasso = false;
       const passosDoModo = () => modoDoTutorial === 'consulta' ? PASSOS_DO_TUTORIAL.map((passo, indice) => passo.topico === topicoEmConsulta ? indice : -1).filter(indice => indice >= 0) : PASSOS_DO_TUTORIAL.map((passo, indice) => indice);
-      const definirMinimizado = function definirMinimizado(minimizado) {
+      const definirMinimizado = function definirMinimizado(minimizado, silencioso = false) {
         cartaoDoTutorial.classList.toggle('minimizado', minimizado); corpoDoTutorial.hidden = minimizado;
         botaoMinimizarTutorial.textContent = minimizado ? '▸' : '▾'; botaoMinimizarTutorial.setAttribute('aria-expanded', String(!minimizado));
         botaoMinimizarTutorial.setAttribute('aria-label', minimizado ? 'Mostrar o tutorial' : 'Minimizar o tutorial');
+        if (!silencioso && typeof tocarEfeito === 'function') tocarEfeito(minimizado ? 'Fecha' : 'Enter');
         atualizarMolduraDoTutorial();
       };
       // Moldura sobre o elemento do passo e posição do cartão, sem cobrir a gaveta:
@@ -351,6 +359,10 @@
         tarefaDoTutorial.hidden = !(passo && passo.tarefa);
         if (!passo || !passo.tarefa) return;
         let feita = false; try { feita = !!passo.tarefa.feita(); } catch (erro) { }
+        if (feita && !tarefaJaAvisadaNoPasso) {
+          tarefaJaAvisadaNoPasso = true;
+          tocarSomDoTutorial('tutorialTarefa', 'Enter');
+        }
         const texto = (feita ? '✔ Feito! ' : '👉 ') + passo.tarefa.texto;
         if (tarefaDoTutorial.textContent !== texto) { tarefaDoTutorial.textContent = texto; tarefaDoTutorial.classList.toggle('feita', feita); }
       };
@@ -359,14 +371,17 @@
         if (ligado) vigiaDoTutorial = setInterval(() => { atualizarMolduraDoTutorial(); atualizarTarefaDoTutorial(); }, 400);
       };
       const botaoDoTutorial = (texto, aoClicar, classe = '') => { const botao = document.createElement('button'); botao.type = 'button'; botao.className = 'botao-pequeno ' + classe; botao.textContent = texto; botao.onclick = aoClicar; return botao; };
-      const fecharTutorial = function fecharTutorial() {
+      const fecharTutorial = function fecharTutorial(silencioso = false) {
+        if (modoDoTutorial && !silencioso && typeof tocarEfeito === 'function') tocarEfeito('Fecha');
         modoDoTutorial = null; cartaoDoTutorial.hidden = true; molduraDoTutorial.hidden = true; vigiarTutorial(false);
         document.body.classList.remove('tutorial-aberto');   // a gaveta volta à largura normal
         desfazerAcomodacaoDaGaveta();                         // e, nas telas estreitas, à altura e à posição normais
       };
-      const mostrarPassoDoTutorial = function mostrarPassoDoTutorial(indice) {
+      const mostrarPassoDoTutorial = function mostrarPassoDoTutorial(indice, silencioso = false) {
         const passos = passosDoModo(), posicao = Math.max(0, passos.indexOf(indice)), passo = PASSOS_DO_TUTORIAL[indice];
         passoDoTutorial = indice;
+        tarefaJaAvisadaNoPasso = false;
+        if (!silencioso) tocarSomDoTutorial('tutorialPasso', 'Enter');
         if (passo.preparar) try { passo.preparar(); } catch (erro) { console.warn('[FarmEdu] tutorial: não foi possível preparar o passo', erro); }
         const topico = TOPICOS_DO_TUTORIAL.find(item => item.id === passo.topico), numeroDoTopico = TOPICOS_DO_TUTORIAL.indexOf(topico) + 1;
         textoDoTopico.textContent = topico.icone + ' ' + (modoDoTutorial === 'consulta' ? 'Ajuda · ' + topico.nome : 'Tópico ' + numeroDoTopico + ' de ' + TOPICOS_DO_TUTORIAL.length + ' · ' + topico.nome);
@@ -377,12 +392,18 @@
         // O foco só passa para o novo botão se o jogador já navegava pelo cartão com o teclado (:focus-visible): um foco automático
         // faria a barra de espaço (que sobe a câmera) também "clicar" no botão.
         const navegandoPeloTeclado = cartaoDoTutorial.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
-        const ultimo = posicao === passos.length - 1, voltar = botaoDoTutorial('‹ Voltar', () => mostrarPassoDoTutorial(passos[posicao - 1]), 'secundario');
+        const ultimo = posicao === passos.length - 1, voltar = botaoDoTutorial('‹ Voltar', () => mostrarPassoDoTutorial(passos[posicao - 1], false), 'secundario');
         voltar.disabled = posicao === 0;
         const avancar = botaoDoTutorial(ultimo ? (modoDoTutorial === 'consulta' ? 'Fechar' : 'Concluir ✔') : 'Avançar ›', () => {
-          if (!ultimo) { mostrarPassoDoTutorial(passos[posicao + 1]); return; }
-          if (modoDoTutorial === 'tutorial') { salvarProgressoDoTutorial('concluido', 0); mostrarAviso('🎉 Tutorial concluído! Ele continua disponível em ☰ Menu → ❓ Ajuda e tutorial.'); }
-          fecharTutorial();
+          if (!ultimo) { mostrarPassoDoTutorial(passos[posicao + 1], false); return; }
+          if (modoDoTutorial === 'tutorial') {
+            salvarProgressoDoTutorial('concluido', 0);
+            tocarSomDoTutorial('tutorialConcluido', 'levelUp');
+            mostrarAviso('🎉 Tutorial concluído! Ele continua disponível em ☰ Menu → ❓ Ajuda e tutorial.');
+            fecharTutorial(true);
+            return;
+          }
+          fecharTutorial(false);
         });
         acoesDoTutorial.replaceChildren(voltar, Object.assign(document.createElement('span'), { className: 'contagem-do-tutorial', textContent: (posicao + 1) + ' / ' + passos.length }), avancar);
         if (modoDoTutorial === 'tutorial') salvarProgressoDoTutorial('andamento', indice);
@@ -391,24 +412,24 @@
         if (navegandoPeloTeclado) avancar.focus({ preventScroll: true });
       };
       const abrirCartaoDoTutorial = function abrirCartaoDoTutorial(modo) {
-        fecharAjuda(); modoDoTutorial = modo; cartaoDoTutorial.hidden = false; definirMinimizado(false);
+        fecharAjuda(true); modoDoTutorial = modo; cartaoDoTutorial.hidden = false; definirMinimizado(false, true);
         botaoPausarTutorial.hidden = modo === 'convite'; botaoMinimizarTutorial.hidden = modo === 'convite';
         botaoPausarTutorial.textContent = modo === 'consulta' ? '✕' : '⏸';
         botaoPausarTutorial.setAttribute('aria-label', modo === 'consulta' ? 'Fechar este tópico' : 'Pausar o tutorial (continua depois)');
         botaoPausarTutorial.title = botaoPausarTutorial.getAttribute('aria-label');
         vigiarTutorial(modo !== 'convite');
       };
-      const iniciarTutorial = function iniciarTutorial(indice = 0) { abrirCartaoDoTutorial('tutorial'); mostrarPassoDoTutorial(indice); };
+      const iniciarTutorial = function iniciarTutorial(indice = 0) { abrirCartaoDoTutorial('tutorial'); mostrarPassoDoTutorial(indice, false); };
       const consultarTopicoDoTutorial = function consultarTopicoDoTutorial(idDoTopico) {
         topicoEmConsulta = idDoTopico; abrirCartaoDoTutorial('consulta');
-        mostrarPassoDoTutorial(PASSOS_DO_TUTORIAL.findIndex(passo => passo.topico === idDoTopico));
+        mostrarPassoDoTutorial(PASSOS_DO_TUTORIAL.findIndex(passo => passo.topico === idDoTopico), false);
       };
       const pausarTutorial = function pausarTutorial() {
         if (modoDoTutorial === 'tutorial') { salvarProgressoDoTutorial('pausado', passoDoTutorial); mostrarAviso('⏸ Tutorial pausado. Continue quando quiser em ☰ Menu → ❓ Ajuda e tutorial.'); }
-        fecharTutorial();
+        fecharTutorial(false);
       };
       botaoPausarTutorial.onclick = pausarTutorial;
-      botaoMinimizarTutorial.onclick = () => definirMinimizado(!cartaoDoTutorial.classList.contains('minimizado'));
+      botaoMinimizarTutorial.onclick = () => definirMinimizado(!cartaoDoTutorial.classList.contains('minimizado'), false);
       // Convite (uma vez por navegador): começar agora ou explorar sozinho. Fecha sem decidir = continua sem a chave salva.
       const mostrarConviteDoTutorial = function mostrarConviteDoTutorial() {
         abrirCartaoDoTutorial('convite');
@@ -416,7 +437,7 @@
         conteudoDoTutorial.innerHTML = `<p>Um passeio curto pelos controles, construções, plantações, mina, trabalhadores, animais e XP.</p><p>Você pode pausar a qualquer momento e rever tudo depois em <b>☰ Menu → ❓ Ajuda e tutorial</b>.</p>`;
         tarefaDoTutorial.hidden = true; barraDoTutorial.style.width = '0%';
         const comecar = botaoDoTutorial('▶ Começar o tutorial', () => iniciarTutorial(0));
-        const sozinho = botaoDoTutorial('Explorar sozinho', () => { salvarProgressoDoTutorial('dispensado', 0); fecharTutorial(); mostrarAviso('Tudo bem! O tutorial fica em ☰ Menu → ❓ Ajuda e tutorial.'); }, 'secundario');
+        const sozinho = botaoDoTutorial('Explorar sozinho', () => { salvarProgressoDoTutorial('dispensado', 0); fecharTutorial(false); mostrarAviso('Tudo bem! O tutorial fica em ☰ Menu → ❓ Ajuda e tutorial.'); }, 'secundario');
         acoesDoTutorial.replaceChildren(sozinho, comecar);   // sem foco automático: o convite não rouba as teclas do jogo
       };
       // Chamada pela seção 33 ao abrir: oferece o tutorial se ele nunca foi oferecido neste navegador, depois da janela do nome.
@@ -430,15 +451,16 @@
       // ---- janela de ajuda ----
       const janelaDeAjuda = selecionar('#janela-ajuda');
       let focoAntesDaAjuda = null;
-      const fecharAjuda = function fecharAjuda() {
+      const fecharAjuda = function fecharAjuda(silencioso = false) {
         if (janelaDeAjuda.hidden) return;
         janelaDeAjuda.hidden = true;
+        if (!silencioso && typeof tocarEfeito === 'function') tocarEfeito('Fecha');
         if (focoAntesDaAjuda && document.contains(focoAntesDaAjuda)) focoAntesDaAjuda.focus({ preventScroll: true });
       };
       const abrirAjuda = function abrirAjuda() {
         focoAntesDaAjuda = document.activeElement;
         if (modoDoTutorial === 'tutorial') salvarProgressoDoTutorial('pausado', passoDoTutorial);
-        fecharTutorial(); fecharMenuEPaineis();
+        fecharTutorial(true); fecharMenuEPaineis(true);
         const situacao = progressoDoTutorial ? progressoDoTutorial.situacao : null, passo = progressoDoTutorial ? progressoDoTutorial.passo : 0;
         const emAndamento = situacao === 'andamento' || situacao === 'pausado';
         selecionar('#ajuda-situacao').textContent = situacao === 'concluido' ? '✔ Você já concluiu o tutorial. Reveja qualquer tópico abaixo.'
@@ -455,13 +477,14 @@
           return botao;
         }));
         janelaDeAjuda.hidden = false;
+        if (typeof tocarEfeito === 'function') tocarEfeito('Enter');
         acoes[0].focus({ preventScroll: true });
       };
       selecionar('#botao-ajuda').onclick = abrirAjuda;
-      selecionar('#fechar-ajuda').onclick = fecharAjuda;
-      janelaDeAjuda.addEventListener('click', evento => { if (evento.target === janelaDeAjuda) fecharAjuda(); });   // clique fora do cartão fecha
+      selecionar('#fechar-ajuda').onclick = () => fecharAjuda(false);
+      janelaDeAjuda.addEventListener('click', evento => { if (evento.target === janelaDeAjuda) fecharAjuda(false); });   // clique fora do cartão fecha
       // Com a ajuda aberta, as teclas ficam com ela (Esc fecha; WASD, letras e Esc não chegam ao jogo nem aos painéis).
-      janelaDeAjuda.addEventListener('keydown', evento => { if (evento.key === 'Escape') fecharAjuda(); if (evento.key !== 'Tab') evento.stopPropagation(); });
+      janelaDeAjuda.addEventListener('keydown', evento => { if (evento.key === 'Escape') fecharAjuda(false); if (evento.key !== 'Tab') evento.stopPropagation(); });
       addEventListener('resize', () => { if (modoDoTutorial) atualizarMolduraDoTutorial(); });
 
       arquivoDaMontagemConcluido('32b-tutorial.js');   // avisa o carregador (fazenda.js) que este arquivo rodou até o fim

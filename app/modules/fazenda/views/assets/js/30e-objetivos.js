@@ -172,7 +172,7 @@
             <div class="topo-do-objetivo"><span class="categoria-do-objetivo">${categoria.icone} ${categoria.nome}</span><span class="estado-do-objetivo">${rotulo}</span></div>
             <b class="nome-do-objetivo">${nome}</b>
             <p class="descricao-do-objetivo">${descricao}</p>
-            ${oculto ? '' : `<div class="progresso-do-objetivo"><span class="barra-do-objetivo" role="progressbar" aria-label="Progresso: ${nome}" aria-valuemin="0" aria-valuemax="${objetivo.meta}" aria-valuenow="${atual}"><i style="width:${porcento}%"></i></span><span class="contagem-do-objetivo">${atual} / ${objetivo.meta}</span></div>`}
+            ${oculto ? '' : `<div class="progresso-do-objetivo"><span class="barra-do-objetivo" role="progressbar" aria-label="Progresso: ${nome}" aria-valuemin="0" aria-valuemax="${objetivo.meta}" aria-valuenow="${atual}"><i style="width:${porcento}%"></i></span><span class="contagem-do-objetivo">${atual} /${objetivo.meta}</span></div>`}
             <span class="recompensa-do-objetivo">${situacao === 'concluido' ? '🏅 Selo conquistado em ' + dataCurta(estado.objetivos.concluidos[objetivo.id]) : '🏅 Recompensa: selo de reconhecimento'}</span>${conquistaDoObjetivo(objetivo.id, situacao)}
           </div></article>`;
       };
@@ -195,8 +195,8 @@
           ${destaques.length ? `<div class="objetivos-em-destaque">${destaques.map(item => htmlDoObjetivo(item)).join('')}</div>` : '<p class="sem-objetivos">🏆 Você concluiu todos os objetivos disponíveis! Novos aparecem conforme a fazenda cresce.</p>'}
           <button type="button" class="ver-todos-os-objetivos" id="ver-todos-os-objetivos" aria-expanded="${listaCompletaAberta}" aria-controls="todos-os-objetivos">${listaCompletaAberta ? '▲ Esconder a lista completa' : '📜 Ver todos os objetivos (' + visiveis.length + ')'}</button>
           <div class="todos-os-objetivos" id="todos-os-objetivos"${listaCompletaAberta ? '' : ' hidden'}>${grupos}
-            ${aindaVirao ? `<p class="objetivos-futuros">🔒 Mais ${aindaVirao} ${aindaVirao === 1 ? 'objetivo aparece' : 'objetivos aparecem'} conforme sua fazenda cresce.</p>` : ''}</div>
-          ${window.farmEduConquistas ? `<button type="button" class="abrir-colecao" id="abrir-colecao-dos-objetivos">📖 Ver conquistas no Diário (${window.farmEduConquistas.resumo().desbloqueadas} de ${window.farmEduConquistas.resumo().total})</button>` : ''}
+            ${aindaVirao ? `<p class="objetivos-futuros">🔒 Mais ${aindaVirao}${aindaVirao === 1 ? 'objetivo aparece' : 'objetivos aparecem'} conforme sua fazenda cresce.</p>` : ''}</div>
+          ${window.farmEduConquistas ? `<button type="button" class="abrir-colecao" id="abrir-colecao-dos-objetivos">📖 Ver conquistas no Diário (${window.farmEduConquistas.resumo().desbloqueadas} de${window.farmEduConquistas.resumo().total})</button>` : ''}
           <p class="dica-dos-objetivos">Os objetivos dão <b>selos de reconhecimento</b>. Eles não dão XP nem recursos: são para você acompanhar a sua fazenda.</p>`;
       };
       const atualizarBotaoDosObjetivos = function atualizarBotaoDosObjetivos() {
@@ -210,6 +210,7 @@
         if (!janelaDosObjetivos.hidden) return;
         if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis(true);
         if (typeof definirGavetaAberta === 'function') definirGavetaAberta(false, true);
+        if (typeof janelaDoDiario !== 'undefined' && !janelaDoDiario.hidden) fecharDiario(true);
         avaliarObjetivos(false);
         assinaturaDoQuadro = ''; janelaDosObjetivos.hidden = false; botaoDosObjetivos.setAttribute('aria-expanded', 'true');
         desenharQuadroDeObjetivos();
@@ -226,8 +227,15 @@
       selecionar('#fechar-objetivos').addEventListener('click', () => fecharQuadroDeObjetivos(false));
       janelaDosObjetivos.addEventListener('click', evento => {
         if (evento.target === janelaDosObjetivos) { fecharQuadroDeObjetivos(false); return; }
-        if (evento.target.closest('#ver-todos-os-objetivos')) { listaCompletaAberta = !listaCompletaAberta; desenharQuadroDeObjetivos(); selecionar('#ver-todos-os-objetivos').focus(); }
-        if (evento.target.closest('#abrir-colecao-dos-objetivos') && window.farmEduConquistas) window.farmEduConquistas.abrirDiario('colecao');   // Etapa 3
+        if (evento.target.closest('#ver-todos-os-objetivos')) {
+          listaCompletaAberta = !listaCompletaAberta;
+          tocarEfeito(listaCompletaAberta ? 'Enter' : 'Fecha');
+          desenharQuadroDeObjetivos();
+          selecionar('#ver-todos-os-objetivos').focus();
+        }
+        if (evento.target.closest('#abrir-colecao-dos-objetivos') && window.farmEduConquistas) {
+          window.farmEduConquistas.abrirDiario('colecao');   // Etapa 3
+        }
       });
       addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDosObjetivos.hidden) fecharQuadroDeObjetivos(false); });
 

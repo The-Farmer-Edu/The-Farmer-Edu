@@ -328,16 +328,3 @@ CREATE TABLE arquivos (
   FOREIGN KEY(id_atividade) REFERENCES atividades(id_atividade),
   INDEX id_arquivo_atividade (id_atividade)
 )
-
-CREATE TABLE anexos_submissao (
-  id_anexo        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  id_submissao    INT UNSIGNED  NOT NULL,
-  nome_original   VARCHAR(150)  NOT NULL,
-  caminho         VARCHAR(255)  NOT NULL,
-  tamanho_bytes   INT UNSIGNED  NOT NULL,
-  enviado_em      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT fk_anexos_submissao
-    FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)
-    ON DELETE CASCADE ON UPDATE CASCADE,
-  INDEX idx_anexos_submissao (id_submissao)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

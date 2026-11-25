@@ -25,6 +25,79 @@ class AtividadesController
         $this->view('aluno', ['usuario' => $usuario]);
     }
 
+    public function showAnexoAluno(): void
+    {
+        $usuario = $this->exigirPerfil('aluno');
+        $this->view('anexo', ['usuario' => $usuario, 'idAtividade' => (int) ($_GET['id'] ?? 0)]);
+    }
+
+    public function dadosAnexoAluno(): void
+    {
+        $this->api('aluno', function (array $usuario): array {
+            $pdo         = iniciarPDO();
+            $idAluno     = (int) $usuario['idUsuario'];
+            $idAtividade = (int) ($_GET['id'] ?? 0);
+
+            return [
+                'atividade' => AnexoAluno::atividadeDoAluno($pdo, $idAtividade, $idAluno),
+                'envios'    => AnexoAluno::enviosDoAluno($pdo, $idAtividade, $idAluno),
+                'config'    => AnexoAluno::config(),
+            ];
+        });
+    }
+
+    public function enviarAnexo(): void
+    {
+        $this->api('aluno', function (array $usuario): array {
+            $tentativa = AnexoAluno::enviar(
+                iniciarPDO(),
+                (int) ($_POST['id_atividade'] ?? 0),
+                (int) $usuario['idUsuario'],
+                AnexoAluno::doUpload($_FILES['arquivos'] ?? [])
+            );
+
+            return ['mensagem' => 'Arquivos enviados com sucesso! (tentativa ' . $tentativa . ')'];
+        }, true);
+    }
+
+    public function baixarAnexo(): void
+    {
+        $usuario = usuarioLogado();
+        $perfil  = (string) ($usuario['perfilAcesso'] ?? '');
+
+        if ($usuario === null || !in_array($perfil, ['aluno', 'instrutor'], true)) {
+            http_response_code(403);
+            echo 'Você não tem acesso a esse arquivo.';
+            return;
+        }
+
+        $anexo   = null;
+        $caminho = null;
+
+        try {
+            $anexo   = AnexoAluno::buscarParaDownload(iniciarPDO(), (int) ($_GET['id'] ?? 0), $perfil, (int) $usuario['idUsuario']);
+            $caminho = $anexo ? AnexoAluno::caminhoAbsoluto($anexo['caminho']) : null;
+        } catch (Throwable $e) {
+            error_log($e->getMessage());
+        }
+
+        if ($anexo === null || $caminho === null) {
+            http_response_code(404);
+            echo 'Arquivo não encontrado.';
+            return;
+        }
+
+        $nome    = (string) $anexo['nome_original'];
+        $simples = preg_replace('/[^A-Za-z0-9._-]/', '_', $nome);
+
+        header('Content-Type: application/octet-stream');
+        header('Content-Disposition: attachment; filename="' . $simples . "\"; filename*=UTF-8''" . rawurlencode($nome));
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Length: ' . filesize($caminho));
+
+        readfile($caminho);
+    }
+
     public function dadosInstrutor(): void
     {
         $this->api('instrutor', function (array $usuario): array {

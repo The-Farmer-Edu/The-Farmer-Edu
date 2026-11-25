@@ -163,22 +163,22 @@ class SubmissoesModel
             $st->execute([$idAtividade, $idAluno]);
             $tentativa = (int) $st->fetchColumn();
 
-            $resumo = json_encode(array_column($arquivos, 'nome_original'), JSON_UNESCAPED_UNICODE);
+            // $resumo = json_encode(array_column($arquivos, 'nome_original'), JSON_UNESCAPED_UNICODE);
             $st = $this->pdo->prepare(
-                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status)
-                 VALUES (?, ?, ?, ?, 'enviada')"
+                "INSERT INTO submissoes (id_atividade, id_aluno, tentativa_num, status, caminho_arquivo)
+                 VALUES (?, ?, ?, ?, ?)"
             );
-            $st->execute([$idAtividade, $idAluno, $resumo, $tentativa]);
+            $st->execute([$idAtividade, $idAluno, $tentativa, 'enviada', $arquivos[0]['caminho']]);
             $idSubmissao = (int) $this->pdo->lastInsertId();
 
-            $st = $this->pdo->prepare(
-                'INSERT INTO arquivos_indexados
-                   (id_atividade, id_aluno, id_submissao, caminho_arquivo, nome_original)
-                 VALUES (?, ?, ?, ?, ?)'
-            );
-            foreach ($arquivos as $a) {
-                $st->execute([$idAtividade, $idAluno, $idSubmissao, $a['caminho'], $a['nome_original']]);
-            }
+            // $st = $this->pdo->prepare(
+            //     'INSERT INTO arquivos_indexados
+            //        (id_atividade, id_aluno, id_submissao, caminho_arquivo, nome_original)
+            //      VALUES (?, ?, ?, ?, ?)'
+            // );
+            // foreach ($arquivos as $a) {
+            //     $st->execute([$idAtividade, $idAluno, $idSubmissao, $a['caminho'], $a['nome_original']]);
+            // }
 
             $this->pdo->commit();
             return ['id_submissao' => $idSubmissao, 'tentativa' => $tentativa];

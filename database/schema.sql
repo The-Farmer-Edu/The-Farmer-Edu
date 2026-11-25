@@ -147,7 +147,7 @@ CREATE TABLE atividades (
   id_turma             INT UNSIGNED  NOT NULL,
   titulo               VARCHAR(150)  NOT NULL,
   descricao            TEXT          NULL,
-  tipo_atividade       ENUM('codigo', 'quiz', 'texto') NOT NULL DEFAULT 'codigo',
+  tipo_atividade       ENUM('codigo', 'quiz', 'texto', 'anexo') NOT NULL DEFAULT 'codigo',
   linguagem            VARCHAR(30)   NULL,
   criterios_correcao   TEXT          NULL, -- Converter JSON->TEXT e TEXT->JSON, dependendo da operação, no JavaScript
   data_entrega         DATETIME      NOT NULL,
@@ -169,7 +169,7 @@ CREATE TABLE submissoes (
   id_atividade         INT UNSIGNED  NOT NULL,
   id_aluno             INT UNSIGNED  NOT NULL,
   conteudo_resposta    LONGTEXT       NULL,
-  caminho_arquivo VARCHAR(255)  NULL,
+  caminho_arquivo      VARCHAR(255)  NULL,
   tentativa_num        INT UNSIGNED  NOT NULL DEFAULT 1,
   status               ENUM('enviada', 'processando', 'corrigida', 'erro', 'cancelado') NOT NULL DEFAULT 'enviada',
   resultado_execucao   TEXT          NULL,     -- stdout/stderr/veredito retornados pelo Judge0

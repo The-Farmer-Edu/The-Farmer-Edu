@@ -1,8 +1,8 @@
 <?php
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/session.php';
-// require_once __DIR__ . '../api/model/Ollama.php';
-// require_once __DIR__ . '../feedback_ia/model.php';
+require_once __DIR__ . '/../api/model/Ollama.php';
+require_once __DIR__ . '/../feedback_ia/model.php';
 
 
 /**
@@ -186,7 +186,7 @@ private function carregarAtividade(): ?array {
     // adicionado 24/11 ¬
     public function enviarAnexo(): void{
         if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-        $idAluno = (int) ($_SESSION['id_usuario'] ?? 0); // ajuste para a chave real da sua sessão
+        $idAluno = (int) (usuarioLogado()['idUsuario'] ?? 0); // ajuste para a chave real da sua sessão
         $idAtividade = filter_var($_POST['id_atividade'] ?? null, FILTER_VALIDATE_INT);
         if ($idAluno < 1 || !$idAtividade) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Requisição inválida.'], 400);
@@ -241,7 +241,7 @@ private function carregarAtividade(): ?array {
                 $limpar();
                 $this->responderJson(['sucesso' => false, 'erro' => 'Falha ao salvar o arquivo.'], 500);
             }
-            $salvos[] = ['caminho' => "$idAtividade/$idAluno/$fisico", 'nome_original' => $nome];
+            $salvos[] = ['caminho' => "submissoes/$idAtividade/$idAluno/$fisico", 'nome_original' => $nome];
         }
 
         try {

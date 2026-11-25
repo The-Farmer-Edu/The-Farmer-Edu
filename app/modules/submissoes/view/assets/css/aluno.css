@@ -30,7 +30,7 @@ body {
     min-height: 100vh;
 }
 
-header {
+header:not(.tfe-topbar) {
     background-color: var(--Cabecalho-aluno);
     color: var(--Titulo);
     padding: 12px;
@@ -41,14 +41,16 @@ header {
     z-index: 2;
 }
 
-header .titulo-modulo {
+.titulo-modulo {
     font-size: 1.1rem;
     font-weight: bold;
     letter-spacing: 0.5px;
     flex: 1;
+    padding: 12px 16px 0;
+    color: var(--Titulo);
 }
 
-header .usuario-avatar {
+header:not(.tfe-topbar) .usuario-avatar {
     width: 35px;
     height: 35px;
     border-radius: 50%;
@@ -584,7 +586,7 @@ aside {
     transform: none;
 }
 
-header .titulo-modulo {
+.titulo-modulo {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -592,12 +594,12 @@ header .titulo-modulo {
 
 /*Mobile*/
 @media (max-width: 780px) {
-    header {
+    header:not(.tfe-topbar) {
         padding: 10px 12px;
         gap: 10px;
     }
 
-    header .titulo-modulo {
+    .titulo-modulo {
         font-size: 0.8rem;
         letter-spacing: 0;
     }

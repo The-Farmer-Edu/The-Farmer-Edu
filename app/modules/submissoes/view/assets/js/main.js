@@ -1,6 +1,9 @@
 (function () {
     /**
      * Carregador de módulos do front-end da submissão.
+     *
+     * A página HTML carrega apenas um script principal; depois, esse módulo decide quais arquivos JS
+     * da pasta /file devem ser adicionados ao DOM dinamicamente.
      * Carrega os JS em ordem e, se não houver atividade (sem id ou id inexistente),
      * mostra apenas o aviso "Nenhuma atividade encontrada".
      */

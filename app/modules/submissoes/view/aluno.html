@@ -15,8 +15,7 @@
 </head>
 
 <body data-pagina="aluno">
-<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
-    <p class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</p>
+    <?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
     <main>
         <!-- Bloco principal para exibir os detalhes da atividade da turma. -->
@@ -63,8 +62,9 @@
                     <button class="btn-adicionar" id="opcaoArquivo">Anexar</button>
 
                     <form action="iniciarAtv" method="get">
-                        <!-- O id da atividade é enviado para a próxima página para carregar a atividade correta. -->
+                        <!-- O id da atividade e, quando em modo instrutor, o id_aluno são repassados para a próxima página. -->
                         <input type="hidden" name="id" id="atvInputId">
+                        <input type="hidden" name="id_aluno" id="atvInputAluno" disabled>
                         <button id="comecar" type="submit" class="btn-comecar-principal">Começar</button>
                     </form>
 
@@ -74,18 +74,19 @@
 
     </main>
 
-    <!-- Rodapé com mascote: o balão de conversa aparece conforme o JS muda o texto. -->
-    <footer>
-        <div class="mascote-container">
-            <div class="balao" id="balao"></div>
-            <button id="btnGalinha">
-                <img src="file?type=img&file=galinha.png" alt="Mascote" width="200" height="200">
-            </button>
-        </div>
-    </footer>
+<!-- Rodapé com o botão de acesso à fazenda. -->
+<footer>
+    <div class="acesso-fazenda">
+        <button id="btnFazenda" class="btn-acessar-fazenda" type="button"
+                title="Acessar a fazenda" aria-label="Acessar a fazenda">
+            <img src="file?type=img&file=icone-acesso-fazenda.png" alt="">
+        </button>
+    </div>
+</footer>
 
     <!-- JSON serializado no HTML: o JavaScript usa esse bloco para montar a tela sem outra requisição. -->
-   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script type="application/json"
+        id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="file?type=js&file=main.js"></script>
 </body>
 

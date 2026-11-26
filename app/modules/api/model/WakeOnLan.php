@@ -1,78 +1,103 @@
 <?php
 /**
- * Minimal Wake-on-LAN helper.
- * Sends a magic packet to the given MAC address via UDP broadcast.
- * Usage: WakeOnLan::send('AA:BB:CC:DD:EE:FF');
+ * Wake-on-LAN helper.
+ * Envia o magic packet via UDP broadcast.
+ *
+ * Uso:
+ *   WakeOnLan::send('AA:BB:CC:DD:EE:FF');
+ *   WakeOnLan::send('AA:BB:CC:DD:EE:FF', '192.168.1.255');                 // broadcast da sua sub-rede
+ *   WakeOnLan::send('AA:BB:CC:DD:EE:FF', '192.168.1.255', [9, 7], '192.168.1.10'); // forçando a interface de saída
  */
 class WakeOnLan {
     /**
-     * Sends a magic packet.
-     * @param string $mac MAC address (e.g., "AA:BB:CC:DD:EE:FF")
-     * @param int $port UDP port, default 9 (discard)
-     * @return bool true on success, false on failure
+     * @param string      $mac        MAC (ex.: "AA:BB:CC:DD:EE:FF")
+     * @param string|null $broadcast  Broadcast da sua sub-rede (ex.: "192.168.1.255"). Opcional.
+     * @param int[]       $ports      Portas UDP de destino
+     * @param string|null $bindIp     IP local da interface que deve enviar (útil com várias placas/VPN)
+     * @return bool true se ao menos um envio foi aceito pelo sistema operacional
      */
-    public static function send(string $mac, int $port = 9): bool {
-        // Clean MAC address
+    public static function send(
+        string $mac,
+        ?string $broadcast = null,
+        array $ports = [9, 7],
+        ?string $bindIp = null
+    ): bool {
         $cleanMac = preg_replace('/[^0-9A-Fa-f]/', '', $mac);
         if (strlen($cleanMac) !== 12) {
             error_log("[WakeOnLan] Endereço MAC inválido fornecido: {$mac}");
             return false;
         }
 
-        // Build magic packet: 6 x 0xFF followed by MAC repeated 16 times (total 102 bytes)
-        $packet = str_repeat(chr(0xFF), 6);
-        $macBytes = '';
-        for ($i = 0; $i < 12; $i += 2) {
-            $macBytes .= chr(hexdec(substr($cleanMac, $i, 2)));
-        }
-        $packet .= str_repeat($macBytes, 16);
+        // Magic packet: 6 x 0xFF + MAC repetido 16 vezes (102 bytes)
+        $packet = str_repeat("\xFF", 6) . str_repeat(hex2bin($cleanMac), 16);
+        $len = strlen($packet);
 
-        $sentSuccessfully = false;
+        $targets = array_values(array_unique(array_filter(['255.255.255.255', $broadcast])));
+        $ports   = array_values(array_unique(array_map('intval', $ports)));
 
-        // Broadcast targets: limited broadcast and local subnet broadcast
-        $targets = ['255.255.255.255', '192.168.0.255'];
-        $ports = array_unique([$port, 7, 9]);
+        $ok = false;
+        $errors = [];
 
-        // Method 1: ext-sockets (socket_create)
+        // Método 1: ext-sockets
         if (function_exists('socket_create')) {
             $sock = @socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
-            if ($sock !== false) {
-                @socket_set_option($sock, SOL_SOCKET, SO_BROADCAST, 1);
-                foreach ($targets as $targetIp) {
-                    foreach ($ports as $targetPort) {
-                        $bytesSent = @socket_sendto($sock, $packet, strlen($packet), 0, $targetIp, $targetPort);
-                        if ($bytesSent !== false) {
-                            $sentSuccessfully = true;
+            if ($sock === false) {
+                $errors[] = 'socket_create: ' . socket_strerror(socket_last_error());
+            } else {
+                if (!@socket_set_option($sock, SOL_SOCKET, SO_BROADCAST, 1)) {
+                    $errors[] = 'SO_BROADCAST: ' . socket_strerror(socket_last_error($sock));
+                }
+                if ($bindIp !== null && !@socket_bind($sock, $bindIp, 0)) {
+                    $errors[] = "socket_bind({$bindIp}): " . socket_strerror(socket_last_error($sock));
+                }
+                foreach ($targets as $ip) {
+                    foreach ($ports as $p) {
+                        $n = @socket_sendto($sock, $packet, $len, 0, $ip, $p);
+                        if ($n === false) {
+                            $errors[] = "sendto {$ip}:{$p}: " . socket_strerror(socket_last_error($sock));
+                        } elseif ($n > 0) {
+                            $ok = true; // o SO aceitou o envio
                         }
                     }
                 }
-                @socket_close($sock);
+                socket_close($sock);
             }
-        }
-
-        // Method 2: Fallback via stream socket if socket_create failed or was unavailable
-        if (!$sentSuccessfully && function_exists('stream_socket_client')) {
-            foreach ($targets as $targetIp) {
-                foreach ($ports as $targetPort) {
-                    $fp = @stream_socket_client("udp://{$targetIp}:{$targetPort}", $errno, $errstr, 2);
-                    if ($fp) {
-                        $bytesWritten = @fwrite($fp, $packet);
-                        @fclose($fp);
-                        if ($bytesWritten !== false && $bytesWritten > 0) {
-                            $sentSuccessfully = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        if ($sentSuccessfully) {
-            error_log("[WakeOnLan] Pacote mágico enviado com sucesso para MAC: {$mac}");
         } else {
-            error_log("[WakeOnLan] Falha ao enviar pacote mágico para MAC: {$mac}");
+            $errors[] = 'extensão sockets não carregada (usando fallback)';
         }
 
-        return $sentSuccessfully;
+        // Método 2: fallback via streams (agora com SO_BROADCAST habilitado)
+        if (!$ok && function_exists('stream_socket_client')) {
+            $opts = ['socket' => ['so_broadcast' => true]];
+            if ($bindIp !== null) {
+                $opts['socket']['bindto'] = "{$bindIp}:0";
+            }
+            $ctx = stream_context_create($opts);
+
+            foreach ($targets as $ip) {
+                foreach ($ports as $p) {
+                    $fp = @stream_socket_client("udp://{$ip}:{$p}", $errno, $errstr, 2, STREAM_CLIENT_CONNECT, $ctx);
+                    if (!$fp) {
+                        $errors[] = "stream {$ip}:{$p}: [{$errno}] {$errstr}";
+                        continue;
+                    }
+                    $w = @fwrite($fp, $packet);
+                    fclose($fp);
+                    if ($w === false || $w === 0) {
+                        $errors[] = "fwrite {$ip}:{$p} falhou";
+                    } else {
+                        $ok = true;
+                    }
+                }
+            }
+        }
+
+        if ($ok) {
+            error_log("[WakeOnLan] Pacote mágico enviado para MAC: {$mac}");
+        } else {
+            error_log("[WakeOnLan] Falha ao enviar para MAC: {$mac} | " . implode(' | ', $errors));
+        }
+
+        return $ok;
     }
 }
-?>

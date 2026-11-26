@@ -1,0 +1,420 @@
+/* ============================================================================
+   The Farmer Edu — Sobre os Desenvolvedores (sobre.css)
+   Tokens do Guia de Design: Poppins (interface) + Inter (conteúdo), cards de
+   25px, botões em pílula, avatar com iniciais, brilho laranja nos botões.
+   Tema por perfil: verde (aluno) / azul (instrutor).
+   ============================================================================ */
+
+.sobre {
+    /* Tema Aluno (padrão) */
+    --tema-primario: #1B5E20;
+    --tema-escuro:   #089C2F;
+    --tema-claro:    #A0FDA3;
+    --tema-botao:    #1B5E20;
+
+    --navy:         #002D38;
+    --cinza-menu:   #E6E6E6;
+    --cinza-item:   #D9D9D9;
+    --cinza-texto:  #727272;
+    --laranja:      #FF8D28;
+    --brilho:       0px 4px 3px rgba(248, 96, 17, 0.5);
+    --sombra-card:  0px 4px 4px rgba(0, 0, 0, 0.25);
+
+    margin: 0;
+    background: #FFFFFF;
+    color: var(--navy);
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Tema Instrutor: mesma estrutura, paleta azul */
+.sobre[data-tema="instrutor"] {
+    --tema-primario: #0088FF;
+    --tema-escuro:   #2276E3;
+    --tema-claro:    #90BDF0;
+    --tema-botao:    #0A64D8; /* azul de link do guia: contraste AA com texto branco */
+}
+
+.sobre *,
+.sobre *::before,
+.sobre *::after {
+    box-sizing: border-box;
+}
+
+/* ---------- Layout ---------- */
+.sobre-main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: clamp(36px, 6vw, 72px) clamp(16px, 4vw, 32px) 96px;
+}
+
+/* ---------- Introdução ---------- */
+.sobre-intro {
+    margin-bottom: 40px;
+}
+
+.sobre-intro h1 {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 800;
+    font-size: clamp(30px, 5vw, 44px);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--navy);
+}
+
+.sobre-intro p {
+    margin: 18px 0 0;
+    max-width: 62ch;
+    font-size: 17px;
+    line-height: 1.65;
+    color: #3A4A4D;
+}
+
+.sobre-controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 26px;
+}
+
+.btn-texto {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 22px;
+    border: 2px solid var(--navy);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--navy);
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+
+.btn-texto:hover {
+    background: var(--navy);
+    color: #FFFFFF;
+}
+
+.btn-texto:focus-visible {
+    outline: 3px solid var(--laranja);
+    outline-offset: 3px;
+}
+
+/* ---------- Lista de squads (acordeão) ---------- */
+.squads {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.squad {
+    background: #FFFFFF;
+    border: 2px solid var(--cinza-item);   /* neutro quando fechado */
+    border-radius: 25px;                    /* raio dos cards principais */
+    box-shadow: var(--sombra-card);
+    transition: border-color .2s ease;
+    scroll-margin-top: 96px;
+}
+
+.squad.is-open {
+    border-color: var(--tema-primario);     /* destaque do item aberto */
+}
+
+.squad-titulo {
+    margin: 0;
+}
+
+.squad-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 22px;
+    border: 0;
+    border-radius: 23px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.squad-toggle:hover {
+    background: rgba(0, 45, 56, 0.04);
+}
+
+.squad-toggle:focus-visible {
+    outline: 3px solid var(--laranja);
+    outline-offset: -4px;
+}
+
+/* Barra de título "colada à mão": levemente rotacionada (-0.35°), como nos cards de matéria */
+.squad-etiqueta {
+    flex: none;
+    padding: 7px 18px;
+    border-radius: 10px;
+    background: var(--tema-claro);
+    color: #000000;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1.2;
+    white-space: nowrap;
+    transform: rotate(-0.35deg);
+}
+
+.squad-nome {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 19px;
+    line-height: 1.25;
+    color: var(--navy);
+}
+
+.squad-qtd {
+    flex: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--cinza-texto);
+}
+
+.squad-chevron {
+    flex: none;
+    color: var(--navy);
+    transition: transform .25s ease;
+}
+
+.squad.is-open .squad-chevron {
+    transform: rotate(180deg);
+}
+
+/* Painel recolhível: anima a altura sem JS de medição (grid 0fr → 1fr) */
+.squad-panel {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;                      /* tira o conteúdo fechado da ordem de foco */
+    transition: grid-template-rows .32s ease, visibility 0s linear .32s;
+}
+
+.squad.is-open .squad-panel {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows .32s ease, visibility 0s linear 0s;
+}
+
+.squad-panel-inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.squad-vazio {
+    margin: 0;
+    padding: 4px 22px 22px;
+    font-size: 15px;
+    color: var(--cinza-texto);
+}
+
+/* ---------- Integrantes ---------- */
+.membros {
+    list-style: none;
+    margin: 0;
+    padding: 0 22px 10px;
+}
+
+.membro {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--cinza-menu);
+}
+
+.membro-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--tema-escuro);
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+.membro-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.membro-nome {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 1.3;
+    color: var(--navy);
+    overflow-wrap: anywhere;
+}
+
+.membro-tl {
+    padding: 2px 10px;
+    border: 1px solid var(--laranja);
+    border-radius: 999px;
+    background: #FFF1E3;
+    color: #7A3B00;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* Botão de GitHub: pílula sólida, texto branco em bold, brilho laranja no hover */
+.btn-github {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: var(--tema-botao);
+    color: #FFFFFF;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+a.btn-github:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--brilho);
+}
+
+a.btn-github:focus-visible {
+    outline: 3px solid var(--laranja);
+    outline-offset: 3px;
+}
+
+.btn-github.is-desativado {
+    background: var(--cinza-item);
+    color: var(--cinza-texto);
+    cursor: not-allowed;
+}
+
+/* ---------- Rodapé ---------- */
+.sobre-rodape {
+    border-top: 1px solid var(--cinza-menu);
+    padding: 32px clamp(16px, 4vw, 32px);
+    text-align: center;
+}
+
+.sobre-rodape p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--cinza-texto);
+}
+
+/* ---------- Cabeçalho oficial: links de visitante (sem estilo no core) ---------- */
+.sobre .tfe-guest-link {
+    padding: 8px 14px;
+    border-radius: 999px;
+    color: var(--navy);
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .15s ease;
+}
+
+.sobre .tfe-guest-link:hover {
+    background: rgba(255, 255, 255, 0.65);
+}
+
+.sobre .tfe-guest-link:focus-visible {
+    outline: 3px solid var(--laranja);
+    outline-offset: 2px;
+}
+
+.sobre .tfe-guest-cta {
+    background: var(--tema-botao);
+    color: #FFFFFF;
+}
+
+.sobre .tfe-guest-cta:hover {
+    background: var(--tema-botao);
+    box-shadow: var(--brilho);
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 680px) {
+    /* No celular o cabeçalho só comporta o botão principal; o logo leva ao início */
+    .sobre .tfe-guest-link:not(.tfe-guest-cta) {
+        display: none;
+    }
+}
+
+@media (max-width: 560px) {
+    /* Cabeçalho do squad: etiqueta | nome | seta, com a contagem logo abaixo do nome */
+    .squad-toggle {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        grid-template-areas:
+            "etiqueta nome seta"
+            ".        qtd  .";
+        align-items: center;
+        column-gap: 12px;
+        row-gap: 4px;
+        padding: 14px 16px;
+    }
+
+    .squad-etiqueta { grid-area: etiqueta; }
+    .squad-nome     { grid-area: nome; font-size: 17px; }
+    .squad-qtd      { grid-area: qtd; }
+    .squad-chevron  { grid-area: seta; }
+
+    .membros {
+        padding: 0 16px 8px;
+    }
+
+    /* Botão do GitHub continua à direita do nome, só com o ícone */
+    .btn-github {
+        width: 40px;
+        padding: 0;
+    }
+
+    .btn-github span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .squad,
+    .squad-toggle,
+    .squad-chevron,
+    .squad-panel,
+    .btn-github,
+    .btn-texto,
+    .sobre .tfe-guest-link {
+        transition: none !important;
+    }
+}

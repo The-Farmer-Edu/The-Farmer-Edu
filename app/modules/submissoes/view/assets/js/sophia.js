@@ -214,10 +214,11 @@ function iniciarSophia() {
         //     return;
         // }
 
-        if (typeof atualizarBotoes === 'function') {
-            window._usosSophia = (window._usosSophia || 0) + 1;
-            atualizarBotoes();
-        }
+
+
+        // --------------------------------------------------------------
+        // Conta o uso e grava no navegador (função definida em iniciaratv.js).
+        if (typeof registrarUsoSophia === 'function') registrarUsoSophia();
 
         ajuda.analisando = true;
         ajuda.assinatura = typeof assinaturaDoCodigo === 'function' ? assinaturaDoCodigo() : '';

@@ -99,11 +99,21 @@ class NotasController
         // Obtém o ID do instrutor e busca as suas turmas
         $idInstrutor = (int) $usuario['idUsuario'];
         $turmas      = $this->model->buscarTurmasDoInstrutor($idInstrutor);
+        require_once __DIR__ . '/../feedback_ia/Model.php';
+
+
+        $pdo = iniciarPDO();
+        $idSubmissao = (int) $submissao['id_submissao'];
+
+
+        $probabilidadeIA =
+            FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
 
         // Carrega a view do painel do instrutor
         $this->view('instrutor', [
             'usuario' => $usuario,
             'turmas'  => $turmas,
+            'probabilidade-ia' => $probabilidadeIA
         ]);
     }
 

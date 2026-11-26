@@ -331,6 +331,7 @@
       };
       let letrasDigitadas = '';
       addEventListener('keydown', evento => {
+        if (evento.repeat) return;
         if (evento.ctrlKey || evento.metaKey || evento.altKey || evento.key.length !== 1) return;
         if (evento.target && evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]')) return;   // ex.: nome da fazenda
 

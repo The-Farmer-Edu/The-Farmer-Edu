@@ -46,6 +46,72 @@
         }
         cena.add(grupoDaMontanha);
       };
+
+      // --- Easter egg: quadro rústico escondido na face posterior da montanha central ---
+      const criarQuadroSecretoDaMontanha = function criarQuadroSecretoDaMontanha() {
+          const quadro = new THREE.Group();
+
+          quadro.name = 'quadro-secreto-da-montanha';
+          quadro.userData.nome = 'quadro-secreto';
+
+          // Posição na parte de trás da montanha, aproximadamente na metade da altura.
+          quadro.position.set(0, 26.4, -83.55);
+
+          // A frente do quadro aponta para fora da montanha.
+          quadro.rotation.y = Math.PI;
+
+          const madeira = new THREE.MeshLambertMaterial({
+              color: 0x68432b
+          });
+
+          const madeiraClara = new THREE.MeshLambertMaterial({
+              color: 0x93633d
+          });
+
+          const texturaQuadro = new THREE.TextureLoader().load(
+              '/The-Farmer-Edu/public/assets/img/png/cerresete.png',
+              () => console.log('Imagem do quadro carregada com sucesso!'),
+              undefined,
+              (erro) => console.error('Erro ao carregar a imagem do quadro:', erro)
+          );
+
+          const fundoVazio = new THREE.MeshLambertMaterial({
+              map:texturaQuadro
+          });
+
+          const adicionarPeca = (largura, altura, profundidade, x, y, z, materialDaPeca) => {
+              const peca = new THREE.Mesh(
+                  new THREE.BoxGeometry(largura, altura, profundidade),
+                  materialDaPeca
+              );
+
+              peca.position.set(x, y, z);
+              peca.castShadow = true;
+              peca.receiveShadow = true;
+
+              quadro.add(peca);
+          };
+
+          // Fundo escuro e vazio: futuramente poderá receber uma textura/imagem.
+          adicionarPeca(4.45, 3.25, 0.16, 0, 0, -0.02, fundoVazio);
+
+          // Moldura de madeira com quatro peças.
+          adicionarPeca(5.2, 0.38, 0.38, 0, 1.81, 0.13, madeira);
+          adicionarPeca(5.2, 0.38, 0.38, 0, -1.81, 0.13, madeira);
+          adicionarPeca(0.38, 3.25, 0.38, -2.41, 0, 0.13, madeira);
+          adicionarPeca(0.38, 3.25, 0.38, 2.41, 0, 0.13, madeira);
+
+          // Filete interno mais claro para acabamento rústico.
+          adicionarPeca(4.55, 0.09, 0.08, 0, 1.56, 0.34, madeiraClara);
+          adicionarPeca(4.55, 0.09, 0.08, 0, -1.56, 0.34, madeiraClara);
+          adicionarPeca(0.09, 3.12, 0.08, -2.16, 0, 0.34, madeiraClara);
+          adicionarPeca(0.09, 3.12, 0.08, 2.16, 0, 0.34, madeiraClara);
+
+          cena.add(quadro);
+      };
+
+      criarQuadroSecretoDaMontanha();
+
       const morro = function morro(posicaoX, posicaoZ, raio, altura, cor = 0x6fb04a) { // colina verde baixa
         const malha = new THREE.Mesh(new THREE.SphereGeometry(raio, 12, 6), material(cor));
         malha.scale.set(1, altura / raio, 1); malha.position.set(posicaoX, 0, posicaoZ); malha.receiveShadow = true; cena.add(malha);

@@ -87,9 +87,10 @@ efeitos: {
     global: { distanciaMaxima: 80, intervaloMinimo: 0.15 },
 
     // --- BOTÕES E MENUS ---
-    tutorialPasso:     { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-passo.mp3',     volume: 0.65, intervaloMinimo: 0.08 },
-    tutorialTarefa:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-tarefa.mp3',    volume: 0.75, intervaloMinimo: 0.2 },
-    tutorialConcluido: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-concluido.mp3', volume: 0.80, intervaloMinimo: 0.5 },
+    tutorialAvancar:   { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorialavanca.mp3',   volume: 0.65, intervaloMinimo: 0.08 },
+    tutorialVoltar:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorialvolta.mp3',    volume: 0.65, intervaloMinimo: 0.08 },
+    tutorialConcluido: { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/conquista.mp3', volume: 0.80, intervaloMinimo: 0.5 },
+    tutorialSwoosh:    { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/tutorial-swoosh.mp3',    volume: 0.5, intervaloMinimo: 0.15 },
     Enter:   { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaoenter.mp3', volume: 0.6, intervaloMinimo: 0.05 },
     Fecha:  { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/botaovoltar.mp3', volume: 0.6, intervaloMinimo: 0.05 },
     ativar:       { arquivo: 'assets/audio/SFX/sons-do-jogo/botoes-e-menu/ativar.mp3', volume: 0.7 },
@@ -156,8 +157,7 @@ efeitos: {
 
      // --- NO MAPA--
       pedraSecreta: { arquivo: 'assets/audio/SFX/segredos/pedra-secreta.mp3', volume: 0.9 },
-/*     unicornio:    { arquivo: 'assets/audio/SFX/segredos/temaunicornio.mp3', volume: 0.9 },
- */    unicornioTrilha:   { arquivo: 'assets/audio/SFX/segredos/unicornio.mp3', volume: 0.95, intervaloMinimo: 1.0 },
+     unicornioTrilha:   { arquivo: 'assets/audio/SFX/segredos/unicornio.mp3', volume: 2, intervaloMinimo: 1.0 },
     discoVoador:    { arquivo: 'assets/audio/SFX/segredos/nave.mp3', volume: 0.9, intervaloMinimo: 1.0, distanciaMaxima: 90 },
     naveindoembora:    { arquivo: 'assets/audio/SFX/segredos/nave_indo_embora.mp3', volume: 0.9, intervaloMinimo: 1.0, distanciaMaxima: 90 },
     abducao:        { arquivo: 'assets/audio/SFX/segredos/pegavaca.mp3', volume: 0.95, intervaloMinimo: 1.0, distanciaMaxima: 90 },
@@ -165,7 +165,7 @@ efeitos: {
     pegarvaca:  { arquivo: 'assets/audio/SFX/vacas/mugido1.mp3', volume: 0.85, intervaloMinimo: 1.0, distanciaMaxima: 90 },
 
    // --- EASTER EGGS (CELEIRO E CAVERNA) ---
-    celeiroTema:     { arquivo: 'assets/audio/SFX/segredos/celeiro-tema.mp3', volume: 0.7 },
+    celeiroTema:     { arquivo: 'assets/audio/SFX/segredos/celeiro-tema.mp3', volume: 5 },
     tonyFala:        { arquivo: 'assets/audio/SFX/segredos/tony-fala.mp3', volume: 0.85 },
     furyFala:        { arquivo: 'assets/audio/SFX/segredos/fury-fala.mp3', volume: 0.85 },
     cavernaTema:    { arquivo: 'assets/audio/SFX/segredos/caverna.mp3',    volume: 0.7 },
@@ -174,7 +174,7 @@ efeitos: {
     venomFala:      { arquivo: 'assets/audio/SFX/segredos/venom.mp3',      volume: 0.8 },
     hulkFala:       { arquivo: 'assets/audio/SFX/segredos/hulk.mp3',       volume: 0.4 },
     destinoFala:    { arquivo: 'assets/audio/SFX/segredos/drdestino.mp3',    volume: 0.2 },
-    batmanFala:     { arquivo: 'assets/audio/SFX/segredos/batman.mp3',     volume: 5.0 },
+    batmanFala:     { arquivo: 'assets/audio/SFX/segredos/batman.mp3',     volume: 8.0 },
     slendermanFala: { arquivo: 'assets/audio/SFX/segredos/slenderman.mp3', volume: 0.3 },
     freddyFala:     { arquivo: 'assets/audio/SFX/segredos/freddy.mp3',     volume: 0.3 },
 

@@ -1,10 +1,12 @@
 /* Fazenda 3D — CSS 2 de 7: barra superior, cartões das áreas e aviso. Extraído do bloco de estilos do fazenda.html; a ordem das tags link no HTML deve ser mantida (01 a 07). */
 /* ===== Barra superior (XP e botão de teste), cartões das áreas no rodapé e aviso temporário ===== */
+/* left/right = margens seguras (entalhe do celular deitado): a barra inteira — XP, recursos, som, menu e os botões
+   Inventário/Objetivos/Diário, posicionados dentro dela — fica fora das áreas reservadas do aparelho */
 #barra-topo {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
+  left: env(safe-area-inset-left, 0px);
+  right: env(safe-area-inset-right, 0px);
   display: flex;
   justify-content: space-between;
   align-items: center;

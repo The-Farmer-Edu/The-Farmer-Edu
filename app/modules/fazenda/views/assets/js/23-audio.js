@@ -153,15 +153,11 @@ for (const nome of TIPOS_DE_EFEITO) {
 for (const nome of Object.keys(AUDIO_CONFIG.segredos)) FONTES_DE_SOM.segredos[nome] = criarFonteDeSom(AUDIO_CONFIG.segredos[nome].arquivo, false);
 FONTES_DE_SOM.pedraSecreta = FONTES_DE_SOM.segredos.pedraSecreta;   // nome antigo, mesmo objeto (todasAsFontesDeSom não o repete)
 
-// Quando uma trilha especial termina sozinha, libera a música de fundo novamente
+// Trilhas especiais (aliens e unicórnio) tocam em loop enquanto o evento durar,
+// e só voltam à música normal quando pararSegredo() for chamado no fim da animação.
 for (const nomeTrilha of ['unicornioTrilha', 'trilha']) {
   if (FONTES_DE_SOM.segredos[nomeTrilha]) {
-    FONTES_DE_SOM.segredos[nomeTrilha].el.addEventListener('ended', () => {
-      if (trilhaEspecialAtiva === nomeTrilha) {
-        trilhaEspecialAtiva = null;
-        sincronizarMusica();
-      }
-    });
+    FONTES_DE_SOM.segredos[nomeTrilha].el.loop = true;
   }
 }
 
@@ -359,13 +355,26 @@ const atualizarSonsDosAnimais = function atualizarSonsDosAnimais(segundosDesdeUl
   }
 };
 let relogioDosAmbientes = 0;
-// Atualiza os sons dos animais e reajusta o volume dos ambientes (a cada 0,25 s) por causa da distância da
-// câmera. Não faz nada antes de o áudio ser liberado.
+// Atualiza os sons dos animais, reajusta o volume dos ambientes e sincroniza a música com invasões e monstros noturnos.
 const atualizarAudio = function atualizarAudio(segundosDesdeUltimoFrame, tempo) {
   if (!ESTADO_DO_AUDIO.liberado) return;
+
+  // Alterna automaticamente entre a música normal e a música de ataque durante invasões ou monstros noturnos
+  const invasaoAtiva = typeof INVASAO_EM_CURSO !== 'undefined' && INVASAO_EM_CURSO.fase !== 'nenhuma';
+  const noturnosAtivos = typeof monstrosVivos === 'function' && monstrosVivos() > 0;
+  const modoDesejado = (invasaoAtiva || noturnosAtivos) ? 'invasao' : 'normal';
+  if (modoMusicaAtual !== modoDesejado) {
+    trocarMusicaDeFundo(modoDesejado);
+  }
+
   atualizarSonsDosAnimais(segundosDesdeUltimoFrame, tempo);
   relogioDosAmbientes -= segundosDesdeUltimoFrame;
-  if (relogioDosAmbientes <= 0) { relogioDosAmbientes = 0.25; sincronizarAmbiente('cachoeira'); sincronizarAmbiente('fonte'); sincronizarAmbiente('trator'); }
+  if (relogioDosAmbientes <= 0) {
+    relogioDosAmbientes = 0.25;
+    sincronizarAmbiente('cachoeira');
+    sincronizarAmbiente('fonte');
+    sincronizarAmbiente('trator');
+  }
 };
 
 // ---- Fazenda 8.4.1: efeitos das mecânicas (AUDIO_CONFIG.efeitos) ----
@@ -423,6 +432,7 @@ const tocarSegredo = function tocarSegredo(nome, posicao) {
     if (!ESTADO_DO_AUDIO.liberado || !ESTADO_DO_AUDIO.musica.ligado) return false;
     trilhaEspecialAtiva = nome;
     sincronizarMusica();
+    fonteDeSom.el.loop = true;
     fonteDeSom.el.muted = ESTADO_DO_AUDIO.silenciado;
     try { fonteDeSom.el.currentTime = 0; } catch (erro) { }
     tocarSom(fonteDeSom, ESTADO_DO_AUDIO.musica.volume * configuracao.volume).then(ok => {
@@ -474,7 +484,7 @@ canvas.addEventListener('pointerup', evento => {
     if (acerto) abrirPainelDaFazenda(idDaArea, acerto.instanceId);
     return !!acerto;
   })) { /* painel aberto */ }
-  else if (estado.niveis.mina && raioDeClique.intersectObject(grupoDaArea.mina, true).length) { abrirPainelDaFazenda(); mostrarAviso(textoDoEstadoDaMina()); }
+  else if (estado.niveis.mina && !(window.farmEduCaverna && window.farmEduCaverna.acertaEntrada(raioDeClique)) && raioDeClique.intersectObject(grupoDaArea.mina, true).length) { abrirPainelDaFazenda(); mostrarAviso(textoDoEstadoDaMina()); }   // edição pessoal (30j): clique na boca da caverna abre a caverna secreta, não o painel da mina
 });
 // Reage ao clique na pedra secreta: faz os cristais pulsarem e toca o som secreto (se o arquivo existir;
 // senão só registra no console).

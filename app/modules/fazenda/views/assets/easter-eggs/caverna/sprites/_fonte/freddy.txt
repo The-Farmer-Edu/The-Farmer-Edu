@@ -1,0 +1,92 @@
+# FREDDY FAZBEAR — rascunho PROVISÓRIO de pixel art (fan art, uso pessoal). 32×47, de frente.
+# Leitura: urso animatrônico marrom, cartola e gravata-borboleta pretas, focinho e barriga claros, orelhas redondas,
+# olhos azuis, mandíbula separada, juntas do endoesqueleto aparecendo nos cotovelos e joelhos, microfone na mão.
+paleta
+k #120a06
+b #5a3218
+B #7f4a24
+n #a46634
+N #c88a4e
+t #dcb57f
+T #b38a58
+h #121116
+H #34333d
+e #2f78cf
+E #eaf2ff
+w #f4efe4
+m #34343a
+M #7c7c84
+r #3a0d0d
+fim
+base-espelhada 32 47
+............kkkk
+...........khhhH
+...........khhhH
+..........kkkhhh
+....kkk..kkkkkkk
+...kbBBk.kbBBnnn
+...kbtBkkbBnnNNN
+...kbBkbbBnnnNNN
+....kkbBnnkkkNNN
+.....kbnnkEEeNNn
+.....kbnnkEeekNn
+.....kbnnnkkknnt
+.....kbnntttttkk
+......kbtttTtttt
+......kbtkwkwkwk
+......kbbkkkkkkk
+.......kbtttwtwt
+........kbTtttTt
+........kkbbbbbb
+....kkbBBBkbkhhH
+...kbBnnNBbkhhhh
+..kbBnnnNnBkkhhk
+..kbBnnNNnBBbkkk
+..kbBnkkkBnnttTT
+..kbBk.kbBntttTT
+..kmmk.kbBttttTt
+..kMmk.kbBtttttt
+..kbBk.kbBttttTt
+.kbBnk.kbBtttttt
+.kbnnk.kbBnttttt
+.kbnnBkkbBnttttT
+.kbBnnkkbBBnnnnn
+..kkkk..kbBBnnnn
+........kbbBBkkk
+........kbBnk...
+........kmMmk...
+........kbBnk...
+.......kbBnnk...
+.......kbBnnk...
+.......kbBnnk...
+.......kbBnnk...
+.......kbBnNk...
+.......kbBnnk...
+......kbBBnnk...
+.....kbBnnnNk...
+.....kbBnnnnk...
+.....kkkkkkkk...
+# microfone na mão direita de quem vê
+pinta 26 24
+.kkk.
+kMmMk
+kmMmk
+.kmk.
+.kmk.
+.kMk.
+# olhos (recortados ANTES da cabeça e presos a ela): piscar (pálpebra desce) e "modo noturno" (olho preto, pupila branca)
+regiao olhos 9 8 14 3
+quadro olhos 9 8
+nkkkNNNNNNkkkn
+kbbbNNnnNNbbbk
+kkkkkNnnNkkkkk
+quadro olhos 9 8
+nkkkNNNNNNkkkn
+khhENNnnNNEhhk
+khhhkNnnNkhhhk
+# cabeça (orelhas, cartola, focinho e dentes de cima): trancos mecânicos de 1 px
+regiao cabeca 3 0 26 15
+# mandíbula: abre e fecha (cantoria do animatrônico)
+regiao mandibula 7 15 18 3
+# braço direito de quem vê (com o microfone): ergue o microfone de vez em quando
+regiao bracoD 24 22 8 11

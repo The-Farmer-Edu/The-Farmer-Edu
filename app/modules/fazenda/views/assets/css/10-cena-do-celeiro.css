@@ -1,0 +1,54 @@
+/* ====================================================================================================
+   EDIÇÃO PESSOAL — CENA DO CELEIRO (js/30i-cena-do-celeiro.js + assets/easter-eggs/vingadores/)
+   Camada da cena 2D por cima de toda a Fazenda (abaixo só da tela de carregamento), tela de pixel art ampliada em escala inteira
+   (nearest-neighbor), balão de fala em pixel art e botão discreto de volta. A íris das transições fica acima de tudo.
+   ==================================================================================================== */
+#cena-do-celeiro {
+  position: fixed; inset: 0; z-index: 95; display: grid; place-items: center;
+  background: #000; overflow: hidden; touch-action: none; user-select: none;
+}
+#cena-do-celeiro[hidden] { display: none; }
+#tela-do-celeiro {
+  /* a regra global "canvas { position: fixed; inset: 0 }" (01-base.css, canvas da Fazenda) não vale para esta tela */
+  position: relative; inset: auto; z-index: auto;
+  display: block; image-rendering: pixelated; image-rendering: crisp-edges;
+}
+#iris-do-celeiro { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 97; pointer-events: auto; }
+#iris-do-celeiro[hidden] { display: none; }
+body.dentro-do-celeiro { cursor: default; }
+
+/* ---- balão de fala (pixel art: bordas em degraus, sem cantos arredondados) ---- */
+#balao-do-celeiro {
+  --px: calc(var(--escala-do-celeiro, 3) * 1px);
+  position: fixed; z-index: 96; transform: translate(-50%, -100%); max-width: calc(var(--px) * 150);
+  padding: calc(var(--px) * 3) calc(var(--px) * 5) calc(var(--px) * 3.5);
+  background: #f3efe2; color: #16131a;
+  font-family: 'VT323', 'Courier New', monospace; font-size: calc(var(--px) * 8); line-height: 0.95;
+  /* moldura de 1 "pixel da cena"; o recorte tira o pixel de cada canto (degrau típico de balão em pixel art) */
+  border: var(--px) solid #16131a;
+  clip-path: polygon(0 var(--px), var(--px) var(--px), var(--px) 0, calc(100% - var(--px)) 0, calc(100% - var(--px)) var(--px), 100% var(--px), 100% calc(100% - var(--px)), calc(100% - var(--px)) calc(100% - var(--px)), calc(100% - var(--px)) 100%, var(--px) 100%, var(--px) calc(100% - var(--px)), 0 calc(100% - var(--px)));
+  animation: balao-entra 0.16s steps(3) both;
+}
+#balao-do-celeiro[hidden] { display: none; }
+#balao-do-celeiro.saindo { animation: balao-sai 0.16s steps(3) both; }
+#balao-do-celeiro .nome {
+  display: block; font-size: calc(var(--px) * 5.5); letter-spacing: 0.06em; margin-bottom: calc(var(--px) * 1);
+}
+#balao-do-celeiro[data-quem="tony"] .nome { color: #b3202a; }
+#balao-do-celeiro[data-quem="tony"]::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--px) * 2); background: #d6a334; }
+#balao-do-celeiro[data-quem="fury"] .nome { color: #2d5a66; }
+#balao-do-celeiro[data-quem="fury"]::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: calc(var(--px) * 2); background: #1b1c22; }
+#balao-do-celeiro .texto { display: block; min-height: 1em; white-space: pre-wrap; }
+@keyframes balao-entra { from { opacity: 0; transform: translate(-50%, calc(-100% + var(--px) * 3)); } to { opacity: 1; transform: translate(-50%, -100%); } }
+@keyframes balao-sai { to { opacity: 0; transform: translate(-50%, calc(-100% - var(--px) * 2)); } }
+
+/* ---- botão discreto de volta ---- */
+#sair-do-celeiro {
+  position: fixed; z-index: 96; left: 14px; top: calc(env(safe-area-inset-top, 0px) + 12px);
+  font: 600 13px/1 system-ui, sans-serif; color: rgba(235, 240, 250, 0.72); background: rgba(10, 12, 18, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 4px; padding: 7px 10px; cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+#sair-do-celeiro:hover, #sair-do-celeiro:focus-visible { color: #fff; background: rgba(10, 12, 18, 0.85); outline: 2px solid #49d6ff; outline-offset: 2px; }
+#sair-do-celeiro kbd { font: inherit; font-size: 11px; opacity: 0.7; margin-left: 4px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 3px; padding: 1px 4px; }
+@media (prefers-reduced-motion: reduce) { #balao-do-celeiro, #balao-do-celeiro.saindo { animation: none; } }

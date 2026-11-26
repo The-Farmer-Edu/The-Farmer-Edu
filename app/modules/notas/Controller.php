@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../core/session.php';
 // =====================================================================
 // NotasController — gerencia as rotas de notas para aluno e instrutor
 // =====================================================================
-
+require_once __DIR__ . '/../feedback_ia/Model.php';
 class NotasController
 {
     /**
@@ -33,7 +33,8 @@ class NotasController
     {
         $this->model = new NotasModel();
     }
-
+    //------------------------------------------------------------------
+    $notas=FeedbackIAModel::salvarNotaIA($pdo, $idSubmissao, $nota);
     // -----------------------------------------------------------------
     // VISÃO DO ALUNO — GET /notas/aluno
     // -----------------------------------------------------------------

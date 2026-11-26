@@ -71,7 +71,7 @@
             );
             $stmt->execute([$idSubmissao, $nota]);
 
-        FeedbackIAModel::salvarNotaIA($pdo, $idSubmissao, $nota);
+        // FeedbackIAModel::salvarNotaIA($pdo, $idSubmissao, $nota);
 
         public static function salvarFeedbackGeral(PDO $pdo, int $idSubmissao, string $analiseTecnica, string $respostaAluno): void {
             $stmt = $pdo->prepare(

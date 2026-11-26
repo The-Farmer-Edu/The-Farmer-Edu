@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#A0FDA3">
+<title>Erro 500 · Erro no servidor · The Farmer Edu</title>
+<link rel="icon" type="image/x-icon" href="/assets/img/ico/logo_icone.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --verde:#1B5E20; --verde-escuro:#089C2F; --verde-claro:#A0FDA3;
+  --laranja:#FF8D28; --navy:#002D38; --cinza:#727272; --item:#D9D9D9; --fundo:#F1FBF3;
+  --sombra:0 4px 4px rgba(0,0,0,.25); --brilho:0 4px 3px rgba(248,96,17,.5);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;position:relative;display:flex;flex-direction:column;
+  background:var(--fundo);color:var(--navy);font-family:'Inter','Segoe UI',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+
+/* Cabeçalho simplificado (mesma identidade do cabeçalho oficial, sem depender de sessão) */
+.topo{background:var(--verde-claro);box-shadow:var(--brilho);border-radius:0 0 10px 10px}
+.topo-int{max-width:1100px;margin:0 auto;padding:10px clamp(16px,4vw,40px);min-height:64px;display:flex;align-items:center}
+.marca{display:inline-flex;align-items:center;gap:12px;color:var(--navy);text-decoration:none;
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:20px}
+.marca img{width:42px;height:42px;border-radius:50%;background:#fff;padding:2px;box-shadow:0 2px 5px rgba(0,0,0,.12)}
+.marca b{color:var(--verde-escuro);font-weight:800}
+.marca:focus-visible{outline:3px solid var(--laranja);outline-offset:4px;border-radius:12px}
+
+main{flex:1;width:100%;max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+  align-items:center;gap:clamp(28px,5vw,72px);padding:clamp(32px,6vw,80px) clamp(16px,4vw,40px) 120px}
+
+/* Barra de título "colada à mão" (-0.35°), igual aos cards de matéria */
+.etiqueta{display:inline-block;padding:7px 18px;border-radius:10px;background:var(--verde-claro);color:#000;
+  font-family:'Poppins',sans-serif;font-weight:700;font-size:15px;line-height:1.2;transform:rotate(-.35deg)}
+h1{margin:20px 0 0;font-family:'Poppins',sans-serif;font-weight:800;font-size:clamp(32px,5.5vw,52px);
+  line-height:1.08;letter-spacing:-.02em}
+.texto{margin:18px 0 0;max-width:46ch;font-size:18px;line-height:1.6;color:#3A4A4D}
+.ajuda{margin:14px 0 0;max-width:46ch;font-size:15px;line-height:1.55;color:var(--cinza)}
+.acoes{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 28px;border-radius:999px;
+  font-family:'Poppins',sans-serif;font-weight:600;font-size:15px;text-decoration:none;cursor:pointer;
+  transition:transform .15s ease,box-shadow .15s ease,background .15s ease,color .15s ease}
+.btn-primario{background:var(--verde);color:#fff;border:2px solid var(--verde)}
+.btn-primario:hover{transform:translateY(-1px);box-shadow:var(--brilho)}
+.btn-secundario{background:transparent;color:var(--navy);border:2px solid var(--navy)}
+.btn-secundario:hover{background:var(--navy);color:#fff}
+.btn:focus-visible{outline:3px solid var(--laranja);outline-offset:3px}
+
+/* Sophia + balão de chat (elemento de marca do guia: balão branco, raio 49px, Inter Bold) */
+.cena{display:flex;flex-direction:column;align-items:flex-start}
+.balao{position:relative;max-width:340px;padding:22px 30px;background:#fff;border:2px solid var(--item);
+  border-radius:49px;box-shadow:var(--sombra);font-family:'Inter',sans-serif;font-weight:700;font-size:17px;line-height:1.45}
+.balao::after{content:"";position:absolute;left:58px;bottom:-13px;width:22px;height:22px;background:#fff;
+  border-right:2px solid var(--item);border-bottom:2px solid var(--item);border-bottom-right-radius:6px;transform:rotate(45deg)}
+.sophia{width:min(230px,52vw);height:auto;margin:22px 0 0 18px;image-rendering:pixelated}
+
+.galinha{position:absolute;right:clamp(12px,3vw,36px);bottom:clamp(10px,2vw,24px);width:72px;height:auto;image-rendering:pixelated}
+
+@media (max-width:760px){
+  main{grid-template-columns:1fr;align-items:start;padding-bottom:110px}
+  .texto{font-size:17px}
+  .btn{flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-int">
+    <a class="marca" href="/" aria-label="The Farmer Edu, ir para o início">
+      <img src="/assets/img/svg/logo_icone.svg" alt="" onerror="this.style.display='none'">
+      <span>The Farmer <b>Edu</b></span>
+    </a>
+  </div>
+</header>
+
+<main>
+  <section>
+    <span class="etiqueta">Erro 500</span>
+    <h1>Erro no servidor</h1>
+    <p class="texto">Algo falhou do nosso lado e a página não pôde ser carregada. Tente de novo em alguns instantes.</p>
+    <p class="ajuda">Se o problema continuar, avise seu instrutor informando o código <strong>500</strong>.<span data-agora></span></p>
+    <div class="acoes"><button type="button" class="btn btn-primario" data-acao="recarregar">Tentar novamente</button><a class="btn btn-secundario" href="/">Ir para o início</a></div>
+  </section>
+
+  <aside class="cena" aria-label="Mensagem da Sophia">
+    <div class="balao" role="note">Tropecei em algo aqui dentro. Tenta de novo daqui a pouco.</div>
+    <img class="sophia" src="/assets/img/mascotes/sophia.webp" alt="Sophia, a assistente do The Farmer Edu" width="256" height="256" onerror="this.style.display='none'">
+  </aside>
+</main>
+
+<img class="galinha" src="/assets/img/mascotes/galinha.png" alt="" aria-hidden="true" onerror="this.style.display='none'">
+
+<script>
+(function(){
+  var inicio = "/";
+  document.addEventListener('click', function(e){
+    var el = e.target.closest('[data-acao]');
+    if(!el) return;
+    if(el.dataset.acao === 'recarregar'){ location.reload(); }
+    if(el.dataset.acao === 'voltar'){ history.length > 1 ? history.back() : (location.href = inicio); }
+  });
+  var agora = document.querySelector('[data-agora]');
+  if(agora){
+    agora.textContent = ' Horário: ' + new Date().toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'});
+  }
+})();
+</script>
+</body>
+</html>

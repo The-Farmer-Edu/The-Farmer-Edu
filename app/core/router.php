@@ -64,8 +64,17 @@ class Router {
             }
         }
 
-        http_response_code(404);
-        echo "404 - Rota não encontrada: " . htmlspecialchars($uri);
+        // Rota existe, mas não para este método HTTP -> 405; caso contrário -> 404
+        $codigoErro = 404;
+        foreach (self::$routes as $metodoRota => $rotas) {
+            if ($metodoRota !== $method && isset($rotas[$uri])) {
+                $codigoErro = 405;
+                break;
+            }
+        }
+
+        // Tela de erro padrão do The Farmer Edu (public/erro.php)
+        require __DIR__ . '/../../public/erro.php';
     }
 }
 

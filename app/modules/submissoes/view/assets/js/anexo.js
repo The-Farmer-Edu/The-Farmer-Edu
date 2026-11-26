@@ -1,43 +1,95 @@
-const opcaoArquivo = document.getElementById('opcaoArquivo');
-const inputArquivoReal = document.getElementById('inputArquivoReal');
+// Se o upload falhar sem mensagem clara, confira upload_max_filesize e post_max_size no php.ini. O padrão do XAMPP é 2 MB, e quando o limite estoura o PHP zera $_POST e $_FILES.
 
-// Array para guardar os arquivos que serão enviados ao servidor
-let arquivosSelecionados = [];
+(function () {
+  const atividade = window.FarmAtividade;
+  if (!atividade || atividade.tipo !== 'anexo') return; // outros tipos seguem o fluxo normal
 
-// 2. Quando clicar em "Arquivo" no menu, aciona o input invisível
-opcaoArquivo.addEventListener('click', () => {
-    inputArquivoReal.click();
-});
+  const MAX_ARQUIVOS = 5;
+  const MAX_BYTES = 10 * 1024 * 1024;
+  const opcaoArquivo = document.getElementById('opcaoArquivo');
+  const inputArquivoReal = document.getElementById('inputArquivoReal');
+  const listaAnexos = document.getElementById('listaAnexos');
+  const botaoEntregar = document.getElementById('comecar');
+  const formulario = botaoEntregar.closest('form');
+  let arquivosSelecionados = [];
 
-// 3. Quando o usuário escolher o(s) arquivo(s) no computador
-inputArquivoReal.addEventListener('change', (evento) => {
-    const novosArquivos = Array.from(evento.target.files);
+  opcaoArquivo.addEventListener('click', () => inputArquivoReal.click());
 
-    novosArquivos.forEach(arquivo => {
-        arquivosSelecionados.push(arquivo);
-        renderizarAnexo(arquivo.name, 'file');
+  inputArquivoReal.addEventListener('change', (evento) => {
+    for (const arquivo of Array.from(evento.target.files)) {
+      if (arquivosSelecionados.length >= MAX_ARQUIVOS) { alert(`Máximo de ${MAX_ARQUIVOS} arquivos.`); break; }
+      if (arquivo.size > MAX_BYTES) { alert(`"${arquivo.name}" passa de 10 MB.`); continue; }
+      const repetido = arquivosSelecionados.some(a => a.name === arquivo.name && a.size === arquivo.size);
+      if (!repetido) arquivosSelecionados.push(arquivo);
+    }
+    inputArquivoReal.value = ''; // permite escolher o mesmo arquivo de novo
+    renderizarLista();
+  });
+
+  function renderizarLista() {
+    listaAnexos.replaceChildren();
+    arquivosSelecionados.forEach((arquivo, indice) => {
+      const item = document.createElement('div');
+      item.className = 'item-anexo';
+
+      const nome = document.createElement('span');
+      nome.title = arquivo.name;
+      nome.textContent = '📄 ' + arquivo.name;   // textContent: sem risco de XSS
+
+      const remover = document.createElement('button');
+      remover.type = 'button';
+      remover.className = 'btn-remover';
+      remover.title = 'Remover';
+      remover.textContent = '✕';
+      remover.addEventListener('click', () => { arquivosSelecionados.splice(indice, 1); renderizarLista(); });
+
+      item.append(nome, remover);
+      listaAnexos.appendChild(item);
     });
+  }
 
-    // Limpa o input para permitir selecionar o mesmo arquivo novamente se removido
-    inputArquivoReal.value = '';
-    atualizarBotaoPrincipal();
-});
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault(); // não navega para iniciarAtv
+    if (atividade.prazoExcedido()) return alert('O prazo de entrega acabou.');
+    if (arquivosSelecionados.length === 0) return alert('Anexe pelo menos um arquivo antes de entregar.');
 
-// Cria o cartão visual do arquivo anexado
-function renderizarAnexo(nome, tipo) {
-    const div = document.createElement('div');
-    div.className = 'item-anexo';
-    div.innerHTML = `
-            <span title="${nome}">${tipo === 'link' ? '🔗' : '📄'} ${nome}</span>
-            <button class="btn-remover" title="Remover">✕</button>
-        `;
+    const dados = new FormData();
+    dados.append('id_atividade', atividade.id);
+    arquivosSelecionados.forEach(a => dados.append('arquivos[]', a));
 
-    // Lógica do botão "X" para remover o anexo
-    div.querySelector('.btn-remover').addEventListener('click', () => {
-        div.remove();
-        arquivosSelecionados = arquivosSelecionados.filter(item => item.name !== nome);
-        atualizarBotaoPrincipal();
-    });
+    botaoEntregar.disabled = true;
+    botaoEntregar.textContent = 'Enviando...';
+    try {
+      const resposta = await fetch('enviarAnexo', { method: 'POST', body: dados });
+      const json = await resposta.json();
+      if (!resposta.ok || !json.sucesso) throw new Error(json.erro || 'Falha ao entregar.');
 
-    listaAnexos.appendChild(div);
-}
+      arquivosSelecionados = [];
+      renderizarLista();
+
+      // Atualiza o estado em memória com os dados confirmados pelo banco de dados.
+      const dataEnvio = json.data_envio || new Date().toISOString();
+      atividade.entregue = true;
+      atividade.submissao = {
+        id: json.id_submissao,
+        tentativa: json.tentativa,
+        status: 'enviada',
+        dataEnvio: dataEnvio
+      };
+      if (typeof json.cancelamentos === 'number') {
+        atividade.cancelamentos = json.cancelamentos;
+      }
+
+      // Espelha no localStorage apenas como cache (a referência real é o banco).
+      try {
+        localStorage.setItem(CHAVE_ENTREGA, JSON.stringify({ data: dataEnvio, atividadeId: atividade.id }));
+      } catch (e) {}
+      alert('Atividade entregue!');
+    } catch (erro) {
+      alert(erro.message);
+    } finally {
+      botaoEntregar.disabled = false;
+      atualizarStatus();
+    }
+  });
+})();

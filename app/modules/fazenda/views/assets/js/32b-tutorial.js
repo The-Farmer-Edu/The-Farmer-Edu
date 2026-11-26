@@ -103,7 +103,8 @@
       const tocarSomDoTutorial = function tocarSomDoTutorial(preferido, reserva = 'Enter') {
         if (typeof tocarEfeito !== 'function') return;
         const temPreferido = typeof AUDIO_CONFIG !== 'undefined' && AUDIO_CONFIG.efeitos && AUDIO_CONFIG.efeitos[preferido];
-        tocarEfeito(temPreferido ? preferido : reserva);
+        if (temPreferido) { tocarEfeito(preferido); return; }
+        if (reserva) tocarEfeito(reserva);
       };
 
       // ---- progresso salvo ----
@@ -124,7 +125,7 @@
       const conteudoDoTutorial = selecionar('#tutorial-texto'), tarefaDoTutorial = selecionar('#tutorial-tarefa'), barraDoTutorial = selecionar('#tutorial-barra'), acoesDoTutorial = selecionar('#tutorial-acoes');
       const botaoMinimizarTutorial = selecionar('#tutorial-minimizar'), botaoPausarTutorial = selecionar('#tutorial-pausar');
       // modo: null (fechado) · 'convite' · 'tutorial' (sequência completa) · 'consulta' (um tópico aberto pela ajuda, sem mexer no progresso)
-      let modoDoTutorial = null, passoDoTutorial = 0, topicoEmConsulta = null, vigiaDoTutorial = null, tarefaJaAvisadaNoPasso = false;
+      let modoDoTutorial = null, passoDoTutorial = 0, topicoEmConsulta = null, vigiaDoTutorial = null, ultimoAlvoDestacado = null;
       const passosDoModo = () => modoDoTutorial === 'consulta' ? PASSOS_DO_TUTORIAL.map((passo, indice) => passo.topico === topicoEmConsulta ? indice : -1).filter(indice => indice >= 0) : PASSOS_DO_TUTORIAL.map((passo, indice) => indice);
       const definirMinimizado = function definirMinimizado(minimizado, silencioso = false) {
         cartaoDoTutorial.classList.toggle('minimizado', minimizado); corpoDoTutorial.hidden = minimizado;
@@ -242,6 +243,11 @@
         const passo = modoDoTutorial === 'convite' || !modoDoTutorial ? null : PASSOS_DO_TUTORIAL[passoDoTutorial];
         const alvo = passo && passo.destaque && !minimizado ? passo.destaque() : null, retangulo = alvo ? alvo.getBoundingClientRect() : null;
         const mostrar = !!retangulo && retangulo.width > 0 && retangulo.height > 0;
+        const alvoAtual = mostrar ? alvo : null;
+        if (alvoAtual !== ultimoAlvoDestacado) {
+          ultimoAlvoDestacado = alvoAtual;
+          if (alvoAtual) tocarSomDoTutorial('tutorialSwoosh', null);
+        }
         if (molduraDoTutorial.hidden !== !mostrar) molduraDoTutorial.hidden = !mostrar;
         if (mostrar) escreverEstilos(molduraDoTutorial, { left: (retangulo.left - 6) + 'px', top: (retangulo.top - 6) + 'px', width: (retangulo.width + 12) + 'px', height: (retangulo.height + 12) + 'px' });
         const estreita = innerWidth < 720, noAlto = estreita && mostrar && retangulo.top + retangulo.height / 2 > innerHeight / 2;
@@ -359,10 +365,6 @@
         tarefaDoTutorial.hidden = !(passo && passo.tarefa);
         if (!passo || !passo.tarefa) return;
         let feita = false; try { feita = !!passo.tarefa.feita(); } catch (erro) { }
-        if (feita && !tarefaJaAvisadaNoPasso) {
-          tarefaJaAvisadaNoPasso = true;
-          tocarSomDoTutorial('tutorialTarefa', 'Enter');
-        }
         const texto = (feita ? '✔ Feito! ' : '👉 ') + passo.tarefa.texto;
         if (tarefaDoTutorial.textContent !== texto) { tarefaDoTutorial.textContent = texto; tarefaDoTutorial.classList.toggle('feita', feita); }
       };
@@ -373,15 +375,15 @@
       const botaoDoTutorial = (texto, aoClicar, classe = '') => { const botao = document.createElement('button'); botao.type = 'button'; botao.className = 'botao-pequeno ' + classe; botao.textContent = texto; botao.onclick = aoClicar; return botao; };
       const fecharTutorial = function fecharTutorial(silencioso = false) {
         if (modoDoTutorial && !silencioso && typeof tocarEfeito === 'function') tocarEfeito('Fecha');
-        modoDoTutorial = null; cartaoDoTutorial.hidden = true; molduraDoTutorial.hidden = true; vigiarTutorial(false);
+        modoDoTutorial = null; ultimoAlvoDestacado = null; cartaoDoTutorial.hidden = true; molduraDoTutorial.hidden = true; vigiarTutorial(false);
         document.body.classList.remove('tutorial-aberto');   // a gaveta volta à largura normal
         desfazerAcomodacaoDaGaveta();                         // e, nas telas estreitas, à altura e à posição normais
       };
-      const mostrarPassoDoTutorial = function mostrarPassoDoTutorial(indice, silencioso = false) {
+      const mostrarPassoDoTutorial = function mostrarPassoDoTutorial(indice, direcao = 'avancar') {
         const passos = passosDoModo(), posicao = Math.max(0, passos.indexOf(indice)), passo = PASSOS_DO_TUTORIAL[indice];
         passoDoTutorial = indice;
-        tarefaJaAvisadaNoPasso = false;
-        if (!silencioso) tocarSomDoTutorial('tutorialPasso', 'Enter');
+        if (direcao === 'voltar') tocarSomDoTutorial('tutorialVoltar', 'Enter');
+        else if (direcao === 'avancar') tocarSomDoTutorial('tutorialAvancar', 'Enter');
         if (passo.preparar) try { passo.preparar(); } catch (erro) { console.warn('[FarmEdu] tutorial: não foi possível preparar o passo', erro); }
         const topico = TOPICOS_DO_TUTORIAL.find(item => item.id === passo.topico), numeroDoTopico = TOPICOS_DO_TUTORIAL.indexOf(topico) + 1;
         textoDoTopico.textContent = topico.icone + ' ' + (modoDoTutorial === 'consulta' ? 'Ajuda · ' + topico.nome : 'Tópico ' + numeroDoTopico + ' de ' + TOPICOS_DO_TUTORIAL.length + ' · ' + topico.nome);
@@ -392,10 +394,10 @@
         // O foco só passa para o novo botão se o jogador já navegava pelo cartão com o teclado (:focus-visible): um foco automático
         // faria a barra de espaço (que sobe a câmera) também "clicar" no botão.
         const navegandoPeloTeclado = cartaoDoTutorial.contains(document.activeElement) && document.activeElement.matches(':focus-visible');
-        const ultimo = posicao === passos.length - 1, voltar = botaoDoTutorial('‹ Voltar', () => mostrarPassoDoTutorial(passos[posicao - 1], false), 'secundario');
+        const ultimo = posicao === passos.length - 1, voltar = botaoDoTutorial('‹ Voltar', () => mostrarPassoDoTutorial(passos[posicao - 1], 'voltar'), 'secundario');
         voltar.disabled = posicao === 0;
         const avancar = botaoDoTutorial(ultimo ? (modoDoTutorial === 'consulta' ? 'Fechar' : 'Concluir ✔') : 'Avançar ›', () => {
-          if (!ultimo) { mostrarPassoDoTutorial(passos[posicao + 1], false); return; }
+          if (!ultimo) { mostrarPassoDoTutorial(passos[posicao + 1], 'avancar'); return; }
           if (modoDoTutorial === 'tutorial') {
             salvarProgressoDoTutorial('concluido', 0);
             tocarSomDoTutorial('tutorialConcluido', 'levelUp');
@@ -419,10 +421,10 @@
         botaoPausarTutorial.title = botaoPausarTutorial.getAttribute('aria-label');
         vigiarTutorial(modo !== 'convite');
       };
-      const iniciarTutorial = function iniciarTutorial(indice = 0) { abrirCartaoDoTutorial('tutorial'); mostrarPassoDoTutorial(indice, false); };
+      const iniciarTutorial = function iniciarTutorial(indice = 0) { abrirCartaoDoTutorial('tutorial'); mostrarPassoDoTutorial(indice, 'avancar'); };
       const consultarTopicoDoTutorial = function consultarTopicoDoTutorial(idDoTopico) {
         topicoEmConsulta = idDoTopico; abrirCartaoDoTutorial('consulta');
-        mostrarPassoDoTutorial(PASSOS_DO_TUTORIAL.findIndex(passo => passo.topico === idDoTopico), false);
+        mostrarPassoDoTutorial(PASSOS_DO_TUTORIAL.findIndex(passo => passo.topico === idDoTopico), 'avancar');
       };
       const pausarTutorial = function pausarTutorial() {
         if (modoDoTutorial === 'tutorial') { salvarProgressoDoTutorial('pausado', passoDoTutorial); mostrarAviso('⏸ Tutorial pausado. Continue quando quiser em ☰ Menu → ❓ Ajuda e tutorial.'); }

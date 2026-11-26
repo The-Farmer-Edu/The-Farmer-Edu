@@ -2,6 +2,7 @@
     require_once __DIR__ . '/../../core/database.php';
     require_once __DIR__ . '/../api/model/Ollama.php';
 
+    ////
     class FeedbackIAModel {
         
 
@@ -23,8 +24,18 @@
             return $texto;
         }
 
+        /**
+         * Grava ou atualiza o percentual e o motivo de possível uso de IA para uma submissão.
+         * O ON DUPLICATE KEY UPDATE garante idempotência pela chave única uq_feedback_submissao.
+         */
         public static function salvarProbabilidadeIA(PDO $pdo, int $idSubmissao, float $probabilidade, string $motivo): void {
-            $stmt = $pdo->prepare('INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia) VALUES (?, ?, ?)');
+            $stmt = $pdo->prepare(
+                'INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia)
+                 VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE
+                    percentual_ia = VALUES(percentual_ia),
+                    motivo_ia     = VALUES(motivo_ia)'
+            );
             $stmt->execute([$idSubmissao, $probabilidade, $motivo]);
         }
 

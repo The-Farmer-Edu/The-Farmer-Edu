@@ -2,6 +2,7 @@
     require_once "Config.php";
     require_once __DIR__ . "/../../../core/database.php";
 
+    //////
     class Ollama {
         protected string $host;
         protected string $prompt;
@@ -53,7 +54,7 @@
             self::wakeOnLan();
 
             // 3. Fallback para Google Gemini
-            $geminiApiKey = $config->geminiApiKey ?? null;
+            $geminiApiKey = (new InitConfig())->geminiApiKey ?? null;
             if (!$geminiApiKey) {
                 return "Gemini API key not set. Unable to fallback. Erro Ollama: $error";
             }
@@ -257,13 +258,22 @@
             PROMPT;
 
             $respostaSIAE = $this->gerar(true);
-            // preg_match("/\{.*\}/s", $respostaSIAE, $respostaFormatada);
-            // if($respostaFormatada[0] === null){
-            $respostaFormatada = json_decode(trim(explode('think>', $respostaSIAE, 3)[2]), true);
-            // } else {
-                // $respostaFormatada = json_decode($respostaFormatada[0], true);
-            // }
-            return $respostaFormatada;
+
+            // Remove eventual bloco de raciocínio <think>...</think> retornado pelo modelo no Ollama.
+            // No fallback do Gemini ou em respostas diretas sem tags <think>, a string original é preservada.
+            $semThink = preg_replace('/<think>[\s\S]*?<\/think>/i', '', (string) $respostaSIAE);
+            $textoLimpo = trim((string) $semThink);
+
+            // Extrai o objeto JSON da resposta (evita falha caso existam textos extras ou cercas ```json)
+            if (preg_match('/\{[\s\S]*\}/', $textoLimpo, $correspondencia)) {
+                $respostaFormatada = json_decode($correspondencia[0], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($respostaFormatada)) {
+                    return $respostaFormatada;
+                }
+            }
+
+            // Retorna null de forma segura quando a IA estiver indisponível ou responder fora do formato JSON
+            return null;
             // return $respostaSIAE;
 
             // $resposta = $this->gerar();

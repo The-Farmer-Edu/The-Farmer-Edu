@@ -152,6 +152,12 @@ button {
     transition: background 0.2s, transform 0.1s;
     width: fit-content;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+    /* Afasta o botão do canto da tela */
+    position: fixed;
+    left: 20px;
+    bottom: 24px;
+    z-index: 15;
 }
 
 .btn-voltar:hover {
@@ -1072,6 +1078,8 @@ button:disabled {
     }
 
     .btn-voltar {
+        /* No celular o botão volta para o header */
+        position: static;
         padding: 8px 12px;
     }
 
@@ -1088,17 +1096,28 @@ button:disabled {
         font-size: 1rem;
     }
 
-    .chip-entrega {
-        width: 100%;
-        text-align: center;
-        font-size: 0.78rem;
-        padding: 5px 10px;
-    }
+.chip-prazo {
+    display: block;
+    position: static;
+    float: none;
+    transform: none;
+    width: 100%;
+    margin: 0;
+    text-align: center;
+    white-space: normal;
+}
 
-    .chip-prazo {
-        width: 100%;
-        text-align: center;
-    }
+.chip-entrega {
+    order: 1;
+    font-size: 0.78rem;
+    padding: 5px 10px;
+}
+
+.chip-prazo {
+    order: 2;
+    margin-top: 6px;
+    padding: 6px 12px;
+}
 
     /* barra de ações fixa embaixo (alcance do polegar) */
     .acoes {
@@ -1293,15 +1312,20 @@ button:disabled {
         padding-bottom: 0;
     }
 
-    /* o editor ocupa a tela toda */
-    body.editor-expandido .editor {
-        position: fixed;
-        inset: 0;
-        z-index: 60;
-        height: 100dvh;
-        border-radius: 0;
-        box-shadow: none;
-    }
+/* o editor ocupa a tela toda, acima de qualquer header */
+body.editor-expandido .editor {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    height: 100dvh;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+/* botão "Início" precisa ficar acima do editor */
+body.editor-expandido .btn-inicio {
+    z-index: 10000;
+}
 
     /* some o que atrapalha enquanto digita */
     body.editor-expandido .acoes,

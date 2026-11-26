@@ -127,7 +127,7 @@
             $wolMac = (new InitConfig())->wolMac ?? null;
             if ($wolMac) {
                 require_once __DIR__ . '/WakeOnLan.php';
-                \WakeOnLan::send($wolMac);
+                \WakeOnLan::send($wolMac, '192.168.0.255', [9, 7], '192.168.0.22');
             }
         } 
     }

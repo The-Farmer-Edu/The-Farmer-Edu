@@ -172,7 +172,7 @@
 
             $resposta = $this->gerar(true);
             preg_match("/\{.*\}/s", $resposta, $certo);
-            return json_decode($certo[0], true);
+            return json_decode($certo[0] ?? '', true);
             // print_r($certo);
             // return "";
         }

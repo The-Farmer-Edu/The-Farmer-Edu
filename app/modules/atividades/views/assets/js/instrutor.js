@@ -1,5 +1,5 @@
-const paginaDoTipo = { codigo: 'normal', texto: 'texto', quiz: 'pergunta' };
-const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta' };
+const paginaDoTipo = { codigo: 'normal', texto: 'texto', quiz: 'pergunta', anexo: 'anexo' };
+const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta', anexo: 'Anexo' };
 const nomeDaLinguagem = { php: 'PHP', javascript: 'JavaScript', python: 'Python', java: 'Java', c: 'C', cpp: 'C++', sql: 'SQL' };
 const paginasDoMenu = ['mural', 'pessoas'];
 

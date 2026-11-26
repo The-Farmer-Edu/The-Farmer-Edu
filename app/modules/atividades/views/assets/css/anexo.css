@@ -1,0 +1,22 @@
+.info-atividade {
+    color: var(--texto-suave);
+    font-size: 0.9rem;
+}
+
+.enunciado {
+    white-space: pre-wrap;
+    margin: 12px 0 20px;
+}
+
+.envio-arquivos {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.envio-arquivos a {
+    color: var(--cor-escura);
+    font-size: 0.9rem;
+    word-break: break-all;
+}

@@ -111,6 +111,12 @@
                 </button>
 
                 <button class="option-card"
+                    onclick="novaAtividade('anexo')">
+                    Atividade de anexo
+                    <small>O aluno responde anexando um ou mais arquivos.</small>
+                </button>
+
+                <button class="option-card"
                     onclick="abrirPagina('reutilizar')">
                     Reutilizar atividade já postada
                     <small>Escolha uma atividade existente para reutilizar.</small>
@@ -338,6 +344,66 @@
 
                     <div class="form-actions">
                         <button class="primary" type="submit">Publicar pergunta</button>
+                        <button class="secondary" type="button"
+                            onclick="cancelarFormulario(this)">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="pagina-anexo" class="pagina hidden">
+            <div class="form-card">
+                <h2>Publicar atividade de anexo</h2>
+                <p>O aluno vai responder esta atividade anexando arquivos.</p>
+                <p class="formato" data-tipo="anexo"></p>
+
+                <form onsubmit="salvarAtividade(event)">
+                    <input type="hidden" name="id_atividade" value="">
+                    <input type="hidden" name="tipo" value="anexo">
+
+                    <div class="field">
+                        <label for="titulo-anexo">Título</label>
+                        <input id="titulo-anexo" name="titulo"
+                            placeholder="" maxlength="150" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="turma-anexo">Turma</label>
+                        <select id="turma-anexo" name="id_turma" class="select-turma" required>
+                            <option value="">Selecione</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="conteudo-anexo">Enunciado</label>
+                        <textarea id="conteudo-anexo" name="descricao"
+                            placeholder=""
+                            required></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="gabarito-anexo">Gabarito</label>
+                        <input type="file" id="gabarito-anexo" name="gabarito[]" multiple>
+                        <small class="dica dica-gabarito"></small>
+                        <div class="arquivos-existentes"></div>
+                    </div>
+
+                    <div class="field">
+                        <label for="criterios-anexo">Critérios de avaliação</label>
+                        <input type="hidden" name="criterios" value="[]">
+                        <button id="criterios-anexo" class="secondary pequeno btn-criterios" type="button"
+                            onclick="abrirCriterios(this)">
+                            Definir critérios <span class="contagem">(0)</span>
+                        </button>
+                    </div>
+
+                    <div class="field">
+                        <label for="prazo-anexo">Prazo de entrega</label>
+                        <input type="date" id="prazo-anexo" name="prazo" required>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="primary" type="submit">Publicar atividade</button>
                         <button class="secondary" type="button"
                             onclick="cancelarFormulario(this)">Cancelar</button>
                     </div>

@@ -152,12 +152,15 @@ button {
     transition: background 0.2s, transform 0.1s;
     width: fit-content;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+<<<<<<< HEAD
 
     /* Afasta o botão do canto da tela */
     position: fixed;
     left: 20px;
     bottom: 24px;
     z-index: 15;
+=======
+>>>>>>> f98a36432a3347ccf3a3c9508cf0b4fc0e25cf75
 }
 
 .btn-voltar:hover {
@@ -1078,8 +1081,11 @@ button:disabled {
     }
 
     .btn-voltar {
+<<<<<<< HEAD
         /* No celular o botão volta para o header */
         position: static;
+=======
+>>>>>>> f98a36432a3347ccf3a3c9508cf0b4fc0e25cf75
         padding: 8px 12px;
     }
 
@@ -1096,6 +1102,7 @@ button:disabled {
         font-size: 1rem;
     }
 
+<<<<<<< HEAD
 .chip-prazo {
     display: block;
     position: static;
@@ -1118,6 +1125,19 @@ button:disabled {
     margin-top: 6px;
     padding: 6px 12px;
 }
+=======
+    .chip-entrega {
+        width: 100%;
+        text-align: center;
+        font-size: 0.78rem;
+        padding: 5px 10px;
+    }
+
+    .chip-prazo {
+        width: 100%;
+        text-align: center;
+    }
+>>>>>>> f98a36432a3347ccf3a3c9508cf0b4fc0e25cf75
 
     /* barra de ações fixa embaixo (alcance do polegar) */
     .acoes {
@@ -1310,6 +1330,19 @@ button:disabled {
 @media (max-width: 780px) {
     body.editor-expandido {
         padding-bottom: 0;
+<<<<<<< HEAD
+=======
+    }
+
+    /* o editor ocupa a tela toda */
+    body.editor-expandido .editor {
+        position: fixed;
+        inset: 0;
+        z-index: 60;
+        height: 100dvh;
+        border-radius: 0;
+        box-shadow: none;
+>>>>>>> f98a36432a3347ccf3a3c9508cf0b4fc0e25cf75
     }
 
 /* o editor ocupa a tela toda, acima de qualquer header */

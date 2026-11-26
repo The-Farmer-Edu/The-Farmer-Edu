@@ -259,9 +259,10 @@
 
             $respostaSIAE = $this->gerar(true);
 
-            $resposta = $this->gerar(true);
-            preg_match("/\{.*\}/s", $resposta, $certo);
-            return json_decode($certo[0] ?? '', true);
+            // $resposta = $this->gerar();
+            // preg_match("/\{.*\}/s", $resposta, $certo);
+            // return json_decode($certo[0], true) ?? $resposta;
+            // return $resposta;
             // print_r($certo);
             // return "";
         }

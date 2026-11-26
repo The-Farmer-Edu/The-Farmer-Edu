@@ -5,7 +5,11 @@
  * e o usa para preencher os campos da tela, controlar o status da entrega e bloquear/ajustar
  * os botões com base exclusiva no banco de dados (evitando manipulação via localStorage).
  */
-const ROTA_FAZENDA = '../fazenda';
+/*
+ * Botão de acesso à fazenda (rodapé).
+ * Fica no topo para ser registrado mesmo que o resto da página dê erro.
+ */
+const ROTA_FAZENDA = '../fazenda'; // TROCAR pela rota real da fazenda
 
 const botaoFazenda = document.getElementById('btnFazenda');
 if (botaoFazenda) {
@@ -192,6 +196,19 @@ function atualizarStatus() {
         }
     }
 
+    // Atividade do tipo anexo: mostra "Anexar" e o botão vira "Entregar".
+    const ehAnexo = atividadeAtual.tipo === 'anexo';
+    const anexoAberto = ehAnexo && !prazoEncerrado;
+    document.getElementById('opcaoArquivo').style.display = anexoAberto ? '' : 'none';
+    document.getElementById('listaAnexos').style.display = anexoAberto ? '' : 'none';
+    if (ehAnexo) {
+        botaoComecar.style.display = prazoEncerrado ? 'none' : ''; // não há o que "visualizar"
+        if (!prazoEncerrado) {
+            botaoComecar.textContent = entregue ? 'Reenviar' : 'Entregar';
+            textoOrientacao.textContent = `Anexe seu(s) arquivo(s) e clique em "${botaoComecar.textContent}".`;
+        }
+    }
+
     // Exibe o prazo da atividade, se existir, com estilo diferente quando acabou.
     if (atividadeAtual.limite) {
         elementoPrazo.hidden = false;
@@ -220,35 +237,5 @@ async function sincronizarStatusDoBanco() {
         const json = await resposta.json();
         if (!json.sucesso || !json.dados) return;
 
-        atividadeAtual.entregue = !!json.dados.entregue;
-        atividadeAtual.submissao = json.dados.submissao || null;
-        atividadeAtual.cancelamentos = Number(json.dados.cancelamentos) || 0;
-        atividadeAtual.tentativas = Number(json.dados.tentativas) || 0;
-        atualizarStatus();
-    } catch (erro) {
-        // Se falhar a consulta em segundo plano, mantém o último estado validado do BD.
-    }
-}
-
-atualizarStatus();
-window.addEventListener('pageshow', () => {
-    atualizarStatus();
-    sincronizarStatusDoBanco();
-});
-window.addEventListener('storage', () => {
-    // Revalida com o BD para impedir que alterações manuais no localStorage enganem a interface.
-    sincronizarStatusDoBanco();
-});
-setInterval(sincronizarStatusDoBanco, 30000);
-
-document.getElementById('btnVoltar').addEventListener('click', () => {
-    if (atividadeAtual.modoInstrutor) {
-        if (history.length > 1) {
-            history.back();
-        } else {
-            location.href = '../notas/instrutor';
-        }
-        return;
-    }
-    location.href = '../atividades/aluno?id=';
-});
+//  + encodeURIComponent(turmaAtual.id) 
+document.getElementById('btnVoltar').addEventListener('click', () => { location.href = '../atividades/aluno?id=' });

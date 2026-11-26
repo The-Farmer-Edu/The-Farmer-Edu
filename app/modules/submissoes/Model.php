@@ -55,20 +55,6 @@ class SubmissoesModel
         return $st->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    //última submissão (maior tentativa) do aluno em uma atividade
-    public function buscarUltimaSubmissao(int $idAtividade, int $idAluno): ?array
-    {
-        $st = $this->pdo->prepare(
-            'SELECT id_submissao, conteudo_resposta, tentativa_num, status, data_envio
-               FROM submissoes
-              WHERE id_atividade = ? AND id_aluno = ?
-              ORDER BY tentativa_num DESC
-              LIMIT 1'
-        );
-        $st->execute([$idAtividade, $idAluno]);
-        return $st->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
-
     /**
      * Busca apenas a última submissão ativa (não cancelada) do aluno em uma atividade.
      * Como cada reenvio incrementa `tentativa_num`, retornar somente a maior tentativa

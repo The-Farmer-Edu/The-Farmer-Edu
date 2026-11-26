@@ -148,7 +148,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: url("file?type=images&file=dia_ensolarado.jpg") center / cover no-repeat;
+    background: url("file?type=images&file=dia_ensolarado.webp") center / cover no-repeat;
     image-rendering: pixelated;
     height: 100vh;
 }

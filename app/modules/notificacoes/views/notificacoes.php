@@ -1,4 +1,3 @@
-
 <?php
 $notificacoes = $notificacoes ?? [];
 ?>
@@ -263,6 +262,8 @@ input:focus-visible {
 </head>
 
 <body>
+
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
 <main class="container">
 

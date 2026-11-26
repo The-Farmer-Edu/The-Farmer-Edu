@@ -1,5 +1,5 @@
-const paginaDoTipo = { codigo: 'normal', texto: 'texto', quiz: 'pergunta' };
-const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta' };
+const paginaDoTipo = { codigo: 'normal', texto: 'texto', quiz: 'pergunta', anexo: 'anexo' };
+const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta', anexo: 'Anexo' };
 const nomeDaLinguagem = { php: 'PHP', javascript: 'JavaScript', python: 'Python', java: 'Java', c: 'C', cpp: 'C++', sql: 'SQL' };
 const paginasDoMenu = ['mural', 'pessoas'];
 
@@ -116,6 +116,9 @@ function configurarGabarito(config) {
 function atualizarCabecalho(turmas) {
     const titulo = document.getElementById('cabecalho-titulo');
     const sub = document.getElementById('cabecalho-sub');
+    if (!titulo || !sub) {
+        return;
+    }
 
     if (turmas.length === 1) {
         titulo.textContent = turmas[0].nome_curso.toUpperCase();
@@ -126,6 +129,17 @@ function atualizarCabecalho(turmas) {
     }
 }
 
+function atualizarBotaoNotas(turmas) {
+    const botao = document.getElementById('botao-notas');
+    if (!botao) {
+        return;
+    }
+
+    botao.href = turmas.length === 1
+        ? 'notas/turma?id=' + encodeURIComponent(turmas[0].id_turma)
+        : 'notas/instrutor';
+}
+
 async function carregarDados() {
     try {
         const dados = await pedir('atividades/instrutor/dados');
@@ -133,6 +147,7 @@ async function carregarDados() {
 
         preencherCampos(dados);
         atualizarCabecalho(dados.turmas);
+        atualizarBotaoNotas(dados.turmas);
         desenharLista();
         desenharReutilizar();
         desenharPessoas(dados.pessoas || []);

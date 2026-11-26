@@ -7,7 +7,10 @@
     --menu-item: #D9D9D9;
     --border: #1E1E1E;
     --radius-card: 25px;
-    --shadow-card: 0 4px 4px rgba(0, 0, 0, .18);
+    --radius-input: 10px;
+    --radius-pill: 20px;
+    --shadow-card: 0 4px 4px rgba(0, 0, 0, .25);
+    --shadow-header: 0 4px 3px rgba(248, 96, 17, .5);
 }
 
 body[data-theme="student"] {
@@ -51,7 +54,6 @@ h4,
 h5,
 h6,
 .brand-name,
-.sidebar-link,
 .btn,
 .card-title,
 .page-kicker {
@@ -60,6 +62,8 @@ h6,
 
 a {
     color: var(--theme-dark);
+    font-family: "Poppins", Arial, sans-serif;
+    font-weight: 500;
     text-decoration: none;
 }
 
@@ -82,8 +86,8 @@ textarea {
     justify-content: space-between;
     gap: 18px;
     background: var(--theme-light);
-    border-bottom: 3px solid var(--theme);
-    box-shadow: 0 3px 6px rgba(var(--theme-rgb), .16);
+    border-radius: 0 0 var(--radius-input) var(--radius-input);
+    box-shadow: var(--shadow-header);
 }
 
 .topbar-brand a,
@@ -226,29 +230,34 @@ textarea {
     color: var(--ink);
     border: 1px solid rgba(var(--theme-rgb), .23);
     box-shadow: var(--shadow-card);
-    transition: transform .2s ease, box-shadow .2s ease;
 }
 
-.course-card:hover {
-    color: var(--ink);
-    transform: translateY(-3px);
-    box-shadow: 0 9px 20px rgba(0, 0, 0, .14);
-}
-
+/* Barra de título colorida, texto preto em bold e ~-0.35° de rotação
+   ("colado à mão", proposital — Guia de Design). As margens negativas escondem
+   as pontas que a rotação deixaria sobrando; o card corta o excesso (overflow). */
 .course-card__title {
     min-height: 80px;
-    padding: 15px 22px;
+    margin: -3px -6px 0;
+    padding: 18px 28px 15px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
-    background: var(--theme-dark);
-    color: #fff;
+    background: var(--theme-light);
+    color: #000;
     font-family: "Poppins", sans-serif;
     font-size: clamp(16px, 1.5vw, 20px);
     font-weight: 700;
     line-height: 1.3;
-    border-radius: 24px 24px 0 0;
+    transform: rotate(-.35deg);
+    transform-origin: center;
+}
+
+.course-card__title small {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: .75;
 }
 
 .course-card__cover {
@@ -405,7 +414,7 @@ textarea {
 .empty-state {
     padding: 38px 22px;
     border: 1px dashed #cbd5dc;
-    border-radius: 18px;
+    border-radius: var(--radius-card);
     text-align: center;
     color: var(--muted);
     background: #fbfcfd;
@@ -422,7 +431,7 @@ textarea {
     background: var(--theme);
     color: #fff;
     border: 1px solid var(--theme);
-    border-radius: 20px;
+    border-radius: var(--radius-pill);
     padding: 10px 22px;
     font-weight: 700;
 }
@@ -438,8 +447,8 @@ textarea {
     border: 1.5px solid var(--theme);
     color: var(--theme);
     background: transparent;
-    border-radius: 20px;
-    font-weight: 600;
+    border-radius: var(--radius-pill);
+    font-weight: 500;
 }
 
 .btn-outline-theme:hover {
@@ -452,21 +461,22 @@ textarea {
     background: #E6E6E6;
     color: #626262;
     border: 1px solid #d2d2d2;
-    border-radius: 20px;
-    font-weight: 600;
+    border-radius: var(--radius-pill);
+    font-weight: 500;
 }
 
 .form-label {
     color: var(--theme-dark);
-    font: 600 12px "Poppins", sans-serif;
+    font: 500 12px "Poppins", sans-serif;
     margin-bottom: 6px;
 }
 
 .form-control,
 .form-select {
     min-height: 44px;
-    border: 1.5px solid var(--theme);
-    border-radius: 10px;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius-input);
+    background-color: #fff;
     color: var(--ink);
     font-size: 13px;
     padding: 10px 13px;
@@ -484,7 +494,7 @@ textarea.form-control {
 
 .modal-content {
     border: 0;
-    border-radius: 19px;
+    border-radius: var(--radius-card);
     overflow: hidden;
     box-shadow: 0 18px 60px rgba(0, 0, 0, .2);
 }
@@ -516,15 +526,24 @@ textarea.form-control {
     flex: 1;
 }
 
+.image-field {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
 .image-dropzone {
-    border: 1.5px solid var(--theme);
-    border-radius: 12px;
+    position: relative;
+    width: 100%;
+    border: 1.5px solid var(--ink);
+    border-radius: var(--radius-input);
+    background: #fff;
     min-height: 190px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
     padding: 18px;
     color: var(--theme);
     cursor: pointer;
@@ -532,12 +551,19 @@ textarea.form-control {
     overflow: hidden;
 }
 
+.image-dropzone__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
 .image-dropzone i {
     font-size: 54px;
 }
 
 .image-dropzone strong {
-    color: #727272;
+    color: var(--muted);
     font-size: 12px;
 }
 
@@ -546,11 +572,56 @@ textarea.form-control {
     font-size: 11px;
 }
 
+/* Com imagem: a prévia ocupa toda a área do campo — sem o ícone e os textos
+   por cima/embaixo, que deixavam um espaço em branco. */
+.image-dropzone.has-preview {
+    min-height: 0;
+    padding: 0;
+    height: clamp(170px, 24vw, 230px);
+    display: block;
+}
+
+.image-dropzone.has-preview .image-dropzone__empty {
+    display: none;
+}
+
 .image-preview {
+    display: block;
     width: 100%;
-    max-height: 185px;
+    height: 100%;
     object-fit: cover;
-    border-radius: 9px;
+}
+
+.image-preview[hidden] {
+    display: none;
+}
+
+.image-dropzone__hint {
+    display: none;
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 50px;
+    background: rgba(0, 0, 0, .62);
+    color: #fff;
+    font: 500 11px "Poppins", sans-serif;
+}
+
+.image-dropzone__hint i {
+    font-size: 13px;
+}
+
+.image-dropzone.has-preview .image-dropzone__hint {
+    display: inline-flex;
+}
+
+.btn-remove-image {
+    border-radius: var(--radius-pill);
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .modal-error {
@@ -563,227 +634,11 @@ textarea.form-control {
     margin-bottom: 18px;
 }
 
-/* Área interna da turma */
-.class-header {
-    padding: 14px clamp(18px, 3vw, 38px);
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background: var(--theme-light);
-    border-bottom: 3px solid var(--theme);
-}
-
-.class-header__logo {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-}
-
-.class-header__text {
-    min-width: 0;
-    flex: 1;
-}
-
-.class-header__text h1 {
-    margin: 0;
-    color: var(--theme-dark);
-    font: 700 clamp(16px, 2vw, 24px) "Poppins", sans-serif;
-}
-
-.class-header__text p {
-    margin: 0;
-    font-size: 11px;
-    color: var(--theme-dark);
-    opacity: .8;
-}
-
-.class-layout {
-    display: grid;
-    grid-template-columns: 260px minmax(0, 1fr);
-    min-height: calc(100vh - 137px);
-}
-
-.class-sidebar {
-    min-width: 0;
-    min-height: 100%;
-    background: var(--menu-bg);
-    border-radius: 0 72px 72px 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 42px 18px 24px 22px;
-}
-
-.class-sidebar__links {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-.sidebar-link,
-.sidebar-back {
-    min-height: 64px;
-    border: 1.5px solid var(--border);
-    border-radius: 20px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    background: var(--menu-item);
-    color: #727272;
-    font: 700 17px "Poppins", sans-serif;
-    transition: .16s ease;
-}
-
-.sidebar-link:hover,
-.sidebar-back:hover {
-    color: var(--theme-dark);
-    border-color: var(--theme);
-}
-
-.sidebar-link.is-active {
-    color: var(--theme-dark);
-    border: 2px solid var(--theme);
-    background: #ececec;
-}
-
-.sidebar-link__icon {
-    flex: 0 0 38px;
-    width: 38px;
-    height: 38px;
-    border: 1.5px solid currentColor;
-    border-radius: 50%;
-    display: inline-grid;
-    place-items: center;
-    font-size: 20px;
-}
-
-.sidebar-back {
-    background: #d6d6d6;
-    border-color: transparent;
-    min-height: 58px;
-}
-
-.class-content {
-    min-width: 0;
-    padding: clamp(22px, 4vw, 48px) clamp(18px, 5vw, 72px);
-}
-
-.activity-section {
-    max-width: 890px;
-    margin: 0 auto;
-}
-
-.activity-banner {
-    border: 1.5px solid var(--theme);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: var(--shadow-card);
-    margin-bottom: 25px;
-    background: #fff;
-}
-
-.activity-banner__title {
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    min-height: 75px;
-    padding: 14px 22px;
-    background: var(--theme);
-    color: #fff;
-    font: 700 21px "Poppins", sans-serif;
-}
-
-.activity-banner__title i {
-    font-size: 30px;
-}
-
-.activity-banner__image {
-    height: 210px;
-    background: var(--theme-soft);
-}
-
-.activity-banner__image img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.activity-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.activity-item {
-    min-height: 72px;
-    border: 1.5px solid transparent;
-    border-radius: 19px;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 13px;
-    background: #E6E6E6;
-    color: #171717;
-}
-
-.activity-item:first-child {
-    border-color: var(--theme);
-    background: #f0f0f0;
-}
-
-.activity-item__icon {
-    color: var(--ink);
-    font-size: 28px;
-    flex: 0 0 32px;
-}
-
-.activity-item__body {
-    min-width: 0;
-    flex: 1;
-}
-
-.activity-item__body strong {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: #111;
-    font: 700 14px "Poppins", sans-serif;
-}
-
-.activity-item__body small {
-    display: block;
-    color: #555;
-    font: 600 10px "Inter", sans-serif;
-}
-
-.activity-item__status {
-    flex: 0 0 auto;
-    font: 600 10px "Poppins", sans-serif;
-    color: var(--theme-dark);
-}
-
-.class-title-row {
-    max-width: 890px;
-    margin: 0 auto 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 14px;
-}
-
-.class-title-row h2 {
-    color: var(--theme-dark);
-    margin: 0;
-    font: 700 23px "Poppins", sans-serif;
-}
 
 /* Pessoas */
 .people-wrap {
-    width: min(760px, 100%);
-    margin: 0 auto;
+    width: min(860px, 100%);
+    margin: 0;
 }
 
 .people-section-title {
@@ -801,7 +656,7 @@ textarea.form-control {
 
 .person-row {
     min-height: 58px;
-    border-radius: 18px;
+    border-radius: 30px;
     background: #E6E6E6;
     padding: 8px 13px;
     display: flex;
@@ -862,7 +717,7 @@ textarea.form-control {
     max-width: 850px;
     margin: 0 auto;
     background: #fff;
-    border-radius: 20px;
+    border-radius: var(--radius-card);
     border: 1px solid #e7edf1;
     box-shadow: var(--shadow-card);
     padding: clamp(20px, 4vw, 34px);
@@ -877,7 +732,7 @@ textarea.form-control {
 
 .data-table-wrap {
     border: 1px solid #e7edf1;
-    border-radius: 15px;
+    border-radius: var(--radius-card);
     overflow: hidden;
     background: #fff;
     box-shadow: var(--shadow-card);
@@ -949,35 +804,6 @@ textarea.form-control {
     padding: 28px;
 }
 
-@media (max-width: 850px) {
-    .class-layout {
-        grid-template-columns: 190px minmax(0, 1fr);
-    }
-
-    .class-sidebar {
-        padding: 28px 13px 20px;
-        border-radius: 0 56px 56px 0;
-    }
-
-    .sidebar-link {
-        min-height: 55px;
-        padding: 7px;
-        font-size: 13px;
-        gap: 8px;
-    }
-
-    .sidebar-link__icon {
-        width: 32px;
-        height: 32px;
-        flex-basis: 32px;
-        font-size: 17px;
-    }
-
-    .class-content {
-        padding: 24px 18px;
-    }
-}
-
 @media (max-width: 650px) {
     .app-topbar {
         padding: 8px 14px;
@@ -1020,57 +846,6 @@ textarea.form-control {
         min-height: 195px;
     }
 
-    .class-layout {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .class-sidebar {
-        order: 2;
-        border-radius: 20px 20px 0 0;
-        padding: 12px;
-        min-height: auto;
-    }
-
-    .class-sidebar__links {
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-
-    .sidebar-link {
-        flex: 1 1 42%;
-        min-height: 45px;
-        border-radius: 16px;
-    }
-
-    .sidebar-back {
-        margin-top: 10px;
-        min-height: 43px;
-    }
-
-    .class-content {
-        order: 1;
-        padding: 23px 14px 36px;
-    }
-
-    .activity-banner__image {
-        height: 160px;
-    }
-
-    .activity-banner__title {
-        min-height: 60px;
-        font-size: 17px;
-    }
-
-    .activity-item {
-        padding: 10px;
-    }
-
-    .activity-item__body strong {
-        white-space: normal;
-    }
-
     .person-row {
         flex-wrap: wrap;
     }
@@ -1078,10 +853,6 @@ textarea.form-control {
     .person-actions {
         width: 100%;
         margin-left: 48px;
-    }
-
-    .class-header {
-        padding: 10px 14px;
     }
 }
 
@@ -1125,4 +896,69 @@ textarea.form-control {
     font-size: 12px;
     line-height: 1.5;
     margin: -8px 0 18px;
+}
+
+/* Título e capa da turma levam às atividades (os botões do rodapé do card ficam fora do link) */
+.course-card__link {
+    display: block;
+    color: inherit;
+}
+
+.course-card__link:hover {
+    color: inherit;
+}
+
+.course-card__link:hover .course-card__cover img {
+    filter: brightness(.94);
+}
+
+/* Botão de acesso à fazenda — canto inferior direito de todas as telas */
+.btn-acessar-fazenda {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1030;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #8d4b20;
+    border: 4px solid #5d2e13;
+    border-radius: 6px;
+    color: #ffe0a3;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    image-rendering: pixelated;
+    box-shadow: 0 5px 0 #3e210f;
+    transition: transform .15s;
+}
+
+.btn-acessar-fazenda img {
+    display: block;
+    width: 60px;
+    height: 60px;
+    image-rendering: pixelated;
+}
+
+.btn-acessar-fazenda:hover {
+    color: #ffe0a3;
+    transform: translateY(-3px);
+    filter: brightness(1.15);
+}
+
+.btn-acessar-fazenda:active {
+    transform: translateY(3px);
+    box-shadow: 0 2px 0 #3e210f;
+}
+
+@media (max-width: 650px) {
+    .btn-acessar-fazenda {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .btn-acessar-fazenda img {
+        width: 44px;
+        height: 44px;
+    }
 }

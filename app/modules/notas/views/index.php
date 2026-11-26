@@ -21,11 +21,18 @@
 
 // Agrupa atividades por turma/curso para exibicao em secoes
 $grupos = [];
+$somaNotas = 0.0;
 foreach ($atividades as $atv) {
     // Chave composta para separar visualmente as disciplinas/turmas
     $chave = $atv['nome_curso'] . ' — ' . $atv['nome_turma'];
     $grupos[$chave][] = $atv;
+    if (isset($atv['nota_valor']) && $atv['nota_valor'] !== null) {
+        $somaNotas += (float) $atv['nota_valor'];
+    }
 }
+
+$notaTotal = isset($resumo['nota_total']) ? (float) $resumo['nota_total'] : $somaNotas;
+$notaMaximaTotal = (int) ($resumo['total_atividades'] ?? count($atividades)) * 10;
 
 // Calcula cor da media para o card de resumo
 // Verde para média >= 7, Laranja para média >= 5 e Vermelho para notas abaixo de 5
@@ -79,7 +86,8 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             --texto-principal:  #002D38;
             --texto-preto:      #000000;
             --texto-secundario: #727272;
-            --bg-pagina:        #F5F7F0;
+            --bg-pagina:        #FFFFFF;
+            /* --bg-pagina:        #FFFFFF; */
             --bg-card:          #FFFFFF;
             --borda-card:       #E6E6E6;
             --cinza-50:         #F5F7F0;
@@ -293,7 +301,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
            ============================================================ */
         .resumo-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 16px;
             margin-bottom: 32px;
         }
@@ -516,29 +524,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 </head>
 <body>
 
-<!-- TOPBAR: Barra de navegação com logotipo e avatar do estudante -->
-<nav class="topbar">
-    <a class="topbar-logo" href="/">
-        🌱 <span>The Farmer</span>Edu
-    </a>
-    <div class="topbar-user" id="userMenuBtn" tabindex="0">
-        <!-- Avatar circular com iniciais do aluno -->
-        <div class="avatar"><?= strtoupper(substr($usuario['nome'], 0, 2)) ?></div>
-        <span><?= htmlspecialchars($usuario['nome']) ?></span>
-        <svg class="seta-user" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        <div class="user-dropdown">
-            <div class="user-dropdown-header">
-                <strong><?= htmlspecialchars($usuario['nome']) ?></strong>
-                <span>🎓 Aluno</span>
-            </div>
-            <div class="user-dropdown-divider"></div>
-            <a href="<?= $base ?>/auth/logout" class="item-logout">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                <span>Sair da conta</span>
-            </a>
-        </div>
-    </div>
-</nav>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
 <div class="container">
 
@@ -576,6 +562,15 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 <?= (int) ($resumo['pendentes'] ?? 0) ?>
             </span>
             <span class="label">Pendentes</span>
+        </div>
+
+        <!-- Nota total acumulada -->
+        <div class="card-resumo">
+            <span class="icone">🏆</span>
+            <span class="valor" style="color: var(--verde-primario)">
+                <?= number_format($notaTotal, 1, ',', '') ?><span style="font-size: 1rem; font-weight: 500; color: var(--texto-secundario);">/<?= $notaMaximaTotal ?></span>
+            </span>
+            <span class="label">Nota total</span>
         </div>
 
         <!-- Média geral com cor dinâmica -->

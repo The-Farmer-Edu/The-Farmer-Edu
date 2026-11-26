@@ -53,23 +53,28 @@
       };
       // Aplica o horário atual ao cenário: posição do sol e da lua, luz principal, luz ambiente, neblina, céu,
       // estrelas, nuvens, lanternas e materiais que escurecem à noite.
+      // Etapa 4 (seção 30g, clima): o clima não tem relógio próprio. Ele ajusta os valores amostrados acima (céu, luz, nuvens, neblina)
+      // por este gancho, que fica nulo até a seção 30g carregar; sem clima, o ciclo funciona exatamente como antes.
+      let ajustarCeuPeloClima = null;
+      const EFEITO_DO_CLIMA_NO_CEU = { luzDoSol: 1, discoDoSol: 1 };   // multiplicadores escritos pela seção 30g (1 = céu limpo)
       const aplicarCicloAoCenario = function aplicarCicloAoCenario() {
         amostrarQuadrosDoCeu(CICLO_DE_DIA_E_NOITE.hora);
+        if (ajustarCeuPeloClima) ajustarCeuPeloClima(ESTADO_DO_CEU);   // Etapa 4: nublado e chuva (seção 30g)
         // O sol nasce a leste (+x), passa ao norte (−z) e se põe a oeste (−x); a lua faz o caminho oposto.
         const angulo = (CICLO_DE_DIA_E_NOITE.hora - 6) / 12 * Math.PI, senoDoAngulo = Math.sin(angulo);
         direcaoDoSol.set(Math.cos(angulo), senoDoAngulo * 0.766, -senoDoAngulo * 0.643).normalize(); direcaoDaLua.copy(direcaoDoSol).negate();
         const elevacaoDoSol = direcaoDoSol.y; ESTADO_DO_CEU.elevacaoDoSol = elevacaoDoSol;
         // luz principal (a única que projeta sombras): sol de dia, lua à noite; a intensidade chega a zero na troca, então não há salto
-        if (elevacaoDoSol >= 0) { luzDoSol.position.copy(luzDoSol.target.position).addScaledVector(direcaoDoSol, 40); luzDoSol.color.copy(ESTADO_DO_CEU.sol); luzDoSol.intensity = suavizar(-0.02, 0.25, elevacaoDoSol) * INTENSIDADE_DO_SOL; }
-        else { luzDoSol.position.copy(luzDoSol.target.position).addScaledVector(direcaoDaLua, 40); luzDoSol.color.copy(COR_DA_LUZ_DA_LUA); luzDoSol.intensity = suavizar(-0.02, 0.25, -elevacaoDoSol) * INTENSIDADE_DA_LUA; }
+        if (elevacaoDoSol >= 0) { luzDoSol.position.copy(luzDoSol.target.position).addScaledVector(direcaoDoSol, 40); luzDoSol.color.copy(ESTADO_DO_CEU.sol); luzDoSol.intensity = suavizar(-0.02, 0.25, elevacaoDoSol) * INTENSIDADE_DO_SOL * EFEITO_DO_CLIMA_NO_CEU.luzDoSol; }
+        else { luzDoSol.position.copy(luzDoSol.target.position).addScaledVector(direcaoDaLua, 40); luzDoSol.color.copy(COR_DA_LUZ_DA_LUA); luzDoSol.intensity = suavizar(-0.02, 0.25, -elevacaoDoSol) * INTENSIDADE_DA_LUA * EFEITO_DO_CLIMA_NO_CEU.luzDoSol; }
         luzHemisferica.color.copy(ESTADO_DO_CEU.hemiCeu); luzHemisferica.groundColor.copy(ESTADO_DO_CEU.hemiChao); luzHemisferica.intensity = ESTADO_DO_CEU.hemiInt;
         cena.background.copy(ESTADO_DO_CEU.hor); cena.fog.color.copy(ESTADO_DO_CEU.hor);
         uniformesDoCeu.uTopo.value.copy(ESTADO_DO_CEU.topo); uniformesDoCeu.uHorizonte.value.copy(ESTADO_DO_CEU.hor); uniformesDoCeu.uBrilho.value.copy(ESTADO_DO_CEU.brilho);
         uniformesDoCeu.uForcaDoBrilho.value = ESTADO_DO_CEU.forca; uniformesDoCeu.uDirecaoDoSol.value.copy(direcaoDoSol);
         uniformesDasEstrelas.uOpacidade.value = ESTADO_DO_CEU.estrelas; estrelasDoCeu.visible = ESTADO_DO_CEU.estrelas > 0.01;
-        const opacidadeDoSol = suavizar(-0.12, 0.06, elevacaoDoSol);
+        const opacidadeDoSol = suavizar(-0.12, 0.06, elevacaoDoSol) * EFEITO_DO_CLIMA_NO_CEU.discoDoSol;
         for (const planoDoSol of [raiosDoSol, discoDoSol]) { planoDoSol.material.opacity = opacidadeDoSol; planoDoSol.material.color.copy(ESTADO_DO_CEU.sol).lerp(corBrancaTemp, 0.35); planoDoSol.visible = opacidadeDoSol > 0.01; }
-        uniformesDaLua.uOpacidade.value = suavizar(-0.04, 0.12, -elevacaoDoSol); luaDoCeu.visible = uniformesDaLua.uOpacidade.value > 0.01;
+        uniformesDaLua.uOpacidade.value = suavizar(-0.04, 0.12, -elevacaoDoSol) * EFEITO_DO_CLIMA_NO_CEU.discoDoSol; luaDoCeu.visible = uniformesDaLua.uOpacidade.value > 0.01;
         uniformesDaLua.uLuz.value.set(0.9 * Math.sin(CICLO_DE_DIA_E_NOITE.dias * 0.8 + 0.6), 0.25, 1);    // a fase da lua muda aos poucos a cada dia
         for (const [material, base] of materiaisBasicosDoCenario) material.color.copy(base).multiply(ESTADO_DO_CEU.corBasica);   // fumaça, névoa, gotas etc. escurecem à noite
         // lanternas: acendem quando o sol se aproxima do horizonte e apagam depois do amanhecer

@@ -48,7 +48,8 @@ class NotasController
      */
     public function verNotasAluno(): void
     {
-        solicitarLogin();
+        // Garante que o usuario esta logado
+        solicitarPerfilDeAcesso();
 
         // Obtém os dados do usuário atualmente autenticado
         $usuario = usuarioLogado();
@@ -85,7 +86,7 @@ class NotasController
     public function painelInstrutor(): void
     {
         // Garante que o usuário esteja logado
-        solicitarLogin();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 
@@ -122,7 +123,7 @@ class NotasController
     public function verTurma(): void
     {
         // Garante autenticação
-        solicitarLogin();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 
@@ -168,7 +169,7 @@ class NotasController
     public function salvarNota(): void
     {
         // Garante que o usuário esteja logado
-        solicitarLogin();
+        solicitarPerfilDeAcesso('instrutor');
 
         $usuario = usuarioLogado();
 

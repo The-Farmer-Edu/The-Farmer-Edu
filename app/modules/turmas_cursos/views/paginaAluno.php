@@ -2,6 +2,7 @@
 $tituloPagina = 'Minhas turmas';
 $ativas = array_filter($turmas, static fn($t) => (int) $t['ativo'] === 1);
 $arquivadas = array_filter($turmas, static fn($t) => (int) $t['ativo'] !== 1);
+
 require __DIR__ . '/partials/head.php';
 ?>
 <main class="page-main">
@@ -16,7 +17,7 @@ require __DIR__ . '/partials/head.php';
         <?php if ($ativas): ?>
             <div class="card-grid">
                 <?php foreach ($ativas as $t): ?>
-                    <a class="course-card" href="<?= $base ?>/turmas_cursos/turmaAluno?id=<?= (int) $t['id_turma'] ?>">
+                    <a class="course-card" href="<?= $base ?>/atividades/aluno?id=<?= (int) $t['id_turma'] ?>">
                         <div class="course-card__title"><?= e($t['nome_turma']) ?></div>
                         <div class="course-card__cover">
                             <?php if (!empty($t['image_turma'])): ?>
@@ -39,7 +40,7 @@ require __DIR__ . '/partials/head.php';
             <h2 class="section-heading" id="turmas-arquivadas-title">Turmas arquivadas</h2>
             <div class="card-grid">
                 <?php foreach ($arquivadas as $t): ?>
-                    <a class="course-card archived-card" href="<?= $base ?>/turmas_cursos/turmaAluno?id=<?= (int) $t['id_turma'] ?>">
+                    <a class="course-card archived-card" href="<?= $base ?>/atividades/aluno?id=<?= (int) $t['id_turma'] ?>">
                         <div class="course-card__title"><?= e($t['nome_turma']) ?> <small class="d-block">Arquivada</small></div>
                         <div class="course-card__cover">
                             <?php if (!empty($t['image_turma'])): ?><img src="<?= $base ?>/turmas_cursos/imagemTurma?id=<?= (int) $t['id_turma'] ?>" alt="Imagem da turma">

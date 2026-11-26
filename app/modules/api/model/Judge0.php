@@ -26,17 +26,29 @@
             curl_setopt($curlLinguagens, CURLOPT_HTTPHEADER, [
                 'Accept: application/json'
             ]);
+            curl_setopt($curlLinguagens, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($curlLinguagens, CURLOPT_TIMEOUT, 6);
+            curl_setopt($curlLinguagens, CURLOPT_SSL_VERIFYPEER, false);
+
+            $raw = curl_exec($curlLinguagens);
             if(curl_errno($curlLinguagens)) {
-                echo "Erro ao obter linguagens: " . curl_error($curlLinguagens);
+                error_log("Erro ao obter linguagens: " . curl_error($curlLinguagens));
+                curl_close($curlLinguagens);
                 return null;
             }
-            $arrayLinguagens = json_decode(curl_exec($curlLinguagens), true);
-            return $arrayLinguagens;
+            curl_close($curlLinguagens);
+
+            $arrayLinguagens = json_decode($raw, true);
+            return is_array($arrayLinguagens) ? $arrayLinguagens : null;
         }
 
         public function buscarLinguagens(string $query): array|bool {
+            if (!$this->linguagens || !is_array($this->linguagens)) {
+                return false;
+            }
+
             $resultados = array_filter($this->linguagens, function($item) use ($query) {
-                return stripos($item['name'], $query) !== false;
+                return isset($item['name']) && stripos($item['name'], $query) !== false;
             });
 
             $resultados = array_values($resultados);
@@ -65,15 +77,27 @@
             curl_setopt($curlJudge0, CURLOPT_POST, true);
             curl_setopt($curlJudge0, CURLOPT_POSTFIELDS, $this->payload);
             curl_setopt($curlJudge0, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($curlJudge0, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($curlJudge0, CURLOPT_TIMEOUT, 20);
+            curl_setopt($curlJudge0, CURLOPT_SSL_VERIFYPEER, false);
 
-            $respostaJudge0 = json_decode(curl_exec($curlJudge0), true);
+            $rawResponse = curl_exec($curlJudge0);
+            $err = curl_error($curlJudge0);
+            curl_close($curlJudge0);
+
+            if ($rawResponse === false || $rawResponse === '') {
+                return ["status" => "Erro na Execução", "saida" => "Não foi possível conectar ao servidor de compilação Judge0. ($err)"];
+            }
+
+            $respostaJudge0 = json_decode($rawResponse, true);
 
             $saidaDecodificada = isset($respostaJudge0['stdout']) ? base64_decode($respostaJudge0['stdout']) : "";
             $saidaCompiladaDecodificada = isset($respostaJudge0['compile_output']) ? base64_decode($respostaJudge0['compile_output']) : "";
             $erroDecodificado = isset($respostaJudge0['stderr']) ? base64_decode($respostaJudge0['stderr']) : "";
 
             $saidaCodigo = $saidaDecodificada ?: $erroDecodificado ?: $saidaCompiladaDecodificada ?: "Sem saída.";
-            $status = $respostaJudge0['status']['description'] === "Accepted" ? "Código Aceito!" : "Código Incorreto!";
+            $desc = $respostaJudge0['status']['description'] ?? "Incorreto";
+            $status = $desc === "Accepted" ? "Código Aceito!" : "Código Incorreto! ($desc)";
             return ["status" => $status, "saida" => $saidaCodigo];
         }
 

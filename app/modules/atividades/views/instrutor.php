@@ -1,6 +1,3 @@
-<?php
-$inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
-?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -17,31 +14,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 </head>
 <body class="tema-instrutor" data-instrutor="<?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?>">
 
-<header>
-    <img src="assets/img/svg/logo_icone.svg" alt="The Farmer Edu">
-    <div class="titulo-header">
-        <h2 id="cabecalho-titulo">MINHAS TURMAS</h2>
-        <p id="cabecalho-sub">The Farmer Edu</p>
-    </div>
-
-    <div>
-        <h4>Bem-Vindo!</h4> <span><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></span>
-    </div>
-
-    <div class="menu-perfil">
-        <button type="button" class="avatar" id="botao-perfil" aria-haspopup="true"
-                aria-expanded="false" aria-controls="menu-perfil-lista" title="Menu do perfil"><?= htmlspecialchars($inicial, ENT_QUOTES, 'UTF-8') ?></button>
-        <div class="menu-perfil-lista hidden" id="menu-perfil-lista" role="menu">
-            <p class="menu-perfil-nome">
-                <span><?= htmlspecialchars($usuario['nome'], ENT_QUOTES, 'UTF-8') ?></span>
-                <small>Instrutor</small>
-            </p>
-            <a role="menuitem" href="turmas_cursos/instrutor">Cursos e turmas</a>
-            <a role="menuitem" href="turmas_cursos/minhaConta">Minha conta</a>
-            <a role="menuitem" class="sair" href="auth/logout">Sair</a>
-        </div>
-    </div>
-</header>
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
 <div class="layout">
 
@@ -65,6 +38,13 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
             Pessoas
         </button>
 
+        <a class="menu-item" id="botao-notas" href="notas/instrutor">
+            <span class="icone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+            </span>
+            Notas
+        </a>
+
         <a class="menu-item back" href="turmas_cursos/instrutor">
             <span class="icone">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="M14 8l4 4-4 4M18 12H9"/></svg>
@@ -75,6 +55,11 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
         </aside>
 
     <main>
+
+        <div class="titulo-header">
+            <h2 id="cabecalho-titulo">MINHAS TURMAS</h2>
+            <p id="cabecalho-sub">The Farmer Edu</p>
+        </div>
 
         <p id="aviso" class="aviso hidden" role="alert"></p>
 
@@ -123,6 +108,12 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
                     onclick="novaAtividade('quiz')">
                     Pergunta
                     <small>Crie uma pergunta com alternativas de resposta.</small>
+                </button>
+
+                <button class="option-card"
+                    onclick="novaAtividade('anexo')">
+                    Atividade de anexo
+                    <small>O aluno responde anexando um ou mais arquivos.</small>
                 </button>
 
                 <button class="option-card"
@@ -353,6 +344,66 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 
                     <div class="form-actions">
                         <button class="primary" type="submit">Publicar pergunta</button>
+                        <button class="secondary" type="button"
+                            onclick="cancelarFormulario(this)">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section id="pagina-anexo" class="pagina hidden">
+            <div class="form-card">
+                <h2>Publicar atividade de anexo</h2>
+                <p>O aluno vai responder esta atividade anexando arquivos.</p>
+                <p class="formato" data-tipo="anexo"></p>
+
+                <form onsubmit="salvarAtividade(event)">
+                    <input type="hidden" name="id_atividade" value="">
+                    <input type="hidden" name="tipo" value="anexo">
+
+                    <div class="field">
+                        <label for="titulo-anexo">Título</label>
+                        <input id="titulo-anexo" name="titulo"
+                            placeholder="" maxlength="150" required>
+                    </div>
+
+                    <div class="field">
+                        <label for="turma-anexo">Turma</label>
+                        <select id="turma-anexo" name="id_turma" class="select-turma" required>
+                            <option value="">Selecione</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="conteudo-anexo">Enunciado</label>
+                        <textarea id="conteudo-anexo" name="descricao"
+                            placeholder=""
+                            required></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="gabarito-anexo">Gabarito</label>
+                        <input type="file" id="gabarito-anexo" name="gabarito[]" multiple>
+                        <small class="dica dica-gabarito"></small>
+                        <div class="arquivos-existentes"></div>
+                    </div>
+
+                    <div class="field">
+                        <label for="criterios-anexo">Critérios de avaliação</label>
+                        <input type="hidden" name="criterios" value="[]">
+                        <button id="criterios-anexo" class="secondary pequeno btn-criterios" type="button"
+                            onclick="abrirCriterios(this)">
+                            Definir critérios <span class="contagem">(0)</span>
+                        </button>
+                    </div>
+
+                    <div class="field">
+                        <label for="prazo-anexo">Prazo de entrega</label>
+                        <input type="date" id="prazo-anexo" name="prazo" required>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="primary" type="submit">Publicar atividade</button>
                         <button class="secondary" type="button"
                             onclick="cancelarFormulario(this)">Cancelar</button>
                     </div>

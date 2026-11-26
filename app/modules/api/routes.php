@@ -8,7 +8,9 @@ Router::get('/api/avaliar', [ApiController::class, 'showAvaliar']);
 Router::get('/api/linguagens', [ApiController::class, 'showLinguagens']);
 Router::get('/api/Judge0', [ApiController::class, 'showJudge0']);
 Router::get('/api/Ollama', [ApiController::class, 'showOllama']);
+Router::get('/api/WOL', [ApiController::class, 'showWOL']);
 
 Router::post('/api/sendAvaliacao', [ApiController::class, 'sendAvaliacao']);
+Router::post('/api/consultarSophia', [ApiController::class, 'showConsultarSophia']);
 Router::post('/api/Judge0', [ApiController::class, 'showJudge0']);
 Router::post('/api/Ollama', [ApiController::class, 'showOllama']);

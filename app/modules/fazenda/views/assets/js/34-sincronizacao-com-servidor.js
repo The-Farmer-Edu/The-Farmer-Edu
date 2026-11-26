@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 34-sincronizacao-com-servidor.js (Backend)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA), depois da interface (seção 32) e antes
       // da finalização (seção 33).
@@ -18,6 +18,13 @@
       // ====================================================================================================
       if (SERVIDOR_DA_FAZENDA) {
         const ESPERA_PARA_ENVIAR_MS = 5000, ESPERA_APOS_FALHA_MS = 15000, INTERVALO_DA_CONSULTA_DE_XP_MS = 60000;
+        // TETO DE ESPERA: a espera de 5 s reinicia a cada mudança. Com ações seguidas (colheitas, equipe, XP chegando) em menos de 5 s,
+        // o save nunca saía (e, no modo servidor, nada vai para o localStorage). Agora, no máximo ESPERA_MAXIMA_MS depois da primeira
+        // mudança ainda não enviada, o envio acontece mesmo que o jogador continue agindo.
+        const ESPERA_MAXIMA_MS = 15000;
+        // keepalive (envio que sobrevive ao fechamento da página) tem limite de ~64 KB de corpo; acima disso o navegador recusa o fetch
+        // inteiro. Só ligamos o keepalive quando o corpo cabe.
+        const LIMITE_DO_KEEPALIVE_BYTES = 60000, MAXIMO_DE_IDS_POR_ENVIO = 400, FALHAS_ATE_AVISAR = 3;
         const sincronia = {
           sessao: SERVIDOR_DA_FAZENDA.sessao || '',
           ultimoEstadoEnviado: '',          // vazio de propósito: o primeiro envio grava também a fazenda nova/migrada
@@ -25,10 +32,15 @@
           superada: false,                  // true quando o servidor informou que outra aba/janela abriu a fazenda depois desta
           idsParaConfirmar: [],             // XP já aplicado no jogo e ainda não confirmado ao servidor
           idsJaAplicados: new Set(),        // evita aplicar o mesmo XP duas vezes enquanto a confirmação não chegou
+          pendenteDesde: 0,                 // instante da primeira mudança ainda não enviada (base do teto de espera)
+          falhasSeguidas: 0,
           agendar(espera = ESPERA_PARA_ENVIAR_MS) {
             if (sincronia.bloqueada) return;
+            const agora = Date.now();
+            if (!sincronia.pendenteDesde) sincronia.pendenteDesde = agora;
+            const ateOTeto = Math.max(0, sincronia.pendenteDesde + ESPERA_MAXIMA_MS - agora);
             clearTimeout(sincronia.temporizador);
-            sincronia.temporizador = setTimeout(() => sincronia.enviar(), espera);
+            sincronia.temporizador = setTimeout(() => sincronia.enviar(), Math.min(espera, ateOTeto));
           },
           bloquear(texto) {
             sincronia.bloqueada = true; clearTimeout(sincronia.temporizador);
@@ -48,23 +60,27 @@
             clearTimeout(sincronia.temporizador);
             if (sincronia.bloqueada || sincronia.enviando) return;
             const textoDoEstado = JSON.stringify(estado);
-            if (textoDoEstado === sincronia.ultimoEstadoEnviado && !sincronia.idsParaConfirmar.length) return;
-            const idsEnviados = sincronia.idsParaConfirmar.slice();
+            if (textoDoEstado === sincronia.ultimoEstadoEnviado && !sincronia.idsParaConfirmar.length) { sincronia.pendenteDesde = 0; return; }
+            sincronia.pendenteDesde = 0;   // o que mudar a partir daqui começa uma nova janela de espera
+            const idsEnviados = sincronia.idsParaConfirmar.slice(0, MAXIMO_DE_IDS_POR_ENVIO);   // o servidor recusa mais de 500 de uma vez
             let esperaParaTentarDeNovo = 0;
             sincronia.enviando = true;
             try {
+              const corpo = '{"sessao":"' + sincronia.sessao + '","xp_entregues":' + JSON.stringify(idsEnviados) + ',"estado":' + textoDoEstado + '}';
               const resposta = await fetch(SERVIDOR_DA_FAZENDA.urls.salvar, {
-                method: 'POST', credentials: 'same-origin', keepalive: true, headers: { 'Content-Type': 'application/json' },
-                body: '{"sessao":"' + sincronia.sessao + '","xp_entregues":' + JSON.stringify(idsEnviados) + ',"estado":' + textoDoEstado + '}',
+                method: 'POST', credentials: 'same-origin', keepalive: corpo.length < LIMITE_DO_KEEPALIVE_BYTES, headers: { 'Content-Type': 'application/json' },
+                body: corpo,
               });
               if (resposta.status === 409) { sincronia.foiSuperada(); return; }
               if (resposta.status === 401) { sincronia.bloquear('Sua sessão expirou. Entre novamente na plataforma para continuar salvando.'); return; }
               if (!resposta.ok) throw new Error('HTTP ' + resposta.status);
-              sincronia.ultimoEstadoEnviado = textoDoEstado;
+              sincronia.ultimoEstadoEnviado = textoDoEstado; sincronia.falhasSeguidas = 0;
               sincronia.idsParaConfirmar = sincronia.idsParaConfirmar.filter(id => !idsEnviados.includes(id));
             } catch (erro) {
               console.warn('[FarmEdu] não foi possível salvar no servidor (nova tentativa em instantes):', erro);
               esperaParaTentarDeNovo = ESPERA_APOS_FALHA_MS;
+              // Falhou várias vezes seguidas: o jogador precisa saber (o progresso só está na memória desta página).
+              if (++sincronia.falhasSeguidas === FALHAS_ATE_AVISAR) mostrarFaixaDeInvasao('⚠️ Sua fazenda não está sendo salva', 'Não consegui falar com o servidor. Continue jogando: vou tentar de novo sozinho. Não feche esta página ainda.', 12000);
             } finally {
               sincronia.enviando = false;
               if (!sincronia.bloqueada && (esperaParaTentarDeNovo || JSON.stringify(estado) !== sincronia.ultimoEstadoEnviado || sincronia.idsParaConfirmar.length)) sincronia.agendar(esperaParaTentarDeNovo || ESPERA_PARA_ENVIAR_MS);
@@ -72,13 +88,16 @@
           },
           // Aplica no jogo o XP vindo do servidor: [{ id, quantidade, motivo }]. Cada id só entra uma vez.
           aplicarXP(lista) {
-            let total = 0, aplicou = false;
-            for (const item of lista) {
-              if (sincronia.idsJaAplicados.has(item.id)) continue;
-              const quantidade = Number(item.quantidade);
-              if (window.adicionarXP(quantidade)) { sincronia.idsJaAplicados.add(item.id); sincronia.idsParaConfirmar.push(item.id); total += quantidade; aplicou = true; }
-            }
+            // Em lote: soma tudo e chama adicionarXP UMA vez (antes eram até 200 chamadas, cada uma redesenhando todos os painéis, e uma
+            // exceção no meio deixava parte do XP aplicada sem o id registrado, aplicando de novo na próxima consulta).
+            const novos = (Array.isArray(lista) ? lista : []).filter(item => item && !sincronia.idsJaAplicados.has(item.id) && Number.isFinite(Number(item.quantidade)));
+            if (!novos.length) return;
+            const total = novos.reduce((soma, item) => soma + Number(item.quantidade), 0), xpAntes = estado.xp;
+            let aplicou = false;
+            try { aplicou = window.adicionarXP(total); }
+            catch (erro) { console.error('[FarmEdu] erro ao aplicar o XP das atividades:', erro); aplicou = estado.xp !== xpAntes; }   // se o XP já entrou, conta como aplicado
             if (!aplicou) return;
+            for (const item of novos) { sincronia.idsJaAplicados.add(item.id); sincronia.idsParaConfirmar.push(item.id); }
             mostrarAviso(total >= 0 ? '📚 Atividades: +' + total.toLocaleString('pt-BR') + ' XP' : '📚 Ajuste de nota nas atividades: ' + total.toLocaleString('pt-BR') + ' XP');
             sincronia.enviar();
           },

@@ -57,7 +57,7 @@
             <section class="hero reveal-area" id="topo">
                 <div class="wrap">
                     <div class="hero-copy">
-                        <h1>Cada atividade faz sua fazenda crescer.</h1>
+                        <h1>Cada atividade planta uma nova <span style="color: var(--green);">evolução</span>.</h1>
                         <p class="hero-sub">The Farmer Edu é a plataforma que a turma de Aprendizagem em Assistente de
                             Programação Web
                             do SENAI está construindo: atividades com feedback de Inteligência Artificial e uma fazenda
@@ -290,17 +290,18 @@
                         <h2>Quem está construindo</h2>
                     </div>
                     <div class="stats">
-                        <div class="stat"><b>56</b><span>Alunos</span></div>
+                        <div class="stat"><b>55</b><span>Alunos</span></div>
                         <div class="stat"><b>2</b><span>Turmas, manhã e tarde</span></div>
-                        <div class="stat"><b>~11</b><span>Semanas de projeto</span></div>
+                        <div class="stat"><b>~7</b><span>Semanas de projeto</span></div>
                     </div>
-                    <p class="equipe-text">56 alunos — 21 da manhã e 35 da tarde — trabalham juntos no mesmo projeto,
+                    <p class="equipe-text">55 alunos — 21 da manhã e 34 da tarde — trabalham juntos no mesmo projeto,
                         divididos em
                         pequenos grupos, cada um responsável por uma parte do sistema. Ninguém fica só na parte visual ou só
                         na
                         técnica: todo mundo passa por todas as frentes, do jeito que aconteceria numa equipe de
                         desenvolvimento de
                         verdade.</p>
+                    <a class="btn btn-primary" href="sobre/desenvolvedores" style="margin-top:32px;">Conheça os desenvolvedores</a>
                 </div>
             </section>
         </main>

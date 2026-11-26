@@ -1,4 +1,4 @@
-﻿// IDE: editor, destaque de sintaxe, abas de arquivos, execução e modo celular.
+// IDE: editor, destaque de sintaxe, abas de arquivos, execução e modo celular.
 // Este arquivo é o núcleo funcional da experiência de desenvolvimento dentro da atividade.
 const atividadeAtual = window.FarmAtividade;
 const linguagemAtual = atividadeAtual.linguagem;
@@ -9,7 +9,6 @@ const LIMITE_CANCELAMENTOS = 3;
 const ID_LINGUAGEM_PYTHON = 71;
 const CONSULTA_CELULAR = '(max-width: 780px)';
 const LIMITE_SOPHIA = 10;
-let usosSophia = 0;
 
 /**
  * Regras de destaque por linguagem.
@@ -55,31 +54,120 @@ const botaoFecharEditor = porId('fecharEditor');
 const CHAVE_CODIGO = `farmedu:codigo:${atividadeAtual.chave}:${linguagemAtual.id}`;
 const CHAVE_ENTREGA = `farmedu:entrega:${atividadeAtual.chave}`;
 const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${atividadeAtual.chave}`;
+const CHAVE_EXECUCOES = `farmedu:execucoes:${atividadeAtual.chave}`;
+const CHAVE_SOPHIA = `farmedu:sophia:${atividadeAtual.chave}`;
+
+// Contadores de limite gravados no navegador, por atividade, para sobreviverem ao refresh.
+function lerContador(chave) {
+    try { return Number(localStorage.getItem(chave)) || 0; } catch (erro) { return 0; }
+}
+function gravarContador(chave, valor) {
+    try { localStorage.setItem(chave, String(valor)); } catch (erro) { }
+}
 
 /*
  * Estado da página.
  *
- * O sistema guarda código, entrega e cancelamentos por atividade em localStorage para não misturar
- * uma atividade da outra enquanto o aluno navega entre telas.
+ * REGRA DE SEGURANÇA:
+ * As contagens de cancelamentos/tentativas e o estado da entrega (`entrega`) são carregados
+ * EXCLUSIVAMENTE do banco de dados (via `atividadeAtual`, injetada pelo PHP), e não do localStorage.
+ * O localStorage continua sendo usado apenas como rascunho de código não entregue e espelho visual,
+ * evitando manipulação dos bloqueios de botão pelo navegador.
  */
+const MODO_INSTRUTOR = !!atividadeAtual.modoInstrutor;
+
+/**
+ * Converte a submissão retornada pelo banco no mapa de arquivos usado pelo editor.
+ */
+function extrairArquivosDaSubmissao(submissao, vazioSeAusente = false) {
+    const mapaVazio = () => {
+        const obj = {};
+        ARQUIVOS.forEach(arquivo => { obj[arquivo.lang] = ''; });
+        return obj;
+    };
+
+    if (!submissao) {
+        return vazioSeAusente ? mapaVazio() : null;
+    }
+
+    const conteudo = submissao.conteudo || '';
+    if (!conteudo && submissao.caminhoArquivo) {
+        return { ...mapaVazio(), [ARQUIVOS[0].lang]: `Arquivo anexado: ${submissao.caminhoArquivo}` };
+    }
+
+    if (ARQUIVOS.length === 1) {
+        return { ...(vazioSeAusente ? mapaVazio() : linguagemAtual.inicial), [ARQUIVOS[0].lang]: conteudo };
+    }
+
+    try {
+        const parsed = JSON.parse(conteudo);
+        if (parsed && typeof parsed === 'object') {
+            return { ...(vazioSeAusente ? mapaVazio() : linguagemAtual.inicial), ...parsed };
+        }
+    } catch (erro) { }
+
+    return vazioSeAusente ? mapaVazio() : { ...linguagemAtual.inicial };
+}
+
+// Estado real de entrega e cancelamentos vindos do banco de dados.
+let entrega = (!MODO_INSTRUTOR && atividadeAtual.entregue && atividadeAtual.submissao)
+    ? {
+        id: atividadeAtual.submissao.id,
+        data: atividadeAtual.submissao.dataEnvio,
+        tentativa: atividadeAtual.submissao.tentativa,
+        status: atividadeAtual.submissao.status,
+        atividadeId: atividadeAtual.id,
+        linguagem: linguagemAtual.id
+    }
+    : null;
+
+let cancelamentos = MODO_INSTRUTOR ? 0 : (Number(atividadeAtual.cancelamentos) || 0);
+
+// Sincroniza o cache local para refletir o banco de dados (anula eventuais edições manuais no DevTools).
+if (!MODO_INSTRUTOR && !atividadeAtual.vazia) {
+    try {
+        if (entrega) {
+            localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega));
+        } else {
+            localStorage.removeItem(CHAVE_ENTREGA);
+        }
+        localStorage.setItem(CHAVE_CANCELAMENTOS, String(cancelamentos));
+    } catch (erro) { }
+}
+
+// Carrega os arquivos do editor priorizando sempre o banco quando entregue ou no modo instrutor.
 let dadosDosArquivos;
-try {
-    dadosDosArquivos = { ...linguagemAtual.inicial, ...JSON.parse(localStorage.getItem(CHAVE_CODIGO)) };
-} catch (erro) {
-    dadosDosArquivos = { ...linguagemAtual.inicial };
+if (MODO_INSTRUTOR) {
+    // Instrutor recebe exclusivamente a última submissão ativa do aluno no BD (nunca o localStorage).
+    dadosDosArquivos = extrairArquivosDaSubmissao(atividadeAtual.submissao, true);
+} else if (entrega) {
+    // Quando já foi entregue no BD, exibe exatamente a resolução gravada no banco.
+    dadosDosArquivos = extrairArquivosDaSubmissao(atividadeAtual.submissao, false) || { ...linguagemAtual.inicial };
+} else {
+    try {
+        const rascunhoLocal = JSON.parse(localStorage.getItem(CHAVE_CODIGO));
+        dadosDosArquivos = rascunhoLocal
+            ? { ...linguagemAtual.inicial, ...rascunhoLocal }
+            : (extrairArquivosDaSubmissao(atividadeAtual.submissao, false) || { ...linguagemAtual.inicial });
+    } catch (erro) {
+        dadosDosArquivos = { ...linguagemAtual.inicial };
+    }
 }
 if (atividadeAtual.vazia) ARQUIVOS.forEach(arquivo => { dadosDosArquivos[arquivo.lang] = ''; });
-
-let entrega = null;
-try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) { }
-let cancelamentos = 0;
-try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) { }
 
 let arquivoAtual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
 let executadoAtual = false;
 let executando = false;
-let usosExecutar = 0;
+let usosExecutar = lerContador(CHAVE_EXECUCOES);
+let usosSophia = lerContador(CHAVE_SOPHIA);
+
+// Chamado pelo sophia.js a cada consulta à Sophia.
+function registrarUsoSophia() {
+    usosSophia++;
+    gravarContador(CHAVE_SOPHIA, usosSophia);
+    atualizarBotoes();
+}
 
 /* Utilitários */
 const ehCelular = () => window.matchMedia(CONSULTA_CELULAR).matches;
@@ -95,6 +183,8 @@ function aviso(mensagem) {
 }
 
 function salvar() {
+    // Modo instrutor e entregas já finalizadas não devem alterar o rascunho local.
+    if (MODO_INSTRUTOR || entrega) return;
     try { localStorage.setItem(CHAVE_CODIGO, JSON.stringify(dadosDosArquivos)); } catch (erro) { }
 }
 
@@ -404,7 +494,7 @@ async function executar(opcoes = {}) {
 function atualizarBotoes() {
     porId('btnRodar').disabled = atividadeAtual.vazia || executando || usosExecutar >= LIMITE_EXECUCOES;
     porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
-    porId('btnSophia').disabled = atividadeAtual.vazia;
+    porId('btnSophia').disabled = atividadeAtual.vazia || usosSophia >= LIMITE_SOPHIA;
     atualizarEntrega();
 }
 
@@ -446,12 +536,20 @@ porId('btnLimpar').onclick = () => { consoleCorpo.innerHTML = ''; };
 porId('btnRodar').onclick = () => {
     if (porId('btnRodar').disabled) return;
     usosExecutar++;
+    gravarContador(CHAVE_EXECUCOES, usosExecutar);
     atualizarContadores();
     executar({ focar: true });
 };
 
-// Voltar sempre leva à página do aluno.
-porId('btnVoltar').onclick = () => { location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id); };
+// Voltar preserva id_aluno no modo instrutor para não perder a permissão de acesso na URL.
+porId('btnVoltar').onclick = () => {
+    if (MODO_INSTRUTOR && atividadeAtual.idAluno) {
+        location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id) + '&id_aluno=' + encodeURIComponent(atividadeAtual.idAluno);
+        return;
+    }
+    location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id);
+};
+// -----------------------------------------------------------------^
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
     const semImagem = () => imagem.parentElement.classList.add('sem-img');
@@ -489,13 +587,47 @@ function aplicarModoTexto() {
     editorTexto.placeholder = 'Escreva sua resposta aqui...';
     editorTexto.setAttribute('aria-label', 'Editor de texto');
 }
+// Instrutor só visualiza a última submissão do aluno (sem executar, entregar nem Sophia).
+function aplicarModoInstrutor() {
+    if (!MODO_INSTRUTOR) return;
+    porId('btnRodar').hidden = true;
+    porId('btnEntregar').hidden = true;
+    document.querySelector('.sophia').hidden = true;
+    porId('contadorLimite').hidden = true;
+    editorTexto.readOnly = true;
 
+    const chipSiae = porId('chipSiae');
+    if (chipSiae && atividadeAtual.feedbackIa && typeof atividadeAtual.feedbackIa.percentual === 'number') {
+        const pct = Math.round(atividadeAtual.feedbackIa.percentual);
+        chipSiae.hidden = false;
+        chipSiae.classList.toggle('encerrado', pct > 60);
+        chipSiae.textContent = `SIAE: ${pct}% IA`;
+        if (atividadeAtual.feedbackIa.motivo) {
+            chipSiae.title = atividadeAtual.feedbackIa.motivo;
+        }
+    }
+
+    if (!atividadeAtual.submissao) {
+        editorTexto.placeholder = 'Este aluno ainda não enviou resolução para esta atividade.';
+    }
+}
 function iniciarPagina() {
     aplicarModoTexto();
+    aplicarModoInstrutor();
     atualizarBotoes();
     setInterval(atualizarEntrega, 30000);
     trocar(arquivoAtual);
-    if (!atividadeAtual.vazia) {
+
+    // Evita que o botão Voltar do navegador restaure estado obsoleto do cache (bfcache).
+    window.addEventListener('pageshow', evento => {
+        if (evento.persisted) location.reload();
+    });
+    // Mantém os bloqueios coerentes com o BD mesmo se o localStorage for alterado em outra aba.
+    window.addEventListener('storage', () => {
+        atualizarBotoes();
+    });
+
+    if (!atividadeAtual.vazia && !MODO_INSTRUTOR) {
         setTimeout(() => sophiaFala('Oi, sou a Sophia! Estou aqui para ajudar. Se precisar, é só clicar em mim.', 6000), 600);
     }
 }

@@ -8,3 +8,23 @@ body.tema-aluno {
 body.tema-aluno main > section:last-of-type {
     margin-top: 24px;
 }
+
+.btn-acessar-fazenda {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1030;
+    text-decoration: none;
+}
+
+@media (max-width: 650px) {
+    .btn-acessar-fazenda {
+        right: 12px;
+        bottom: 12px;
+    }
+
+    .btn-acessar-fazenda img {
+        width: 44px;
+        height: 44px;
+    }
+}

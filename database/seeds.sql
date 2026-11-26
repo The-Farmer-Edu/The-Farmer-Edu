@@ -154,7 +154,7 @@ VALUES (
         'manha',
         1,
         1,
-        'uploads/turmas/webdev_2026_1.png',
+        NULL,
         1
     ),
     (
@@ -163,7 +163,7 @@ VALUES (
         'tarde',
         2,
         2,
-        'uploads/turmas/tecds_2026_1.png',
+        NULL,
         1
     );
 -- ---------------------------------------------------------------------

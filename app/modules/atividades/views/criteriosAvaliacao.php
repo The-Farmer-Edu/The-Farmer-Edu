@@ -12,6 +12,8 @@
 
 <body>
 
+<?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
+
     <h1>Critérios da IA</h1>
 
     <input

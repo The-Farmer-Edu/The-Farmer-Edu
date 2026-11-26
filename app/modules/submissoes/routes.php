@@ -20,3 +20,13 @@ Router::post('/submissoes/enviarSubmissao', [atividadesSub::class, 'processarSub
 
 // Servidor de assets: CSS, JS e imagens internos do módulo.
 Router::get('/submissoes/file', [atividadesSub::class, 'sendFile']);
+
+Router::post('/submissoes/enviarAnexo', [atividadesSub::class, 'enviarAnexo']);
+
+Router::post('/submissoes/salvarResolucao', [atividadesSub::class, 'salvarResolucao']);
+
+// Cancela a última entrega ativa do aluno diretamente no banco de dados.
+Router::post('/submissoes/cancelarEntrega', [atividadesSub::class, 'cancelarEntrega']);
+
+// Consulta o estado atual da atividade/submissão direto do banco de dados.
+Router::get('/submissoes/status', [atividadesSub::class, 'statusAtividade']);

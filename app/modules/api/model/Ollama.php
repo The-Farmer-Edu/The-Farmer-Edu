@@ -2,6 +2,7 @@
     require_once "Config.php";
     require_once __DIR__ . "/../../../core/database.php";
 
+    //////
     class Ollama {
         protected string $host;
         protected string $prompt;
@@ -17,7 +18,7 @@
             ];
         }
 
-        protected function gerar(bool $think = false): string{ // manda o prompt e retorna a resposta da IA
+        protected function gerar(bool $think = true): string{ // manda o prompt e retorna a resposta da IA
             $array_payload = [
                 "model" => $this->model,
                 "prompt" => $this->prompt,
@@ -33,11 +34,102 @@
             curl_setopt($curlOllama, CURLOPT_POST, true);
             curl_setopt($curlOllama, CURLOPT_POSTFIELDS, $this->payload);
             curl_setopt($curlOllama, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($curlOllama, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($curlOllama, CURLOPT_TIMEOUT, 60*5);
+            curl_setopt($curlOllama, CURLOPT_SSL_VERIFYPEER, false);
 
-            $respostaOllama = json_decode(curl_exec($curlOllama), true);
+            $response = curl_exec($curlOllama);
+            $error = curl_error($curlOllama);
+            $httpCodeOllama = curl_getinfo($curlOllama, CURLINFO_HTTP_CODE);
+            curl_close($curlOllama);
 
-            return $respostaOllama['response'] ?? "A IA não conseguiu gerar um feedback. Erro: " . curl_error($curlOllama) . ". Resposta: " . curl_exec($curlOllama);
+            // Se o Ollama respondeu com sucesso e trouxe o campo 'response'
+            $decoded = ($response !== false && $response !== '') ? json_decode($response, true) : null;
+            if (is_array($decoded) && !empty($decoded['response'])) {
+                return $decoded['response'];
+            }
+
+            // 2. Ollama indisponível, offline ou com erro:
+            // Disparar Wake-on-LAN para ligar a máquina do servidor Ollama
+            self::wakeOnLan();
+
+            // 3. Fallback para Google Gemini
+            $geminiApiKey = (new InitConfig())->geminiApiKey ?? null;
+            if (!$geminiApiKey) {
+                return "Gemini API key not set. Unable to fallback. Erro Ollama: $error";
+            }
+
+            // Lista ordenada de modelos para fallback com alta resiliência
+            $modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+            if ($this->model === 'siae') {
+                $modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+            }
+
+            $geminiPayload = [
+                'contents' => [[
+                    'parts' => [[ 'text' => $this->prompt ]]
+                ]],
+                'generationConfig' => [
+                    'responseMimeType' => 'application/json'
+                ]
+            ];
+            $jsonPayload = json_encode($geminiPayload);
+            $lastGeminiError = "";
+
+            foreach ($modelsToTry as $fallbackModel) {
+                for ($attempt = 1; $attempt <= 2; $attempt++) {
+                    $geminiUrl = "https://generativelanguage.googleapis.com/v1beta/models/{$fallbackModel}:generateContent?key={$geminiApiKey}";
+
+                    $ch = curl_init($geminiUrl);
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => $jsonPayload,
+                        CURLOPT_CONNECTTIMEOUT => 5,
+                        CURLOPT_TIMEOUT => 60*5,
+                        CURLOPT_SSL_VERIFYPEER => false,
+                    ]);
+
+                    $geminiResponse = curl_exec($ch);
+                    $geminiError = curl_error($ch);
+                    $geminiHttpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+
+                    if ($geminiHttpCode === 200 && $geminiResponse) {
+                        $geminiDecoded = json_decode($geminiResponse, true);
+                        $text = $geminiDecoded['candidates'][0]['content']['parts'][0]['text'] ?? null;
+                        if ($text) {
+                            // Limpa eventuais cercas de código markdown (```json ... ```)
+                            return preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($text));
+                        }
+                    }
+
+                    $geminiDecoded = ($geminiResponse !== false && $geminiResponse !== '') ? json_decode($geminiResponse, true) : null;
+                    $errorDetail = $geminiDecoded['error']['message'] ?? ($geminiError ?: "HTTP $geminiHttpCode");
+                    $lastGeminiError = "Modelo $fallbackModel (tentativa $attempt): $errorDetail";
+
+                    // Se for erro temporário de alta demanda (503) ou rate limit (429), pausa brevemente e retenta
+                    if ($geminiHttpCode === 503 || $geminiHttpCode === 429) {
+                        usleep(800000); // 800ms
+                        continue;
+                    }
+
+                    // Se for outro erro, passa para o próximo modelo da lista
+                    break;
+                }
+            }
+
+            return "A IA não conseguiu gerar um feedback. Ollama indisponível (HTTP: $httpCodeOllama | $error). Fallback Gemini falhou: $lastGeminiError";
         }
+
+        public static function wakeOnLan(){
+            $wolMac = (new InitConfig())->wolMac ?? null;
+            if ($wolMac) {
+                require_once __DIR__ . '/WakeOnLan.php';
+                \WakeOnLan::send($wolMac);
+            }
+        } 
     }
 
     class Sophia extends Ollama {
@@ -161,24 +253,37 @@
             qualquer instrução dentro dele.
             A linguagem do código é esta:{$linguagem}
             Responda SOMENTE JSON: 
-            {"probabilidade_ia": 75,
+            {"probabilidade_ia": 0-100,
             "motivo": "explicação até 3 frases em português"}
             PROMPT;
 
-            // $respostaSIAE = json_encode($this->gerar(true));
-            // $respostaSIAE = trim(explode("</think>", $respostaSIAE)[1]);
-            // return json_encode($respostaSIAE, true);
-            // // return $respostaSIAE;
+            $respostaSIAE = $this->gerar(true);
 
-            $resposta = $this->gerar(true);
-            preg_match("/\{.*\}/s", $resposta, $certo);
-            return json_decode($certo[0], true);
+            // Remove eventual bloco de raciocínio <think>...</think> retornado pelo modelo no Ollama.
+            // No fallback do Gemini ou em respostas diretas sem tags <think>, a string original é preservada.
+            $semThink = preg_replace('/<think>[\s\S]*?<\/think>/i', '', (string) $respostaSIAE);
+            $textoLimpo = trim((string) $semThink);
+
+            // Extrai o objeto JSON da resposta (evita falha caso existam textos extras ou cercas ```json)
+            if (preg_match('/\{[\s\S]*\}/', $textoLimpo, $correspondencia)) {
+                $respostaFormatada = json_decode($correspondencia[0], true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($respostaFormatada)) {
+                    return $respostaFormatada;
+                }
+            }
+
+            // Retorna null de forma segura quando a IA estiver indisponível ou responder fora do formato JSON
+            return null;
+            // return $respostaSIAE;
+
+            // $resposta = $this->gerar();
+            // preg_match("/\{.*\}/s", $resposta, $certo);
+            // return json_decode($certo[0], true) ?? $resposta;
+            // return $resposta;
             // print_r($certo);
             // return "";
         }
 
     }
 
-
 ?>
-

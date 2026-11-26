@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -8,32 +9,29 @@
     <!-- Fontes do projeto: padronizam a leitura e a identidade visual da experiência de coding. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap"
+        rel="stylesheet">
 
     <!-- CSS do editor/IDE, servido pelo controller de assets do módulo. -->
     <link rel="stylesheet" href="file?type=css&file=iniciaratv.css">
 </head>
-<body data-pagina="iniciaratv">
-    <!-- Topbar do editor: em uma só linha, o aluno vê o fluxo de navegação, status e ações. -->
-    <header class="topbar">
-        <div class="brand">
-            <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
-            <span class="logo">
-                <img src="file?type=img&file=logo_icone.png" alt="The Farm Edu">
-            </span>
-            <span class="nome">The Farm <b>Edu</b></span>
-            <span class="modulo">Escrever código</span>
-        </div>
 
-        <!-- Chips de estado: entregou ou prazo encerrado. O JS decide se aparecem e qual texto exibem. -->
-        <span class="chip-entrega" id="chipEntrega" hidden></span>
-        <span class="chip-prazo" id="chipPrazo" hidden></span>
+<body data-pagina="iniciaratv">
+    <?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
+    <!-- Barra do editor: navegação da atividade, status e ações. A marca fica no cabeçalho oficial. -->
+    <div class="topbar">
+        <div>
+            <!-- Chips de estado: entregou, prazo encerrado ou resumo SIAE (modo instrutor). O JS decide se aparecem. -->
+            <span class="chip-entrega" id="chipEntrega" hidden></span>
+            <span class="chip-prazo" id="chipPrazo" hidden></span>
+            <span class="chip-prazo" id="chipSiae" hidden></span>
+        </div>
 
         <div class="acoes">
             <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
             <button class="btn btn-verde" id="btnEntregar">Entregar atividade</button>
         </div>
-    </header>
+    </div>
 
     <!-- Bloco resumo da atividade; os dados são preenchidos pelo JS com base na atividade carregada. -->
     <section class="atividade" id="atividade" aria-label="Informações da atividade">
@@ -63,15 +61,18 @@
             <ul id="arquivos"></ul>
             <div class="contador-limite" id="contadorLimite">
                 <span class="contador-limite__titulo">Limites</span>
-                <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong></div>
+                <div class="contador-limite__linha"><span>Executar</span><strong id="contadorExecutar">10/10</strong>
+                </div>
                 <div class="contador-limite__linha"><span>Sophia</span><strong id="contadorSophia">10/10</strong></div>
-                <div class="contador-limite__linha"><span>Cancelar entrega</span><strong id="contadorCancelar">3/3</strong></div>
+                <div class="contador-limite__linha"><span>Cancelar entrega</span><strong
+                        id="contadorCancelar">3/3</strong></div>
             </div>
         </aside>
 
         <section class="card editor" id="painelCodigo">
             <!-- No celular, o editor pode expandir para ocupar a tela. Este botão fecha a visão expandida. -->
-            <button type="button" class="btn-fechar-editor" id="fecharEditor" aria-label="Fechar editor expandido">✕</button>
+            <button type="button" class="btn-fechar-editor" id="fecharEditor"
+                aria-label="Fechar editor expandido">✕</button>
             <div class="editor-wrap">
                 <pre class="gutter" id="gutter" aria-hidden="true"></pre>
                 <div class="code">
@@ -81,7 +82,8 @@
             </div>
 
             <!-- Permite voltar ao início da linha quando o texto for rolado para lateral. -->
-            <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤ Início</button>
+            <button type="button" class="btn-inicio" id="btnInicio" hidden aria-label="Voltar ao início da linha">⇤
+                Início</button>
             <div class="status">
                 <span id="stLang">HTML</span>
                 <span id="stPos">Ln 1, Col 1</span>
@@ -104,7 +106,8 @@
                 <div class="con-corpo" id="console"></div>
                 <form class="con-input" id="conForm" autocomplete="off">
                     <span class="con-prompt">›</span>
-                    <input type="text" id="conInput" placeholder="Responder à Sophia (sim ou não)" aria-label="Responder à Sophia" disabled>
+                    <input type="text" id="conInput" placeholder="Responder à Sophia (sim ou não)"
+                        aria-label="Responder à Sophia" disabled>
                 </form>
             </div>
         </section>
@@ -134,8 +137,12 @@
     </div>
     <div class="toast" id="toast" role="status"></div>
 
+    <button class="btn-voltar" id="btnVoltar" aria-label="Voltar">⬅<span>Voltar</span></button>
+
     <!-- A mesma estratégia de JSON em bloco permite ao JS montar a atividade sem nova chamada de API. -->
-    <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script type="application/json"
+        id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="file?type=js&file=main.js"></script>
 </body>
+
 </html>

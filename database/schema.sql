@@ -147,7 +147,7 @@ CREATE TABLE atividades (
   id_turma             INT UNSIGNED  NOT NULL,
   titulo               VARCHAR(150)  NOT NULL,
   descricao            TEXT          NULL,
-  tipo_atividade       ENUM('codigo', 'quiz', 'texto') NOT NULL DEFAULT 'codigo',
+  tipo_atividade       ENUM('codigo', 'quiz', 'texto', 'anexo') NOT NULL DEFAULT 'codigo',
   linguagem            VARCHAR(30)   NULL,
   criterios_correcao   TEXT          NULL, -- Converter JSON->TEXT e TEXT->JSON, dependendo da operação, no JavaScript
   data_entrega         DATETIME      NOT NULL,
@@ -168,9 +168,10 @@ CREATE TABLE submissoes (
   id_submissao        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_atividade         INT UNSIGNED  NOT NULL,
   id_aluno             INT UNSIGNED  NOT NULL,
-  conteudo_resposta    LONGTEXT      NOT NULL,
+  conteudo_resposta    LONGTEXT       NULL,
+  caminho_arquivo      VARCHAR(255)  NULL,
   tentativa_num        INT UNSIGNED  NOT NULL DEFAULT 1,
-  status               ENUM('enviada', 'processando', 'corrigida', 'erro') NOT NULL DEFAULT 'enviada',
+  status               ENUM('enviada', 'processando', 'corrigida', 'erro', 'cancelado') NOT NULL DEFAULT 'enviada',
   resultado_execucao   TEXT          NULL,     -- stdout/stderr/veredito retornados pelo Judge0
   data_envio           TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_submissoes_atividade
@@ -229,7 +230,7 @@ CREATE TABLE historico_notas (
   id_instrutor           INT UNSIGNED                 NOT NULL,
   nota_anterior          INT DEFAULT                  NULL,
   nota_nova              INT                          NOT NULL,
-  data_alteracao         DATE                         NOT NULL DEFAULT current_timestamp(),
+  data_alteracao         DATETIME                     NOT NULL DEFAULT current_timestamp(),
   CONSTRAINT fk_id_instrutor 
     FOREIGN KEY (id_instrutor) REFERENCES instrutores (id_usuario)
     ON DELETE CASCADE ON UPDATE CASCADE,

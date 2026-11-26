@@ -7,8 +7,9 @@ class TipoAtividade
     public const CODIGO = 'codigo';
     public const TEXTO  = 'texto';
     public const QUIZ   = 'quiz';
+    public const ANEXO  = 'anexo';
 
-    public const tipos        = [self::CODIGO, self::TEXTO, self::QUIZ];
+    public const tipos        = [self::CODIGO, self::TEXTO, self::QUIZ, self::ANEXO];
     public const linguagens   = ['php', 'javascript', 'python', 'java', 'c', 'cpp', 'sql'];
     public const alternativas = ['A', 'B', 'C'];
 
@@ -20,6 +21,7 @@ class TipoAtividade
             self::CODIGO => 'código-fonte digitado na plataforma, na linguagem definida pelo instrutor.',
             self::TEXTO  => 'texto livre digitado na plataforma.',
             self::QUIZ   => 'uma única alternativa (A, B ou C).',
+            self::ANEXO  => 'um ou mais arquivos anexados pelo aluno.',
             default      => throw new InvalidArgumentException('Tipo de atividade inválido.'),
         };
     }
@@ -31,6 +33,11 @@ class TipoAtividade
             $formatos[$tipo] = self::formatoResposta($tipo);
         }
         return $formatos;
+    }
+    
+    public static function colunaBanco(string $tipo): string
+    {
+        return $tipo === self::ANEXO ? self::TEXTO : $tipo;
     }
 
     public static function validarResposta(string $tipo, string $resposta): ?string
@@ -58,7 +65,7 @@ class Criterios
 
     public static function ler(?string $json): array
     {
-        $resultado = ['criterios' => [], 'alternativas' => null, 'correta' => null];
+        $resultado = ['criterios' => [], 'alternativas' => null, 'correta' => null, 'anexo' => false];
 
         $dados = json_decode((string) $json, true);
         if (!is_array($dados)) {
@@ -72,7 +79,8 @@ class Criterios
 
         $formatoAtual = array_key_exists('criterios', $dados)
             || array_key_exists('alternativas', $dados)
-            || array_key_exists('correta', $dados);
+            || array_key_exists('correta', $dados)
+            || array_key_exists('tipo_resposta', $dados);
 
         if (!$formatoAtual) {
             foreach ($dados as $nome => $peso) {
@@ -88,6 +96,8 @@ class Criterios
         if (isset($dados['criterios']) && is_array($dados['criterios'])) {
             $resultado['criterios'] = self::textos($dados['criterios']);
         }
+
+        $resultado['anexo'] = ($dados['tipo_resposta'] ?? '') === TipoAtividade::ANEXO;
 
         if (isset($dados['alternativas']) && is_array($dados['alternativas'])) {
             $alternativas = [];
@@ -142,9 +152,13 @@ class Criterios
         return $limpos;
     }
 
-    public static function montar(array $criterios, ?array $alternativas, ?string $correta): ?string
+    public static function montar(array $criterios, ?array $alternativas, ?string $correta, bool $anexo = false): ?string
     {
         $dados = [];
+
+        if ($anexo) {
+            $dados['tipo_resposta'] = TipoAtividade::ANEXO;
+        }
 
         if ($criterios !== []) {
             $dados['criterios'] = array_values($criterios);
@@ -626,9 +640,9 @@ class Atividade
             $this->idTurma,
             $this->titulo,
             $this->descricao,
-            $this->tipo,
+            TipoAtividade::colunaBanco($this->tipo),
             $this->linguagem,
-            Criterios::montar($this->criterios, $this->alternativas, $this->correta),
+            Criterios::montar($this->criterios, $this->alternativas, $this->correta, $this->tipo === TipoAtividade::ANEXO),
             $this->dataEntrega,
         ]);
 
@@ -648,7 +662,7 @@ class Atividade
         self::exigirTurma($pdo, $this->idTurma, $idInstrutor);
 
         $mudouTurmaOuTipo = (int) $atual['id_turma'] !== $this->idTurma
-            || $atual['tipo_atividade'] !== $this->tipo;
+            || self::tipoEfetivo($atual) !== $this->tipo;
 
         if ($mudouTurmaOuTipo && (int) $atual['total_submissoes'] > 0) {
             throw new RuntimeException('Esta atividade já tem submissões, então não dá para trocar a turma nem o tipo.');
@@ -668,9 +682,9 @@ class Atividade
             $this->idTurma,
             $this->titulo,
             $this->descricao,
-            $this->tipo,
+            TipoAtividade::colunaBanco($this->tipo),
             $this->linguagem,
-            Criterios::montar($this->criterios, $this->alternativas, $this->correta),
+            Criterios::montar($this->criterios, $this->alternativas, $this->correta, $this->tipo === TipoAtividade::ANEXO),
             $this->dataEntrega,
             $id,
         ]);
@@ -712,8 +726,17 @@ class Atividade
             @unlink($arquivo);
         }
     }
+    
+    public static function tipoEfetivo(array $linha): string
+    {
+        $tipo = (string) ($linha['tipo_atividade'] ?? '');
 
-    /** A turma precisa ser do instrutor e estar ativa (turma e curso). */
+        if ($tipo === TipoAtividade::TEXTO && Criterios::ler($linha['criterios_correcao'] ?? null)['anexo']) {
+            return TipoAtividade::ANEXO;
+        }
+        return $tipo;
+    }
+
     private static function exigirTurma(PDO $pdo, int $idTurma, int $idInstrutor): void
     {
         $stmt = $pdo->prepare(
@@ -845,6 +868,7 @@ class Atividade
 
         return array_map(function (array $linha) use ($arquivos): array {
             $dados = Criterios::ler($linha['criterios_correcao']);
+            $linha['tipo_atividade'] = self::tipoEfetivo($linha);
             unset($linha['criterios_correcao']);
 
             $linha['criterios']    = $dados['criterios'];
@@ -856,28 +880,28 @@ class Atividade
         }, $linhas);
     }
 
-    public static function cursosDoAluno(PDO $pdo, int $idAluno): array
+    public static function turmasDoAluno(PDO $pdo, int $idAluno): array
     {
         $stmt = $pdo->prepare(
-            'SELECT DISTINCT c.id_curso, c.nome_curso
+            'SELECT t.id_turma, t.nome_turma, c.nome_curso
                FROM matriculas m
                JOIN turmas t ON t.id_turma = m.id_turma
                JOIN cursos c ON c.id_curso = t.id_curso
               WHERE m.id_aluno = ? AND t.ativo = 1 AND c.ativo = 1
-              ORDER BY c.nome_curso'
+              ORDER BY c.nome_curso, t.nome_turma'
         );
         $stmt->execute([$idAluno]);
 
         return $stmt->fetchAll();
     }
 
-    public static function atividadesDoAluno(PDO $pdo, int $idAluno, int $idCurso): array
+    public static function atividadesDoAluno(PDO $pdo, int $idAluno, int $idTurma): array
     {
         $stmt = $pdo->prepare(
             <<<'SQL'
-            SELECT a.id_atividade, a.titulo, a.tipo_atividade, a.linguagem, a.data_entrega,
+            SELECT a.id_atividade, a.titulo, a.tipo_atividade, a.criterios_correcao, a.linguagem, a.data_entrega,
                    (a.data_entrega < NOW()) AS atrasada,
-                   t.nome_turma,
+                   t.nome_turma, c.nome_curso,
                    s.id_submissao, s.tentativa_num, s.status, s.data_envio,
                    CASE WHEN n.origem = 'instrutor' THEN n.valor END AS nota
               FROM atividades a
@@ -890,16 +914,19 @@ class Atividade
                                             FROM submissoes s2
                                            WHERE s2.id_atividade = a.id_atividade AND s2.id_aluno = ?)
               LEFT JOIN notas n ON n.id_submissao = s.id_submissao
-             WHERE t.id_curso = ? AND t.ativo = 1 AND c.ativo = 1
+             WHERE t.id_turma = ? AND t.ativo = 1 AND c.ativo = 1
              ORDER BY a.data_entrega ASC
             SQL
         );
-        $stmt->execute([$idAluno, $idAluno, $idAluno, $idCurso]);
+        $stmt->execute([$idAluno, $idAluno, $idAluno, $idTurma]);
 
         $pendentes  = [];
         $realizadas = [];
 
         foreach ($stmt->fetchAll() as $linha) {
+            $linha['tipo_atividade'] = self::tipoEfetivo($linha);
+            unset($linha['criterios_correcao']);
+
             if ($linha['id_submissao'] === null) {
                 $pendentes[] = $linha;
             } else {
@@ -938,5 +965,275 @@ class Atividade
         $stmt->execute([$idAluno, $idTurma]);
 
         return $stmt->fetchAll();
+    }
+}
+
+class AnexoAluno
+{
+    public const extensoes   = [
+        'pdf', 'doc', 'docx', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'md', 'csv', 'json',
+        'png', 'jpg', 'jpeg', 'gif', 'zip',
+        'sql', 'php', 'js', 'py', 'java', 'c', 'cpp', 'html', 'css',
+    ];
+    public const maxArquivos = 5;
+    public const maxBytes    = 10485760;
+
+    private const maxNome = 150;
+
+    public static function config(): array
+    {
+        return [
+            'extensoes'    => self::extensoes,
+            'max_arquivos' => self::maxArquivos,
+            'max_mb'       => intdiv(self::maxBytes, 1048576),
+        ];
+    }
+
+    public static function doUpload($entrada): array
+    {
+        if (!is_array($entrada) || !isset($entrada['name']) || !is_array($entrada['name'])) {
+            return [];
+        }
+
+        $envios = [];
+
+        foreach ($entrada['name'] as $posicao => $nomeOriginal) {
+            $erro = (int) ($entrada['error'][$posicao] ?? UPLOAD_ERR_NO_FILE);
+            if ($erro === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            $nome = (string) $nomeOriginal;
+
+            if ($erro === UPLOAD_ERR_INI_SIZE || $erro === UPLOAD_ERR_FORM_SIZE) {
+                throw new InvalidArgumentException('O arquivo "' . $nome . '" passou do limite de tamanho.');
+            }
+            if ($erro !== UPLOAD_ERR_OK) {
+                throw new RuntimeException('Não foi possível receber o arquivo "' . $nome . '".');
+            }
+
+            $temporario = (string) ($entrada['tmp_name'][$posicao] ?? '');
+            if (!is_uploaded_file($temporario)) {
+                throw new RuntimeException('Não foi possível receber o arquivo "' . $nome . '".');
+            }
+
+            $tamanho = (int) filesize($temporario);
+            if ($tamanho <= 0) {
+                throw new InvalidArgumentException('O arquivo "' . $nome . '" está vazio.');
+            }
+            if ($tamanho > self::maxBytes) {
+                throw new InvalidArgumentException('O arquivo "' . $nome . '" passou de ' . intdiv(self::maxBytes, 1048576) . ' MB.');
+            }
+
+            $extensao = strtolower(pathinfo($nome, PATHINFO_EXTENSION));
+            if (!in_array($extensao, self::extensoes, true)) {
+                throw new InvalidArgumentException(
+                    'O arquivo "' . $nome . '" não é de um tipo aceito (' . implode(', ', self::extensoes) . ').'
+                );
+            }
+
+            $envios[] = [
+                'temporario' => $temporario,
+                'nome'       => self::nomeParaExibir($nome, $extensao),
+                'extensao'   => $extensao,
+                'tamanho'    => $tamanho,
+            ];
+        }
+
+        if (count($envios) > self::maxArquivos) {
+            throw new InvalidArgumentException('Envie no máximo ' . self::maxArquivos . ' arquivos por vez.');
+        }
+
+        return $envios;
+    }
+
+    private static function nomeParaExibir(string $nome, string $extensao): string
+    {
+        $base = pathinfo($nome, PATHINFO_FILENAME);
+        $base = str_replace(['\\', '/'], '_', $base);
+        $base = trim((string) preg_replace('/[\x00-\x1F\x7F]+/u', '', $base));
+
+        if ($base === '') {
+            $base = 'anexo';
+        }
+
+        $sufixo = '.' . $extensao;
+        $limite = self::maxNome - mb_strlen($sufixo);
+        if (mb_strlen($base) > $limite) {
+            $base = mb_substr($base, 0, $limite);
+        }
+
+        return $base . $sufixo;
+    }
+
+    public static function pasta(): string
+    {
+        $storage = realpath(__DIR__ . '/../../../storage');
+        if ($storage === false) {
+            throw new RuntimeException('A pasta de armazenamento não existe no servidor.');
+        }
+
+        $pasta = $storage . DIRECTORY_SEPARATOR . 'anexos_alunos';
+        if (!is_dir($pasta) && !@mkdir($pasta, 0775, true) && !is_dir($pasta)) {
+            throw new RuntimeException('Não foi possível criar a pasta dos anexos.');
+        }
+
+        return (string) realpath($pasta);
+    }
+
+    public static function caminhoAbsoluto(string $caminho): ?string
+    {
+        $base    = self::pasta();
+        $arquivo = realpath($base . DIRECTORY_SEPARATOR . $caminho);
+
+        if ($arquivo === false || !str_starts_with($arquivo, $base . DIRECTORY_SEPARATOR) || !is_file($arquivo)) {
+            return null;
+        }
+
+        return $arquivo;
+    }
+
+    public static function atividadeDoAluno(PDO $pdo, int $idAtividade, int $idAluno): array
+    {
+        $stmt = $pdo->prepare(
+            'SELECT a.id_atividade, a.id_turma, a.titulo, a.descricao, a.tipo_atividade, a.criterios_correcao,
+                    a.data_entrega, (a.data_entrega < NOW()) AS atrasada,
+                    t.nome_turma, c.nome_curso
+               FROM atividades a
+               JOIN turmas t ON t.id_turma = a.id_turma
+               JOIN cursos c ON c.id_curso = t.id_curso
+               JOIN matriculas m ON m.id_turma = t.id_turma AND m.id_aluno = ?
+              WHERE a.id_atividade = ? AND t.ativo = 1 AND c.ativo = 1'
+        );
+        $stmt->execute([$idAluno, $idAtividade]);
+        $atividade = $stmt->fetch();
+
+        if (!$atividade || Atividade::tipoEfetivo($atividade) !== TipoAtividade::ANEXO) {
+            throw new RuntimeException('Atividade de anexo não encontrada.');
+        }
+
+        unset($atividade['criterios_correcao']);
+        $atividade['tipo_atividade'] = TipoAtividade::ANEXO;
+
+        return $atividade;
+    }
+
+    public static function enviar(PDO $pdo, int $idAtividade, int $idAluno, array $envios): int
+    {
+        if ($envios === []) {
+            throw new InvalidArgumentException('Selecione pelo menos um arquivo para enviar.');
+        }
+
+        self::atividadeDoAluno($pdo, $idAtividade, $idAluno);
+
+        $criados = [];
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = $pdo->prepare(
+                'SELECT COALESCE(MAX(tentativa_num), 0) + 1 FROM submissoes
+                  WHERE id_atividade = ? AND id_aluno = ? FOR UPDATE'
+            );
+            $stmt->execute([$idAtividade, $idAluno]);
+            $tentativa = (int) $stmt->fetchColumn();
+            $resumo = '[Anexos] ' . implode('; ', array_column($envios, 'nome'));
+
+            $pdo->prepare(
+                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status)
+                 VALUES (?, ?, ?, ?, 'enviada')"
+            )->execute([$idAtividade, $idAluno, $resumo, $tentativa]);
+            $idSubmissao = (int) $pdo->lastInsertId();
+
+            foreach ($envios as $envio) {
+                $guardado = bin2hex(random_bytes(16)) . '.' . $envio['extensao'];
+                $destino  = self::pasta() . DIRECTORY_SEPARATOR . $guardado;
+
+                if (!move_uploaded_file($envio['temporario'], $destino)) {
+                    throw new RuntimeException('Não foi possível salvar o arquivo "' . $envio['nome'] . '".');
+                }
+                @chmod($destino, 0644);
+                $criados[] = $destino;
+
+                $pdo->prepare(
+                    'INSERT INTO anexos_submissao (id_submissao, nome_original, caminho, tamanho_bytes)
+                     VALUES (?, ?, ?, ?)'
+                )->execute([$idSubmissao, $envio['nome'], $guardado, $envio['tamanho']]);
+            }
+
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            foreach ($criados as $arquivo) {
+                @unlink($arquivo);
+            }
+            throw $e;
+        }
+
+        return $tentativa;
+    }
+
+    public static function enviosDoAluno(PDO $pdo, int $idAtividade, int $idAluno): array
+    {
+        $stmt = $pdo->prepare(
+            'SELECT s.id_submissao, s.tentativa_num, s.status, s.data_envio,
+                    CASE WHEN n.origem = \'instrutor\' THEN n.valor END AS nota
+               FROM submissoes s
+               LEFT JOIN notas n ON n.id_submissao = s.id_submissao
+              WHERE s.id_atividade = ? AND s.id_aluno = ?
+              ORDER BY s.tentativa_num DESC'
+        );
+        $stmt->execute([$idAtividade, $idAluno]);
+        $envios = $stmt->fetchAll();
+
+        if ($envios === []) {
+            return [];
+        }
+
+        $ids    = array_column($envios, 'id_submissao');
+        $marcas = implode(',', array_fill(0, count($ids), '?'));
+
+        $stmt = $pdo->prepare(
+            "SELECT id_anexo, id_submissao, nome_original, tamanho_bytes
+               FROM anexos_submissao
+              WHERE id_submissao IN ($marcas)
+              ORDER BY id_anexo"
+        );
+        $stmt->execute($ids);
+
+        $porSubmissao = [];
+        foreach ($stmt->fetchAll() as $anexo) {
+            $porSubmissao[(int) $anexo['id_submissao']][] = [
+                'id_anexo'      => (int) $anexo['id_anexo'],
+                'nome_original' => $anexo['nome_original'],
+                'tamanho_bytes' => (int) $anexo['tamanho_bytes'],
+            ];
+        }
+
+        foreach ($envios as &$envio) {
+            $envio['arquivos'] = $porSubmissao[(int) $envio['id_submissao']] ?? [];
+        }
+        unset($envio);
+
+        return $envios;
+    }
+
+    public static function buscarParaDownload(PDO $pdo, int $idAnexo, string $perfil, int $idUsuario): ?array
+    {
+        $filtro = $perfil === 'instrutor' ? 't.id_instrutor = ?' : 's.id_aluno = ?';
+
+        $stmt = $pdo->prepare(
+            "SELECT an.nome_original, an.caminho
+               FROM anexos_submissao an
+               JOIN submissoes s ON s.id_submissao = an.id_submissao
+               JOIN atividades a ON a.id_atividade = s.id_atividade
+               JOIN turmas t ON t.id_turma = a.id_turma
+              WHERE an.id_anexo = ? AND $filtro"
+        );
+        $stmt->execute([$idAnexo, $idUsuario]);
+
+        return $stmt->fetch() ?: null;
     }
 }

@@ -15,53 +15,7 @@
 </head>
 
 <body data-pagina="aluno">
-    <!-- Cabeçalho principal da tela do aluno: logo, título do módulo e avatar do usuário. -->
-    <header>
-        <button id="botaoIconi" class="botao-iconi" type="button" aria-expanded="false" aria-controls="menuIconi">
-            <img src="file?type=img&file=logo_icone.png" alt="iconiEDU" height="55px" width="55px">
-        </button>
-
-        <span class="titulo-modulo">MODELAGEM DE SISTEMAS | AI-APW-01-M-25-13150</span>
-
-        <button id="botaoUsuario" class="botao-usuario" type="button" aria-label="Perfil do usuário" aria-expanded="false" aria-controls="menuUsuario">
-            <img class="usuario-avatar" src="file?type=img&file=icone_user.png" alt="iconiEDU">
-        </button>
-    </header>
-
-    <!-- Menu lateral/overlay do ícone principal. Ele é do tipo “dropdown” e aparece ao clique. -->
-    <div id="menuIconi" class="menu-iconi" role="menu" aria-hidden="true">
-        <div class="menu-coluna">
-            <button class="menu-item" type="button">
-                <i class="fa-regular fa-calendar"></i>
-                calendario
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-medal"></i>
-                visão geral
-            </button>
-        </div>
-    </div>
-
-    <!-- Menu do usuário: acessórios de perfil e logout. -->
-    <div id="menuUsuario" class="menu-usuario" role="menu" aria-hidden="true">
-        <div class="menu-coluna">
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-gear"></i>
-                configurações
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                logout
-            </button>
-
-            <button class="menu-item" type="button">
-                <i class="fa-regular fa-envelope"></i>
-                meus dados
-            </button>
-        </div>
-    </div>
+    <?php require_once __DIR__ . '/../../../core/cabecalho.php'; ?>
 
     <main>
         <!-- Bloco principal para exibir os detalhes da atividade da turma. -->
@@ -108,8 +62,9 @@
                     <button class="btn-adicionar" id="opcaoArquivo">Anexar</button>
 
                     <form action="iniciarAtv" method="get">
-                        <!-- O id da atividade é enviado para a próxima página para carregar a atividade correta. -->
+                        <!-- O id da atividade e, quando em modo instrutor, o id_aluno são repassados para a próxima página. -->
                         <input type="hidden" name="id" id="atvInputId">
+                        <input type="hidden" name="id_aluno" id="atvInputAluno" disabled>
                         <button id="comecar" type="submit" class="btn-comecar-principal">Começar</button>
                     </form>
 
@@ -119,18 +74,19 @@
 
     </main>
 
-    <!-- Rodapé com mascote: o balão de conversa aparece conforme o JS muda o texto. -->
-    <footer>
-        <div class="mascote-container">
-            <div class="balao" id="balao"></div>
-            <button id="btnGalinha">
-                <img src="file?type=img&file=galinha.png" alt="Mascote" width="200" height="200">
-            </button>
-        </div>
-    </footer>
+<!-- Rodapé com o botão de acesso à fazenda. -->
+<footer>
+    <div class="acesso-fazenda">
+        <button id="btnFazenda" class="btn-acessar-fazenda" type="button"
+                title="Acessar a fazenda" aria-label="Acessar a fazenda">
+            <img src="file?type=img&file=icone-acesso-fazenda.png" alt="">
+        </button>
+    </div>
+</footer>
 
     <!-- JSON serializado no HTML: o JavaScript usa esse bloco para montar a tela sem outra requisição. -->
-   <script type="application/json" id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
+    <script type="application/json"
+        id="dadosAtividade"><?= json_encode($dadosAtividade ?? null, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?></script>
     <script src="file?type=js&file=main.js"></script>
 </body>
 

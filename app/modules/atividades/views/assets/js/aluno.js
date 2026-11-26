@@ -1,4 +1,4 @@
-const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta' };
+const rotuloDoTipo = { codigo: 'Código', texto: 'Texto', quiz: 'Pergunta', anexo: 'Anexo' };
 const nomeDaLinguagem = { php: 'PHP', javascript: 'JavaScript', python: 'Python', java: 'Java', c: 'C', cpp: 'C++' };
 const rotuloDoStatus = { enviada: 'Enviada', processando: 'Em correção', corrigida: 'Corrigida', erro: 'Erro na correção' };
 
@@ -89,8 +89,7 @@ async function selecionarTurma(turma) {
         botao.classList.toggle('active', Number(botao.dataset.turma) === Number(turma.id_turma));
     });
     document.getElementById('titulo-turma').textContent = turma.nome_turma.toUpperCase();
-
-    // mantém a URL com o id da turma selecionada (sem recarregar a página)
+    
     const url = new URL(window.location.href);
     url.searchParams.set('id', turma.id_turma);
     window.history.replaceState(null, '', url);
@@ -114,7 +113,9 @@ function descricaoDaAtividade(atividade) {
 
 function criarItem(atividade, detalhe, selo) {
     const item = criar('a', 'feed-item');
-    item.href = 'submissoes/aluno?id=' + encodeURIComponent(atividade.id_atividade);
+    item.href = atividade.tipo_atividade === 'anexo'
+        ? 'atividades/aluno/anexo?id=' + encodeURIComponent(atividade.id_atividade)
+        : 'submissoes/aluno?id=' + encodeURIComponent(atividade.id_atividade);
 
     const info = criar('div', 'feed-info');
     info.append(

@@ -7,3 +7,6 @@
     Router::get('/feedback_ia/file', [testarAPIController::class, 'sendFile']);
     Router::get('/feedback_ia/respostaReferencia', [testarAPIController::class, 'sendRespostaReferencia']);
     Router::get('/feedback_ia/criterios_avaliacao', [testarAPIController::class, 'showAvaliacao']);
+    Router::get('/feedback_ia/testarSIAE', [testarAPIController::class, 'tremAvaliar']);
+
+

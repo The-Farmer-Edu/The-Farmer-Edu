@@ -29,13 +29,8 @@
          * O ON DUPLICATE KEY UPDATE garante idempotência pela chave única uq_feedback_submissao.
          */
         public static function salvarProbabilidadeIA(PDO $pdo, int $idSubmissao, float $probabilidade, string $motivo): void {
-            $stmt = $pdo->prepare(
-                'INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia)
-                 VALUES (?, ?, ?)
-                 ON DUPLICATE KEY UPDATE
-                    percentual_ia = VALUES(percentual_ia),
-                    motivo_ia     = VALUES(motivo_ia)'
-            );
+            $stmt = $pdo->prepare('INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATEpercentual_ia = VALUES(percentual_ia), 
+            motivo_ia = VALUES(motivo_ia)' );
             $stmt->execute([$idSubmissao, $probabilidade, $motivo]);
         }
 
@@ -70,18 +65,40 @@
             return 'A análise automática identificou sinais de possível uso de IA neste código. Se houver dúvidas, converse com o professor.';
         }
 
+        public static function salvarNotaIA(PDO $pdo, int $idSubmissao, float $nota): void {
+            $nota = max(0, min(10, $nota)); // O professor define a nota entre 0 e 10, ou pode continuar assim?(ver com o Pedro)
+            $stmt = $pdo->prepare("INSERT INTO notas (id_submissao, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = IF(origem = 'ia', VALUES(valor), valor)"
+            );
+            $stmt->execute([$idSubmissao, $nota]);
+
+        FeedbackIAModel::salvarNotaIA($pdo, $idSubmissao, $nota);
+
+        public static function salvarFeedbackGeral(PDO $pdo, int $idSubmissao, string $analiseTecnica, string $respostaAluno): void {
+            $stmt = $pdo->prepare(
+                'INSERT INTO feedback_ia (id_submissao, analise_tecnica, resposta_aluno) VALUES (?, ?, ?) 
+                ON DUPLICATE KEY UPDATE analise_tecnica = VALUES(analise_tecnica), resposta_aluno = VALUES(resposta_aluno)'
+            );
+            $stmt->execute([$idSubmissao, $analiseTecnica, $respostaAluno]);
+}
+        }
+
+
+
+}
+
 
         
     }
     // $gabarito = FeedbackIAModel::gabaritosDaAtividade($idAtividade );
     // $resposta = (new Ollama())->gerar("Compare com o gabarito...\n\n$gabarito\n\nResposta do aluno:\n$respostaAluno");
 
-    
+
     //  Para a galera de Notas(lembra de mandar o feedbeck geral tambem Gustavo do futuro)
     // $textoFeedback = FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
 
 
     //     Presente para o grupo de Submissões.
+    // deois de criar a submissão:
     // $resultadoIA = (new SIAE())->obterResultadoSIAE(
     //     $linguagem,
     //     $objetivoAtividade,
@@ -96,6 +113,5 @@
     //     $resultadoIA['motivo']
     // );
 
-    // $aviso = FeedbackIAModel::mensagemAvisoAluno(
-    //     $resultadoIA['probabilidade_ia']
+    // $aviso = FeedbackIAModel::mensagemAvisoAluno($resultadoIA['probabilidade_ia']
     // );

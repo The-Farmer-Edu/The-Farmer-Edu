@@ -190,11 +190,13 @@ CREATE TABLE submissoes (
 CREATE TABLE feedback_ia (
   id_feedback        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_submissao       INT UNSIGNED  NOT NULL,
-  percentual_ia      DECIMAL(5,2)  NOT NULL,
+  percentual_ia      DECIMAL(5,2)  NULL,
   motivo_ia          TEXT          NULL,
   pontos_positivos   TEXT          NULL,
   pontos_negativos   TEXT          NULL,
   sugestao_resposta  TEXT          NULL,
+  analise_tecnica TEXT NULL,
+  resposta_aluno TEXT NULL,
   gerado_em          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_feedback_submissao
     FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)

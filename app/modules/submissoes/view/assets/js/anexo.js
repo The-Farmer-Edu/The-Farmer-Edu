@@ -66,9 +66,23 @@
 
       arquivosSelecionados = [];
       renderizarLista();
-      // mantém o status "Entregue em..." do aluno.js (CHAVE_ENTREGA e atualizarStatus vêm de lá)
+
+      // Atualiza o estado em memória com os dados confirmados pelo banco de dados.
+      const dataEnvio = json.data_envio || new Date().toISOString();
+      atividade.entregue = true;
+      atividade.submissao = {
+        id: json.id_submissao,
+        tentativa: json.tentativa,
+        status: 'enviada',
+        dataEnvio: dataEnvio
+      };
+      if (typeof json.cancelamentos === 'number') {
+        atividade.cancelamentos = json.cancelamentos;
+      }
+
+      // Espelha no localStorage apenas como cache (a referência real é o banco).
       try {
-        localStorage.setItem(CHAVE_ENTREGA, JSON.stringify({ data: new Date().toISOString(), atividadeId: atividade.id }));
+        localStorage.setItem(CHAVE_ENTREGA, JSON.stringify({ data: dataEnvio, atividadeId: atividade.id }));
       } catch (e) {}
       alert('Atividade entregue!');
     } catch (erro) {

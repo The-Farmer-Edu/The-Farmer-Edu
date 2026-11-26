@@ -62,8 +62,9 @@
                     <button class="btn-adicionar" id="opcaoArquivo">Anexar</button>
 
                     <form action="iniciarAtv" method="get">
-                        <!-- O id da atividade é enviado para a próxima página para carregar a atividade correta. -->
+                        <!-- O id da atividade e, quando em modo instrutor, o id_aluno são repassados para a próxima página. -->
                         <input type="hidden" name="id" id="atvInputId">
+                        <input type="hidden" name="id_aluno" id="atvInputAluno" disabled>
                         <button id="comecar" type="submit" class="btn-comecar-principal">Começar</button>
                     </form>
 

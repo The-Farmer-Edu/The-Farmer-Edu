@@ -70,7 +70,7 @@
             $stmt = $pdo->prepare("INSERT INTO notas (id_submissao, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = IF(origem = 'ia', VALUES(valor), valor)"
             );
             $stmt->execute([$idSubmissao, $nota]);
-
+        }
         // FeedbackIAModel::salvarNotaIA($pdo, $idSubmissao, $nota);
 
         public static function salvarFeedbackGeral(PDO $pdo, int $idSubmissao, string $analiseTecnica, string $respostaAluno): void {
@@ -79,7 +79,6 @@
                 ON DUPLICATE KEY UPDATE analise_tecnica = VALUES(analise_tecnica), resposta_aluno = VALUES(resposta_aluno)'
             );
             $stmt->execute([$idSubmissao, $analiseTecnica, $respostaAluno]);
-}
         }
 
 
@@ -88,7 +87,7 @@
 
 
         
-    }
+    // }
     // $gabarito = FeedbackIAModel::gabaritosDaAtividade($idAtividade );
     // $resposta = (new Ollama())->gerar("Compare com o gabarito...\n\n$gabarito\n\nResposta do aluno:\n$respostaAluno");
 

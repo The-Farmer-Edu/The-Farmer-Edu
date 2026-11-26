@@ -34,7 +34,6 @@ class NotasController
         $this->model = new NotasModel();
     }
     //------------------------------------------------------------------
-    $notas=FeedbackIAModel::salvarNotaIA($pdo, $idSubmissao, $nota);
     // -----------------------------------------------------------------
     // VISÃO DO ALUNO — GET /notas/aluno
     // -----------------------------------------------------------------

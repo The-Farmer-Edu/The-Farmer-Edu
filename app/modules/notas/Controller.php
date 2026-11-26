@@ -108,7 +108,9 @@ class NotasController
 
         $probabilidadeIA =
             FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
-
+        
+        $feedbackIA =
+            FeedbackIAModel::acessarFeedbackGeral($pdo, $idSubmissao);
         // Carrega a view do painel do instrutor
         $this->view('instrutor', [
             'usuario' => $usuario,

@@ -54,7 +54,7 @@
             self::wakeOnLan();
 
             // 3. Fallback para Google Gemini
-            $geminiApiKey = $config->geminiApiKey ?? null;
+            $geminiApiKey = (new InitConfig())->geminiApiKey ?? null;
             if (!$geminiApiKey) {
                 return "Gemini API key not set. Unable to fallback. Erro Ollama: $error";
             }

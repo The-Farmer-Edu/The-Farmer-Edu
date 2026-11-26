@@ -25,7 +25,8 @@
         }
 
         public static function salvarProbabilidadeIA(PDO $pdo, int $idSubmissao, float $probabilidade, string $motivo): void {
-            $stmt = $pdo->prepare('INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia) VALUES (?, ?, ?)');
+            $stmt = $pdo->prepare('INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATEpercentual_ia = VALUES(percentual_ia), 
+            motivo_ia = VALUES(motivo_ia)' );
             $stmt->execute([$idSubmissao, $probabilidade, $motivo]);
         }
 
@@ -43,13 +44,15 @@
                 return null;
             }
 
-            $percentual = $feedbackProbabilidade['percentual_ia'];
+            $percentual = (float)$feedbackProbabilidade['percentual_ia'];
             $motivo = $feedbackProbabilidade['motivo_ia'];
+            $mensagemAluno = self::mensagemAvisoAluno($percentual);
 
-            
-
-            return "Probabilidade de uso de IA: {$percentual}%\nMotivo: {$motivo}";
-
+            return [
+                "probabilidade_ia" => "Probabilidade de uso de IA: {$percentual}%",
+                "motivo_ia"        => "Motivo: {$motivo}",
+                "mensagem_aluno"   => "Mensagem para o aluno: " . ($mensagemAluno ?? 'Nenhuma mensagem de aviso.')
+            ];
         }
 
         public static function mensagemAvisoAluno(float $probabilidade): ?string {
@@ -60,24 +63,44 @@
             return 'A análise automática identificou sinais de possível uso de IA neste código. Se houver dúvidas, converse com o professor.';
         }
 
+        public static function salvarNotaIA(PDO $pdo, int $idSubmissao, float $nota): void {
+            $nota = max(0, min(100, $nota));
+            $stmt = $pdo->prepare("INSERT INTO notas (id_submissao, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = IF(origem = 'ia', VALUES(valor), valor)");
+            $stmt->execute([$idSubmissao, $nota]);
+        }
 
-        
+        public static function salvarFeedbackGeral(PDO $pdo, int $idSubmissao, string $analiseTecnica, string $respostaAluno): void {
+            $stmt = $pdo->prepare(
+                'INSERT INTO feedback_ia (id_submissao, analise_tecnica, resposta_aluno) VALUES (?, ?, ?) 
+                ON DUPLICATE KEY UPDATE analise_tecnica = VALUES(analise_tecnica), resposta_aluno = VALUES(resposta_aluno)'
+            );
+            $stmt->execute([$idSubmissao, $analiseTecnica, $respostaAluno]);
+        }
+
+        public static function acessarFeedbackGeral(PDO $pdo, int $idSubmissao): ?array {
+            $stmt = $pdo->prepare(
+                'SELECT analise_tecnica, resposta_aluno FROM feedback_ia
+                WHERE id_submissao = ?'
+            );
+            $stmt->execute([$idSubmissao]);
+            $feedbackGeral = $stmt->fetch();
+            return $feedbackGeral ?: null;
+        }
     }
-    // $gabarito = FeedbackIAModel::gabaritosDaAtividade($idAtividade );
+
+    // $gabarito = FeedbackIAModel::gabaritosDaAtividade($idAtividade);
     // $resposta = (new Ollama())->gerar("Compare com o gabarito...\n\n$gabarito\n\nResposta do aluno:\n$respostaAluno");
 
-    
-    //  Para a galera de Notas(lembra de mandar o feedbeck geral tambem Gustavo do futuro)
+    // Para a galera de Notas (lembra de mandar o feedback geral também, Gustavo do futuro)
     // $textoFeedback = FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
 
-
-    //     Presente para o grupo de Submissões.
+    // Presente para o grupo de Submissões.
+    // depois de criar a submissão:
     // $resultadoIA = (new SIAE())->obterResultadoSIAE(
     //     $linguagem,
     //     $objetivoAtividade,
     //     $codigoAluno
     // );
-
 
     // FeedbackIAModel::salvarProbabilidadeIA(
     //     $pdo,
@@ -86,6 +109,4 @@
     //     $resultadoIA['motivo']
     // );
 
-    // $aviso = FeedbackIAModel::mensagemAvisoAluno(
-    //     $resultadoIA['probabilidade_ia']
-    // );
+    // $aviso = FeedbackIAModel::mensagemAvisoAluno($resultadoIA['probabilidade_ia']);

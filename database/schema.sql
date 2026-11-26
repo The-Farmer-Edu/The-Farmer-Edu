@@ -190,11 +190,11 @@ CREATE TABLE submissoes (
 CREATE TABLE feedback_ia (
   id_feedback        INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   id_submissao       INT UNSIGNED  NOT NULL,
-  percentual_ia      DECIMAL(5,2)  NOT NULL,
+  percentual_ia      DECIMAL(5,2)  NULL,
   motivo_ia          TEXT          NULL,
-  pontos_positivos   TEXT          NULL,
-  pontos_negativos   TEXT          NULL,
   sugestao_resposta  TEXT          NULL,
+  analise_tecnica TEXT NULL,
+  resposta_aluno TEXT NULL,
   gerado_em          TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_feedback_submissao
     FOREIGN KEY (id_submissao) REFERENCES submissoes(id_submissao)
@@ -221,7 +221,7 @@ CREATE TABLE notas (
     FOREIGN KEY (id_instrutor_revisor) REFERENCES instrutores(id_usuario)
     ON DELETE SET NULL ON UPDATE CASCADE,
   UNIQUE KEY uq_nota_submissao (id_submissao),
-  CONSTRAINT chk_notas_valor CHECK (valor >= 0 AND valor <= 10)
+  CONSTRAINT chk_notas_valor CHECK (valor >= 0 AND valor <= 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE historico_notas (

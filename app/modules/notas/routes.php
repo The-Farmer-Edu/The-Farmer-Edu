@@ -33,6 +33,9 @@ Router::get('/notas/turma', [NotasController::class, 'verTurma']);
 // Endpoint POST para processamento e persistência das notas atribuídas (suporta AJAX)
 Router::post('/notas/salvar', [NotasController::class, 'salvarNota']);
 
+// Endpoint POST para consulta de feedback da IA (aluno ou instrutor)
+Router::post('/notas/feedback-ia', [NotasController::class, 'buscarFeedbackIA']);
+
 // Entrega os arquivos CSS e JavaScript das views do módulo
 Router::get('/notas/file', [NotasController::class, 'sendAsset']);
 ?>

@@ -635,7 +635,7 @@ $atividadeIdSelecionada = (int) ($_GET['atividade_id'] ?? 0);
 </div>
 
 <!-- MODAL FLUTUANTE DE FEEDBACK DA IA -->
-<div id="modalFeedbackIA" class="modal-overlay" onclick="if(event.target === this) fecharFeedbackIA()">
+<div id="modalFeedbackIA" class="modal-overlay" style="display: none;" onclick="if(event.target === this) fecharFeedbackIA()">
     <div class="modal-content modal-feedback-ia">
         <div class="modal-header">
             <h3>🤖 Feedback da Inteligência Artificial</h3>

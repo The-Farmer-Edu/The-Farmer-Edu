@@ -76,6 +76,20 @@ class NotasController
         $atividades = $this->model->buscarNotasDoAluno($idAluno);
         $resumo     = $this->model->calcularResumoAluno($idAluno);
 
+        require_once __DIR__ . '/../feedback_ia/Model.php';
+        foreach ($atividades as &$atv) {
+            $idSub = (int) ($atv['id_submissao'] ?? 0);
+            $atv['ia_detectada'] = false;
+
+            if ($idSub > 0 && $atv['percentual_ia'] !== null) {
+                $percentual = (float) $atv['percentual_ia'];
+                if (FeedbackIAModel::mensagemAvisoAluno($percentual) !== null) {
+                    $atv['ia_detectada'] = true;
+                }
+            }
+        }
+        unset($atv);
+
         // Carrega a view de notas do aluno com as variáveis necessárias
         $this->view('index', [
             'usuario'    => $usuario,
@@ -160,6 +174,45 @@ class NotasController
             'turma'      => $turma,
             'submissoes' => $submissoes,
         ]);
+    }
+
+    public function buscarFeedbackIA(): void
+    {
+        solicitarPerfilDeAcesso();
+        $usuario = usuarioLogado();
+
+        ob_clean();
+        header('Content-Type: application/json');
+
+        $idSubmissao = (int) ($_POST['id_submissao'] ?? 0);
+        if ($idSubmissao <= 0) {
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Submissão inválida.']);
+            exit;
+        }
+
+        if ($usuario['perfilAcesso'] !== 'instrutor' && !$this->model->submissaoPertenceAoAluno($idSubmissao, (int) $usuario['idUsuario'])) {
+            http_response_code(403);
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Acesso negado.']);
+            exit;
+        }
+
+        require_once __DIR__ . '/../feedback_ia/Model.php';
+        $pdo = iniciarPDO();
+        $probabilidadeIA = FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
+        $feedbackGeral   = FeedbackIAModel::acessarFeedbackGeral($pdo, $idSubmissao);
+
+        // Busca dados adicionais caso analise_tecnica/resposta_aluno não estejam preenchidos
+        $stmtExtra = $pdo->prepare('SELECT pontos_positivos, pontos_negativos, sugestao_resposta FROM feedback_ia WHERE id_submissao = ?');
+        $stmtExtra->execute([$idSubmissao]);
+        $feedbackExtra = $stmtExtra->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        echo json_encode([
+            'sucesso'        => true,
+            'probabilidade'  => $probabilidadeIA,
+            'feedback_geral' => $feedbackGeral,
+            'feedback_extra' => $feedbackExtra,
+        ]);
+        exit;
     }
 
     public function sendAsset(): void

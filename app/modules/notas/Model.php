@@ -65,7 +65,8 @@ class NotasModel
                 s.tentativa_num,
                 n.valor           AS nota_valor,
                 n.origem          AS origem_nota,
-                n.data_atribuicao AS data_nota
+                n.data_atribuicao AS data_nota,
+                f.percentual_ia   AS percentual_ia
             FROM atividades a
             INNER JOIN turmas t        ON t.id_turma = a.id_turma
             INNER JOIN cursos c        ON c.id_curso  = t.id_curso
@@ -80,6 +81,7 @@ class NotasModel
                                             AND s2.id_aluno     = :idAluno3
                                       )
             LEFT JOIN notas n          ON n.id_submissao = s.id_submissao
+            LEFT JOIN feedback_ia f    ON f.id_submissao = s.id_submissao
             ORDER BY a.data_entrega ASC
         ";
 
@@ -286,6 +288,18 @@ class NotasModel
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$idSubmissao]);
         return $stmt->fetchAll();
+    }
+
+    public function submissaoPertenceAoAluno(int $idSubmissao, int $idAluno): bool
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT 1
+            FROM submissoes
+            WHERE id_submissao = ? AND id_aluno = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$idSubmissao, $idAluno]);
+        return (bool) $stmt->fetchColumn();
     }
 
     public function buscarTurma(int $idTurma): ?array

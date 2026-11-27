@@ -69,7 +69,7 @@
           });
 
           const texturaQuadro = new THREE.TextureLoader().load(
-              '/The-Farmer-Edu/public/assets/img/png/cerresete.png',
+              'assets/img/png/cerresete.png',
               () => console.log('Imagem do quadro carregada com sucesso!'),
               undefined,
               (erro) => console.error('Erro ao carregar a imagem do quadro:', erro)

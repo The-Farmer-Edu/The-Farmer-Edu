@@ -6,7 +6,7 @@
     <title>The Farmer Edu - testarAPI</title>
     <!-- Fontes Inter e Poppins para manter a estética dark tech -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="shortcut icon" href="/The-Farmer-Edu-Tarde/public/assets/img/ico/logo_icone.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="assets/img/ico/logo_icone.ico" type="image/x-icon">
 
     <style>
         * {

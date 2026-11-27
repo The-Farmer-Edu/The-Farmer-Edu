@@ -141,91 +141,6 @@ class atividadesSub {
         $this->responderJson(['sucesso' => true, 'dados' => $dados]);
     }
 
-    public function sendFile(): void {
-        enviarArquivoEstatico(__DIR__ . '/views/assets', ['css', 'img', 'js']);
-    }
-
-    public function enviarAnexo(): void{
-        solicitarPerfilDeAcesso('aluno');
-        $idAluno = $this->idUsuarioLogado();
-        $idAtividade = filter_var($_POST['id_atividade'] ?? null, FILTER_VALIDATE_INT);
-        if ($idAluno < 1 || !$idAtividade) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Requisição inválida.'], 400);
-        }
-
-        $model = new SubmissoesModel();
-        $atividade = $model->buscarAtividade($idAtividade);
-        if (!$atividade || $atividade['tipo_atividade'] !== 'anexo') {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Atividade não aceita anexos.'], 404);
-        }
-        if (!$model->alunoMatriculado($idAluno, (int) $atividade['id_turma'])) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Você não está matriculado nesta turma.'], 403);
-        }
-        $fuso = new DateTimeZone('America/Sao_Paulo');
-        if (new DateTime($atividade['data_entrega'], $fuso) < new DateTime('now', $fuso)) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'O prazo de entrega acabou.'], 403);
-        }
-
-        $enviados = $_FILES['arquivos'] ?? null;
-        if (!$enviados || !is_array($enviados['name'])) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Nenhum arquivo enviado.'], 400);
-        }
-        $total = count($enviados['name']);
-        if ($total < 1 || $total > self::MAX_ARQUIVOS) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Envie de 1 a ' . self::MAX_ARQUIVOS . ' arquivos.'], 400);
-        }
-
-        $pasta = self::PASTA_UPLOADS . "/$idAtividade/$idAluno";
-        if (!is_dir($pasta) && !mkdir($pasta, 0755, true)) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao preparar a pasta.'], 500);
-        }
-
-        $salvos = [];
-        $limpar = function () use (&$salvos) {
-            foreach ($salvos as $s) { @unlink(self::PASTA_UPLOADS . '/' . $s['caminho']); }
-        };
-
-        for ($i = 0; $i < $total; $i++) {
-            $nome = basename((string) $enviados['name'][$i]);
-            $ext  = strtolower(pathinfo($nome, PATHINFO_EXTENSION));
-
-            if ($enviados['error'][$i] !== UPLOAD_ERR_OK
-                || $enviados['size'][$i] > self::MAX_BYTES
-                || !in_array($ext, self::EXT_ANEXOS, true)
-                || !is_uploaded_file($enviados['tmp_name'][$i])) {
-                $limpar();
-                $this->responderJson(['sucesso' => false, 'erro' => "Arquivo inválido: $nome"], 400);
-            }
-
-            $fisico = bin2hex(random_bytes(16)) . '.' . $ext;
-            if (!move_uploaded_file($enviados['tmp_name'][$i], "$pasta/$fisico")) {
-                $limpar();
-                $this->responderJson(['sucesso' => false, 'erro' => 'Falha ao salvar o arquivo.'], 500);
-            }
-            $salvos[] = ['caminho' => "submissoes/$idAtividade/$idAluno/$fisico", 'nome_original' => $nome];
-        }
-
-        try {
-            $r = $model->criarSubmissaoAnexo($idAtividade, $idAluno, $salvos);
-            $this->responderJson([
-                'sucesso'       => true,
-                'id_submissao'  => $r['id_submissao'],
-                'tentativa'     => $r['tentativa'],
-                'data_envio'    => $r['data_envio'],
-                'cancelamentos' => $r['cancelamentos'],
-            ]);
-        } catch (Throwable $e) {
-            $limpar();
-            error_log('[submissoes] ' . $e->getMessage());
-            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao registrar a entrega.'], 500);
-        }
-    }
-
-    /**
-     * Salva a resolução (código ou texto) do aluno na tabela "submissoes".
-     * Aceita JSON ({"id_atividade":1,"conteudo":"..."}) ou POST comum.
-     * Após gravar no BD, aciona a análise do SIAE (Feedback IA) quando for atividade de código.
-     */
     public function salvarResolucao(): void
     {
         solicitarPerfilDeAcesso('aluno');
@@ -410,5 +325,82 @@ class atividadesSub {
         header('Content-Type: application/json; charset=UTF-8');
         echo json_encode($corpo, JSON_UNESCAPED_UNICODE);
         exit;
+    }
+
+    public function enviarAnexo(): void{
+        solicitarPerfilDeAcesso('aluno');
+        $idAluno = $this->idUsuarioLogado();
+        $idAtividade = filter_var($_POST['id_atividade'] ?? null, FILTER_VALIDATE_INT);
+        if ($idAluno < 1 || !$idAtividade) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Requisição inválida.'], 400);
+        }
+
+        $model = new SubmissoesModel();
+        $atividade = $model->buscarAtividade($idAtividade);
+        if (!$atividade || $atividade['tipo_atividade'] !== 'anexo') {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Atividade não aceita anexos.'], 404);
+        }
+        if (!$model->alunoMatriculado($idAluno, (int) $atividade['id_turma'])) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Você não está matriculado nesta turma.'], 403);
+        }
+        $fuso = new DateTimeZone('America/Sao_Paulo');
+        if (new DateTime($atividade['data_entrega'], $fuso) < new DateTime('now', $fuso)) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'O prazo de entrega acabou.'], 403);
+        }
+
+        $enviados = $_FILES['arquivos'] ?? null;
+        if (!$enviados || !is_array($enviados['name'])) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Nenhum arquivo enviado.'], 400);
+        }
+        $total = count($enviados['name']);
+        if ($total < 1 || $total > self::MAX_ARQUIVOS) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Envie de 1 a ' . self::MAX_ARQUIVOS . ' arquivos.'], 400);
+        }
+
+        $pasta = self::PASTA_UPLOADS . "/$idAtividade/$idAluno";
+        if (!is_dir($pasta) && !mkdir($pasta, 0755, true)) {
+            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao preparar a pasta.'], 500);
+        }
+
+        $salvos = [];
+        $limpar = function () use (&$salvos) {
+            foreach ($salvos as $s) { @unlink(self::PASTA_UPLOADS . '/' . $s['caminho']); }
+        };
+
+        for ($i = 0; $i < $total; $i++) {
+            $nome = basename((string) $enviados['name'][$i]);
+            $ext  = strtolower(pathinfo($nome, PATHINFO_EXTENSION));
+
+            if ($enviados['error'][$i] !== UPLOAD_ERR_OK
+                || $enviados['size'][$i] > self::MAX_BYTES
+                || !in_array($ext, self::EXT_ANEXOS, true)
+                || !is_uploaded_file($enviados['tmp_name'][$i])) {
+                $limpar();
+                $this->responderJson(['sucesso' => false, 'erro' => "Arquivo inválido: $nome"], 400);
+            }
+
+            $fisico = bin2hex(random_bytes(16)) . '.' . $ext;
+            if (!move_uploaded_file($enviados['tmp_name'][$i], "$pasta/$fisico")) {
+                $limpar();
+                $this->responderJson(['sucesso' => false, 'erro' => 'Falha ao salvar o arquivo.'], 500);
+            }
+            $salvos[] = ['caminho' => "submissoes/$idAtividade/$idAluno/$fisico", 'nome_original' => $nome];
+        }
+
+        try {
+            $r = $model->criarSubmissaoAnexo($idAtividade, $idAluno, $salvos);
+        } catch (Throwable $e) {
+            $limpar();
+            error_log('[submissoes] ' . $e->getMessage());
+            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao registrar a entrega.'], 500);
+        }
+
+        $this->responderJson([
+            'sucesso'       => true,
+            'id_submissao'  => $r['id_submissao'],
+            'tentativa'     => $r['tentativa'],
+            'data_envio'    => $r['data_envio'],
+            'cancelamentos' => $r['cancelamentos'],
+        ]);
     }
 }

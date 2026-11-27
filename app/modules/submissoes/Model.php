@@ -319,24 +319,6 @@ class SubmissoesModel
             }
             throw $e;
         }
-
-        //     Presente para o grupo de Submissões.
-        $resultadoIA = (new SIAE())->obterResultadoSIAE(
-            $linguagem,
-            $objetivoAtividade,
-            $codigoAluno
-        );
-
-        FeedbackIAModel::salvarProbabilidadeIA(
-            $pdo,
-            $idSubmissao,
-            $resultadoIA['probabilidade_ia'],
-            $resultadoIA['motivo']
-        );
-
-        $aviso = FeedbackIAModel::mensagemAvisoAluno(
-            $resultadoIA['probabilidade_ia']
-        );
     }
 
     public function atualizarResultado(int $idSubmissao, string $status, ?string $resultadoExecucao): void

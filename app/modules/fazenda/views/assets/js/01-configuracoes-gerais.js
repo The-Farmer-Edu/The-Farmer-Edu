@@ -20,12 +20,12 @@
         { id: 'celeiro', nome: 'Celeiro', icone: '🛖', posicao: { x: 7, z: -9 } },
         { id: 'maquinario', nome: 'Maquinário', icone: '🚜', posicao: { x: -8, z: 6 } },
         { id: 'moinho', nome: 'Moinho de pedra', icone: '🌬️', posicao: { x: 35, z: -8 } },        // Mark 8.2: substitui a plantação pequena (marcação azul)
-        { id: 'plantacaoGrande', nome: 'Grande plantação', icone: '🌾', posicao: { x: 43, z: 12 } },
+        { id: 'plantacaoGrande', nome: 'Plantação Moinho', icone: '🌾', posicao: { x: 43, z: 12 } },
         { id: 'galinheiro', nome: 'Galinheiro', icone: '🐔', posicao: { x: 19, z: 6 } },
         { id: 'chiqueiro', nome: 'Chiqueiro', icone: '🐖', posicao: { x: 19, z: -9 } },
         { id: 'estabulo', nome: 'Estábulo', icone: '🐎', posicao: { x: 19, z: 21 } },
         { id: 'ponte', nome: 'Ponte do rio', icone: '🌉', posicao: { x: -20.4, z: -1 } },
-        { id: 'novaPlantacao', nome: 'Nova plantação', icone: '🥕', posicao: { x: 43, z: 32.3 } },   // Mark 8.2: marcação vermelha
+        { id: 'novaPlantacao', nome: 'Plantação Praça', icone: '🥕', posicao: { x: 43, z: 32.3 } },   // Mark 8.2: marcação vermelha
         { id: 'mina', nome: 'Mina', icone: '⛏️', posicao: { x: -32.3, z: -3.3 } },                   // Mark 8.2: depósito da mina (caverna na marcação roxa)
       ];
       const NIVEL_MAXIMO = 3;

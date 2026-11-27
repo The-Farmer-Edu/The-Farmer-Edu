@@ -13,7 +13,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Poppins:wght@500;700&display=swap">
 <link rel="stylesheet" href="atividades/file?type=css&file=base.css">
 <link rel="stylesheet" href="atividades/file?type=css&file=aluno.css">
-<link rel="stylesheet" href="atividades/file?type=fazenda&file=botao-acesso-fazenda.css">
+<link rel="stylesheet" href="fazenda/file?type=botao-acesso-fazenda&file=style.css">
 </head>
 <body class="tema-aluno">
 
@@ -49,7 +49,7 @@ $inicial = mb_strtoupper(mb_substr($usuario['nome'], 0, 1, 'UTF-8'), 'UTF-8');
 </div>
 
 <a class="btn-acessar-fazenda" href="fazenda" aria-label="Acessar a fazenda" title="Acessar a fazenda">
-    <img src="atividades/file?type=fazenda&file=icone-acesso-fazenda.png" alt="">
+    <img src="fazenda/file?type=botao-acesso-fazenda&file=icon.png" alt="">
 </a>
 
 <script src="atividades/file?type=js&file=menu.js"></script>

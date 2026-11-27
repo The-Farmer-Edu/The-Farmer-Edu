@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../core/database.php';
+require_once __DIR__ . '/../feedback_ia/Model.php';
 
 class SubmissoesModel
 {
@@ -180,6 +181,11 @@ class SubmissoesModel
                 'status'         => (string) $s['status'],
                 'dataEnvio'      => $this->formatarDataIso((string) $s['data_envio']),
             ] : null;
+
+            // O aluno recebe apenas a mensagem da Sophia sobre a própria entrega vigente.
+            if (!$modoInstrutor && $s) {
+                $dados['feedbackAluno'] = FeedbackIAModel::acessarFeedbackGeral($this->pdo, (int) $s['id_submissao'])['resposta_aluno'];
+            }
 
             // Somente o instrutor recebe os detalhes completos da análise de uso de IA (percentual e motivo).
             if ($modoInstrutor && $s) {

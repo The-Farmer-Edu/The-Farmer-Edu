@@ -15,6 +15,7 @@ function atualizarContadores() {
 }
 
 function atualizarEntrega() {
+    atualizarVisibilidadeAcoes();
     const prazoEncerrado = atividadeAtual.prazoExcedido();
 
     // No modo instrutor, exibe o status da última submissão ativa do aluno no BD e mantém somente leitura.

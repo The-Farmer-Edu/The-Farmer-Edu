@@ -470,6 +470,29 @@ async function executar(opcoes = {}) {
         atualizarBotoes();
     }
 }
+/*
+ * Disponibilidade da atividade para o aluno.
+ * Executar e Sophia Copilot só aparecem enquanto o aluno ainda pode realizar a atividade:
+ * - não é a visualização do instrutor;
+ * - o prazo de entrega não acabou;
+ * - não há entrega ativa (com entrega feita o editor fica somente leitura; para voltar a
+ *   trabalhar, o aluno cancela a entrega e os botões reaparecem).
+ * Os botões nascem com `hidden` no HTML e só são exibidos aqui.
+ */
+function atividadeDisponivelParaAluno() {
+    return !atividadeAtual.vazia
+        && !MODO_INSTRUTOR
+        && !entrega
+        && !atividadeAtual.prazoExcedido();
+}
+
+function atualizarVisibilidadeAcoes() {
+    const disponivel = atividadeDisponivelParaAluno();
+    // Atividades de texto nunca têm o botão Executar (aplicarModoTexto), mesmo disponíveis.
+    porId('btnRodar').hidden = !disponivel || modoExecucao === 'texto';
+    porId('sophia-group').hidden = !disponivel;
+}
+
 function atualizarBotoes() {
     porId('btnRodar').disabled = atividadeAtual.vazia || executando || usosExecutar >= LIMITE_EXECUCOES;
     porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';

@@ -116,6 +116,27 @@ function sincronizarCacheLocalComBanco(entregaBanco) {
     } catch (erro) { }
 }
 
+/**
+ * Card "Feedback da IA": aparece somente para o aluno, em atividade de código com entrega ativa.
+ * Texto e anexo não passam pela avaliação da IA, então o campo nem é exibido neles.
+ * Enquanto a IA não gravou o feedback, mostra um aviso neutro (o polling do status atualiza sozinho).
+ */
+function atualizarFeedbackIa(entregue) {
+    const bloco = document.getElementById('feedbackIa');
+    const texto = document.getElementById('feedbackIaTexto');
+    if (!bloco || !texto) return;
+
+    const avaliadaPorIa = atividadeAtual.idLinguagem !== 'texto';
+    const mostrar = entregue && !atividadeAtual.modoInstrutor && avaliadaPorIa;
+    // bloco.hidden = !mostrar;
+    // if (!mostrar) return;
+
+    const feedback = String(atividadeAtual.feedbackAluno || '').trim();
+    texto.textContent = feedback
+        || 'O feedback da IA ainda não está disponível. Ele aparece aqui assim que a análise da sua entrega for concluída.';
+    texto.classList.toggle('vazio', !feedback);
+}
+
 function atualizarStatus() {
     if (atividadeAtual.vazia) {
         elementoStatus.style.display = 'none';
@@ -142,6 +163,7 @@ function atualizarStatus() {
         elementoStatus.append(pontoStatus, ' Não entregue');
     }
     elementoStatus.classList.toggle('entregue', entregue);
+    atualizarFeedbackIa(entregue);
 
     const conteudo = atividadeAtual.idLinguagem === 'texto' ? 'sua resposta' : 'seu código';
     const ehAnexo = atividadeAtual.tipo === 'anexo';
@@ -224,6 +246,7 @@ async function sincronizarStatusDoBanco() {
         atividadeAtual.submissao = json.dados.submissao || null;
         atividadeAtual.cancelamentos = Number(json.dados.cancelamentos) || 0;
         atividadeAtual.tentativas = Number(json.dados.tentativas) || 0;
+        atividadeAtual.feedbackAluno = json.dados.feedbackAluno || null;
         atualizarStatus();
     } catch (erro) {
         // Se falhar a consulta em segundo plano, mantém o último estado validado do BD.

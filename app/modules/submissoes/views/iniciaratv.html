@@ -28,7 +28,7 @@
         </div>
 
         <div class="acoes">
-            <button class="btn btn-laranja" id="btnRodar">▶ Executar</button>
+            <button class="btn btn-laranja" id="btnRodar" hidden>▶ Executar</button>
             <button class="btn btn-verde" id="btnEntregar">Entregar atividade</button>
         </div>
     </div>
@@ -115,9 +115,9 @@
     </main>
 
     <!-- Mascote da IA com balão de conversa. A lógica de falas fica em sophia.js. -->
-    <div class="sophia">
+    <div class="sophia" id="sophia-group" hidden>
         <div class="balao" id="balao"></div>
-        <button class="sophia-avatar" id="btnSophia" aria-label="Sophia">
+        <button class="sophia-avatar" id="btnSophia" aria-label="Sophia" >
             <img src="file?type=img&file=sophia_ia.webp" alt="Sophia">
         </button>
     </div>

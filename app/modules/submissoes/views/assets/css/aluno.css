@@ -303,6 +303,36 @@ aside {
     transform: scale(0.98);
 }
 
+/* Feedback gerado pela IA (card "Seus trabalhos") */
+.feedback-ia {
+    padding: 14px 14px;
+    border-radius: 12px;
+    border-left: 4px solid var(--Verde-principal);
+    background: rgba(52, 199, 89, 0.10);
+}
+
+.feedback-ia__titulo {
+    margin: 0 0 px !important;
+    font-family: var(--Fonte-ui);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--Texto);
+}
+
+.card_trabalhos .feedback-ia__texto {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.card_trabalhos .feedback-ia__texto.vazio {
+    font-size: 0.88rem;
+    opacity: 0.75;
+    font-style: italic;
+}
+
 /* Botão "Visualizar" */
 .btn-comecar-principal.visualizar {
     background-color: var(--Verde-principal);

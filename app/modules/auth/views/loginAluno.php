@@ -11,6 +11,10 @@ $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
 
 // usuarioLogado() é do core, devolve os dados da sessão ou null
 $logado = usuarioLogado();
+if($logado){
+    header("Location: ../turmas_cursos/" . $logado['perfilAcesso']);
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

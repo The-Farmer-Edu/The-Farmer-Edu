@@ -56,11 +56,13 @@ function solicitarLogin($perfil): void {
 }
 
 function solicitarPerfilDeAcesso(string $perfil = "aluno"): void {
-    solicitarLogin($perfil);
-    if (usuarioLogado()['perfilAcesso'] !== $perfil){
-        http_response_code(403);
-        echo "Você não tem acesso a essa página!";
-        exit();
+    if(!usuarioLogado() || $perfil !== "ambos"){
+        solicitarLogin($perfil);
+        if (usuarioLogado()['perfilAcesso'] !== $perfil){
+            http_response_code(403);
+            echo "Você não tem acesso a essa página!";
+            exit();
+        }
     }
 }
 

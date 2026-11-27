@@ -17,7 +17,7 @@ class UsuarioController
     // ler qualquer arquivo do servidor, inclusive o .env com a senha do banco. A consulta remota de tipos MIME em
     // svn.apache.org, feita a cada pedido, também saiu: a lista de tipos agora é local.)
     public function sendFile(): void {
-        enviarArquivoEstatico(__DIR__ . '/views/assets', ['css', 'images']);
+        enviarArquivoEstatico(__DIR__ . '/views/assets', ['css', 'images', 'js']);
     }
 
     // só o formulário vazio

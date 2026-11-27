@@ -272,6 +272,112 @@ function fecharHistorico() {
     document.getElementById('modalHistorico').style.display = 'none';
 }
 
+// ============================================================
+// MODAL DE FEEDBACK DA IA
+// ============================================================
+
+function abrirFeedbackIA(idSubmissao) {
+    const container = document.getElementById('feedbackIAConteudo');
+    container.innerHTML = '<div class="feedback-ia-loading">⏳ Carregando análise da IA...</div>';
+    document.getElementById('modalFeedbackIA').style.display = 'flex';
+
+    const body = new URLSearchParams({
+        acao: 'feedback_ia',
+        id_submissao: idSubmissao
+    });
+
+    fetch('salvar', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: body.toString()
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.sucesso) {
+            container.innerHTML = '<div class="feedback-ia-vazio">Nenhum feedback da IA disponível para esta submissão.</div>';
+            return;
+        }
+
+        let html = '';
+
+        // Seção de probabilidade de uso de IA
+        if (data.probabilidade) {
+            const prob = data.probabilidade;
+
+            // Extrair o percentual numérico para a barra de progresso
+            const matchPct = (prob.probabilidade_ia || '').match(/([\d.]+)%/);
+            const pctNum = matchPct ? parseFloat(matchPct[1]) : 0;
+
+            let corBarra = 'var(--verde-primario)';
+            let labelRisco = 'Baixo';
+            if (pctNum > 80) { corBarra = 'var(--vermelho)'; labelRisco = 'Alto'; }
+            else if (pctNum > 60) { corBarra = 'var(--laranja)'; labelRisco = 'Moderado'; }
+
+            html += `
+                <div class="feedback-ia-secao">
+                    <div class="feedback-ia-titulo">📊 Probabilidade de Uso de IA</div>
+                    <div class="feedback-ia-barra-wrap">
+                        <div class="feedback-ia-barra-bg">
+                            <div class="feedback-ia-barra-fill" style="width:${pctNum}%;background:${corBarra}"></div>
+                        </div>
+                        <div class="feedback-ia-barra-info">
+                            <span class="feedback-ia-pct" style="color:${corBarra}">${pctNum}%</span>
+                            <span class="feedback-ia-risco" style="background:${corBarra}">${labelRisco}</span>
+                        </div>
+                    </div>
+                    ${prob.motivo_ia ? `<div class="feedback-ia-motivo"><strong>Motivo:</strong> ${escapeHtml(prob.motivo_ia.replace('Motivo: ', ''))}</div>` : ''}
+                    ${prob.mensagem_aluno ? `<div class="feedback-ia-alerta-aluno">⚠️ ${escapeHtml(prob.mensagem_aluno.replace('Mensagem para o aluno: ', ''))}</div>` : ''}
+                </div>
+            `;
+        }
+
+        // Seção de feedback geral (análise técnica + resposta ao aluno)
+        if (data.feedback_geral) {
+            const fg = data.feedback_geral;
+
+            if (fg.analise_tecnica) {
+                html += `
+                    <div class="feedback-ia-secao">
+                        <div class="feedback-ia-titulo">🔍 Análise Técnica</div>
+                        <div class="feedback-ia-texto">${escapeHtml(fg.analise_tecnica)}</div>
+                    </div>
+                `;
+            }
+
+            if (fg.resposta_aluno) {
+                html += `
+                    <div class="feedback-ia-secao">
+                        <div class="feedback-ia-titulo">💬 Feedback para o Aluno</div>
+                        <div class="feedback-ia-texto">${escapeHtml(fg.resposta_aluno)}</div>
+                    </div>
+                `;
+            }
+        }
+
+        if (!html) {
+            html = '<div class="feedback-ia-vazio">Nenhum feedback da IA disponível para esta submissão.</div>';
+        }
+
+        container.innerHTML = html;
+    })
+    .catch(() => {
+        container.innerHTML = '<div class="feedback-ia-erro">❌ Erro ao carregar feedback da IA. Tente novamente.</div>';
+    });
+}
+
+function fecharFeedbackIA() {
+    document.getElementById('modalFeedbackIA').style.display = 'none';
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function mostrarToast(msg, sucesso) {
     const toast = document.getElementById('toast');
     toast.textContent = msg;

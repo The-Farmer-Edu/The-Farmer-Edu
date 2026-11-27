@@ -153,7 +153,25 @@ if (MODO_INSTRUTOR) {
         dadosDosArquivos = { ...linguagemAtual.inicial };
     }
 }
+// instrutor vendo a resolução de um aluno (vem do banco, não do localStorage)
+const MODO_INSTRUTOR = !!atividadeAtual.modoInstrutor;
+if (MODO_INSTRUTOR) {
+    const submissao = atividadeAtual.submissao;
+    const conteudo = submissao ? submissao.conteudo : '';
+    if (ARQUIVOS.length === 1) {
+        dadosDosArquivos = { ...linguagemAtual.inicial, [ARQUIVOS[0].lang]: conteudo };
+    } else {
+        try { dadosDosArquivos = { ...linguagemAtual.inicial, ...JSON.parse(conteudo) }; }
+        catch (erro) { dadosDosArquivos = { ...linguagemAtual.inicial }; }
+    }
+}
 if (atividadeAtual.vazia) ARQUIVOS.forEach(arquivo => { dadosDosArquivos[arquivo.lang] = ''; });
+
+let entrega = null;
+try { entrega = JSON.parse(localStorage.getItem(CHAVE_ENTREGA)); } catch (erro) { }
+if (MODO_INSTRUTOR) entrega = null; // a entrega guardada no navegador não vale para o instrutor
+let cancelamentos = 0;
+try { cancelamentos = Number(localStorage.getItem(CHAVE_CANCELAMENTOS)) || 0; } catch (erro) { }
 
 let arquivoAtual = ARQUIVOS[0].lang;
 let resultadoAberto = false;
@@ -183,8 +201,6 @@ function aviso(mensagem) {
 }
 
 function salvar() {
-    // Modo instrutor e entregas já finalizadas não devem alterar o rascunho local.
-    if (MODO_INSTRUTOR || entrega) return;
     try { localStorage.setItem(CHAVE_CODIGO, JSON.stringify(dadosDosArquivos)); } catch (erro) { }
 }
 
@@ -541,14 +557,8 @@ porId('btnRodar').onclick = () => {
     executar({ focar: true });
 };
 
-// Voltar preserva id_aluno no modo instrutor para não perder a permissão de acesso na URL.
-porId('btnVoltar').onclick = () => {
-    if (MODO_INSTRUTOR && atividadeAtual.idAluno) {
-        location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id) + '&id_aluno=' + encodeURIComponent(atividadeAtual.idAluno);
-        return;
-    }
-    location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id);
-};
+// Voltar sempre leva à página do aluno.
+porId('btnVoltar').onclick = () => { location.href = 'aluno?id=' + encodeURIComponent(atividadeAtual.id); };
 // -----------------------------------------------------------------^
 
 document.querySelectorAll('.logo img, .sophia-avatar img').forEach(imagem => {
@@ -587,7 +597,7 @@ function aplicarModoTexto() {
     editorTexto.placeholder = 'Escreva sua resposta aqui...';
     editorTexto.setAttribute('aria-label', 'Editor de texto');
 }
-// Instrutor só visualiza a última submissão do aluno (sem executar, entregar nem Sophia).
+// instrutor só visualiza (sem executar, entregar nem Sophia)
 function aplicarModoInstrutor() {
     if (!MODO_INSTRUTOR) return;
     porId('btnRodar').hidden = true;
@@ -595,39 +605,17 @@ function aplicarModoInstrutor() {
     document.querySelector('.sophia').hidden = true;
     porId('contadorLimite').hidden = true;
     editorTexto.readOnly = true;
-
-    const chipSiae = porId('chipSiae');
-    if (chipSiae && atividadeAtual.feedbackIa && typeof atividadeAtual.feedbackIa.percentual === 'number') {
-        const pct = Math.round(atividadeAtual.feedbackIa.percentual);
-        chipSiae.hidden = false;
-        chipSiae.classList.toggle('encerrado', pct > 60);
-        chipSiae.textContent = `SIAE: ${pct}% IA`;
-        if (atividadeAtual.feedbackIa.motivo) {
-            chipSiae.title = atividadeAtual.feedbackIa.motivo;
-        }
-    }
-
     if (!atividadeAtual.submissao) {
         editorTexto.placeholder = 'Este aluno ainda não enviou resolução para esta atividade.';
     }
 }
 function iniciarPagina() {
     aplicarModoTexto();
-    aplicarModoInstrutor();
+    aplicarModoInstrutor(); // NOVO
     atualizarBotoes();
     setInterval(atualizarEntrega, 30000);
     trocar(arquivoAtual);
-
-    // Evita que o botão Voltar do navegador restaure estado obsoleto do cache (bfcache).
-    window.addEventListener('pageshow', evento => {
-        if (evento.persisted) location.reload();
-    });
-    // Mantém os bloqueios coerentes com o BD mesmo se o localStorage for alterado em outra aba.
-    window.addEventListener('storage', () => {
-        atualizarBotoes();
-    });
-
-    if (!atividadeAtual.vazia && !MODO_INSTRUTOR) {
+    if (!atividadeAtual.vazia && !MODO_INSTRUTOR) { // ALTERADO: + && !MODO_INSTRUTOR
         setTimeout(() => sophiaFala('Oi, sou a Sophia! Estou aqui para ajudar. Se precisar, é só clicar em mim.', 6000), 600);
     }
 }

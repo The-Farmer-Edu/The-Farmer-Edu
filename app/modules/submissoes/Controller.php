@@ -16,10 +16,12 @@ require_once __DIR__ . '/../feedback_ia/Model.php';
  */
 class atividadesSub {
 
+    // adicionado 24/11 ¬
     private const EXT_ANEXOS = ['pdf', 'png', 'jpg', 'jpeg', 'zip', 'txt', 'doc', 'docx'];
     private const MAX_ARQUIVOS = 5;
     private const MAX_BYTES = 10 * 1024 * 1024;
     private const PASTA_UPLOADS = __DIR__ . '/../../../storage/submissoes';
+    // adicionado 24/11 ^
 
     /**
      * Permite apenas os tipos de asset que o front-end realmente usa.
@@ -56,60 +58,47 @@ class atividadesSub {
     public function processarSubmisssao() {
         require_once __DIR__ . '/view/processar_submissao.php';
     }
-
     /**
      * Lê ?id= (ou ?id_atividade=) da URL e busca a atividade no banco.
      * Para o instrutor visualizar a atividade de um aluno, a URL precisa informar
      * obrigatoriamente o id da atividade e o id_aluno, retornando somente a última
      * submissão ativa referente àquele aluno.
      */
-    private function carregarAtividade(): ?array {
-        // Aceita ?id= (padrão do módulo) ou ?id_atividade= por compatibilidade na URL.
-        $id = filter_var($_GET['id'] ?? $_GET['id_atividade'] ?? null, FILTER_VALIDATE_INT);
-        if (!$id || $id < 1) return null;
+private function carregarAtividade(): ?array {
+    $id = filter_var($_GET['id'] ?? null, FILTER_VALIDATE_INT);
+    if (!$id || $id < 1) return null;
 
-        try {
-            if (isset($_GET['id_aluno'])) {
-                solicitarPerfilDeAcesso('instrutor');
+    try {
+        if (isset($_GET['id_aluno'])) {
+            solicitarPerfilDeAcesso('instrutor');
 
-                // Validações do acesso do instrutor: exige id_aluno válido, vínculo com a turma e matrícula do aluno.
-                $idAlunoUrl = filter_var($_GET['id_aluno'], FILTER_VALIDATE_INT);
-                if (!$idAlunoUrl || $idAlunoUrl < 1) return null;
-
-                $model = new SubmissoesModel();
-                $atividade = $model->buscarAtividade($id);
-                if (!$atividade) return null;
-
-                $idTurma = (int) $atividade['id_turma'];
-                if (!$model->instrutorDaTurma($this->idUsuarioLogado(), $idTurma)) return null;
-                if (!$model->alunoMatriculado($idAlunoUrl, $idTurma)) return null;
-
-                // Carrega exclusivamente a última submissão ativa do aluno informado para esta atividade.
-                $dados = $model->dadosParaView($id, $idAlunoUrl, true);
-                if ($dados) $dados['modoInstrutor'] = true; // O JS usa isso para abrir somente leitura.
-                return $dados;
-            } else {
-                solicitarPerfilDeAcesso('aluno');
-            }
-
-            $idAluno = $this->idAlunoDaRequisicao();
-            if (!$idAluno || $idAluno < 1) return null;
+            // NOVO: validações do acesso do instrutor
+            $idAlunoUrl = filter_var($_GET['id_aluno'], FILTER_VALIDATE_INT);
+            if (!$idAlunoUrl || $idAlunoUrl < 1) return null;
 
             $model = new SubmissoesModel();
             $atividade = $model->buscarAtividade($id);
             if (!$atividade) return null;
 
-            // Garante que o aluno só visualize atividades das turmas em que está matriculado.
-            if (!$model->alunoMatriculado($idAluno, (int) $atividade['id_turma'])) return null;
+            $idTurma = (int) $atividade['id_turma'];
+            if (!$model->instrutorDaTurma($this->idUsuarioLogado(), $idTurma)) return null;
+            if (!$model->alunoMatriculado($idAlunoUrl, $idTurma)) return null;
 
-            return $model->dadosParaView($id, $idAluno, false);
-        } catch (Throwable $e) {
-            error_log('[submissoes] ' . $e->getMessage());
-            return null;
+            $dados = $model->dadosParaView($id, $idAlunoUrl);
+            if ($dados) $dados['modoInstrutor'] = true; // o JS usa isso para abrir somente leitura
+            return $dados;
+        } else {
+            solicitarPerfilDeAcesso('aluno');
         }
+        return (new SubmissoesModel())->dadosParaView($id, $this->idAlunoDaRequisicao());
+    } catch (Throwable $e) {
+        error_log('[submissoes] ' . $e->getMessage());
+        return null;
     }
+}
 
-    // Descobre o id do usuário logado, tentando as chaves de sessão mais comuns.
+    // descobre o id do usuário logado, tentando as chaves de sessão mais comuns.
+    // Se nenhuma existir, grava a sessão no log do PHP para descobrir o nome real da chave.
     private function idUsuarioLogado(): int
     {
         if (session_status() !== PHP_SESSION_ACTIVE) session_start();
@@ -136,7 +125,7 @@ class atividadesSub {
         return 0;
     }
 
-    // Define de qual aluno carregar a submissão
+    //  define de qual aluno carregar a submissão
     // (instrutor: id_aluno da URL | aluno: o próprio usuário logado)
     private function idAlunoDaRequisicao(): ?int
     {
@@ -212,9 +201,10 @@ class atividadesSub {
         return self::MIME_TYPES[$extensao] ?? 'application/octet-stream';
     }
 
+    // adicionado 24/11 ¬
     public function enviarAnexo(): void{
-        solicitarPerfilDeAcesso('aluno');
-        $idAluno = $this->idUsuarioLogado();
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $idAluno = (int) (usuarioLogado()['idUsuario'] ?? 0); // ajuste para a chave real da sua sessão
         $idAtividade = filter_var($_POST['id_atividade'] ?? null, FILTER_VALIDATE_INT);
         if ($idAluno < 1 || !$idAtividade) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Requisição inválida.'], 400);
@@ -280,24 +270,16 @@ class atividadesSub {
             $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao registrar a entrega.'], 500);
         }
 
-        $this->responderJson([
-            'sucesso'       => true,
-            'id_submissao'  => $r['id_submissao'],
-            'tentativa'     => $r['tentativa'],
-            'data_envio'    => $r['data_envio'],
-            'cancelamentos' => $r['cancelamentos'],
-        ]);
+        $this->responderJson(['sucesso' => true, 'id_submissao' => $r['id_submissao'], 'tentativa' => $r['tentativa']]);
     }
 
-    /**
-     * Salva a resolução (código ou texto) do aluno na tabela "submissoes".
-     * Aceita JSON ({"id_atividade":1,"conteudo":"..."}) ou POST comum.
-     * Após gravar no BD, aciona a análise do SIAE (Feedback IA) quando for atividade de código.
-     */
+    //  salva a resolução (código ou texto) do aluno na tabela "submissoes".
+    // Aceita JSON ({"id_atividade":1,"conteudo":"..."}) ou POST comum.
     public function salvarResolucao(): void
     {
         solicitarPerfilDeAcesso('aluno');
 
+        // usa o auxiliar que tenta as chaves de sessão mais comuns
         $idAluno = $this->idUsuarioLogado();
 
         $entrada = json_decode((string) file_get_contents('php://input'), true);
@@ -306,6 +288,7 @@ class atividadesSub {
         $idAtividade = filter_var($entrada['id_atividade'] ?? null, FILTER_VALIDATE_INT);
         $conteudo    = (string) ($entrada['conteudo'] ?? '');
 
+        //a mensagem agora diz qual dado está faltando
         if ($idAluno < 1) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Sessão inválida: usuário não identificado.'], 400);
         }
@@ -334,145 +317,16 @@ class atividadesSub {
 
         try {
             $r = $model->criarSubmissao($idAtividade, $idAluno, $conteudo);
-        } catch (RuntimeException $e) {
-            // Ex.: já existe uma entrega ativa não cancelada no banco.
-            $this->responderJson(['sucesso' => false, 'erro' => $e->getMessage()], 409);
         } catch (Throwable $e) {
             error_log('[submissoes] ' . $e->getMessage());
             $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao salvar a resolução.'], 500);
         }
 
-        // Integração com o bloco do SIAE (equipe de Feedback IA) após persistir a submissão.
-        $avisoIa = $this->analisarUsoIaNaSubmissao(
-            $model->getPdo(),
-            (int) $r['id_submissao'],
-            $atividade,
-            $conteudo
-        );
-
         $this->responderJson([
-            'sucesso'       => true,
-            'id_submissao'  => $r['id_submissao'],
-            'tentativa'     => $r['tentativa'],
-            'data_envio'    => $r['data_envio'],
-            'cancelamentos' => $r['cancelamentos'],
-            'aviso_ia'      => $avisoIa,
+            'sucesso'      => true,
+            'id_submissao' => $r['id_submissao'],
+            'tentativa'    => $r['tentativa'],
         ]);
-    }
-
-    /**
-     * Cancela a entrega ativa do aluno no banco de dados (marca status = 'cancelado').
-     * Todas as regras (prazo, entrega ativa, limite de 3 cancelamentos) são validadas no servidor.
-     */
-    public function cancelarEntrega(): void
-    {
-        solicitarPerfilDeAcesso('aluno');
-        $idAluno = $this->idUsuarioLogado();
-
-        $entrada = json_decode((string) file_get_contents('php://input'), true);
-        if (!is_array($entrada)) $entrada = $_POST;
-        $idAtividade = filter_var($entrada['id_atividade'] ?? null, FILTER_VALIDATE_INT);
-
-        if ($idAluno < 1 || !$idAtividade) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Requisição inválida.'], 400);
-        }
-
-        $model = new SubmissoesModel();
-        $atividade = $model->buscarAtividade($idAtividade);
-        if (!$atividade || $atividade['tipo_atividade'] === 'anexo') {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Atividade não encontrada.'], 404);
-        }
-        if (!$model->alunoMatriculado($idAluno, (int) $atividade['id_turma'])) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'Você não está matriculado nesta turma.'], 403);
-        }
-        $fuso = new DateTimeZone('America/Sao_Paulo');
-        if (new DateTime($atividade['data_entrega'], $fuso) < new DateTime('now', $fuso)) {
-            $this->responderJson(['sucesso' => false, 'erro' => 'O prazo acabou: a entrega não pode mais ser cancelada.'], 403);
-        }
-
-        try {
-            $res = $model->cancelarUltimaSubmissao($idAtividade, $idAluno);
-        } catch (RuntimeException $e) {
-            $this->responderJson(['sucesso' => false, 'erro' => $e->getMessage()], 409);
-        } catch (Throwable $e) {
-            error_log('[submissoes] ' . $e->getMessage());
-            $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao cancelar a entrega.'], 500);
-        }
-
-        $this->responderJson([
-            'sucesso'       => true,
-            'id_submissao'  => $res['id_submissao'],
-            'cancelamentos' => $res['cancelamentos'],
-        ]);
-    }
-
-    /**
-     * Integração corrigida do bloco deixado pela equipe de Feedback IA ("presenteDoGustavin").
-     *
-     * Problemas corrigidos em relação ao bloco original:
-     * 1) Require estava com "model.php" em minúsculo em vez de "Model.php";
-     * 2) As variáveis ($linguagem, $objetivoAtividade, $codigoAluno, $pdo, $idSubmissao) não existiam no escopo;
-     * 3) SIAE::obterResultadoSIAE pode retornar null se a IA estiver offline/sem .env ou sem tag <think>,
-     *    o que causava TypeError ao chamar FeedbackIAModel::salvarProbabilidadeIA;
-     * 4) O retorno $aviso não era devolvido para a tela do aluno;
-     * 5) Falhas de rede/IA são isoladas em try/catch para nunca impedir a entrega do aluno.
-     */
-    private function analisarUsoIaNaSubmissao(PDO $pdo, int $idSubmissao, array $atividade, string $conteudo): ?string
-    {
-        // O detector SIAE analisa código-fonte; atividades puramente de texto não entram nessa checagem.
-        if (($atividade['tipo_atividade'] ?? '') !== 'codigo') {
-            return null;
-        }
-
-        $linguagem = trim((string) ($atividade['linguagem'] ?? 'web')) ?: 'web';
-        $objetivoAtividade = trim(
-            (string) $atividade['titulo'] . "\n" . (string) ($atividade['descricao'] ?? '')
-        );
-
-        // Em atividades Web (html/css/js), o conteúdo é salvo em JSON; formatamos os blocos para a IA ler melhor.
-        $codigoAluno = $conteudo;
-        $arquivosWeb = json_decode($conteudo, true);
-        if (is_array($arquivosWeb)) {
-            $partes = [];
-            foreach ($arquivosWeb as $ext => $codigo) {
-                if (trim((string) $codigo) !== '') {
-                    $partes[] = "=== {$ext} ===\n{$codigo}";
-                }
-            }
-            if (!empty($partes)) {
-                $codigoAluno = implode("\n\n", $partes);
-            }
-        }
-
-        try {
-            $resultadoIA = (new SIAE())->obterResultadoSIAE(
-                $linguagem,
-                $objetivoAtividade,
-                $codigoAluno
-            );
-
-            // Garante que o retorno da IA é um array válido com probabilidade numérica antes de gravar no BD.
-            if (!is_array($resultadoIA) || !isset($resultadoIA['probabilidade_ia']) || !is_numeric($resultadoIA['probabilidade_ia'])) {
-                error_log("[submissoes/SIAE] Retorno inválido para submissão #{$idSubmissao}: " . json_encode($resultadoIA));
-                return null;
-            }
-
-            $probabilidade = max(0.0, min(100.0, (float) $resultadoIA['probabilidade_ia']));
-            $motivo = trim((string) ($resultadoIA['motivo'] ?? 'Análise automática concluída.'));
-
-            FeedbackIAModel::salvarProbabilidadeIA(
-                $pdo,
-                $idSubmissao,
-                $probabilidade,
-                $motivo
-            );
-
-            return FeedbackIAModel::mensagemAvisoAluno($probabilidade);
-        } catch (Throwable $e) {
-            // A entrega já foi gravada no BD; registramos o erro sem quebrar o fluxo do aluno.
-            error_log('[submissoes/SIAE] Falha na análise de IA: ' . $e->getMessage());
-            return null;
-        }
     }
 
     private function responderJson(array $corpo, int $status = 200): void{
@@ -481,4 +335,26 @@ class atividadesSub {
         echo json_encode($corpo, JSON_UNESCAPED_UNICODE);
         exit;
     }
+    //adicionado 24/11 ^
+
+    // public function presenteDoGustavin(): void {
+    //         //     Presente para o grupo de Submissões,
+    //     $resultadoIA = (new SIAE())->obterResultadoSIAE(
+    //         $linguagem,
+    //         $objetivoAtividade,
+    //         $codigoAluno
+    //     );
+
+
+    //     FeedbackIAModel::salvarProbabilidadeIA(
+    //         $pdo,
+    //         $idSubmissao,
+    //         $resultadoIA['probabilidade_ia'],
+    //         $resultadoIA['motivo']
+    //     );
+
+    //     $aviso = FeedbackIAModel::mensagemAvisoAluno(
+    //         $resultadoIA['probabilidade_ia']
+    //     );
+    // }
 }

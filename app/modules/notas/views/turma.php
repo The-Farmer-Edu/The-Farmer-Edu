@@ -274,7 +274,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                 $comAtraso   = $dataEnvio && $dataEntrega && $dataEnvio > $dataEntrega;
                                 ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($atv['titulo_atividade']) ?></td>
+                                    <td><a class="link-atividade" href="<?= htmlspecialchars($base) ?>/submissoes/aluno?id=<?= (int)$atv['id_atividade'] ?>&id_aluno=<?= $atv['id_aluno'] ?>"><?= htmlspecialchars($atv['titulo_atividade']) ?></a></td>
 
                                     <!-- Chip com tipo da atividade -->
                                     <td>
@@ -384,7 +384,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                         <?php foreach ($porAluno as $idAluno => $dados): ?>
                             <tr>
                                 <td class="coluna-aluno">
-                                    <strong><?= htmlspecialchars($dados['nome']) ?></strong>
+                                    <strong><a class="link-atividade" href="<?= htmlspecialchars($base) ?>/submissoes/aluno?id=<?= (int)$atv['id'] ?>&id_aluno=<?= $dados['atividades'][0]['id_aluno'] ?>"><?= htmlspecialchars($dados['nome']) ?></a></strong>
                                 </td>
 
                                 <?php foreach ($atividadesUnicas as $atv): ?>
@@ -456,7 +456,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                         </span>
 
                         <span class="aluno-nome">
-                            <?= htmlspecialchars($tituloAtv) ?>
+                            <span class="link-atividade"><?= htmlspecialchars($tituloAtv) ?></span>
                         </span>
 
                         <div class="aluno-media">
@@ -526,7 +526,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
                                     <tr>
                                         <td>
-                                            <strong><?= htmlspecialchars($atv['nome_aluno']) ?></strong>
+                                            <strong><a class="link-atividade" href="<?= htmlspecialchars($base) ?>/submissoes/aluno?id=<?= (int)$idAtv ?>&id_aluno=<?= $atv['id_aluno'] ?>"><?= htmlspecialchars($atv['nome_aluno']) ?></a></strong>
                                         </td>
 
                                         <td>

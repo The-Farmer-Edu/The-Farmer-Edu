@@ -17,7 +17,7 @@ require_once __DIR__ . '/../../core/session.php';
 // =====================================================================
 // NotasController — gerencia as rotas de notas para aluno e instrutor
 // =====================================================================
-
+require_once __DIR__ . '/../feedback_ia/Model.php';
 class NotasController
 {
     private const ASSETS = [
@@ -47,7 +47,6 @@ class NotasController
     {
         $this->model = new NotasModel();
     }
-
     // -----------------------------------------------------------------
     // VISÃO DO ALUNO — GET /notas/aluno
     // -----------------------------------------------------------------
@@ -114,11 +113,23 @@ class NotasController
         // Obtém o ID do instrutor e busca as suas turmas
         $idInstrutor = (int) $usuario['idUsuario'];
         $turmas      = $this->model->buscarTurmasDoInstrutor($idInstrutor);
+        require_once __DIR__ . '/../feedback_ia/Model.php';
 
+
+        $pdo = iniciarPDO();
+        $idSubmissao = (int) $submissao['id_submissao'];
+
+
+        $probabilidadeIA =
+            FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
+        
+        $feedbackIA =
+            FeedbackIAModel::acessarFeedbackGeral($pdo, $idSubmissao);
         // Carrega a view do painel do instrutor
         $this->view('instrutor', [
             'usuario' => $usuario,
             'turmas'  => $turmas,
+            'probabilidade-ia' => $probabilidadeIA
         ]);
     }
 

@@ -123,7 +123,8 @@ class SubmissoesModel
      * Quando $idAluno é informado, injeta também o estado real da entrega no BD
      * (última submissão ativa, status entregue, cancelamentos e tentativas).
      */
-    public function dadosParaView(int $idAtividade, ?int $idAluno = null, bool $modoInstrutor = false): ?array
+    // ALTERADO: acrescentado o parâmetro opcional $idAluno
+    public function dadosParaView(int $idAtividade, ?int $idAluno = null): ?array
     {
         $a = $this->buscarAtividade($idAtividade);
         if (!$a) return null;
@@ -149,61 +150,38 @@ class SubmissoesModel
         $idLinguagem = in_array($tipo, ['texto', 'anexo'], true) ? 'texto' : (self::MAPA_LINGUAGEM[$lang] ?? 'web');
 
         $dados = [
-            'id'                  => (int) $a['id_atividade'],
-            'chave'               => (string) $a['id_atividade'],
-            'titulo'              => (string) $a['titulo'],
-            'descricao'           => (string) ($a['descricao'] ?? ''),
-            'requisitos'          => $requisitos,
-            'idLinguagem'         => $idLinguagem,
-            'tipo'                => $tipo,
-            'notaMax'             => 10,
-            'notaMin'             => 6,
-            'limiteEntrega'       => $limite,
-            'limiteCancelamentos' => self::LIMITE_CANCELAMENTOS,
+            'id'            => (int) $a['id_atividade'],
+            'chave'         => (string) $a['id_atividade'],
+            'titulo'        => (string) $a['titulo'],
+            'descricao'     => (string) ($a['descricao'] ?? ''),
+            'requisitos'    => $requisitos,
+            'idLinguagem'   => $idLinguagem,
+            'tipo'          => $tipo,
+            'notaMax'       => 10,
+            'notaMin'       => 6,
+            'limiteEntrega' => $limite,
         ];
 
-        // Injeta os dados reais do banco para impedir manipulação via localStorage.
+        //resolução já salva pelo aluno
         if ($idAluno) {
             $s = $this->buscarUltimaSubmissao($idAtividade, $idAluno);
-            $cancelamentos = $this->contarCancelamentos($idAtividade, $idAluno);
-            $tentativas = $this->contarTentativas($idAtividade, $idAluno);
-
-            $dados['idAluno'] = $idAluno;
-            $dados['cancelamentos'] = $cancelamentos;
-            $dados['tentativas'] = $tentativas;
-            $dados['entregue'] = $s !== null && in_array($s['status'], ['enviada', 'processando', 'corrigida'], true);
             $dados['submissao'] = $s ? [
-                'id'             => (int) $s['id_submissao'],
-                'conteudo'       => (string) ($s['conteudo_resposta'] ?? ''),
-                'caminhoArquivo' => $s['caminho_arquivo'] ?? null,
-                'tentativa'      => (int) $s['tentativa_num'],
-                'status'         => (string) $s['status'],
-                'dataEnvio'      => $this->formatarDataIso((string) $s['data_envio']),
+                'id'        => (int) $s['id_submissao'],
+                'conteudo'  => (string) ($s['conteudo_resposta'] ?? ''),
+                'tentativa' => (int) $s['tentativa_num'],
+                'status'    => (string) $s['status'],
+                'dataEnvio' => (string) $s['data_envio'],
             ] : null;
-
-            // Somente o instrutor recebe os detalhes completos da análise de uso de IA (percentual e motivo).
-            if ($modoInstrutor && $s) {
-                $fb = $this->buscarFeedbackIa((int) $s['id_submissao']);
-                if ($fb) {
-                    $dados['feedbackIa'] = [
-                        'percentual' => (float) $fb['percentual_ia'],
-                        'motivo'     => (string) ($fb['motivo_ia'] ?? ''),
-                    ];
-                }
-            }
         }
         return $dados;
     }
-
-    /**
-     * Verifica se o instrutor é o responsável pela turma da atividade.
-     */
+    // o instrutor é responsável pela turma?
     public function instrutorDaTurma(int $idInstrutor, int $idTurma): bool
-    {
-        $st = $this->pdo->prepare('SELECT 1 FROM turmas WHERE id_turma = ? AND id_instrutor = ? LIMIT 1');
-        $st->execute([$idTurma, $idInstrutor]);
-        return (bool) $st->fetchColumn();
-    }
+{
+    $st = $this->pdo->prepare('SELECT 1 FROM turmas WHERE id_turma = ? AND id_instrutor = ? LIMIT 1');
+    $st->execute([$idTurma, $idInstrutor]);
+    return (bool) $st->fetchColumn();
+}
 
     public function alunoMatriculado(int $idAluno, int $idTurma): bool
     {
@@ -212,12 +190,7 @@ class SubmissoesModel
         return (bool) $st->fetchColumn();
     }
 
-    /**
-     * Registra uma nova submissão de código/texto no banco de dados.
-     * Valida dentro de transação (FOR UPDATE) se já não há entrega ativa para impedir
-     * burlar os bloqueios do botão pelo DevTools/localStorage.
-     */
-    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array
+    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array //<3
     {
         $this->pdo->beginTransaction();
         try {
@@ -345,8 +318,7 @@ class SubmissoesModel
         $st->execute([$status, $resultadoExecucao, $idSubmissao]);
     }
 
-    public function criarSubmissaoAnexo(int $idAtividade, int $idAluno, array $arquivos): array
-    {
+    public function criarSubmissaoAnexo(int $idAtividade, int $idAluno, array $arquivos): array {
         $this->pdo->beginTransaction();
         try {
             $st = $this->pdo->prepare(
@@ -356,6 +328,7 @@ class SubmissoesModel
             $st->execute([$idAtividade, $idAluno]);
             $tentativa = (int) $st->fetchColumn();
 
+            // $resumo = json_encode(array_column($arquivos, 'nome_original'), JSON_UNESCAPED_UNICODE);
             $st = $this->pdo->prepare(
                 "INSERT INTO submissoes (id_atividade, id_aluno, tentativa_num, status, caminho_arquivo)
                  VALUES (?, ?, ?, ?, ?)"
@@ -363,21 +336,19 @@ class SubmissoesModel
             $st->execute([$idAtividade, $idAluno, $tentativa, 'enviada', $arquivos[0]['caminho']]);
             $idSubmissao = (int) $this->pdo->lastInsertId();
 
-            $stData = $this->pdo->prepare('SELECT data_envio FROM submissoes WHERE id_submissao = ?');
-            $stData->execute([$idSubmissao]);
-            $dataEnvio = $this->formatarDataIso((string) $stData->fetchColumn());
+            // $st = $this->pdo->prepare(
+            //     'INSERT INTO arquivos_indexados
+            //        (id_atividade, id_aluno, id_submissao, caminho_arquivo, nome_original)
+            //      VALUES (?, ?, ?, ?, ?)'
+            // );
+            // foreach ($arquivos as $a) {
+            //     $st->execute([$idAtividade, $idAluno, $idSubmissao, $a['caminho'], $a['nome_original']]);
+            // }
 
             $this->pdo->commit();
-            return [
-                'id_submissao'  => $idSubmissao,
-                'tentativa'     => $tentativa,
-                'data_envio'    => $dataEnvio,
-                'cancelamentos' => $this->contarCancelamentos($idAtividade, $idAluno),
-            ];
+            return ['id_submissao' => $idSubmissao, 'tentativa' => $tentativa];
         } catch (Throwable $e) {
-            if ($this->pdo->inTransaction()) {
-                $this->pdo->rollBack();
-            }
+            $this->pdo->rollBack();
             throw $e;
         }
     }

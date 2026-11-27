@@ -1,4 +1,3 @@
-
 /**
  * Exibe notificação flutuante temporária.
  */
@@ -35,6 +34,16 @@ function filtrarAlunos(termo) {
             const nome = s.dataset.nome || '';
             s.style.display = (!q || nome.includes(q)) ? '' : 'none';
         });
+}
+
+function filtrarAtividades(termo) {
+    const secoes = document.querySelectorAll('#view-atividade .aluno-secao');
+    const q = termo.toLowerCase().trim();
+
+    secoes.forEach(secao => {
+        const nome = (secao.dataset.nome || '').toLowerCase().trim();
+        secao.style.display = (!q || nome.includes(q)) ? '' : 'none';
+    });
 }
 
 function alternarVisualizacao(modo) {
@@ -78,7 +87,8 @@ function alternarVisualizacao(modo) {
         if (filtroInput) {
             filtroInput.parentElement.style.display = 'flex';
             filtroInput.placeholder = 'Buscar atividade pelo título...';
-            filtrarAlunos(filtroInput.value);
+
+            filtrarAtividades(filtroInput.value);
         }
     } else {
         viewBoletim.style.display = 'none';
@@ -284,3 +294,37 @@ document.addEventListener('click', function(e) {
         userBtn.classList.remove('aberto');
     }
 });
+
+function aplicarFiltroInicialDeAtividade() {
+    const parametros = new URLSearchParams(window.location.search);
+    const atividade = (parametros.get('atividade') || '').trim();
+
+    if (!atividade) return;
+
+    alternarVisualizacao('atividade');
+
+    const filtroInput = document.getElementById('filtro-aluno');
+    if (!filtroInput) return;
+
+    filtroInput.value = atividade;
+    filtroInput.placeholder = 'Buscar atividade pelo título...';
+    filtroInput.setAttribute('aria-label', 'Buscar atividade pelo título');
+    filtrarAtividades(atividade);
+}
+
+function filtrarCampoAtual(termo) {
+    const viewAtividade = document.getElementById('view-atividade');
+
+    if (viewAtividade && viewAtividade.style.display !== 'none') {
+        filtrarAtividades(termo);
+        return;
+    }
+
+    filtrarAlunos(termo);
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', aplicarFiltroInicialDeAtividade);
+} else {
+    aplicarFiltroInicialDeAtividade();
+}

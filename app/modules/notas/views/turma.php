@@ -78,6 +78,8 @@ usort($atividadesUnicas, function ($a, $b) {
 $msgSucesso = htmlspecialchars($_GET['sucesso'] ?? '');
 $msgErro    = htmlspecialchars($_GET['erro']    ?? '');
 $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$atividadeSelecionada = trim((string) ($_GET['atividade'] ?? ''));
+$atividadeIdSelecionada = (int) ($_GET['atividade_id'] ?? 0);
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -165,9 +167,10 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <input
             type="text"
             id="filtro-aluno"
-            placeholder="Buscar aluno pelo nome..."
-            oninput="filtrarAlunos(this.value)"
-            aria-label="Filtrar alunos"
+            value="<?= htmlspecialchars($atividadeSelecionada, ENT_QUOTES, 'UTF-8') ?>"
+            placeholder="<?= $atividadeSelecionada !== '' ? 'Buscar atividade pelo título...' : 'Buscar aluno pelo nome...' ?>"
+            oninput="filtrarCampoAtual(this.value)"
+            aria-label="<?= $atividadeSelecionada !== '' ? 'Buscar atividade pelo título' : 'Filtrar alunos' ?>"
         >
     </div>
     
@@ -175,8 +178,8 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <button
             type="button"
             id="btn-por-aluno"
-            class="ativo"
-            aria-pressed="true"
+            class="<?= $atividadeSelecionada === '' ? 'ativo' : '' ?>"
+            aria-pressed="<?= $atividadeSelecionada === '' ? 'true' : 'false' ?>"
             onclick="alternarVisualizacao('aluno')"
         >
             👤 Por aluno
@@ -194,14 +197,15 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <button
             type="button"
             id="btn-por-atividade"
-            aria-pressed="false"
+            class="<?= $atividadeSelecionada !== '' ? 'ativo' : '' ?>"
+            aria-pressed="<?= $atividadeSelecionada !== '' ? 'true' : 'false' ?>"
             onclick="alternarVisualizacao('atividade')"
         >
             📋 Por atividades
         </button>
     </div>
 
-    <div id="view-aluno">
+    <div id="view-aluno"<?= $atividadeSelecionada !== '' ? ' style="display: none;"' : '' ?>>
         <?php if (empty($porAluno)): ?>
             <div class="vazio">
                 <p style="font-size:3rem">🌾</p>
@@ -425,7 +429,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <?php endif; ?>
     </div>
 
-    <div id="view-atividade" style="display: none;">
+    <div id="view-atividade"<?= $atividadeSelecionada !== '' ? '' : ' style="display: none;"' ?> >
         <?php if (empty($porAtividade)): ?>
             <div class="vazio">
                 <p style="font-size:3rem">🌾</p>
@@ -449,6 +453,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                 <div
                     class="aluno-secao"
                     data-nome="<?= htmlspecialchars(strtolower($tituloAtv)) ?>"
+                    data-atividade-id="<?= (int) $idAtv ?>"
                 >
                     <div class="aluno-header" onclick="toggleAluno(this)">
                         <span class="tipo-chip tipo-<?= htmlspecialchars($tipoAtv) ?>">

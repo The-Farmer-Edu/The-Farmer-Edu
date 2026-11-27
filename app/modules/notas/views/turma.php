@@ -309,7 +309,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                         <?php if ($notaFmt !== null): ?>
                                             <span class="nota-atual <?= $classNota ?>"><?= $notaFmt ?></span>
                                             <?php if ($origem === 'ia'): ?>
-                                                <span class="badge badge-ia" style="margin-left:6px">🤖 IA</span>
+                                                <span class="badge badge-ia badge-ia-clicavel" style="margin-left:6px" onclick="abrirFeedbackIA(<?= (int)$idSub ?>)" title="Ver feedback da IA">🤖 IA</span>
                                             <?php endif; ?>
                                         <?php else: ?>
                                             <span class="sem-envio">—</span>
@@ -562,7 +562,7 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                                 </span>
 
                                                 <?php if ($origem === 'ia'): ?>
-                                                    <span class="badge badge-ia" style="margin-left:6px">
+                                                    <span class="badge badge-ia badge-ia-clicavel" style="margin-left:6px" onclick="abrirFeedbackIA(<?= (int)$idSub ?>)" title="Ver feedback da IA">
                                                         🤖 IA
                                                     </span>
                                                 <?php endif; ?>
@@ -626,6 +626,19 @@ $base       = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
         <ul id="historicoConteudo" class="historico-lista">
             <!-- Preenchido via MySQL -->
         </ul>
+    </div>
+</div>
+
+<!-- MODAL FLUTUANTE DE FEEDBACK DA IA -->
+<div id="modalFeedbackIA" class="modal-overlay" onclick="if(event.target === this) fecharFeedbackIA()">
+    <div class="modal-content modal-feedback-ia">
+        <div class="modal-header">
+            <h3>🤖 Feedback da Inteligência Artificial</h3>
+            <button class="modal-close" onclick="fecharFeedbackIA()">✕</button>
+        </div>
+        <div id="feedbackIAConteudo" class="feedback-ia-corpo">
+            <!-- Preenchido via AJAX -->
+        </div>
     </div>
 </div>
 

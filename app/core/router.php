@@ -73,7 +73,7 @@ class Router {
             }
         }
 
-        Tela de erro padrão do The Farmer Edu (public/erro.php)
+        //Tela de erro padrão do The Farmer Edu (public/erro.php)
         require __DIR__ . '/../../public/erro.php';
     }
 }

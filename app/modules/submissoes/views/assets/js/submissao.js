@@ -115,12 +115,16 @@ function montarConteudoResposta() {
 // Envia a resolução ao servidor (rota salvarResolucao) e retorna os dados confirmados pelo BD.
 async function salvarResolucaoNoBanco() {
     try {
+        // const respostaJudge = await enviarParaAvaliacao(null, 'judge0');
+        const respostaJudge = JSON.parse(localStorage.getItem(CHAVE_AVALIACAO));
+        console.log(respostaJudge);
         const resposta = await fetch('salvarResolucao', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 id_atividade: atividadeAtual.id,
-                conteudo: montarConteudoResposta()
+                conteudo: montarConteudoResposta(),
+                resultado_execucao: respostaJudge.compilacao.saida_terminal
             })
         });
 
@@ -153,10 +157,13 @@ async function confirmarEntrega() {
     salvar();
 
     const botao = porId('btnConfirmar');
+    botao.classList.add('is-loading');
     botao.disabled = true;
     const resultado = await salvarResolucaoNoBanco();
-    botao.disabled = false;
-    if (!resultado) return; // Mantém o modal aberto para o aluno tentar de novo.
+    if (!resultado) {
+        botao.disabled = false;
+        return; // Mantém o modal aberto para o aluno tentar de novo.
+    }
 
     // Atualiza o estado em memória usando os valores reais persistidos no BD.
     const dataEnvio = resultado.data_envio || new Date().toISOString();
@@ -175,11 +182,13 @@ async function confirmarEntrega() {
         localStorage.setItem(CHAVE_CANCELAMENTOS, String(cancelamentos));
     } catch (erro) { }
 
+    // Judge0 + IA: avalia a entrega já gravada. Roda em segundo plano e nunca desfaz a entrega se falhar.
+    await enviarParaAvaliacao(entrega.id, 'IAs');
+    
     fecharModalEntrega();
     atualizarEntrega();
-
-    // Judge0 + IA: avalia a entrega já gravada. Roda em segundo plano e nunca desfaz a entrega se falhar.
-    enviarParaAvaliacao();
+    botao.classList.remove('is-loading');
+    botao.disabled = false;
 
     // Se a análise do SIAE retornou alerta de possível uso de IA (> 60%), exibe ao aluno.
     if (resultado.aviso_ia) {

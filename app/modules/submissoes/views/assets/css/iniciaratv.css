@@ -235,6 +235,51 @@ button {
     background: #144818;
 }
 
+.btn-verde.is-loading .btn-text {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Centraliza os pontos exatamente no meio do botão */
+.loader {
+  position: absolute;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn-verde.is-loading .loader {
+  display: inline-flex;
+}
+
+.loader span {
+  width: 7px;
+  height: 7px;
+  background-color: currentColor;
+  border-radius: 50%;
+  animation: bounce 0.6s infinite alternate;
+}
+
+.loader span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loader span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bounce {
+  from {
+    transform: translateY(3px);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
 .btn-cinza {
     background: var(--item-inativo);
     color: var(--titulo);

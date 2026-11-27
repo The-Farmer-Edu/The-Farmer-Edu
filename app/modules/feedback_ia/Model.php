@@ -29,8 +29,11 @@
          * O ON DUPLICATE KEY UPDATE garante idempotência pela chave única uq_feedback_submissao.
          */
         public static function salvarProbabilidadeIA(PDO $pdo, int $idSubmissao, float $probabilidade, string $motivo): void {
-            $stmt = $pdo->prepare('INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATEpercentual_ia = VALUES(percentual_ia), 
-            motivo_ia = VALUES(motivo_ia)' );
+            $stmt = $pdo->prepare('
+                INSERT INTO feedback_ia (id_submissao, percentual_ia, motivo_ia)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE percentual_ia = VALUES(percentual_ia), motivo_ia = VALUES(motivo_ia)
+            ');
             $stmt->execute([$idSubmissao, $probabilidade, $motivo]);
         }
 

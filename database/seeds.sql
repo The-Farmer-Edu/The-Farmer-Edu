@@ -277,30 +277,30 @@ VALUES (
         NULL,
         '2026-11-12 09:00:00'
     );
--- ---------------------------------------------------------------------
--- 9. FEEDBACK DA IA
--- ---------------------------------------------------------------------
-INSERT INTO feedback_ia (
-        id_feedback,
-        id_submissao,
-        pontos_positivos,
-        pontos_negativos,
-        sugestao_resposta
-    )
-VALUES (
-        1,
-        1,
-        'Algoritmo perfeito, cobriu todas as regras condicionais e tratou corretamente o limite da nota 6.',
-        'Nenhum ponto negativo encontrado.',
-        'Poderia utilizar o operador ternário para resumir o código em uma única linha.'
-    ),
-    (
-        2,
-        2,
-        'Entendeu a lógica da estrutura condicional (if).',
-        'Esqueceu de tratar a nota exata 6 como aprovada (usou > em vez de >=) e não implementou o caso de reprovação.',
-        'function verificarStatus(nota) { return nota >= 6 ? "Aprovado" : "Reprovado"; }'
-    );
+-- -- ---------------------------------------------------------------------
+-- -- 9. FEEDBACK DA IA
+-- -- ---------------------------------------------------------------------
+-- INSERT INTO feedback_ia (
+--         id_feedback,
+--         id_submissao,
+--         pontos_positivos,
+--         pontos_negativos,
+--         sugestao_resposta
+--     )
+-- VALUES (
+--         1,
+--         1,
+--         'Algoritmo perfeito, cobriu todas as regras condicionais e tratou corretamente o limite da nota 6.',
+--         'Nenhum ponto negativo encontrado.',
+--         'Poderia utilizar o operador ternário para resumir o código em uma única linha.'
+--     ),
+--     (
+--         2,
+--         2,
+--         'Entendeu a lógica da estrutura condicional (if).',
+--         'Esqueceu de tratar a nota exata 6 como aprovada (usou > em vez de >=) e não implementou o caso de reprovação.',
+--         'function verificarStatus(nota) { return nota >= 6 ? "Aprovado" : "Reprovado"; }'
+--     );
 -- ---------------------------------------------------------------------
 -- 10. NOTAS E HISTÓRICO DE ALTERAÇÕES
 -- ---------------------------------------------------------------------

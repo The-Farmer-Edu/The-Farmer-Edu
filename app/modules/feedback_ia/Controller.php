@@ -4,19 +4,6 @@
     
 
     class testarAPIController {
-    public function showAvaliar(): void {
-        // require_once __DIR__ . '/views/index.php';
-        require_once __DIR__ . '/views/testeSIAE.php';
-    }
-
-    public function tremAvaliar(): void {
-        // require_once __DIR__ . '/views/index.php';
-        require_once __DIR__ . '/views/testarsalvarSIAE.php';
-    }
-
-    public function sendAvaliacao(): void {
-        require_once __DIR__ . '/views/sendAvaliacao.php';
-    }
 
     public function sendRespostaReferencia(): void {
         require_once __DIR__ . '/views/respostaReferencia.php';

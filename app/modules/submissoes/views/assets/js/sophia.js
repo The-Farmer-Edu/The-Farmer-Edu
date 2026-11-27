@@ -206,16 +206,6 @@ function iniciarSophia() {
             habilitarConsole(false);
         }
 
-        const FarmAtividade = window.FarmAtividade;
-        // const arquivos = FarmAtividade ? FarmAtividade.linguagem.arquivos : [];
-        const dados = window._dadosCodigo ? window._dadosCodigo() : {};
-        // if (arquivos.every(a => !dados[a.lang] || !dados[a.lang].trim())) {
-        //     sophiaFala('Escreva um pouco de código e clique em mim de novo!', 4000);
-        //     return;
-        // }
-
-
-
         // --------------------------------------------------------------
         // Conta o uso e grava no navegador (função definida em iniciaratv.js).
         if (typeof registrarUsoSophia === 'function') registrarUsoSophia();
@@ -225,50 +215,35 @@ function iniciarSophia() {
         sophiaFala('Deixa eu olhar o seu código...', 0);
 
         try {
-            // const erros = window._errosConsole ? window._errosConsole() : [];
-            console.log("A1")
             ajuda.dados = JSON.parse(await consultarSophia());
-            // if (temProblema(ajuda.dados)) {
-            //     console.log("D")
-            //     perguntarAjuda();
-            // } else {
-                console.log("E")
-                // if (typeof escreverConsole === 'function')
-                //     escreverConsole('Sophia: Código sem erros!', 'sophia-msg');
-                // sophiaMostrarAjuda(ajuda.dados.avaliacao.resposta_aluno, ajuda.dados.sucesso);
-                // console.log(ajuda.dados.sucesso)
-                // console.log(ajuda.dados.avaliacao.resposta_aluno)
-                const b = document.getElementById('balao');
-                if (!b) return;
-                clearTimeout(sophiaFala._t);
-                b.innerHTML = '';
-                b.classList.add('fixo');
+            const b = document.getElementById('balao');
+            if (!b) return;
+            clearTimeout(sophiaFala._t);
+            b.innerHTML = '';
+            b.classList.add('fixo');
 
-                const topo = document.createElement('div');
-                topo.className = 'balao-topo';
+            const topo = document.createElement('div');
+            topo.className = 'balao-topo';
 
-                const titulo = document.createElement('strong');
-                titulo.textContent = temProblema ? 'Vamos corrigir juntos!' : 'Código sem erros!';
+            const titulo = document.createElement('strong');
+            titulo.textContent = temProblema ? 'Vamos corrigir juntos!' : 'Código sem erros!';
 
-                const fechar = document.createElement('button');
-                fechar.type = 'button';
-                fechar.className = 'balao-fechar';
-                fechar.setAttribute('aria-label', 'Fechar ajuda');
-                fechar.textContent = '✕';
-                fechar.onclick = fecharBalao;
+            const fechar = document.createElement('button');
+            fechar.type = 'button';
+            fechar.className = 'balao-fechar';
+            fechar.setAttribute('aria-label', 'Fechar ajuda');
+            fechar.textContent = '✕';
+            fechar.onclick = fecharBalao;
 
-                topo.append(titulo, fechar);
-                b.appendChild(topo);
+            topo.append(titulo, fechar);
+            b.appendChild(topo);
 
-                const msgStatus = ajuda.dados.avaliacao.ha_erros_codigo == "true" ? "Foram encontrados erros X" : "Não existem erros no seu código ✔";
+            const msgStatus = ajuda.dados.avaliacao.ha_erros_codigo == "true" ? "Foram encontrados erros X" : "Não existem erros no seu código ✔";
 
-                const p = document.createElement('p');
-                p.className = 'balao-texto';
-                // p.textContent = msgStatus;
-                b.appendChild(p);
-                _secaoAjuda(b, msgStatus, [ajuda.dados.avaliacao.resposta_aluno], 'ok');
-                // sophiaFala("")
-            // }
+            const p = document.createElement('p');
+            p.className = 'balao-texto';
+            b.appendChild(p);
+            _secaoAjuda(b, msgStatus, [ajuda.dados.avaliacao.resposta_aluno], 'ok');
         } catch (erro) {
             console.error(erro)
             sophiaFala('Não consegui analisar agora. Tente novamente mais tarde.', 6000);
@@ -278,17 +253,10 @@ function iniciarSophia() {
     });
 }
 
-async function consultarSophia(erros){
-    console.log("Processando Dados...")
-    console.log(CHAVE_CODIGO)
+async function consultarSophia(erros = null){
     const dadosDigitados = localStorage.getItem(CHAVE_CODIGO) ?? false;
 
     if(dadosDigitados){
-        console.log("A");
-        // $leituraCodigo = $data['leitura_codigo'];
-        // $linguagem = $data['linguagem'];
-        // $objetivoAtividade = $data['objetivo_atividade'];
-        // $errosCodigo = $data['erros_codigo'];
         const dadosJSON = JSON.parse(dadosDigitados);
         const payload = {
             leitura_codigo: Object.values(dadosJSON),
@@ -296,7 +264,6 @@ async function consultarSophia(erros){
             objetivo_atividade: document.querySelector('#atvDescricao').innerText,
             erros_codigo: erros
         };
-        console.log("B")
         const response = await fetch('../api/consultarSophia', {
             method: 'POST',
             headers: {
@@ -304,10 +271,7 @@ async function consultarSophia(erros){
             },
             body: JSON.stringify(payload)
         })
-        console.log("C")
-        // const data = await response.text();
         const data = await response.text();
-        console.log(data);
         return data;
     }
 }

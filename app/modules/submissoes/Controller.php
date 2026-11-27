@@ -237,6 +237,7 @@ class atividadesSub {
 
         $idAtividade = filter_var($entrada['id_atividade'] ?? null, FILTER_VALIDATE_INT);
         $conteudo    = (string) ($entrada['conteudo'] ?? '');
+        $resultadoExecucao = (string) ($entrada['resultado_execucao'] ?? '');
 
         if ($idAluno < 1) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Sessão inválida: usuário não identificado.'], 400);
@@ -249,6 +250,9 @@ class atividadesSub {
         }
         if (mb_strlen($conteudo) > 200000) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Resposta muito grande.'], 413);
+        }
+        if (trim($resultadoExecucao) === '') {
+            $this->responderJson(['sucesso' => false, 'erro' => 'O Resultado da Execução está vazio.'], 400);
         }
 
         $model = new SubmissoesModel();
@@ -265,22 +269,14 @@ class atividadesSub {
         }
 
         try {
-            $r = $model->criarSubmissao($idAtividade, $idAluno, $conteudo);
-            // Integração com o bloco do SIAE (equipe de Feedback IA) após persistir a submissão.
-            $avisoIa = $this->analisarUsoIaNaSubmissao(
-                $model->getPdo(),
-                (int) $r['id_submissao'],
-                $atividade,
-                $conteudo
-            );
+            $r = $model->criarSubmissao($idAtividade, $idAluno, $conteudo, $resultadoExecucao);
 
             $this->responderJson([
                 'sucesso'       => true,
                 'id_submissao'  => $r['id_submissao'],
                 'tentativa'     => $r['tentativa'],
                 'data_envio'    => $r['data_envio'],
-                'cancelamentos' => $r['cancelamentos'],
-                'aviso_ia'      => $avisoIa,
+                'cancelamentos' => $r['cancelamentos']
             ]);
         } catch (RuntimeException $e) {
             // Ex.: já existe uma entrega ativa não cancelada no banco.

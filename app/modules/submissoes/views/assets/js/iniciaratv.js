@@ -442,7 +442,7 @@ async function rodarTerminal() {
     saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
     // const codigo = dadosDosArquivos[ARQUIVOS[0].lang] || '';
 
-    enviarParaAvaliacao();
+    await enviarParaAvaliacao(null, 'judge0');
     // if (linguagemAtual.id === 63) {
     //     await rodarJs(codigo);
     //     escreverConsole('Execução concluída.', 'info');
@@ -598,14 +598,14 @@ async function avaliarNoServidor(extra = {}) {
 }
 
 // Disparada por submissao.js depois que o banco confirmou a entrega. Não bloqueia a tela.
-async function enviarParaAvaliacao() {
+async function enviarParaAvaliacao(idSubmissao = null, tipoAvaliacao = 'completa') {
     // Judge0 só faz sentido para código; atividades de texto não passam por aqui.
     if (MODO_INSTRUTOR || enviando || modoExecucao === 'texto') return;
     const sequencia = ++avaliacaoSeq;
     enviando = true;
     escreverConsole('Enviando a entrega para avaliação automática...', 'info');
     try {
-        const data = await avaliarNoServidor();
+        const data = await avaliarNoServidor({'id_submissao': idSubmissao, 'tipo_avaliacao': tipoAvaliacao});
         if (sequencia !== avaliacaoSeq) return;   // a entrega foi cancelada enquanto avaliava
         ultimaResposta = data;
         try { localStorage.setItem(CHAVE_AVALIACAO, JSON.stringify(data)); } catch (erro) { }

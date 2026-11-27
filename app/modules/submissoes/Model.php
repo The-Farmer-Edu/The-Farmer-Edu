@@ -217,7 +217,7 @@ class SubmissoesModel
      * Valida dentro de transação (FOR UPDATE) se já não há entrega ativa para impedir
      * burlar os bloqueios do botão pelo DevTools/localStorage.
      */
-    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array
+    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo, string $resultadoExecucao): array
     {
         $this->pdo->beginTransaction();
         try {
@@ -245,10 +245,10 @@ class SubmissoesModel
             $tentativa = !empty($registros) ? ((int) $registros[0]['tentativa_num'] + 1) : 1;
 
             $st = $this->pdo->prepare(
-                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status)
-                 VALUES (?, ?, ?, ?, 'enviada')"
+                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status, resultado_execucao)
+                 VALUES (?, ?, ?, ?, ?, ?)"
             );
-            $st->execute([$idAtividade, $idAluno, $conteudo, $tentativa]);
+            $st->execute([$idAtividade, $idAluno, $conteudo, $tentativa, 'enviada', $resultadoExecucao]);
             $id = (int) $this->pdo->lastInsertId();
 
             $stData = $this->pdo->prepare('SELECT data_envio FROM submissoes WHERE id_submissao = ?');

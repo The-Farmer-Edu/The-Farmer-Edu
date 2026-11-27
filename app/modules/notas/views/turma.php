@@ -312,7 +312,7 @@ $atividadeIdSelecionada = (int) ($_GET['atividade_id'] ?? 0);
                                     <td>
                                         <?php if ($notaFmt !== null): ?>
                                             <span class="nota-atual <?= $classNota ?>"><?= $notaFmt ?></span>
-                                            <?php if ($origem === 'ia'): ?>
+                                            <?php if ($origem === 'ia' || (!empty($atv['percentual_ia']) && (float)$atv['percentual_ia'] > 60)): ?>
                                                 <span class="badge badge-ia badge-ia-clicavel" style="margin-left:6px" onclick="abrirFeedbackIA(<?= (int)$idSub ?>)" title="Ver feedback da IA">🤖 IA</span>
                                             <?php endif; ?>
                                         <?php else: ?>
@@ -566,7 +566,7 @@ $atividadeIdSelecionada = (int) ($_GET['atividade_id'] ?? 0);
                                                     <?= $notaFmt ?>
                                                 </span>
 
-                                                <?php if ($origem === 'ia'): ?>
+                                                <?php if ($origem === 'ia' || (!empty($atv['percentual_ia']) && (float)$atv['percentual_ia'] > 60)): ?>
                                                     <span class="badge badge-ia badge-ia-clicavel" style="margin-left:6px" onclick="abrirFeedbackIA(<?= (int)$idSub ?>)" title="Ver feedback da IA">
                                                         🤖 IA
                                                     </span>

@@ -180,7 +180,8 @@ class NotasModel
                 s.data_envio,
                 n.id_nota,
                 n.valor           AS nota_valor,
-                n.origem          AS origem_nota
+                n.origem          AS origem_nota,
+                f.percentual_ia   AS percentual_ia
             FROM atividades a
             INNER JOIN turmas t     ON t.id_turma  = a.id_turma
             INNER JOIN matriculas m ON m.id_turma  = t.id_turma
@@ -194,6 +195,7 @@ class NotasModel
                                          AND s2.id_aluno     = m.id_aluno
                                    )
             LEFT JOIN notas n       ON n.id_submissao = s.id_submissao
+            LEFT JOIN feedback_ia f ON f.id_submissao = s.id_submissao
             WHERE a.id_turma = :idTurma
             ORDER BY u.nome ASC, a.data_entrega ASC
         ";

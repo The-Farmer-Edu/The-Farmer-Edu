@@ -357,11 +357,11 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                         $origem     = $atv['origem_nota'] ?? null;
                         $idSub      = (int) ($atv['id_submissao'] ?? 0);
 
-                        // Regra: Caso a nota esteja baixa (< 7) E detecte que foi IA
+                        // Regra de negócio:
+                        // 1. Nota baixa (< 7)
+                        // 2. O código REALMENTE tem indícios/cara de IA (SIAE estimou probabilidade > 60%)
                         $notaBaixa  = ($notaVal !== null && (float) $notaVal < 7);
-                        $detectouIA = !empty($atv['ia_detectada'])
-                            || ($origem === 'ia')
-                            || (!empty($atv['percentual_ia']) && (float) $atv['percentual_ia'] > 50);
+                        $detectouIA = !empty($atv['ia_detectada']);
 
                         $mostrarBotaoIA = ($idSub > 0 && $notaBaixa && $detectouIA);
                         ?>

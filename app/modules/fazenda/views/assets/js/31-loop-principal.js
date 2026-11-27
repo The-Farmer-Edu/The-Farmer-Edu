@@ -13,11 +13,15 @@
       // Controle do primeiro quadro: a seção 28 liga o loop UMA vez e espera este quadro ser desenhado para encerrar a tela de
       // carregamento. Se o primeiro quadro falhar, o loop para e o erro vai para a tela de carregamento (em vez de travar nela).
       let aoTerminarPrimeiroQuadro = null, loopInterrompido = false;
+      // Edição pessoal (cena do celeiro, seção 30i): com "ativa", o loop continua agendado mas não atualiza nem desenha a Fazenda —
+      // o mesmo que acontece com a aba em segundo plano. O tempo parado é descartado (relogio.getDelta), sem salto na volta.
+      const FAZENDA_SUSPENSA = { ativa: false, motivo: '' };
       // Loop principal (requestAnimationFrame). A cada quadro: mede o tempo, atualiza ciclo de dia e noite,
       // fazendeiros, luzes, pedra secreta, áudio, invasões, câmera, nuvens, água e animais, e desenha a cena.
       const animarCena = function animarCena() {
         if (loopInterrompido) return;
         requestAnimationFrame(animarCena);
+        if (FAZENDA_SUSPENSA.ativa && !aoTerminarPrimeiroQuadro) { relogio.getDelta(); return; }
         if (!aoTerminarPrimeiroQuadro) { atualizarEDesenharQuadro(); return; }
         const avisar = aoTerminarPrimeiroQuadro;
         try { atualizarEDesenharQuadro(); aoTerminarPrimeiroQuadro = null; avisar.resolver(); }

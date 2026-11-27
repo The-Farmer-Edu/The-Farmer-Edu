@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../core/database.php';
+require_once __DIR__ . '/../feedback_ia/Model.php';
 
 class SubmissoesModel
 {
@@ -181,6 +182,11 @@ class SubmissoesModel
                 'dataEnvio'      => $this->formatarDataIso((string) $s['data_envio']),
             ] : null;
 
+            // O aluno recebe apenas a mensagem da Sophia sobre a própria entrega vigente.
+            if (!$modoInstrutor && $s) {
+                $dados['feedbackAluno'] = FeedbackIAModel::acessarFeedbackGeral($this->pdo, (int) $s['id_submissao'])['resposta_aluno'];
+            }
+
             // Somente o instrutor recebe os detalhes completos da análise de uso de IA (percentual e motivo).
             if ($modoInstrutor && $s) {
                 $fb = $this->buscarFeedbackIa((int) $s['id_submissao']);
@@ -217,7 +223,7 @@ class SubmissoesModel
      * Valida dentro de transação (FOR UPDATE) se já não há entrega ativa para impedir
      * burlar os bloqueios do botão pelo DevTools/localStorage.
      */
-    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo): array
+    public function criarSubmissao(int $idAtividade, int $idAluno, string $conteudo, string $resultadoExecucao): array
     {
         $this->pdo->beginTransaction();
         try {
@@ -245,10 +251,10 @@ class SubmissoesModel
             $tentativa = !empty($registros) ? ((int) $registros[0]['tentativa_num'] + 1) : 1;
 
             $st = $this->pdo->prepare(
-                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status)
-                 VALUES (?, ?, ?, ?, 'enviada')"
+                "INSERT INTO submissoes (id_atividade, id_aluno, conteudo_resposta, tentativa_num, status, resultado_execucao)
+                 VALUES (?, ?, ?, ?, ?, ?)"
             );
-            $st->execute([$idAtividade, $idAluno, $conteudo, $tentativa]);
+            $st->execute([$idAtividade, $idAluno, $conteudo, $tentativa, 'enviada', $resultadoExecucao]);
             $id = (int) $this->pdo->lastInsertId();
 
             $stData = $this->pdo->prepare('SELECT data_envio FROM submissoes WHERE id_submissao = ?');
@@ -319,24 +325,6 @@ class SubmissoesModel
             }
             throw $e;
         }
-
-        //     Presente para o grupo de Submissões.
-        $resultadoIA = (new SIAE())->obterResultadoSIAE(
-            $linguagem,
-            $objetivoAtividade,
-            $codigoAluno
-        );
-
-        FeedbackIAModel::salvarProbabilidadeIA(
-            $pdo,
-            $idSubmissao,
-            $resultadoIA['probabilidade_ia'],
-            $resultadoIA['motivo']
-        );
-
-        $aviso = FeedbackIAModel::mensagemAvisoAluno(
-            $resultadoIA['probabilidade_ia']
-        );
     }
 
     public function atualizarResultado(int $idSubmissao, string $status, ?string $resultadoExecucao): void

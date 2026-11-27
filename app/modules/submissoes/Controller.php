@@ -2,9 +2,8 @@
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/session.php';
 require_once __DIR__ . '/../api/model/Ollama.php';
-// Corrigido: o arquivo real no módulo feedback_ia possui "M" maiúsculo (Model.php).
 require_once __DIR__ . '/../feedback_ia/Model.php';
-
+require_once __DIR__ . '/../../core/arquivosEstaticos.php';
 
 /**
  * Controlador do módulo de submissões.
@@ -20,41 +19,13 @@ class atividadesSub {
     private const MAX_ARQUIVOS = 5;
     private const MAX_BYTES = 10 * 1024 * 1024;
     private const PASTA_UPLOADS = __DIR__ . '/../../../storage/submissoes';
-
-    /**
-     * Permite apenas os tipos de asset que o front-end realmente usa.
-     * Isso evita que qualquer arquivo do servidor seja servido por URL arbitrária.
-     */
-    private const TIPOS_ASSETS_PERMITIDOS = ['css', 'img', 'js'];
-
-    /**
-     * Mapa de extensões para MIME type.
-     * O navegador usa esse valor para interpretar corretamente o conteúdo retornado.
-     */
-    private const MIME_TYPES = [
-        'html' => 'text/html',
-        'htm'  => 'text/html',
-        'css'  => 'text/css',
-        'js'   => 'application/javascript',
-        'json' => 'application/json',
-        'txt'  => 'text/plain',
-        'png'  => 'image/png',
-        'jpg'  => 'image/jpeg',
-        'jpeg' => 'image/jpeg',
-        'gif'  => 'image/gif',
-        'webp' => 'image/webp',
-        'svg'  => 'image/svg+xml',
-        'ico'  => 'image/vnd.microsoft.icon',
-    ];
-
-
     /**
      * Método que dispara o processamento da submissão.
      * No fluxo atual, ele apenas inclui o script PHP responsável por receber JSON e lidar
      * com a avaliação; a lógica real fica no AvaliadorController.
      */
     public function processarSubmisssao() {
-        require_once __DIR__ . '/view/processar_submissao.php';
+        require_once __DIR__ . '/views/processar_submissao.php';
     }
 
     /**
@@ -148,12 +119,12 @@ class atividadesSub {
 
     public function showaluno() {
         $dadosAtividade = $this->carregarAtividade();
-        require_once __DIR__ . '/view/aluno.html';
+        require_once __DIR__ . '/views/aluno.html';
     }
 
     public function showiniciarAtv() {
         $dadosAtividade = $this->carregarAtividade();
-        require_once __DIR__ . '/view/iniciaratv.html';
+        require_once __DIR__ . '/views/iniciaratv.html';
     }
 
     /**
@@ -170,46 +141,8 @@ class atividadesSub {
         $this->responderJson(['sucesso' => true, 'dados' => $dados]);
     }
 
-    /**
-     * Serve arquivos estáticos internos da pasta view/assets.
-     *
-     * O front-end usa URLs do tipo:
-     * file?type=js&file=main.js
-     * submissoes/file?type=js&file=main.js
-     *
-     * Isso centraliza a entrega desses recursos e impede leitura de arquivos arbitrários.
-     */
     public function sendFile(): void {
-        $tipo = $_GET['type'] ?? '';
-        $arquivo = basename($_GET['file'] ?? '');
-
-        // 1) Valida que a extensão solicitada é permitida e que o nome do arquivo é real.
-        if (!in_array($tipo, self::TIPOS_ASSETS_PERMITIDOS, true) || $arquivo === '') {
-            http_response_code(404);
-            return;
-        }
-
-        // 2) Monta o caminho físico do arquivo, sem permitir traversal de diretórios.
-        $caminhoArquivo = __DIR__ . "/view/assets/$tipo/$arquivo";
-        if (!is_file($caminhoArquivo)) {
-            http_response_code(404);
-            return;
-        }
-
-        // 3) Define cabeçalhos para o navegador interpretar corretamente o recurso.
-        header('Content-Type: ' . $this->resolverMimeType($caminhoArquivo));
-        header('X-Content-Type-Options: nosniff');
-        header('Content-Length: ' . filesize($caminhoArquivo));
-        readfile($caminhoArquivo);
-    }
-
-    /**
-     * Resolve o MIME type de um arquivo pela extensão.
-     * Extensões fora do mapa caem em application/octet-stream.
-     */
-    private function resolverMimeType(string $caminhoArquivo): string {
-        $extensao = strtolower(pathinfo($caminhoArquivo, PATHINFO_EXTENSION));
-        return self::MIME_TYPES[$extensao] ?? 'application/octet-stream';
+        enviarArquivoEstatico(__DIR__ . '/views/assets', ['css', 'img', 'js']);
     }
 
     public function enviarAnexo(): void{
@@ -274,19 +207,18 @@ class atividadesSub {
 
         try {
             $r = $model->criarSubmissaoAnexo($idAtividade, $idAluno, $salvos);
+            $this->responderJson([
+                'sucesso'       => true,
+                'id_submissao'  => $r['id_submissao'],
+                'tentativa'     => $r['tentativa'],
+                'data_envio'    => $r['data_envio'],
+                'cancelamentos' => $r['cancelamentos'],
+            ]);
         } catch (Throwable $e) {
             $limpar();
             error_log('[submissoes] ' . $e->getMessage());
             $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao registrar a entrega.'], 500);
         }
-
-        $this->responderJson([
-            'sucesso'       => true,
-            'id_submissao'  => $r['id_submissao'],
-            'tentativa'     => $r['tentativa'],
-            'data_envio'    => $r['data_envio'],
-            'cancelamentos' => $r['cancelamentos'],
-        ]);
     }
 
     /**
@@ -305,6 +237,7 @@ class atividadesSub {
 
         $idAtividade = filter_var($entrada['id_atividade'] ?? null, FILTER_VALIDATE_INT);
         $conteudo    = (string) ($entrada['conteudo'] ?? '');
+        $resultadoExecucao = (string) ($entrada['resultado_execucao'] ?? '');
 
         if ($idAluno < 1) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Sessão inválida: usuário não identificado.'], 400);
@@ -317,6 +250,9 @@ class atividadesSub {
         }
         if (mb_strlen($conteudo) > 200000) {
             $this->responderJson(['sucesso' => false, 'erro' => 'Resposta muito grande.'], 413);
+        }
+        if (trim($resultadoExecucao) === '') {
+            $this->responderJson(['sucesso' => false, 'erro' => 'O Resultado da Execução está vazio.'], 400);
         }
 
         $model = new SubmissoesModel();
@@ -333,7 +269,15 @@ class atividadesSub {
         }
 
         try {
-            $r = $model->criarSubmissao($idAtividade, $idAluno, $conteudo);
+            $r = $model->criarSubmissao($idAtividade, $idAluno, $conteudo, $resultadoExecucao);
+
+            $this->responderJson([
+                'sucesso'       => true,
+                'id_submissao'  => $r['id_submissao'],
+                'tentativa'     => $r['tentativa'],
+                'data_envio'    => $r['data_envio'],
+                'cancelamentos' => $r['cancelamentos']
+            ]);
         } catch (RuntimeException $e) {
             // Ex.: já existe uma entrega ativa não cancelada no banco.
             $this->responderJson(['sucesso' => false, 'erro' => $e->getMessage()], 409);
@@ -341,23 +285,6 @@ class atividadesSub {
             error_log('[submissoes] ' . $e->getMessage());
             $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao salvar a resolução.'], 500);
         }
-
-        // Integração com o bloco do SIAE (equipe de Feedback IA) após persistir a submissão.
-        $avisoIa = $this->analisarUsoIaNaSubmissao(
-            $model->getPdo(),
-            (int) $r['id_submissao'],
-            $atividade,
-            $conteudo
-        );
-
-        $this->responderJson([
-            'sucesso'       => true,
-            'id_submissao'  => $r['id_submissao'],
-            'tentativa'     => $r['tentativa'],
-            'data_envio'    => $r['data_envio'],
-            'cancelamentos' => $r['cancelamentos'],
-            'aviso_ia'      => $avisoIa,
-        ]);
     }
 
     /**
@@ -391,19 +318,18 @@ class atividadesSub {
         }
 
         try {
-            $res = $model->cancelarUltimaSubmissao($idAtividade, $idAluno);
+            $r = $model->cancelarUltimaSubmissao($idAtividade, $idAluno);
+            $this->responderJson([
+                'sucesso'       => true,
+                'id_submissao'  => $r['id_submissao'],
+                'cancelamentos' => $r['cancelamentos'],
+            ]);
         } catch (RuntimeException $e) {
             $this->responderJson(['sucesso' => false, 'erro' => $e->getMessage()], 409);
         } catch (Throwable $e) {
             error_log('[submissoes] ' . $e->getMessage());
             $this->responderJson(['sucesso' => false, 'erro' => 'Erro ao cancelar a entrega.'], 500);
         }
-
-        $this->responderJson([
-            'sucesso'       => true,
-            'id_submissao'  => $res['id_submissao'],
-            'cancelamentos' => $res['cancelamentos'],
-        ]);
     }
 
     /**

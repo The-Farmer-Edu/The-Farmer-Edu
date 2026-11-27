@@ -4,6 +4,7 @@ require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/../../core/database.php';
 require_once __DIR__ . '/../../core/session.php';
 require_once __DIR__ . '/../notificacoes/Model.php';
+require_once __DIR__ . '/../../core/arquivosEstaticos.php';
 
 class AtividadesController
 {
@@ -205,53 +206,8 @@ class AtividadesController
         });
     }
 
-    public function sendFile(): void
-    {
-        $type = $_GET['type'] ?? null;
-        $file = basename((string) ($_GET['file'] ?? ''));
-        $botaoFazenda = [
-            'botao-acesso-fazenda.css'  => __DIR__ . '/../fazenda/botao-acesso-fazenda/botao-acesso-fazenda.css',
-            'icone-acesso-fazenda.png'  => __DIR__ . '/../fazenda/botao-acesso-fazenda/icone-acesso-fazenda.png',
-        ];
-
-        if ($type === 'fazenda') {
-            $caminhoArquivo = $botaoFazenda[$file] ?? null;
-        } elseif (in_array($type, ['css', 'js'], true) && $file !== '') {
-            $caminhoArquivo = __DIR__ . "/views/assets/$type/$file";
-        } else {
-            http_response_code(404);
-            return;
-        }
-
-        if ($caminhoArquivo !== null && is_file($caminhoArquivo)) {
-            header("Content-Type: " . $this->mimeType($caminhoArquivo));
-            header("X-Content-Type-Options: nosniff");
-            header("Content-Length: " . filesize($caminhoArquivo));
-
-            readfile($caminhoArquivo);
-        } else {
-            http_response_code(404);
-        }
-    }
-
-    private function mimeType(string $caminho): string
-    {
-        $conhecidos = [
-            'css' => 'text/css',
-            'js'  => 'application/javascript',
-            'png' => 'image/png',
-        ];
-
-        $extensao = strtolower(pathinfo($caminho, PATHINFO_EXTENSION));
-        if (isset($conhecidos[$extensao])) {
-            return $conhecidos[$extensao];
-        }
-
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mimeType = finfo_file($finfo, $caminho);
-        finfo_close($finfo);
-
-        return $mimeType ?: 'application/octet-stream';
+    public function sendFile(): void {
+        enviarArquivoEstatico(__DIR__ . '/views/assets', ['css', 'images', 'js']);
     }
 
     private function api(string $perfil, callable $acao, bool $post = false): void

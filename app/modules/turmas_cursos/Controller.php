@@ -395,10 +395,10 @@ class CursosController
     {
         $nome = (string) ($_GET['file'] ?? '');
         $permitidos = [
-            'turmas-cursos.css' => __DIR__ . '/assets/css/turmas-cursos.css',
-            'turmas-cursos.js'  => __DIR__ . '/assets/js/turmas-cursos.js',
-            'logo_icone.ico'    => __DIR__ . '/assets/img/logo_icone.ico',
-            'icone-acesso-fazenda.png' => __DIR__ . '/assets/img/icone-acesso-fazenda.png',
+            'turmas-cursos.css' => __DIR__ . '/views/assets/css/turmas-cursos.css',
+            'turmas-cursos.js'  => __DIR__ . '/views/assets/js/turmas-cursos.js',
+            'logo_icone.ico'    => __DIR__ . '/views/assets/img/logo_icone.ico',
+            'icone-acesso-fazenda.png' => __DIR__ . '/views/assets/img/icone-acesso-fazenda.png',
         ];
         if (!isset($permitidos[$nome]) || !is_file($permitidos[$nome])) {
             http_response_code(404);
@@ -623,7 +623,7 @@ class CursosController
         if (empty($_SESSION['csrf_turmas'])) $_SESSION['csrf_turmas'] = bin2hex(random_bytes(32));
         $csrf = $_SESSION['csrf_turmas'];
         $assetUrl = $base . '/turmas_cursos/asset?file=';
-        $logoUrl = $base . '/assets/img/png/logo_icone.png';
+        $logoUrl = $base . '/views/assets/img/png/logo_icone.png';
         $theme = (($u['perfilAcesso'] ?? '') === 'aluno') ? 'student' : 'teacher';
         extract($dados);
         require __DIR__ . '/views/' . $nome . '.php';

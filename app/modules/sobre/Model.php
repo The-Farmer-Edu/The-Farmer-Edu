@@ -99,7 +99,6 @@ class SobreModel
                 self::m('Gustavo de Oliveira', 'Gasvuto', true),
                 self::m('Felipe Cesar', 'Cesar-I-A'),
                 self::m('Hugo Candido', 'hugo-silva15'),
-                self::m('Laís Aparecida', 'laissilvz'),
             ]],
             ['numero' => 9, 'nome' => 'Feedback IA 2', 'membros' => [
                 self::m('Breno Santos', 'brenola22', true),

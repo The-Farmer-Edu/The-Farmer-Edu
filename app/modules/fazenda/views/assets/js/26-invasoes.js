@@ -76,7 +76,7 @@
       // tela cheia ou aba escondida. A invasão não é perdida: a conferência roda de novo a cada segundo (atualizarInvasao).
       const motivoParaAdiarInvasao = function motivoParaAdiarInvasao() {
         try { if (eventoEspecialEmAndamento()) return 'cena especial'; } catch (erro) { }   // seção 30c (carregada depois desta)
-        for (const seletor of ['#tutorial', '#painel-do-guardiao', '#janela-nome-da-fazenda', '#janela-defesa']) { const elemento = document.querySelector(seletor); if (elemento && !elemento.hidden) return seletor; }
+        for (const seletor of ['#tutorial', '#painel-do-guardiao', '#janela-nome-da-fazenda', '#janela-defesa', '#cena-do-celeiro', '#caverna-secreta']) { const elemento = document.querySelector(seletor); if (elemento && !elemento.hidden) return seletor; }   // #cena-do-celeiro e #caverna-secreta: edição pessoal (30i, 30j)
         return document.hidden ? 'aba escondida' : '';
       };
       // Missão final: as criaturas só aparecem à noite (INVASOES_CONFIG.somenteANoite). Usa o ciclo existente (seção 17) com a mesma

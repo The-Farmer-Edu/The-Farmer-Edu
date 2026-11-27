@@ -6,7 +6,7 @@
  *   $base            URL base do sistema.
  *   $imagemAtualUrl  (opcional) URL da imagem já salva; só existe na edição.
  *
- * O comportamento (prévia, remover/desfazer) fica em assets/js/turmas-cursos.js.
+ * O comportamento (prévia, remover/desfazer) fica em views/assets/js/turmas-cursos.js.
  * O botão "Remover imagem" é um <button> de verdade. Ele limpa o arquivo
  * escolhido e, quando já existe uma imagem salva, marca remover_imagem=1.
  */

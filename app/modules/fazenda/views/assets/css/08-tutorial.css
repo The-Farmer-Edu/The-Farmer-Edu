@@ -4,7 +4,8 @@
    Camadas: cartão 15 e moldura 14 (acima do menu e dos painéis, 12, e da faixa de invasão, 13; abaixo do aviso curto, 20);
    janela de ajuda 60 (como a janela do nome da fazenda).
    ==================================================================================================== */
-#tutorial { position: fixed; z-index: 15; left: 12px; top: calc(env(safe-area-inset-top, 0px) + 64px); width: min(360px, calc(100vw - 24px)); box-sizing: border-box;
+/* left: a margem segura esquerda (entalhe do celular deitado) entra na conta — antes o cartão ficava a 12 px da borda física */
+#tutorial { position: fixed; z-index: 15; left: calc(env(safe-area-inset-left, 0px) + 12px); top: calc(env(safe-area-inset-top, 0px) + 64px); width: min(360px, calc(100vw - 24px)); box-sizing: border-box;
   background: var(--gaveta-papel); color: var(--gaveta-texto); border: 2px solid var(--gaveta-madeira); border-radius: 14px;
   box-shadow: 0 3px 0 var(--gaveta-madeira-escura), 0 8px 18px #0005; padding: 10px 12px 12px; font-size: 14px; line-height: 1.45 }
 #tutorial[hidden] { display: none }
@@ -31,15 +32,24 @@
 #tutorial-destaque[hidden] { display: none }
 @keyframes pulso-do-tutorial { 50% { box-shadow: 0 0 0 7px #f5b83d33, 0 0 24px #f5b83d } }
 @media (prefers-reduced-motion: reduce) { #tutorial-destaque { animation: none; transition: none } #tutorial-barra { transition: none } }
-/* telas largas: com o cartão aberto, a gaveta aberta abre ao lado dele (sem passar por baixo do cartão) */
+/* telas largas: com o cartão aberto, a gaveta aberta abre ao lado dele (sem passar por baixo do cartão).
+   --coluna-do-tutorial: largura ocupada pelo cartão a partir da borda esquerda (margem segura + 12 + 360 + 12 px). A seção 32b
+   aumenta quando o cartão precisa ficar ao lado do joystick de toque (celular deitado), e a gaveta continua desviando dele. */
 @media (min-width: 720px) {
-  body.tutorial-aberto #lista-cards.aberta { left: calc(384px + (100vw - 384px) / 2); width: min(1280px, calc(100vw - 396px)) }
+  body.tutorial-aberto #lista-cards.aberta {
+    left: calc(var(--coluna-do-tutorial, calc(env(safe-area-inset-left, 0px) + 384px)) + (100vw - var(--coluna-do-tutorial, calc(env(safe-area-inset-left, 0px) + 384px))) / 2);
+    width: min(1280px, calc(100vw - var(--coluna-do-tutorial, calc(env(safe-area-inset-left, 0px) + 384px)) - 12px)) }
 }
 /* telas estreitas: o cartão fica logo acima da gaveta; se o elemento apontado estiver na metade de baixo, sobe para o alto.
    A posição exata e a altura máxima são calculadas pela seção 32b a partir do topo real da gaveta. */
 @media (max-width: 719px) {
-  #tutorial { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); left: 8px; width: calc(100vw - 16px); max-height: 46vh; overflow-y: auto; font-size: 13.5px }
+  #tutorial { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 80px); left: calc(env(safe-area-inset-left, 0px) + 8px);
+    width: calc(100vw - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); max-height: 46vh; overflow-y: auto; font-size: 13.5px }
   #tutorial.no-alto { top: calc(env(safe-area-inset-top, 0px) + 58px); bottom: auto }
+  /* gaveta ABERTA com o cartão visível (classes e variáveis postas pela seção 32b, acomodarGavetaAbertaComOCartao):
+     empilhada = a área de rolagem encolhe para a gaveta começar abaixo do cartão; ao lado = a gaveta fica à esquerda do cartão */
+  body.gaveta-empilhada-com-o-tutorial #lista-cards.aberta #conteudo-da-gaveta { max-height: var(--altura-do-conteudo-da-gaveta); box-sizing: border-box }
+  body.gaveta-ao-lado-do-tutorial #lista-cards.aberta { left: var(--centro-da-gaveta); width: var(--largura-da-gaveta); max-width: none }
 }
 /* janela de ajuda */
 #janela-ajuda, #janela-defesa { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: #0006 }

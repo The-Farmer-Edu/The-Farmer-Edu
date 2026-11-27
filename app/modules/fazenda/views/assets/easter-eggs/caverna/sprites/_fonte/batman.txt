@@ -1,0 +1,106 @@
+# BATMAN — rascunho PROVISÓRIO de pixel art (fan art, uso pessoal). 30×46, de frente, capa fechada sobre os braços.
+# Leitura: orelhas pontudas do capuz, olhos brancos, queixo à mostra, morcego preto no peito, cinto amarelo, capa longa recortada.
+paleta
+k #07070c
+b #15161f
+B #2b2e3d
+c #1f2230
+C #343a4f
+d #121420
+g #4c5262
+G #6c7385
+H #959cae
+s #d8a984
+S #a87656
+w #f4f4f0
+y #e3b532
+Y #a87d17
+fim
+base-espelhada 30 46
+..........k....
+..........kk...
+..........kbk..
+..........kbbkk
+.........kbbbbB
+.........kbwwbb
+.........kbbbbb
+.........kbbbss
+..........kbsss
+..........ksssS
+...........kSss
+.......kkkkkkbb
+......kcCCCkgGG
+.....kccCCkgGGG
+.....kcCCCkgkGk
+.....kcCCCkgkkk
+....kccCCCkgGkG
+....kcCCCCkgGGG
+....kcCCCCkgGGG
+....kcCCCCkgGGH
+....kcCCCCkYyyy
+...kccCCCCkYYyY
+...kcCCCCCkggGG
+...kcCCCCCkgGGG
+...kcCCCCCkgGGk
+...kcCCCCCkgGGk
+..kccCCCCCkgGGk
+..kcCCCCCCkgGGk
+..kcCCCCCCkgHGk
+..kcCCCCCCkgGGk
+..kcCCCCCCkgGGk
+.kccCCCCCCkgGGk
+.kcCCCCCCckgGGk
+.kcCCCCCCckbBbk
+.kcCCCCCcckbBbk
+.kcCCCCCcckbBbk
+kccCCCCCcckbBbk
+kcCCCCCccckbBbk
+kcCCCCcccckbBbk
+kcCCCCcccdkbBbk
+kcCCCcccddkbBbk
+kcCCcccdddkbbbk
+kkcCccdddkkbbbk
+.kkcckddkkkbbbk
+..kk.kkk..kbbbk
+..........kkkkk
+# capuz/cabeça como região: os quadros alternativos viram o olhar (vigia) e baixam o queixo
+regiao cabeca 9 0 12 11
+# olhando para a esquerda de quem vê (o da direita é o espelho)
+quadro cabeca 9 0
+.k........k.
+.kk......kk.
+.kbk....kbk.
+.kbbkkkkbbk.
+kbbbBBbbbbbk
+kbwwbbbwwbbk
+kbbbbbbbbbbk
+kbbssssbbbbk
+.kbssssssbk.
+.kssSSssskk.
+..kSsssSk...
+espelho cabeca 9 0 cabeca 1
+# capa: duas abas que balançam com a corrente de ar da caverna (região = aba parada)
+regiao capaE 0 26 10 20
+regiao capaD 20 26 10 20
+quadro capaE 0 26
+.kccCCCCCC
+.kcCCCCCCC
+.kcCCCCCCC
+.kcCCCCCCC
+.kcCCCCCCC
+kccCCCCCCC
+kcCCCCCCCc
+kcCCCCCCcc
+kcCCCCCCcc
+kcCCCCCCcc
+kccCCCCCcc
+kcCCCCCccc
+kcCCCCcccc
+kcCCCCcccd
+kcCCCcccdd
+kcCCCccddd
+kcCCccdddk
+kkcCcdddkk
+.kkkcdddk.
+...kkkkk..
+espelho capaD 20 26 capaE 1

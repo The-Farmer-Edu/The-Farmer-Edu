@@ -1,5 +1,4 @@
-    // ====================================================================================================
-    // FARMEDU 3D — fazenda em Three.js (HTML + CSS + JavaScript, arquivo único)
+// FARMEDU 3D — fazenda em Three.js (HTML + CSS + JavaScript, arquivo único)
     //
     // COMO LER ESTE ARQUIVO
     //  • As seções abaixo estão na ORDEM DE EXECUÇÃO: cada uma só usa o que foi definido nas anteriores.
@@ -163,6 +162,7 @@
       '17-ciclo-do-dia-e-da-noite.js',        [80, 'Ajustando câmera e iluminação...'],
       '18-camera-e-controles.js',
       '19-movimento-pelo-teclado.js',
+      '19b-joystick-movel.js',                 // joystick virtual de movimento nas telas de toque (preenche entradaDoJoystick da seção 19)
       '20-iluminacao-noturna.js',             [84, 'Chamando os fazendeiros...'],
       '21-modo-leve.js',
       '22-fazendeiros-e-navegacao.js',        [88, 'Preparando sons e painéis...'],
@@ -184,6 +184,8 @@
       '30e-objetivos.js',                      // Etapa 2: quadro de objetivos (principais, atividades e descobertas)
       '30f-conquistas-e-diario.js',            // Etapa 3: conquistas (medalhas) e Diário da Fazenda
       '30g-clima-e-vida-ambiente.js',          // Etapa 4: clima dinâmico (só visual) e vida ambiente
+      '30i-cena-do-celeiro.js',                // Edição pessoal: clicar no celeiro abre a cena 2D (Homem de Ferro e Nick Fury); arte em easter-eggs/vingadores/
+      '30j-caverna-secreta.js',                // Edição pessoal: clicar na boca da caverna abre o esconderijo dos personagens; arte em easter-eggs/caverna/
       '31-loop-principal.js',                 [93, 'Montando a interface...'],
       '32-interface.js',
       '32b-tutorial.js',                      // Fazenda 8.4.1: tutorial interativo e janela de ajuda (seção 32b)
@@ -232,12 +234,25 @@
       await concluirMontagemDaFazenda();   // seção 33: primeiro quadro, fim da tela de carregamento e invasões
     }
     iniciarFarmEdu().catch(erro => carregamento.falhar(erro));
-    
+
     // Botão "Sair da fazenda": salva o progresso e volta ao site
     const DESTINO_AO_SAIR = 'turmas_cursos';   // TROQUE pela página ou rota de destino
 
-    selecionar('#botao-sair-da-fazenda').addEventListener('click', () => {
+    selecionar('#botao-sair-da-fazenda').addEventListener('click', async () => {
       if (!confirm('Sair da fazenda? Seu progresso será salvo.')) return;
-      try { if (typeof salvarProgresso === 'function') salvarProgresso(); } catch (erro) { console.warn('Não foi possível salvar ao sair:', erro); }
+      try {
+        if (typeof salvarProgresso === 'function' && !salvarProgresso()) {
+          mostrarFaixaDeInvasao('⚠️ Não foi possível proteger o progresso', 'O navegador não conseguiu registrar o rascunho local. Permaneça nesta página e tente novamente.', 12000);
+          return;
+        }
+        const sincronia = window.FarmEduSincronia;
+        if (sincronia && !(await sincronia.salvarAgora())) {
+          const sairMesmoAssim = confirm('O servidor ainda não confirmou o salvamento. Seu rascunho local foi preservado, mas a cópia no banco pode estar desatualizada. Deseja sair mesmo assim?');
+          if (!sairMesmoAssim) return;
+        }
+      } catch (erro) {
+        console.warn('Não foi possível confirmar o salvamento ao sair:', erro);
+        if (!confirm('Não foi possível confirmar o salvamento. Deseja sair mesmo assim?')) return;
+      }
       location.href = DESTINO_AO_SAIR;
     });

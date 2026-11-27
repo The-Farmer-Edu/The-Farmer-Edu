@@ -1,4 +1,4 @@
-      // ====================================================================================================
+// ====================================================================================================
       // FARMEDU 3D — 30f-conquistas-e-diario.js (Etapa 3: conquistas e Diário da Fazenda)
       // Script clássico carregado em sequência por fazenda.js (lista MONTAGEM_DA_FAZENDA), depois do quadro de objetivos (30e) e
       // antes do loop (31). Mesmo padrão dos demais: declarações no escopo global compartilhado, funções como "const nome = function...".
@@ -162,6 +162,10 @@
         const classeDoGrau = conquista.tipo === 'progressiva' ? ['bronze', 'prata', 'ouro'][Math.max(0, grau - 1)] : conquista.tipo;
         return `<span class="medalha medalha-${classeDoGrau}${grau ? '' : ' bloqueada'}${revelada ? '' : ' oculta'}${tamanho ? ' ' + tamanho : ''}" aria-hidden="true"><span class="face-da-medalha">${revelada ? conquista.icone : '?'}</span></span>`;
       };
+      const tocarSomDaConquista = function tocarSomDaConquista() {
+        const nomeSom = (typeof AUDIO_CONFIG !== 'undefined' && AUDIO_CONFIG.efeitos && AUDIO_CONFIG.efeitos.conquista) ? 'conquista' : 'levelUp';
+        tocarEfeito(nomeSom);
+      };
       const mostrarProximoAvisoDeConquista = function mostrarProximoAvisoDeConquista() {
         if (avisoDeConquistaOcupado || !filaDeAvisosDeConquista.length) return;
         avisoDeConquistaOcupado = true;
@@ -169,7 +173,7 @@
         const nomeDoGrau = conquista.tipo === 'progressiva' ? ' · ' + NOMES_DOS_GRAUS[grau - 1] : '';
         avisoDeConquista.innerHTML = `${htmlDaMedalha(conquista, grau, true, 'media')}<div class="texto-do-aviso-de-conquista"><small>${conquista.tipo === 'secreta' ? '✨ Conquista secreta desbloqueada!' : '🏅 Conquista desbloqueada!'}</small><b>${conquista.nome}${nomeDoGrau}</b><span>${conquista.descricao}</span></div>`;
         avisoDeConquista.hidden = false; avisoDeConquista.classList.remove('saindo'); void avisoDeConquista.offsetWidth; avisoDeConquista.classList.add('entrando');
-        tocarEfeito('levelUp');
+        tocarSomDaConquista();
         setTimeout(() => {
           avisoDeConquista.classList.remove('entrando'); avisoDeConquista.classList.add('saindo');
           setTimeout(() => { avisoDeConquista.hidden = true; avisoDeConquista.classList.remove('saindo'); avisoDeConquistaOcupado = false; mostrarProximoAvisoDeConquista(); }, 260);
@@ -183,8 +187,11 @@
       const dataDoRegistro = quando => quando ? new Date(quando).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : 'antes do Diário';
       const registrosDaCategoria = categoria => Object.entries(estado.diario.registros).filter(([, registro]) => registro.categoria === categoria)
         .sort(([, a], [, b]) => (b.quando || 0) - (a.quando || 0));
-      const htmlDoRegistro = ([chave, registro], extra = '') => `<li class="registro-do-diario" data-registro="${chave}"><span class="icone-do-registro" aria-hidden="true">${registro.icone}</span>
-        <div><span class="data-do-registro">${dataDoRegistro(registro.quando)}</span><b>${registro.titulo}</b>${registro.texto ? `<p>${registro.texto}</p>` : ''}${extra}</div></li>`;
+      // Segurança (auditoria final): os registros vêm do save (que o navegador envia) e alguns citam o NOME DA FAZENDA, digitado
+      // pelo aluno. Tudo é escapado antes de entrar no HTML — antes, um nome como <img src onerror=…> era executado ao abrir o diário.
+      const escaparHtml = texto => String(texto ?? '').replace(/[&<>"']/g, caractere => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[caractere]);
+      const htmlDoRegistro = ([chave, registro], extra = '') => `<li class="registro-do-diario" data-registro="${escaparHtml(chave)}"><span class="icone-do-registro" aria-hidden="true">${escaparHtml(registro.icone)}</span>
+        <div><span class="data-do-registro">${dataDoRegistro(registro.quando)}</span><b>${escaparHtml(registro.titulo)}</b>${registro.texto ? `<p>${escaparHtml(registro.texto)}</p>` : ''}${extra}</div></li>`;
       const paginaVazia = texto => `<p class="pagina-vazia">${texto}</p>`;
       const desenharDiario = function desenharDiario() {
         const assinatura = JSON.stringify([abaDoDiario, Object.keys(estado.diario.registros).length, estado.conquistas.desbloqueadas, estado.eventosEspeciais.alienigena.abducoes, estado.eventosEspeciais.et.vezes,
@@ -196,7 +203,7 @@
         let html = '';
         if (abaDoDiario === 'fazenda') {
           const registros = registrosDaCategoria('fazenda');
-          html = `<h3 class="titulo-da-pagina">🏡 Minha Fazenda</h3><p class="subtitulo-da-pagina">Construções, evoluções e marcos de ${nomeDaFazendaNoDiario()}.</p>`
+          html = `<h3 class="titulo-da-pagina">🏡 Minha Fazenda</h3><p class="subtitulo-da-pagina">Construções, evoluções e marcos de ${escaparHtml(nomeDaFazendaNoDiario())}.</p>`
             + (registros.length ? `<ol class="registros-do-diario">${registros.map(item => htmlDoRegistro(item)).join('')}</ol>` : paginaVazia('Nada construído ainda. A primeira plantação é grátis: comece por ela!'));
         } else if (abaDoDiario === 'descobertas') {
           const vezes = { 'descoberta:abducao': estado.eventosEspeciais.alienigena.abducoes, 'descoberta:et': estado.eventosEspeciais.et.vezes };
@@ -228,8 +235,9 @@
         selecionar('#novidade-do-diario').hidden = !(ultimo > estado.diario.vistoAte);
       };
       const abrirDiario = function abrirDiario(aba) {
-        if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis();
-        if (!janelaDosObjetivos.hidden) fecharQuadroDeObjetivos();
+        if (typeof fecharMenuEPaineis === 'function') fecharMenuEPaineis(true);
+        if (typeof definirGavetaAberta === 'function') definirGavetaAberta(false, true);
+        if (!janelaDosObjetivos.hidden) fecharQuadroDeObjetivos(true);
         if (aba && ABAS_DO_DIARIO.some(([id]) => id === aba)) abaDoDiario = aba;
         avaliarConquistas(false);
         assinaturaDoDiario = ''; janelaDoDiario.hidden = false; botaoDoDiario.setAttribute('aria-expanded', 'true');
@@ -237,13 +245,23 @@
         estado.diario.vistoAte = Date.now(); salvarProgresso(); atualizarBotaoDoDiario();
         tocarEfeito('Enter'); selecionar('#fechar-diario').focus();
       };
-      const fecharDiario = function fecharDiario() { if (janelaDoDiario.hidden) return; janelaDoDiario.hidden = true; botaoDoDiario.setAttribute('aria-expanded', 'false'); botaoDoDiario.focus(); };
-      botaoDoDiario.addEventListener('click', () => { if (janelaDoDiario.hidden) abrirDiario(); else fecharDiario(); });
-      selecionar('#fechar-diario').addEventListener('click', fecharDiario);
+      const fecharDiario = function fecharDiario(silencioso = false) {
+        if (janelaDoDiario.hidden) return;
+        janelaDoDiario.hidden = true; botaoDoDiario.setAttribute('aria-expanded', 'false');
+        if (!silencioso) tocarEfeito('Fecha');
+        botaoDoDiario.focus();
+      };
+      botaoDoDiario.addEventListener('click', () => { if (janelaDoDiario.hidden) abrirDiario(); else fecharDiario(false); });
+      selecionar('#fechar-diario').addEventListener('click', () => fecharDiario(false));
       janelaDoDiario.addEventListener('click', evento => {
-        if (evento.target === janelaDoDiario) { fecharDiario(); return; }
+        if (evento.target === janelaDoDiario) { fecharDiario(false); return; }
         const fita = evento.target.closest('[data-aba-diario]');
-        if (fita) { abaDoDiario = fita.dataset.abaDiario; desenharDiario(); fita.focus(); }
+        if (fita && fita.dataset.abaDiario !== abaDoDiario) {
+          abaDoDiario = fita.dataset.abaDiario;
+          tocarEfeito('Enter');
+          desenharDiario();
+          fita.focus();
+        }
       });
       janelaDoDiario.addEventListener('keydown', evento => {   // fitas do livro: setas/Home/End (padrão de abas)
         const fitas = [...janelaDoDiario.querySelectorAll('[data-aba-diario]')], atual = fitas.indexOf(document.activeElement);
@@ -251,9 +269,15 @@
         const destino = { ArrowRight: atual + 1, ArrowLeft: atual - 1, Home: 0, End: fitas.length - 1 }[evento.key];
         if (destino === undefined) return;
         evento.preventDefault(); evento.stopPropagation();
-        const fita = fitas[(destino + fitas.length) % fitas.length]; abaDoDiario = fita.dataset.abaDiario; desenharDiario(); fita.focus();
+        const fita = fitas[(destino + fitas.length) % fitas.length];
+        if (fita.dataset.abaDiario !== abaDoDiario) {
+          abaDoDiario = fita.dataset.abaDiario;
+          tocarEfeito('Enter');
+          desenharDiario();
+        }
+        fita.focus();
       });
-      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDoDiario.hidden) fecharDiario(); });
+      addEventListener('keydown', evento => { if (evento.key === 'Escape' && !janelaDoDiario.hidden) fecharDiario(false); });
 
       // ---- Abertura do jogo: preparação do Diário (uma vez por save) e avaliação inicial ----
       // 1ª vez neste save: o que JÁ era fato vira registro (sem data quando o save não a guarda) e as conquistas que já valiam são

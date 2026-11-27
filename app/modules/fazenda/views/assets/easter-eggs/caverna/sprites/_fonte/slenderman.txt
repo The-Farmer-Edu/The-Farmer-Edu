@@ -1,0 +1,142 @@
+# SLENDERMAN — rascunho PROVISÓRIO de pixel art (fan art, uso pessoal). 22×72, de frente.
+# Leitura: altíssimo e magro, rosto branco SEM traços, terno preto, camisa branca, gravata vermelho-escura, braços que
+# passam dos joelhos, dedos longos. Os tentáculos (parte extra) surgem atrás dele por instantes.
+paleta
+k #040406
+s #101016
+S #22222b
+w #e6e6e1
+W #b4b4ae
+x #f3f3f3
+R #8e171c
+r #5a0b0f
+fim
+base-espelhada 22 72
+........kkk
+.......kwww
+......kwwww
+......kWwww
+......kWwww
+......kWwww
+......kWwww
+......kWWww
+.......kWww
+........kWw
+........kkx
+....kkkksxx
+...kssSSsxR
+..kssSSSsxR
+..ksSSSSsxr
+..ksSSSSSsR
+..ksSkSSSsR
+..ksSkSSSsr
+.ksSSkSSSsR
+.ksSkkSSSsR
+.ksSk.kSSsr
+.ksSk.kSSsR
+.ksSk.kSSss
+.ksSk.kSSSs
+.ksSk.kSSSs
+.ksSk.kSSSs
+.ksSk.ksSSs
+.ksSk.ksSSs
+.ksSk.ksSSs
+.ksSk.ksSSk
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.ksSk.ksSk.
+.kwWk.ksSk.
+.kwWk.ksSk.
+.kwwk.ksSk.
+kwkwk.ksSk.
+kwkwk.ksSk.
+k.k.k.ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+......ksSk.
+.....kssSk.
+....kssssk.
+....kkkkkk.
+# cabeça: inclina devagar demais (quadros), como quem observa
+regiao cabeca 6 0 10 10
+quadro cabeca 6 0
+...kkk....
+..kwwwk...
+.kwwwwwk..
+.kWwwwwwk.
+.kWwwwwwk.
+..kWwwwwwk
+..kWwwwwwk
+..kWWwwwwk
+...kWwwwk.
+....kWwk..
+espelho cabeca 6 0 cabeca 1
+# mão esquerda de quem vê: os dedos se alongam por um instante
+regiao maoE 0 50 5 6
+quadro maoE 0 50
+.kwWk
+.kwWk
+.kwwk
+kwkwk
+kwkwk
+kwkwk
+kwkwk
+k.k.k
+# tentáculos (parte extra, desenhada ATRÁS do corpo): saem das costas, dois quadros de ondulação
+quadro tentaculos 0 0
+k....................k
+.k..................k.
+.k..................k.
+..k................k..
+..ks..............sk..
+...k..............k...
+...ks............sk...
+....k............k....
+....ks..........sk....
+.....k..........k.....
+.....ks........sk.....
+......k........k......
+......ks......sk......
+.......k......k.......
+quadro tentaculos 0 0
+.k..................k.
+k....................k
+k....................k
+.k..................k.
+..k................k..
+..ks..............sk..
+...k..............k...
+...ks............sk...
+....k............k....
+....ks..........sk....
+.....k..........k.....
+.....ks........sk.....
+......k........k......
+......ks......sk......

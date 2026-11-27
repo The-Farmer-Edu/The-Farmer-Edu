@@ -7,6 +7,10 @@ $antigo = static fn(string $campo): string => htmlspecialchars((string) ($_POST[
 
 $expirou = sessaoExpirouPorInatividade() || isset($_GET['expirou']);
 $logado = usuarioLogado();
+if($logado){
+    header("Location: ../turmas_cursos/" . $logado['perfilAcesso']);
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">

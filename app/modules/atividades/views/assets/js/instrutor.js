@@ -175,16 +175,33 @@ function criarBotao(texto, classe, acao) {
     return botao;
 }
 
-function criarItemAtividade(atividade, titulo, acoes) {
+function criarItemAtividade(atividade, titulo, acoes, linkAtividade = null) {
     const icone = criar('span', 'item-icone');
     icone.innerHTML = iconeAtividade;
 
     const info = criar('div', 'feed-info');
-    info.append(
-        criar('strong', '', titulo),
-        criar('small', '', `${formatarDia(atividade.criado_em)} · Prazo: ${formatarData(atividade.data_entrega)}`),
-        criar('small', '', descricaoDaAtividade(atividade))
-    );
+
+    if (linkAtividade) {
+        const tituloElemento = criar('strong', '');
+        tituloElemento.append(document.createTextNode(`${nomeInstrutor} lançou uma nova atividade: `));
+
+        const link = criar('a', 'link-atividade-notas', linkAtividade.titulo);
+        link.href = `notas/turma?id=${encodeURIComponent(linkAtividade.id_turma)}&atividade=${encodeURIComponent(linkAtividade.titulo)}&atividade_id=${encodeURIComponent(linkAtividade.id_atividade)}`;
+        link.title = 'Abrir notas desta atividade';
+        tituloElemento.append(link);
+
+        info.append(
+            tituloElemento,
+            criar('small', '', `${formatarDia(atividade.criado_em)} · Prazo: ${formatarData(atividade.data_entrega)}`),
+            criar('small', '', descricaoDaAtividade(atividade))
+        );
+    } else {
+        info.append(
+            criar('strong', '', titulo),
+            criar('small', '', `${formatarDia(atividade.criado_em)} · Prazo: ${formatarData(atividade.data_entrega)}`),
+            criar('small', '', descricaoDaAtividade(atividade))
+        );
+    }
 
     const lado = criar('div', 'feed-lado');
     lado.append(icone, info);
@@ -223,7 +240,7 @@ function desenharLista() {
             remover
         );
 
-        const item = criarItemAtividade(atividade, `${nomeInstrutor} lançou uma nova atividade: ${atividade.titulo}`, acoes);
+        const item = criarItemAtividade(atividade, `${nomeInstrutor} lançou uma nova atividade: ${atividade.titulo}`, acoes, atividade);
         if (posicao === 0) {
             item.classList.add('destaque');
         }

@@ -17,7 +17,6 @@ require_once __DIR__ . '/../../core/session.php';
 // =====================================================================
 // NotasController — gerencia as rotas de notas para aluno e instrutor
 // =====================================================================
-
 class NotasController
 {
     /**
@@ -33,7 +32,6 @@ class NotasController
     {
         $this->model = new NotasModel();
     }
-
     // -----------------------------------------------------------------
     // VISÃO DO ALUNO — GET /notas/aluno
     // -----------------------------------------------------------------
@@ -63,6 +61,20 @@ class NotasController
         $idAluno   = (int) $usuario['idUsuario'];
         $atividades = $this->model->buscarNotasDoAluno($idAluno);
         $resumo     = $this->model->calcularResumoAluno($idAluno);
+
+        require_once __DIR__ . '/../feedback_ia/Model.php';
+        foreach ($atividades as &$atv) {
+            $idSub = (int) ($atv['id_submissao'] ?? 0);
+            $atv['ia_detectada'] = false;
+
+            if ($idSub > 0 && $atv['percentual_ia'] !== null) {
+                $percentual = (float) $atv['percentual_ia'];
+                if (FeedbackIAModel::mensagemAvisoAluno($percentual) !== null) {
+                    $atv['ia_detectada'] = true;
+                }
+            }
+        }
+        unset($atv);
 
         // Carrega a view de notas do aluno com as variáveis necessárias
         $this->view('index', [
@@ -102,10 +114,7 @@ class NotasController
         $turmas      = $this->model->buscarTurmasDoInstrutor($idInstrutor);
 
         // Carrega a view do painel do instrutor
-        $this->view('instrutor', [
-            'usuario' => $usuario,
-            'turmas'  => $turmas,
-        ]);
+        $this->view('instrutor', compact('usuario', 'turmas'));
     }
 
     // -----------------------------------------------------------------
@@ -153,6 +162,48 @@ class NotasController
         ]);
     }
 
+    public function buscarFeedbackIA(): void
+    {
+        solicitarPerfilDeAcesso();
+        $usuario = usuarioLogado();
+
+        ob_clean();
+        header('Content-Type: application/json');
+
+        $idSubmissao = (int) ($_POST['id_submissao'] ?? 0);
+        if ($idSubmissao <= 0) {
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Submissão inválida.']);
+            exit;
+        }
+
+        if ($usuario['perfilAcesso'] !== 'instrutor' && !$this->model->submissaoPertenceAoAluno($idSubmissao, (int) $usuario['idUsuario'])) {
+            http_response_code(403);
+            echo json_encode(['sucesso' => false, 'mensagem' => 'Acesso negado.']);
+            exit;
+        }
+
+        require_once __DIR__ . '/../feedback_ia/Model.php';
+        $pdo = iniciarPDO();
+        $probabilidadeIA = FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
+        $feedbackGeral   = FeedbackIAModel::acessarFeedbackGeral($pdo, $idSubmissao);
+
+        // Busca dados adicionais caso analise_tecnica/resposta_aluno não estejam preenchidos
+        $stmtExtra = $pdo->prepare('SELECT pontos_positivos, pontos_negativos, sugestao_resposta FROM feedback_ia WHERE id_submissao = ?');
+        $stmtExtra->execute([$idSubmissao]);
+        $feedbackExtra = $stmtExtra->fetch(PDO::FETCH_ASSOC) ?: null;
+
+        echo json_encode([
+            'sucesso'        => true,
+            'probabilidade'  => $probabilidadeIA,
+            'feedback_geral' => $feedbackGeral,
+            'feedback_extra' => $feedbackExtra,
+        ]);
+        exit;
+    }
+
+    public function sendFile(): void {
+        enviarArquivoEstatico(__DIR__ . '/views/assets', ['css', 'js']);
+    }
     // -----------------------------------------------------------------
     // SALVAR NOTA OU CONSULTAR HISTÓRICO — POST /notas/salvar
     // -----------------------------------------------------------------
@@ -182,6 +233,26 @@ class NotasController
 
         $acao        = $_POST['acao'] ?? 'salvar';
         $idSubmissao = (int) ($_POST['id_submissao'] ?? 0);
+
+        // Consulta de feedback da IA para a janela flutuante
+        if ($acao === 'feedback_ia') {
+            ob_clean();
+            header('Content-Type: application/json');
+            if ($idSubmissao <= 0) {
+                echo json_encode(['sucesso' => false, 'mensagem' => 'Submissão inválida.']);
+                exit;
+            }
+            require_once __DIR__ . '/../feedback_ia/Model.php';
+            $pdo = iniciarPDO();
+            $probabilidadeIA = FeedbackIAModel::acessarProbabilidadeIa($pdo, $idSubmissao);
+            $feedbackGeral   = FeedbackIAModel::acessarFeedbackGeral($pdo, $idSubmissao);
+            echo json_encode([
+                'sucesso'         => true,
+                'probabilidade'   => $probabilidadeIA,
+                'feedback_geral'  => $feedbackGeral,
+            ]);
+            exit;
+        }
 
         // Consulta de histórico vindo do modal
         if ($acao === 'historico') {

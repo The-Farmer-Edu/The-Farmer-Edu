@@ -51,476 +51,196 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="<?= $base ?>/notas/file?type=css&amp;file=index.css&amp;v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= $base ?>/atividades/file?type=fazenda&amp;file=botao-acesso-fazenda.css">
+
     <style>
-        /* ============================================================
-           RESET E BASE
-           ============================================================ */
-        *, *::before, *::after {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        :root {
-            /* Perfil Aluno (Verde) - Guia de Design */
-            --verde-primario:   #1B5E20;
-            --verde-escuro:     #089C2F;
-            --verde-header:     #A0FDA3;
-            --verde-suave:      #E8F5E9;
-            --verde:            #1B5E20;
-            --verde-claro:      #A0FDA3;
-
-            /* Destaque Secundário (Laranja) - Guia de Design */
-            --laranja:          #FF8D28;
-            --laranja-suave:    #FFF3E0;
-            --amarelo:          #FF8D28;
-            --amarelo-claro:    #FFF3E0;
-
-            /* Feedback / Status */
-            --vermelho:         #DC2626;
-            --vermelho-claro:   #FEE2E2;
-            --azul:             #002D38;
-            --azul-claro:       #A0FDA3;
-
-            /* Neutros - Guia de Design */
-            --texto-principal:  #002D38;
-            --texto-preto:      #000000;
-            --texto-secundario: #727272;
-            --bg-pagina:        #FFFFFF;
-            /* --bg-pagina:        #FFFFFF; */
-            --bg-card:          #FFFFFF;
-            --borda-card:       #E6E6E6;
-            --cinza-50:         #F5F7F0;
-            --cinza-100:        #E6E6E6;
-            --cinza-200:        #D9D9D9;
-            --cinza-400:        #727272;
-            --cinza-600:        #727272;
-            --cinza-800:        #002D38;
-            --cinza-900:        #002D38;
-
-            /* Sombras do Guia de Design */
-            --sombra-card:      0px 4px 4px rgba(0, 0, 0, 0.25);
-            --sombra-header:    0px 4px 3px rgba(248, 96, 17, 0.5);
-            --sombra-sm:        0px 2px 4px rgba(0, 0, 0, 0.08);
-            --sombra-md:        0px 4px 4px rgba(0, 0, 0, 0.25);
-            --sombra-lg:        0 10px 15px rgba(0, 0, 0, 0.1);
-
-            /* Geometria do Guia de Design */
-            --raio-card:        25px;
-            --raio-pill:        20px;
-            --raio-icone:       10px;
-            --raio:             25px;
-            --transicao:        all .2s ease;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-pagina);
-            color: var(--texto-principal);
-            min-height: 100vh;
-        }
-
-        /* ============================================================
-           TOPBAR (HEADER) - Guia de Design
-           Faixa colorida de ponta a ponta (#A0FDA3), logo circular + "The Farmer Edu"
-           com "Edu" em verde (#1B5E20) e o restante em navy (#002D38),
-           avatar em verde escuro (#089C2F) e brilho laranja por baixo.
-           ============================================================ */
-        .topbar {
-            background: var(--verde-header);
-            color: var(--texto-principal);
-            padding: 0 24px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--sombra-header);
-        }
-
-        .topbar-logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: var(--verde-primario);
-            text-decoration: none;
-        }
-
-        .topbar-logo span {
-            color: var(--texto-principal);
-        }
-
-        .topbar-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 600;
-            font-size: .875rem;
-            color: var(--texto-principal);
-            position: relative;
-            cursor: pointer;
-            padding: 5px 12px 5px 6px;
-            border-radius: var(--raio-pill);
-            transition: var(--transicao);
-            user-select: none;
-        }
-
-        .topbar-user:hover {
-            background: rgba(255, 255, 255, 0.45);
-        }
-
-        .seta-user {
-            transition: transform 0.2s ease;
-        }
-
-        .topbar-user.aberto .seta-user {
-            transform: rotate(180deg);
-        }
-
-        .user-dropdown {
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: var(--bg-card);
-            border: 1px solid var(--borda-card);
-            border-radius: 16px;
-            box-shadow: 0 12px 28px rgba(0,0,0,.15);
-            min-width: 210px;
-            z-index: 200;
-            overflow: hidden;
-            display: none;
-            animation: fadeInMenu .2s ease;
-        }
-
-        @keyframes fadeInMenu {
-            from { opacity: 0; transform: translateY(-6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .topbar-user.aberto .user-dropdown {
-            display: block;
-        }
-
-        .user-dropdown-header {
-            padding: 14px 16px 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .user-dropdown-header strong {
-            font-size: .875rem;
-            color: var(--texto-principal);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .user-dropdown-header span {
-            font-size: .75rem;
-            color: var(--verde-primario);
-            font-weight: 600;
-        }
-
-        .user-dropdown-divider {
-            height: 1px;
-            background: var(--cinza-100);
-            margin: 4px 0;
-        }
-
-        .user-dropdown .item-logout {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 16px;
-            font-family: 'Inter', sans-serif;
-            font-size: .85rem;
-            font-weight: 600;
-            color: var(--vermelho);
-            text-decoration: none;
-            transition: background .15s;
-        }
-
-        .user-dropdown .item-logout:hover {
-            background: var(--vermelho-claro);
-        }
-
-        .avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--verde-escuro);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 700;
-            font-size: .875rem;
-            color: #ffffff;
-            flex-shrink: 0;
-        }
-
-        /* ============================================================
-           CONTAINER PRINCIPAL
-           ============================================================ */
-        .container {
-            max-width: 960px;
-            margin: 0 auto;
-            padding: 28px 20px 60px;
-        }
-
-        /* ============================================================
-           CABECALHO DA PAGINA
-           ============================================================ */
-        .page-header {
-            margin-bottom: 28px;
-        }
-
-        .page-header h1 {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.75rem;
-            font-weight: 700;
-            color: var(--texto-principal);
-            margin-bottom: 4px;
-        }
-
-        .page-header p {
-            font-family: 'Inter', sans-serif;
-            font-size: .95rem;
-            color: var(--texto-secundario);
-        }
-
-        /* ============================================================
-           CARDS DE RESUMO (Raio: 25px, Sombra padrão de card)
-           ============================================================ */
-        .resumo-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .card-resumo {
-            background: var(--bg-card);
-            border-radius: var(--raio-card);
-            padding: 20px 24px;
-            box-shadow: var(--sombra-card);
-            border: 1px solid var(--borda-card);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            transition: var(--transicao);
-        }
-
-        .card-resumo:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .card-resumo .icone {
-            font-size: 1.6rem;
-        }
-
-        .card-resumo .valor {
-            font-family: 'Poppins', sans-serif;
-            font-size: 2rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .card-resumo .label {
-            font-family: 'Inter', sans-serif;
-            font-size: .8rem;
-            color: var(--texto-secundario);
-            font-weight: 500;
-        }
-
-        /* ============================================================
-           BARRA DE PESQUISA
-           ============================================================ */
-        .filtro-bar {
-            background: var(--bg-card);
-            border: 1px solid var(--borda-card);
-            border-radius: var(--raio-icone);
-            padding: 14px 18px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            box-shadow: var(--sombra-card);
-        }
-
-        .filtro-bar input {
-            flex: 1;
-            border: none;
-            outline: none;
-            font-size: .9rem;
-            font-family: 'Inter', sans-serif;
-            color: var(--texto-principal);
-            background: transparent;
-        }
-
-        .filtro-bar input::placeholder {
-            color: var(--texto-secundario);
-        }
-
-        /* ============================================================
-           SECAO DE DISCIPLINA / TURMA
-           ============================================================ */
-        .secao {
-            margin-bottom: 36px;
-        }
-
-        .secao-titulo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--verde-primario);
-            margin-bottom: 14px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--verde-header);
-        }
-
-        /* ============================================================
-           CARDS DE ATIVIDADE (Raio: 25px, Sombra padrão de card)
-           ============================================================ */
-        .lista-atividades {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .card-atividade {
-            background: var(--bg-card);
-            border-radius: var(--raio-card);
-            border: 1px solid var(--borda-card);
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            box-shadow: var(--sombra-card);
-            transition: var(--transicao);
-        }
-
-        .card-atividade:hover {
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-            border-color: var(--verde-escuro);
-        }
-
-        .atividade-esq {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            min-width: 0;
-        }
-
-        .tipo-icone {
-            width: 42px;
-            height: 42px;
-            border-radius: var(--raio-icone);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            flex-shrink: 0;
-            background: var(--cinza-100);
-        }
-
-        .tipo-codigo  { background: var(--laranja-suave); }
-        .tipo-quiz    { background: var(--verde-suave); }
-        .tipo-texto   { background: #E0F2FE; }
-
-        .atividade-info h3 {
-            font-family: 'Poppins', sans-serif;
-            font-size: .925rem;
-            font-weight: 700;
-            color: var(--texto-preto);
-            margin-bottom: 3px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 420px;
-        }
-
-        .atividade-info .meta {
-            font-family: 'Inter', sans-serif;
-            font-size: .8rem;
-            color: var(--texto-secundario);
-        }
-
-        .atividade-dir {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-
-        /* NOTA */
-        .nota {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-        .nota-10  { color: var(--verde-primario); }
-        .nota-boa { color: var(--verde-escuro); }
-        .nota-ok  { color: var(--laranja); }
-        .nota-ruim{ color: var(--vermelho); }
-
-        .nota-max {
-            font-family: 'Inter', sans-serif;
-            font-size: .8rem;
-            color: var(--texto-secundario);
-            font-weight: 400;
-        }
-
-        /* BADGES (Formato pílula: 20px) */
-        .badge {
+        /* Estilos do Botão 🤖 IA ao lado de Tentativa e Modal Flutuante */
+        .btn-ia-tentativa {
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            padding: 3px 10px;
-            border-radius: var(--raio-pill);
+            padding: 2px 9px;
+            background: #F3E8FF;
+            color: #7E22CE;
+            border: 1px solid #D8B4FE;
+            border-radius: 14px;
             font-family: 'Inter', sans-serif;
-            font-size: .75rem;
-            font-weight: 600;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-left: 8px;
+            vertical-align: middle;
+            transition: all 0.2s ease;
+            outline: none;
+            line-height: 1.3;
         }
 
-        .badge-avaliado  { background: var(--verde-suave);   color: var(--verde-primario); }
-        .badge-enviado   { background: #E0F2FE;              color: #0284C7; }
-        .badge-pendente  { background: var(--laranja-suave); color: var(--laranja); }
-        .badge-ia        { background: #F3E8FF;              color: #7E22CE; }
+        .btn-ia-tentativa:hover {
+            background: #7E22CE;
+            color: #FFFFFF;
+            border-color: #7E22CE;
+            transform: scale(1.06);
+            box-shadow: 0 2px 8px rgba(126, 34, 206, 0.35);
+        }
 
-        /* ============================================================
-           ESTADO VAZIO
-           ============================================================ */
-        .vazio {
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content.modal-feedback-ia {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 560px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            color: #002D38;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #727272;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .modal-close:hover {
+            background: #F5F7F0;
+            color: #000000;
+        }
+
+        .feedback-ia-corpo {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feedback-ia-loading,
+        .feedback-ia-vazio,
+        .feedback-ia-erro {
             text-align: center;
-            padding: 60px 20px;
-            color: var(--texto-secundario);
+            padding: 32px 16px;
             font-family: 'Inter', sans-serif;
+            font-size: .9rem;
+            color: #727272;
         }
 
-        .vazio p { font-size: 1rem; margin-top: 12px; }
+        .feedback-ia-erro { color: #DC2626; }
 
-        /* ============================================================
-           RESPONSIVO
-           ============================================================ */
-        @media (max-width: 600px) {
-            .atividade-info h3 { max-width: 200px; }
-            .nota { font-size: 1.2rem; }
+        .feedback-ia-secao {
+            background: #F5F7F0;
+            border: 1px solid #E6E6E6;
+            border-radius: 14px;
+            padding: 16px 18px;
+        }
+
+        .feedback-ia-titulo {
+            font-family: 'Poppins', sans-serif;
+            font-size: .92rem;
+            font-weight: 700;
+            color: #002D38;
+            margin-bottom: 10px;
+        }
+
+        .feedback-ia-barra-wrap { margin-bottom: 10px; }
+
+        .feedback-ia-barra-bg {
+            width: 100%;
+            height: 10px;
+            background: #D9D9D9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .feedback-ia-barra-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        .feedback-ia-barra-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .feedback-ia-pct {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .feedback-ia-risco {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-family: 'Inter', sans-serif;
+            font-size: .72rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: .03em;
+        }
+
+        .feedback-ia-motivo {
+            font-family: 'Inter', sans-serif;
+            font-size: .84rem;
+            color: #002D38;
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        .feedback-ia-alerta-aluno {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #FFF3E0;
+            border: 1px solid #FF8D28;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: .82rem;
+            font-weight: 600;
+            color: #FF8D28;
+            line-height: 1.4;
+        }
+
+        .feedback-ia-texto {
+            font-family: 'Inter', sans-serif;
+            font-size: .84rem;
+            color: #002D38;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
         }
     </style>
+
 </head>
 <body>
 
@@ -633,8 +353,17 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                         }
 
                         // Status da submissão e origem da nota
-                        $status = $atv['status_submissao'] ?? null;
-                        $origem = $atv['origem_nota'] ?? null;
+                        $status     = $atv['status_submissao'] ?? null;
+                        $origem     = $atv['origem_nota'] ?? null;
+                        $idSub      = (int) ($atv['id_submissao'] ?? 0);
+
+                        // Regra de negócio:
+                        // 1. Nota baixa (< 7)
+                        // 2. O código REALMENTE tem indícios/cara de IA (SIAE estimou probabilidade > 60%)
+                        $notaBaixa  = ($notaVal !== null && (float) $notaVal < 7);
+                        $detectouIA = !empty($atv['ia_detectada']);
+
+                        $mostrarBotaoIA = ($idSub > 0 && $notaBaixa && $detectouIA);
                         ?>
                         <!-- Card individual da atividade -->
                         <article class="card-atividade" data-titulo="<?= htmlspecialchars(strtolower($atv['titulo'])) ?>">
@@ -652,6 +381,11 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
                                         Prazo: <?= date('d/m/Y H:i', strtotime($atv['data_entrega'])) ?>
                                         <?php if ($atv['tentativa_num'] ?? 0): ?>
                                             &nbsp;·&nbsp; Tentativa <?= (int)$atv['tentativa_num'] ?>
+                                            <?php if ($mostrarBotaoIA): ?>
+                                                <button type="button" class="btn-ia-tentativa" onclick="abrirFeedbackIAAluno(<?= $idSub ?>)" title="Ver feedback da IA">
+                                                    🤖 IA
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </p>
                                 </div>
@@ -687,39 +421,27 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 
 </div><!-- /container -->
 
+<a class="btn-acessar-fazenda" href="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>/fazenda" aria-label="Acessar a fazenda" title="Acessar a fazenda">
+    <img src="<?= htmlspecialchars($base, ENT_QUOTES, 'UTF-8') ?>/atividades/file?type=fazenda&amp;file=icone-acesso-fazenda.png" alt="">
+</a>
+
+<!-- MODAL FLUTUANTE DE FEEDBACK DA IA -->
+<div id="modalFeedbackIA" class="modal-overlay" style="display: none;" onclick="if(event.target === this) fecharFeedbackIAAluno()">
+    <div class="modal-content modal-feedback-ia">
+        <div class="modal-header">
+            <h3>🤖 Feedback da Inteligência Artificial</h3>
+            <button type="button" class="modal-close" onclick="fecharFeedbackIAAluno()">✕</button>
+        </div>
+        <div id="feedbackIAConteudo" class="feedback-ia-corpo">
+            <!-- Preenchido via AJAX -->
+        </div>
+    </div>
+</div>
+
 <script>
-// Menu de usuário dropdown
-const userBtn = document.getElementById('userMenuBtn');
-if (userBtn) {
-    userBtn.addEventListener('click', function(e) {
-        e.stopPropagation();
-        this.classList.toggle('aberto');
-    });
-}
-document.addEventListener('click', function(e) {
-    if (userBtn && !userBtn.contains(e.target)) {
-        userBtn.classList.remove('aberto');
-    }
-});
-
-// Filtro de pesquisa das atividades
-function filtrarAtividades(termo) {
-    const q = termo.toLowerCase().trim();
-    document.querySelectorAll('.secao').forEach(secao => {
-        const cards = secao.querySelectorAll('.card-atividade');
-        let visiveis = 0;
-
-        cards.forEach(card => {
-            const titulo = card.dataset.titulo || '';
-            const mostrar = !q || titulo.includes(q);
-            card.style.display = mostrar ? '' : 'none';
-            if (mostrar) visiveis++;
-        });
-
-        secao.style.display = visiveis > 0 ? '' : 'none';
-    });
-}
+    window.BASE_URL = <?= json_encode($base) ?>;
 </script>
+<script src="<?= $base ?>/notas/file?type=js&amp;file=index.js&amp;v=<?= time() ?>"></script>
 
 </body>
 </html>

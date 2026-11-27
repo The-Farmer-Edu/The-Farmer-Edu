@@ -184,7 +184,8 @@ class SubmissoesModel
 
             // O aluno recebe apenas a mensagem da Sophia sobre a própria entrega vigente.
             if (!$modoInstrutor && $s) {
-                $dados['feedbackAluno'] = FeedbackIAModel::acessarFeedbackGeral($this->pdo, (int) $s['id_submissao'])['resposta_aluno'];
+                $feedbackAluno = FeedbackIAModel::acessarFeedbackGeral($this->pdo, (int) $s['id_submissao']);
+                $dados['feedbackAluno'] = $feedbackAluno['resposta_aluno'] ?? '';
             }
 
             // Somente o instrutor recebe os detalhes completos da análise de uso de IA (percentual e motivo).

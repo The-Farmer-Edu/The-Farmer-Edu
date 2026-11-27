@@ -56,6 +56,7 @@ const CHAVE_ENTREGA = `farmedu:entrega:${atividadeAtual.chave}`;
 const CHAVE_CANCELAMENTOS = `farmedu:cancelamentos:${atividadeAtual.chave}`;
 const CHAVE_EXECUCOES = `farmedu:execucoes:${atividadeAtual.chave}`;
 const CHAVE_SOPHIA = `farmedu:sophia:${atividadeAtual.chave}`;
+const CHAVE_AVALIACAO = `farmedu:avaliacao:${atividadeAtual.chave}`;
 
 // Contadores de limite gravados no navegador, por atividade, para sobreviverem ao refresh.
 function lerContador(chave) {
@@ -130,6 +131,7 @@ if (!MODO_INSTRUTOR && !atividadeAtual.vazia) {
             localStorage.setItem(CHAVE_ENTREGA, JSON.stringify(entrega));
         } else {
             localStorage.removeItem(CHAVE_ENTREGA);
+            localStorage.removeItem(CHAVE_AVALIACAO);
         }
         localStorage.setItem(CHAVE_CANCELAMENTOS, String(cancelamentos));
     } catch (erro) { }
@@ -258,47 +260,23 @@ function montarAbas() {
         porId('stLang').textContent = '—';
         return;
     }
-    if (modoExecucao === 'texto') {   // atividade de texto: lista de arquivos vazia
+    // Atividade de texto: lista de arquivos vazia
+    if (modoExecucao === 'texto') {
         porId('stLang').textContent = 'Texto';
         return;
     }
+
+    ARQUIVOS.forEach(arquivo => {
+        const item = document.createElement('li');
+        if (arquivo.lang === arquivoAtual) item.className = 'on';
+        const bolinha = document.createElement('span');
+        bolinha.className = 'dot dot-' + arquivo.lang;
+        item.append(bolinha, arquivo.nome);
+        item.onclick = () => trocar(arquivo.lang);
+        porId('arquivos').appendChild(item);
+    });
+    porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
 }
-
-ARQUIVOS.forEach(arquivo => {
-    const item = document.createElement('li');
-    if (arquivo.lang === arquivoAtual) item.className = 'on';
-    const bolinha = document.createElement('span');
-    bolinha.className = 'dot dot-' + arquivo.lang;
-    item.append(bolinha, arquivo.nome);
-    item.onclick = () => trocar(arquivo.lang);
-    porId('arquivos').appendChild(item);
-});
-porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
-
-// Sem atividade: seção de arquivos vazia
-if (atividadeAtual.vazia) {
-    porId('stLang').textContent = '—';
-    // -----------------------incerteza
-    // return;
-}
-// Atividade de texto: lista de arquivos vazia
-if (modoExecucao === 'texto') {
-    porId('stLang').textContent = 'Texto';
-    // -----------------------incerteza
-    // return;
-}
-
-ARQUIVOS.forEach(arquivo => {
-    const item = document.createElement('li');
-    if (arquivo.lang === arquivoAtual) item.className = 'on';
-    const bolinha = document.createElement('span');
-    bolinha.className = 'dot dot-' + arquivo.lang;
-    item.append(bolinha, arquivo.nome);
-    item.onclick = () => trocar(arquivo.lang);
-    porId('arquivos').appendChild(item);
-});
-
-porId('stLang').textContent = ARQUIVOS.find(arquivo => arquivo.lang === arquivoAtual).rotulo;
 
 function trocar(lang) {
     // Sem atividade: editor vazio, desativado e sem arquivos
@@ -379,101 +357,102 @@ function escreverTerminal(texto) {
     saidaTerminal.scrollTop = saidaTerminal.scrollHeight;
 }
 
-// JavaScript roda em um Web Worker (isolado da página, com limite de 5s).
-function rodarJs(codigo) {
-    return new Promise(resolver => {
-        const fonte = [
-            "const _e=(t,a)=>postMessage({t:t,m:Array.from(a).map(x=>{try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(' ')});",
-            "['log','info','warn','error'].forEach(k=>{console[k]=(...a)=>_e(k,a)});",
-            "try{(0,eval)(" + JSON.stringify(codigo) + ")}catch(e){_e('error',[e&&e.name?e.name+': '+e.message:String(e)])}",
-            "setTimeout(()=>postMessage({fim:true}),300);"
-        ].join('\n');
-        const url = URL.createObjectURL(new Blob([fonte], { type: 'text/javascript' }));
-        const worker = new Worker(url);
-        let linhas = 0, terminou = false;
-        const encerrar = () => {
-            if (terminou) return;
-            terminou = true;
-            clearTimeout(limite);
-            worker.terminate();
-            URL.revokeObjectURL(url);
-            if (!linhas) escreverTerminal('(sem saída)');
-            resolver();
-        };
-        const limite = setTimeout(() => { linhas++; escreverTerminal('✖ Tempo limite de 5 segundos excedido.'); encerrar(); }, 5000);
-        worker.onmessage = evento => {
-            if (evento.data.fim) return encerrar();
-            linhas++;
-            escreverTerminal((evento.data.t === 'error' ? '✖ ' : '') + evento.data.m);
-        };
-        worker.onerror = evento => { linhas++; escreverTerminal('✖ ' + evento.message); evento.preventDefault(); };
-    });
-}
+// // JavaScript roda em um Web Worker (isolado da página, com limite de 5s).
+// function rodarJs(codigo) {
+//     return new Promise(resolver => {
+//         const fonte = [
+//             "const _e=(t,a)=>postMessage({t:t,m:Array.from(a).map(x=>{try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return String(x)}}).join(' ')});",
+//             "['log','info','warn','error'].forEach(k=>{console[k]=(...a)=>_e(k,a)});",
+//             "try{(0,eval)(" + JSON.stringify(codigo) + ")}catch(e){_e('error',[e&&e.name?e.name+': '+e.message:String(e)])}",
+//             "setTimeout(()=>postMessage({fim:true}),300);"
+//         ].join('\n');
+//         const url = URL.createObjectURL(new Blob([fonte], { type: 'text/javascript' }));
+//         const worker = new Worker(url);
+//         let linhas = 0, terminou = false;
+//         const encerrar = () => {
+//             if (terminou) return;
+//             terminou = true;
+//             clearTimeout(limite);
+//             worker.terminate();
+//             URL.revokeObjectURL(url);
+//             if (!linhas) escreverTerminal('(sem saída)');
+//             resolver();
+//         };
+//         const limite = setTimeout(() => { linhas++; escreverTerminal('✖ Tempo limite de 5 segundos excedido.'); encerrar(); }, 5000);
+//         worker.onmessage = evento => {
+//             if (evento.data.fim) return encerrar();
+//             linhas++;
+//             escreverTerminal((evento.data.t === 'error' ? '✖ ' : '') + evento.data.m);
+//         };
+//         worker.onerror = evento => { linhas++; escreverTerminal('✖ ' + evento.message); evento.preventDefault(); };
+//     });
+// }
 
-// SQL roda em SQLite no navegador (sql.js), o mesmo motor do Judge0 (language_id 82).
-let sqlJsPromessa = null;
-function carregarSqlJs() {
-    if (!sqlJsPromessa) {
-        const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/';
-        sqlJsPromessa = new Promise((ok, falha) => {
-            const script = document.createElement('script');
-            script.src = base + 'sql-wasm.js';
-            script.onload = () => initSqlJs({ locateFile: arquivo => base + arquivo }).then(ok, falha);
-            script.onerror = () => falha(new Error('Não foi possível baixar o motor SQL (verifique a internet).'));
-            document.head.appendChild(script);
-        });
-        sqlJsPromessa.catch(() => { sqlJsPromessa = null; });
-    }
-    return sqlJsPromessa;
-}
+// // SQL roda em SQLite no navegador (sql.js), o mesmo motor do Judge0 (language_id 82).
+// let sqlJsPromessa = null;
+// function carregarSqlJs() {
+//     if (!sqlJsPromessa) {
+//         const base = 'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/';
+//         sqlJsPromessa = new Promise((ok, falha) => {
+//             const script = document.createElement('script');
+//             script.src = base + 'sql-wasm.js';
+//             script.onload = () => initSqlJs({ locateFile: arquivo => base + arquivo }).then(ok, falha);
+//             script.onerror = () => falha(new Error('Não foi possível baixar o motor SQL (verifique a internet).'));
+//             document.head.appendChild(script);
+//         });
+//         sqlJsPromessa.catch(() => { sqlJsPromessa = null; });
+//     }
+//     return sqlJsPromessa;
+// }
 
-function formatarTabela(resultado) {
-    const texto = valor => (valor === null || valor === undefined ? 'NULL' : String(valor));
-    const larguras = resultado.columns.map((coluna, i) =>
-        Math.max(coluna.length, ...resultado.values.map(linha => texto(linha[i]).length)));
-    const linhaTexto = linha => linha.map((valor, i) => texto(valor).padEnd(larguras[i])).join(' | ');
-    return [
-        linhaTexto(resultado.columns),
-        larguras.map(n => '-'.repeat(n)).join('-+-'),
-        ...resultado.values.map(linhaTexto)
-    ].join('\n');
-}
+// function formatarTabela(resultado) {
+//     const texto = valor => (valor === null || valor === undefined ? 'NULL' : String(valor));
+//     const larguras = resultado.columns.map((coluna, i) =>
+//         Math.max(coluna.length, ...resultado.values.map(linha => texto(linha[i]).length)));
+//     const linhaTexto = linha => linha.map((valor, i) => texto(valor).padEnd(larguras[i])).join(' | ');
+//     return [
+//         linhaTexto(resultado.columns),
+//         larguras.map(n => '-'.repeat(n)).join('-+-'),
+//         ...resultado.values.map(linhaTexto)
+//     ].join('\n');
+// }
 
-async function rodarSql(codigo) {
-    escreverTerminal('Carregando motor SQL...');
-    try {
-        const SQL = await carregarSqlJs();
-        const banco = new SQL.Database();   // banco novo e vazio a cada execução
-        saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
-        banco.exec(codigo).forEach(resultado => escreverTerminal(formatarTabela(resultado) + '\n'));
-        const tabelas = banco.exec("SELECT name FROM sqlite_master WHERE type='table'");
-        escreverTerminal(tabelas.length
-            ? 'Tabelas no banco: ' + tabelas[0].values.map(linha => linha[0]).join(', ')
-            : 'Comando executado. Nenhuma tabela criada.');
-        banco.close();
-    } catch (erro) {
-        saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
-        escreverTerminal('✖ ' + erro.message);
-        escreverConsole(erro.message, 'error');
-    }
-}
+// async function rodarSql(codigo) {
+//     escreverTerminal('Carregando motor SQL...');
+//     try {
+//         const SQL = await carregarSqlJs();
+//         const banco = new SQL.Database();   // banco novo e vazio a cada execução
+//         saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+//         banco.exec(codigo).forEach(resultado => escreverTerminal(formatarTabela(resultado) + '\n'));
+//         const tabelas = banco.exec("SELECT name FROM sqlite_master WHERE type='table'");
+//         escreverTerminal(tabelas.length
+//             ? 'Tabelas no banco: ' + tabelas[0].values.map(linha => linha[0]).join(', ')
+//             : 'Comando executado. Nenhuma tabela criada.');
+//         banco.close();
+//     } catch (erro) {
+//         saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
+//         escreverTerminal('✖ ' + erro.message);
+//         escreverConsole(erro.message, 'error');
+//     }
+// }
 
 async function rodarTerminal() {
     quadroPreview.hidden = true;
     saidaTerminal.hidden = false;
     saidaTerminal.textContent = `$ ${ARQUIVOS[0].nome}\n`;
-    const codigo = dadosDosArquivos[ARQUIVOS[0].lang] || '';
+    // const codigo = dadosDosArquivos[ARQUIVOS[0].lang] || '';
 
-    if (linguagemAtual.id === 63) {
-        await rodarJs(codigo);
-        escreverConsole('Execução concluída.', 'info');
-    } else if (linguagemAtual.id === 'sql') {
-        await rodarSql(codigo);
-        escreverConsole('Execução concluída.', 'info');
-    } else {
-        escreverTerminal(`A execução de ${linguagemAtual.rotulo} será integrada em breve.`);
-        escreverConsole('Execução no servidor (Judge0) ainda não integrada.', 'info');
-    }
+    enviarParaAvaliacao();
+    // if (linguagemAtual.id === 63) {
+    //     await rodarJs(codigo);
+    //     escreverConsole('Execução concluída.', 'info');
+    // } else if (linguagemAtual.id === 'sql') {
+    //     await rodarSql(codigo);
+    //     escreverConsole('Execução concluída.', 'info');
+    // } else {
+    //     escreverTerminal(`A execução de ${linguagemAtual.rotulo} será integrada em breve.`);
+    //     escreverConsole('Execução no servidor (Judge0) ainda não integrada.', 'info');
+    // }
 }
 
 async function executar(opcoes = {}) {
@@ -496,6 +475,158 @@ function atualizarBotoes() {
     porId('btnRodar').textContent = executando ? 'Executando...' : '▶ Executar';
     porId('btnSophia').disabled = atividadeAtual.vazia || usosSophia >= LIMITE_SOPHIA;
     atualizarEntrega();
+}
+
+/*
+ * Avaliação no servidor (Judge0 + IA).
+ *
+ * Restaurado da versão "com_integracao_judge0". O navegador envia o código para
+ * POST /submissoes/enviarSubmissao (views/processar_submissao.php -> AvaliadorController),
+ * que executa no Judge0 e pede a avaliação da IA. A resposta esperada é:
+ *   { sucesso, compilacao: { status, saida_terminal }, avaliacao: { nota_atribuida, status_avaliacao,
+ *     feedback_geral, pontos_melhoria, ... } }
+ * A entrega em si já foi gravada no banco por salvarResolucao; esta avaliação NUNCA desfaz a entrega.
+ */
+const FEEDBACK = {
+    // Rota registrada em routes.php. Tenta nesta ordem; só passa ao próximo se não existir (404/405) ou não responder.
+    endpoints: ['enviarSubmissao'],
+    timeoutMs: 120000,
+
+    montarPayload(ctx) {
+        return {
+            linguagem: ctx.linguagem,
+            codigo_aluno: ctx.codigo,
+            id_linguagem: ctx.idLinguagem,
+            // O banco não envia "objetivo" ao navegador; a descrição da atividade cumpre esse papel.
+            objetivo_atividade: atividadeAtual.objetivo || atividadeAtual.descricao || '',
+            nota_max: String(atividadeAtual.notaMax),
+            nota_min: String(atividadeAtual.notaMin),
+            dados_entrada: atividadeAtual.entrada || '',
+            atividadeId: atividadeAtual.id
+        };
+    },
+
+    interpretar(data) {
+        const av = data.avaliacao || {};
+        const st = data.compilacao && data.compilacao.status;
+        return {
+            nota: av.nota_atribuida,
+            status: av.status_avaliacao,
+            feedback: av.feedback_geral,
+            melhorias: av.pontos_melhoria || [],
+            feitos: av.pontos_positivos || av.o_que_foi_feito || [],
+            faltando: av.o_que_falta || av.pontos_faltantes || [],
+            compilador: st && (st.description || st),
+            saida: data.compilacao && data.compilacao.saida_terminal
+        };
+    }
+};
+
+// Estado da avaliação da entrega atual.
+let avaliacaoSeq = 0;       // sobe a cada cancelamento: descarta respostas de avaliações antigas
+let enviando = false;
+let ultimaResposta = null;  // última resposta crua do servidor (Judge0 + IA) para a entrega atual
+
+// Monta o que o servidor precisa saber sobre o código atual do editor.
+function contextoEntrega() {
+    const web = modoExecucao === 'web';
+    return {
+        linguagem: web ? 'HTML/CSS/JS' : linguagemAtual.rotulo,
+        idLinguagem: linguagemAtual.judge0,
+        codigo: web
+            ? ARQUIVOS.map(arquivo => `/* ${arquivo.nome} */\n${dadosDosArquivos[arquivo.lang]}`).join('\n\n')
+            : dadosDosArquivos[ARQUIVOS[0].lang]
+    };
+}
+
+// Converte o corpo da resposta em JSON, tolerando BOM ou avisos do PHP impressos antes do objeto.
+function lerJson(texto) {
+    const limpo = String(texto || '').replace(/^\uFEFF/, '').trim();
+    try {
+        return JSON.parse(limpo);
+    } catch (erroInicial) {
+        const inicio = limpo.indexOf('{'), fim = limpo.lastIndexOf('}');
+        if (inicio === -1 || fim <= inicio) throw erroInicial;
+        return JSON.parse(limpo.slice(inicio, fim + 1));
+    }
+}
+
+// Detecta mensagens de erro/aviso do próprio PHP no corpo da resposta.
+function erroDoPHP(texto) {
+    return /\b(Fatal error|Parse error|Warning|Notice|Deprecated|Uncaught)\b/i.test(String(texto || ''));
+}
+
+// Chamada ao servidor de avaliação (Judge0 + IA).
+async function avaliarNoServidor(extra = {}) {
+    const corpo = JSON.stringify({ ...FEEDBACK.montarPayload(contextoEntrega()), ...extra });
+    let ultimoErro = null;
+    for (const endereco of FEEDBACK.endpoints) {
+        let resposta, texto;
+        const controle = new AbortController();
+        const relogio = setTimeout(() => controle.abort(), FEEDBACK.timeoutMs);
+        try {
+            resposta = await fetch(endereco, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: corpo,
+                signal: controle.signal
+            });
+            texto = await resposta.text();
+        } catch (erro) {
+            ultimoErro = erro.name === 'AbortError' ? new Error('o servidor demorou demais para responder') : erro;
+            continue;   // sem conexão com este endereço: tenta o próximo
+        } finally {
+            clearTimeout(relogio);
+        }
+        if (resposta.status === 404 || resposta.status === 405) {
+            ultimoErro = new Error(`endereço "${endereco}" não encontrado (HTTP ${resposta.status})`);
+            continue;
+        }
+        let data;
+        try {
+            data = lerJson(texto);
+        } catch (erro) {
+            console.error(`"${endereco}" não devolveu JSON. Resposta:`, texto);
+            ultimoErro = new Error('o servidor não devolveu JSON: ' + erro.message);
+            if (erroDoPHP(texto)) throw ultimoErro;   // erro do próprio servidor: não repete em outro endereço
+            continue;                                  // página qualquer (rota inexistente): tenta o próximo
+        }
+        if (!data.sucesso) throw new Error(data.erro || 'Erro desconhecido');
+        return data;
+    }
+    throw ultimoErro || new Error('Sem resposta do servidor de avaliação');
+}
+
+// Disparada por submissao.js depois que o banco confirmou a entrega. Não bloqueia a tela.
+async function enviarParaAvaliacao() {
+    // Judge0 só faz sentido para código; atividades de texto não passam por aqui.
+    if (MODO_INSTRUTOR || enviando || modoExecucao === 'texto') return;
+    const sequencia = ++avaliacaoSeq;
+    enviando = true;
+    escreverConsole('Enviando a entrega para avaliação automática...', 'info');
+    try {
+        const data = await avaliarNoServidor();
+        if (sequencia !== avaliacaoSeq) return;   // a entrega foi cancelada enquanto avaliava
+        ultimaResposta = data;
+        try { localStorage.setItem(CHAVE_AVALIACAO, JSON.stringify(data)); } catch (erro) { }
+        const resumo = FEEDBACK.interpretar(data);
+        if (resumo.compilador) escreverConsole('Judge0: ' + resumo.compilador, 'info');
+        escreverConsole('Avaliação automática concluída. A nota será liberada depois do prazo de entrega.', 'info');
+    } catch (erro) {
+        if (sequencia !== avaliacaoSeq) return;
+        console.error('Falha na avaliação automática:', erro);
+        escreverConsole('Não foi possível concluir a avaliação automática agora: ' + erro.message, 'warn');
+    } finally {
+        if (sequencia === avaliacaoSeq) enviando = false;
+    }
+}
+
+// Chamada por submissao.js quando o banco confirma o cancelamento da entrega.
+function cancelarAvaliacao() {
+    avaliacaoSeq++;
+    enviando = false;
+    ultimaResposta = null;
+    try { localStorage.removeItem(CHAVE_AVALIACAO); } catch (erro) { }
 }
 
 /* Eventos do editor */

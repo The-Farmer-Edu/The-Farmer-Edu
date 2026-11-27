@@ -178,6 +178,9 @@ async function confirmarEntrega() {
     fecharModalEntrega();
     atualizarEntrega();
 
+    // Judge0 + IA: avalia a entrega já gravada. Roda em segundo plano e nunca desfaz a entrega se falhar.
+    enviarParaAvaliacao();
+
     // Se a análise do SIAE retornou alerta de possível uso de IA (> 60%), exibe ao aluno.
     if (resultado.aviso_ia) {
         aviso(resultado.aviso_ia);
@@ -215,6 +218,7 @@ async function cancelarEntrega() {
         // Atualiza os contadores e libera o editor somente após o BD confirmar o cancelamento.
         cancelamentos = Number(resultado.cancelamentos) || (cancelamentos + 1);
         entrega = null;
+        cancelarAvaliacao();   // descarta avaliação em andamento/guardada da entrega cancelada
         try {
             localStorage.setItem(CHAVE_CANCELAMENTOS, String(cancelamentos));
             localStorage.removeItem(CHAVE_ENTREGA);

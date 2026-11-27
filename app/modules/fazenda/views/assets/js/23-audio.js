@@ -58,19 +58,19 @@ const enderecoDoAudio = function enderecoDoAudio(caminho) {
   if (!caminho || !ENDERECO_DO_SCRIPT_PRINCIPAL || !caminho.startsWith(PREFIXO_DOS_AUDIOS)) return caminho;
   try {
     let relativo = caminho.slice(PREFIXO_DOS_AUDIOS.length), endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL);
-    if (endereco.searchParams.get('rota') === 'fazenda/script') {
-      endereco.searchParams.set('rota', 'fazenda/audio'); endereco.searchParams.set('arquivo', relativo);
+    if (endereco.searchParams.get('rota') === 'fazenda?type=js') {
+      endereco.searchParams.set('rota', 'fazenda?type=audio'); endereco.searchParams.set('arquivo', relativo);
       return endereco.href;
     }
     // Missão final: aberto pelo arquivo (file://, modo local sem servidor) não há rota PHP: o áudio é lido direto da pasta
-    // views/assets/audio, ao lado de assets/js (antes virava "assets/js/arquivo?type=...", que não existe, e o jogo ficava mudo).
+    // views/assets/audio, ao lado de assets/js (antes virava "assets/js/file?type=...", que não existe, e o jogo ficava mudo).
     if (endereco.protocol === 'file:') return new URL('../audio/' + relativo.split('/').map(encodeURIComponent).join('/'), endereco).href;
     let file = relativo.split('/');
     file = file[file.length - 1];
     if (relativo.includes(file)) {
       relativo = relativo.replace('/' + file, '');
     }
-    return new URL('arquivo?type=audio/' + relativo + '&file=' + file, endereco).href;   // assets/js/fazenda.js → assets/audio/...
+    return new URL('file?type=audio/' + relativo + '&file=' + file, endereco).href;   // assets/js/fazenda.js → assets/audio/...
   } catch (erro) { console.error('Erro ao criar endereço do áudio:', erro); return caminho; }
 };
 // Cria o elemento <audio> de um som (uma única vez). O arquivo só é carregado quando necessário; erros de

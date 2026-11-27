@@ -22,13 +22,13 @@
         + '<button id="sair-da-caverna" type="button" title="Voltar à fazenda (Esc)">⟵ Fazenda <kbd>Esc</kbd></button>';
       document.body.appendChild(camadaDaCaverna);
 
-      // ---- endereço dos arquivos (servidor PHP → rota fazenda/arquivo; file:// → pasta), relativo a assets/easter-eggs/ ----
+      // ---- endereço dos arquivos (servidor PHP → rota fazenda/file; file:// → pasta), relativo a assets/easter-eggs/ ----
       const enderecoDaCaverna = function enderecoDaCaverna(caminho, semCache) {
         const endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL || location.href);
         const sufixo = semCache ? (caminho.includes('?') ? '&' : '?') + 'v=' + Date.now() : '';
         if (endereco.protocol === 'file:' || !ENDERECO_DO_SCRIPT_PRINCIPAL) return new URL('../easter-eggs/' + caminho + sufixo, endereco).href;
         const partes = ('easter-eggs/' + caminho).split('/'), arquivo = partes.pop();
-        return new URL('arquivo?type=' + encodeURIComponent(partes.join('/')) + '&file=' + encodeURIComponent(arquivo) + (semCache ? '&v=' + Date.now() : ''), endereco).href;
+        return new URL('file?type=' + encodeURIComponent(partes.join('/')) + '&file=' + encodeURIComponent(arquivo) + (semCache ? '&v=' + Date.now() : ''), endereco).href;
       };
 
       // Baixa os arquivos UMA vez (em ordem), depois os PNGs dos sprites, e prepara a cena; chamadas seguintes reutilizam.

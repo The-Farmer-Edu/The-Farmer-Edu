@@ -2,23 +2,9 @@
     require_once __DIR__ . '/Model.php';
     require_once __DIR__ . '/../../core/database.php';
     require_once __DIR__ . '/../../core/session.php';
+    require_once __DIR__ . '/../../core/arquivosEstaticos.php';
 
     class baseFazenda {
-        // CSS e JavaScript da fazenda: ficam ao lado do HTML (views/assets/css e views/assets/js) para o fazenda.html
-        // continuar abrindo direto pelo arquivo.
-        private const PASTA_DOS_ESTILOS = __DIR__ . '/views/assets/css';
-        private const PASTA_DOS_SCRIPTS = __DIR__ . '/views/assets/js';
-        // Áudios (Fazenda 8.4.1): views/assets/audio, com uma subpasta por categoria. Só MP3 e OGG; ver views/assets/audio/LEIA-ME.md.
-        private const PASTA_DOS_AUDIOS = __DIR__ . '/views/assets/audio';
-        private const SUBPASTAS_DE_AUDIO = 'musica|ambiente|animais|segredos|efeitos';
-        private const TIPOS_DE_AUDIO = ['mp3' => 'audio/mpeg', 'ogg' => 'audio/ogg'];
-        // Backend: extensões que o sendFile entrega (views/assets). Qualquer outra extensão responde 404.
-        private const TIPOS_DE_ARQUIVO = [
-            'mp3' => 'audio/mpeg', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav',
-            'css' => 'text/css; charset=utf-8', 'js' => 'text/javascript; charset=utf-8',
-            'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'webp' => 'image/webp', 'gif' => 'image/gif', 'svg' => 'image/svg+xml',
-            'json' => 'application/json', 'txt' => 'text/plain; charset=utf-8',
-        ];
         // Backend: tamanho máximo do corpo de /fazenda/salvar (512 KB ≈ 100 vezes um save real; abaixo do max_allowed_packet
         // de 1 MB do MySQL do XAMPP, para o banco nunca receber um pacote que ele recusaria com erro 500).
         private const TAMANHO_MAXIMO_DO_SAVE = 512 * 1024;
@@ -26,18 +12,20 @@
         public function showFazenda(): void {
             $usuario = $this->exigirAluno();   // Backend: só aluno logado abre a fazenda
             $html = file_get_contents(__DIR__ . '/views/fazenda.html');
+            // print_r($this->getFolderTree(__DIR__ . '/views/assets/audio/'));
+            // exit();
             // Os <link> e <script src> do HTML são relativos ao próprio arquivo, mas a pasta views/ não é pública: pela rota,
             // cada href "assets/css/..." e src "assets/js/..." é trocado pela rota que entrega o arquivo. O resto do HTML sai
             // sem nenhuma alteração.
             $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
             $html = preg_replace_callback(
                 '#href="assets/css/([0-9a-z-]+\.css)"#',
-                fn(array $encontrado): string => 'href="' . htmlspecialchars($base . '/fazenda/estilo?arquivo=' . $encontrado[1]) . '"',
+                fn(array $encontrado): string => 'href="' . htmlspecialchars($base . '/fazenda/file?type=css&file=' . $encontrado[1]) . '"',
                 $html
             );
             $html = preg_replace_callback(
                 '#src="assets/js/([0-9a-z-]+\.js)"#',
-                fn(array $encontrado): string => 'src="' . htmlspecialchars($base . '/fazenda/script?arquivo=' . $encontrado[1]) . '"',
+                fn(array $encontrado): string => 'src="' . htmlspecialchars($base . '/fazenda/file?type=js&file=' . $encontrado[1]) . '"',
                 $html
             );
             // Backend: save do banco e XP pendente entram no HTML (o jogo lê window.FARMEDU_SERVIDOR)
@@ -53,146 +41,50 @@
             echo $html;
         }
 
-        public function enviarEstilo(): void {
-            $this->enviarArquivo(self::PASTA_DOS_ESTILOS, 'css', 'text/css; charset=utf-8');
-        }
-
-        public function enviarScript(): void {
-            $this->enviarArquivo(self::PASTA_DOS_SCRIPTS, 'js', 'text/javascript; charset=utf-8');
-        }
-
-        // Entrega um áudio da pasta views/assets/audio (rota fazenda/audio&arquivo=animais/vaca.mp3). Só aceita "subpasta/nome.ext"
-        // com subpasta da lista, nome simples em minúsculas e extensão mp3/ogg; o caminho real ainda precisa ficar DENTRO da
-        // pasta de áudio (protege contra atalhos). Qualquer recusa ou arquivo ausente responde 404 sem corpo: no jogo o som fica
-        // "indisponível" e nada quebra. Aceita um intervalo "Range: bytes=..." (resposta 206), que os navegadores usam para
-        // reposicionar e repetir áudio.
-        public function enviarAudio(): void {
-            $arquivo = $_GET['arquivo'] ?? '';
-            if (!is_string($arquivo) || !preg_match('#^(?:' . self::SUBPASTAS_DE_AUDIO . ')/[0-9a-z-]+\.(mp3|ogg)$#', $arquivo, $partes)) {
-                http_response_code(404);
-                return;
-            }
-            $pasta = realpath(self::PASTA_DOS_AUDIOS);
-            $caminho = $pasta === false ? false : realpath($pasta . '/' . $arquivo);
-            if ($caminho === false || !is_file($caminho) || strpos($caminho, $pasta . DIRECTORY_SEPARATOR) !== 0) {
-                http_response_code(404);
-                return;
-            }
-            $tamanho = filesize($caminho);
-            $inicio = 0;
-            $fim = $tamanho - 1;
-            $faixa = $_SERVER['HTTP_RANGE'] ?? '';
-            if ($faixa !== '') {
-                if (!preg_match('/^bytes=(\d*)-(\d*)$/', $faixa, $limites) || ($limites[1] === '' && $limites[2] === '')) {
-                    http_response_code(416);
-                    header('Content-Range: bytes */' . $tamanho);
-                    return;
-                }
-                if ($limites[1] === '') {
-                    $inicio = max(0, $tamanho - (int) $limites[2]);   // "bytes=-500": os últimos 500 bytes
-                } else {
-                    $inicio = (int) $limites[1];
-                    if ($limites[2] !== '') $fim = min($fim, (int) $limites[2]);
-                }
-                if ($inicio > $fim) {
-                    http_response_code(416);
-                    header('Content-Range: bytes */' . $tamanho);
-                    return;
-                }
-                http_response_code(206);
-                header('Content-Range: bytes ' . $inicio . '-' . $fim . '/' . $tamanho);
-            }
-            header('Content-Type: ' . self::TIPOS_DE_AUDIO[$partes[1]]);
-            header('X-Content-Type-Options: nosniff');
-            header('Accept-Ranges: bytes');
-            header('Cache-Control: no-cache');
-            header('Content-Length: ' . ($fim - $inicio + 1));
-            $leitor = fopen($caminho, 'rb');
-            fseek($leitor, $inicio);
-            $restante = $fim - $inicio + 1;
-            while ($restante > 0) {
-                $bloco = fread($leitor, min(65536, $restante));
-                if ($bloco === false || $bloco === '') break;   // erro de leitura: para em vez de girar sem fim
-                echo $bloco;
-                $restante -= strlen($bloco);
-            }
-            fclose($leitor);
-        }
-
-        // Entrega um arquivo da pasta informada. Só aceita nomes simples com a extensão esperada que existam nessa pasta.
-        private function enviarArquivo(string $pasta, string $extensao, string $tipo): void {
-            $arquivo = $_GET['arquivo'] ?? '';
-            if (!is_string($arquivo) || !preg_match('/^[0-9a-z-]+\.' . $extensao . '$/', $arquivo) || !is_file($pasta . '/' . $arquivo)) {
-                http_response_code(404);
-                return;
-            }
-            header('Content-Type: ' . $tipo);
-            header('X-Content-Type-Options: nosniff');
-            header('Cache-Control: no-cache');
-            readfile($pasta . '/' . $arquivo);
-        }
-
         // ---------------------------------------------------------------------------------------------
-        // Entrega de arquivos de views/assets (usada pelos áudios: fazenda/arquivo?type=audio/Theme_songs&file=x.mp3)
+        // Entrega de arquivos de views/assets (usada pelos áudios: fazenda/file?type=audio/Theme_songs&file=x.mp3)
         // Backend: antes, "type" e "file" eram concatenados no caminho sem validação (dava para ler arquivos fora de
         // views/assets com "../") e o arquivo era executado com require_once depois de enviado. Agora o caminho real
         // precisa ficar DENTRO de views/assets, a extensão precisa estar na lista e o arquivo é só enviado.
         // ---------------------------------------------------------------------------------------------
         public function sendFile(): void {
-            $tipo = $_GET['type'] ?? null;
-            $arquivo = $_GET['file'] ?? null;
-            if (!is_string($tipo) || !is_string($arquivo) || $tipo === '' || $arquivo === '' || strpos($tipo . $arquivo, "\0") !== false) {
-                http_response_code(404);
-                return;
-            }
-            $pasta = realpath(__DIR__ . '/views/assets');
-            $caminhoArquivo = $pasta === false ? false : realpath($pasta . '/' . $tipo . '/' . $arquivo);
-            $extensao = $caminhoArquivo === false ? '' : strtolower(pathinfo($caminhoArquivo, PATHINFO_EXTENSION));
-            if ($caminhoArquivo === false || strpos($caminhoArquivo, $pasta . DIRECTORY_SEPARATOR) !== 0
-                || !is_file($caminhoArquivo) || !isset(self::TIPOS_DE_ARQUIVO[$extensao])) {
-                http_response_code(404);
-                return;
+            $paths = ['botao-acesso-fazenda', 'css', 'js'];
+            $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/audio/'));
+            $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/easter-eggs/'));
+            enviarArquivoEstatico(__DIR__ . '/views/assets', $paths);
+        }
+
+        private function getFolderTree(string $dir, string $baseDir = ''): array {
+            if ($baseDir === '') {
+                $baseDir = rtrim($dir, DIRECTORY_SEPARATOR);
             }
 
-            $tamanho = filesize($caminhoArquivo);
-            $inicio = 0;
-            $fim = $tamanho - 1;
-            $faixa = $_SERVER['HTTP_RANGE'] ?? '';
-            if ($faixa !== '') {
-                if (!preg_match('/^bytes=(\d*)-(\d*)$/', $faixa, $limites) || ($limites[1] === '' && $limites[2] === '')) {
-                    http_response_code(416);
-                    header('Content-Range: bytes */' . $tamanho);
-                    return;
-                }
-                if ($limites[1] === '') {
-                    $inicio = max(0, $tamanho - (int) $limites[2]);   // "bytes=-500": os últimos 500 bytes
-                } else {
-                    $inicio = (int) $limites[1];
-                    if ($limites[2] !== '') $fim = min($fim, (int) $limites[2]);
-                }
-                if ($inicio > $fim) {
-                    http_response_code(416);
-                    header('Content-Range: bytes */' . $tamanho);
-                    return;
-                }
-                http_response_code(206);
-                header('Content-Range: bytes ' . $inicio . '-' . $fim . '/' . $tamanho);
+            $items = scandir($dir);
+            if ($items === false) {
+                return [];
             }
-            header('Content-Type: ' . self::TIPOS_DE_ARQUIVO[$extensao]);
-            header('X-Content-Type-Options: nosniff');
-            header('Accept-Ranges: bytes');
-            header('Cache-Control: no-cache');
-            header('Content-Length: ' . ($fim - $inicio + 1));
-            $leitor = fopen($caminhoArquivo, 'rb');
-            fseek($leitor, $inicio);
-            $restante = $fim - $inicio + 1;
-            while ($restante > 0) {
-                $bloco = fread($leitor, min(65536, $restante));
-                if ($bloco === false || $bloco === '') break;   // erro de leitura: para em vez de girar sem fim
-                echo $bloco;
-                $restante -= strlen($bloco);
+
+            $paths = [];
+
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') {
+                    continue;
+                }
+
+                $fullPath = $dir . DIRECTORY_SEPARATOR . $item;
+
+                if (!is_dir($fullPath)) {
+                    continue;
+                }
+
+                $relativePath = ltrim(str_replace($baseDir, '', $fullPath), DIRECTORY_SEPARATOR);
+                $paths[] = str_replace('\\', '/', explode('assets/', $baseDir)[1] . $relativePath);
+
+                // Adiciona os caminhos das subpastas diretamente no mesmo array
+                $paths = array_merge($paths, $this->getFolderTree($fullPath, $baseDir));
             }
-            fclose($leitor);
+
+            return $paths;
         }
 
         // ---------------------------------------------------------------------------------------------
@@ -269,10 +161,6 @@
             }
             solicitarPerfilDeAcesso();
             exit;
-        }
-
-        private function baseDaAplicacao(): string {
-            return rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'])), '/');
         }
 
         // Coloca no HTML, antes do primeiro <script>, o save do aluno e o XP pendente. O JSON sai com as

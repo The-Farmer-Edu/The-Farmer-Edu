@@ -27,12 +27,12 @@
       document.body.appendChild(camadaDoCeleiro);
       const irisDoCeleiro = document.createElement('canvas'); irisDoCeleiro.id = 'iris-do-celeiro'; irisDoCeleiro.hidden = true; document.body.appendChild(irisDoCeleiro);
 
-      // ---- endereço dos arquivos da cena (mesma lógica dos áudios: servidor PHP → rota fazenda/arquivo; file:// → pasta) ----
+      // ---- endereço dos arquivos da cena (mesma lógica dos áudios: servidor PHP → rota fazenda/file; file:// → pasta) ----
       const enderecoDaCena = function enderecoDaCena(caminho) {
         const endereco = new URL(ENDERECO_DO_SCRIPT_PRINCIPAL || location.href);
         if (endereco.protocol === 'file:' || !ENDERECO_DO_SCRIPT_PRINCIPAL) return new URL('../easter-eggs/vingadores/' + caminho, endereco).href;
         const partes = ('easter-eggs/vingadores/' + caminho).split('/'), arquivo = partes.pop();
-        return new URL('arquivo?type=' + encodeURIComponent(partes.join('/')) + '&file=' + encodeURIComponent(arquivo), endereco).href;
+        return new URL('file?type=' + encodeURIComponent(partes.join('/')) + '&file=' + encodeURIComponent(arquivo), endereco).href;
       };
       // Baixa os arquivos da cena UMA vez (em ordem) e prepara a cena; chamadas seguintes reutilizam a mesma promessa.
       const carregarCenaDoCeleiro = function carregarCenaDoCeleiro() {

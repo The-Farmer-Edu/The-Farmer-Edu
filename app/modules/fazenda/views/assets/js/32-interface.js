@@ -329,24 +329,33 @@
         tocarEfeito('desativar');
         definirModoDesenvolvedor(false); mostrarAviso('🛠️ Modo desenvolvedor desligado.');
       };
+
       let letrasDigitadas = '';
-      addEventListener('keydown', evento => {
+      const DEV_HASH_SHA256 = '0745af338d9af9d0d813454c8d6f8bee7bfed60c767504a7a324691e97dba518';
+      async function verificarCodigoDev(texto) {
+        const dados = new TextEncoder().encode(texto);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', dados);
+        const hashHex = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+        return hashHex === DEV_HASH_SHA256;
+      }
+
+      addEventListener('keydown', async (evento) => {
+        if (evento.repeat) return; // Evita disparar várias vezes se o jogador segurar a tecla
         if (evento.ctrlKey || evento.metaKey || evento.altKey || evento.key.length !== 1) return;
-        if (evento.target && evento.target.closest && evento.target.closest('input, textarea, select, [contenteditable="true"]')) return;   // ex.: nome da fazenda
+        if (evento.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
 
         letrasDigitadas = (letrasDigitadas + evento.key.toLowerCase()).slice(-6);
-        let devHash = '$2b$10$pxY99Vv6BOlrxBPMbRcNEuP0LgoyvoPWRKwuOQ8vC7.uZA99F9TjW';
-        if(letrasDigitadas.length === 6) {
-          bcrypt.compare(letrasDigitadas, devHash, function(err, result) {
-              if(result){
-                letrasDigitadas = '';
-                tocarEfeito('desenvolvedor');
-                definirModoDesenvolvedor(true);
-                mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
-              } else {
-                return
-              }
-          });
+
+        if (letrasDigitadas.length === 6) {
+          const valido = await verificarCodigoDev(letrasDigitadas);
+          if (valido) {
+            letrasDigitadas = '';
+            tocarEfeito('desenvolvedor');
+            definirModoDesenvolvedor(true);
+            mostrarAviso('🛠️ Modo desenvolvedor ligado: ferramentas de teste no menu e no painel Tempo.');
+          }
         }
       });
       // Com o modo desligado, um clique (ou Enter) num controle de teste para aqui, antes do handler original: além de escondidos,

@@ -9,7 +9,7 @@
       // SEÇÃO 05 — PROGRESSO E SALVAMENTO (XP, NÍVEIS, RECURSOS, LAVOURA, ANIMAIS, MINA E TRABALHADORES)
       // O objeto "estado" é a única fonte de verdade: xp, niveis (0 = não construído), recursos, lavoura, animais, mina, trabalhadores,
       // candidatos, atividade, danos e invasao. A versão 4 (Mark 8.2) migra saves antigos sem apagar o progresso evoluído.
-      // É gravado no localStorage (chave fazenda3d-progresso-v3); campos que faltam em saves antigos são criados sem perder o progresso.
+      // No modo local é gravado em localStorage; no modo servidor, um rascunho local por aluno protege saves ainda não confirmados.
       // ====================================================================================================
       const CHAVE_SALVAMENTO = 'fazenda3d-progresso-v3';
       // 4 = Mark 8.2 · 5 = Mark 8.2 corrigida (casa começa na base, ponte evolutiva, duas plantações com canteiros próprios,
@@ -17,17 +17,32 @@
       const VERSAO_DO_SALVAMENTO = 5;
       const nivelInicialDaArea = () => 0;   // todas as áreas começam no nível 0 (a casa no nível 0 é a "base", que já existe)
       // Backend: quando a fazenda é aberta pela aplicação PHP, o Controller injeta window.FARMEDU_SERVIDOR (save do banco, revisão e XP
-      // pendente das atividades). Nesse caso o BANCO é a fonte do save e o localStorage do navegador NÃO é lido nem gravado (em
-      // computadores compartilhados ele misturaria a fazenda de alunos diferentes). Aberto direto pelo arquivo (file://), sem
-      // o objeto, tudo continua como antes: só localStorage. A gravação no banco fica em 34-sincronizacao-com-servidor.js.
+      // pendente das atividades). O BANCO é a fonte oficial; o localStorage guarda somente um diário de recuperação isolado por aluno,
+      // restaurado apenas se a revisão do banco não mudou. Aberto direto pelo arquivo (file://), sem o objeto, tudo continua como antes.
       const SERVIDOR_DA_FAZENDA = window.FARMEDU_SERVIDOR || null;
+      const CHAVE_RECUPERACAO = SERVIDOR_DA_FAZENDA ? 'fazenda3d-recuperacao-v1-' + String(SERVIDOR_DA_FAZENDA.idUsuario) : '';
       let estado = { versao: VERSAO_DO_SALVAMENTO, xp: 0, niveis: Object.fromEntries(AREAS.map(area => [area.id, 0])) };
       const avisosDaMigracao = [];   // mensagens mostradas uma vez ao abrir (seção 33)
       let existiaSalvamento = false; // false = fazenda nova (a seção 32 pergunta o nome da fazenda)
       try {
         const salvo = SERVIDOR_DA_FAZENDA ? SERVIDOR_DA_FAZENDA.estado : JSON.parse(localStorage.getItem(CHAVE_SALVAMENTO));   // Backend: save do banco quando existe
         if (salvo && salvo.niveis) { estado = salvo; existiaSalvamento = true; }
-      } catch (erro) { }
+        // O banco continua sendo a fonte oficial. Só recuperamos um rascunho local se a revisão do servidor ainda for
+        // exatamente a revisão sobre a qual ele foi criado. Se o servidor avançou, não sobrescrevemos dados mais recentes.
+        if (SERVIDOR_DA_FAZENDA && CHAVE_RECUPERACAO) {
+          const rascunho = JSON.parse(localStorage.getItem(CHAVE_RECUPERACAO) || 'null');
+          if (rascunho && Number(rascunho.usuarioId) === Number(SERVIDOR_DA_FAZENDA.idUsuario) && rascunho.estado && rascunho.estado.niveis) {
+            if (Number(rascunho.revisaoBase) === Number(SERVIDOR_DA_FAZENDA.revisao)) {
+              estado = rascunho.estado; existiaSalvamento = true;
+            } else if (JSON.stringify(rascunho.estado) === JSON.stringify(SERVIDOR_DA_FAZENDA.estado)) {
+              // A requisição pode ter sido confirmada pelo banco e a resposta perdida durante a desconexão.
+              localStorage.removeItem(CHAVE_RECUPERACAO);
+            } else {
+              window.FARMEDU_RECUPERACAO_EM_CONFLITO = true; // preserva o rascunho para não descartá-lo silenciosamente
+            }
+          }
+        }
+      } catch (erro) { console.warn('[FarmEdu] Não foi possível ler o rascunho local de recuperação:', erro); }
       // Backend: uma versão anterior do PHP regravava objetos vazios {} como listas vazias [] (json_decode associativo). Uma lista
       // não guarda propriedades por nome e o JSON.stringify as descarta, então tudo o que o jogo gravava nessas chaves depois
       // (instalações destruídas em "danos", estado das invasões, melhorias da equipe...) "voltava ao normal" ao recarregar. O
@@ -83,7 +98,7 @@
       // o benefício conta como usado (sem reembolso); sem nenhuma, ele fica disponível. Sem mudança na versão do salvamento.
       estado.primeiraPlantacaoGratuitaUsada = estado.primeiraPlantacaoGratuitaUsada === true || PLANTACOES_COM_CANTEIROS.some(idDaArea => estado.niveis[idDaArea] > 0);
       // Campos do sistema de inatividade e invasões. Saves antigos não têm esses campos: são criados aqui, sem tocar em xp/niveis.
-      const AGORA_AO_CARREGAR = Date.now();
+            const AGORA_AO_CARREGAR = Date.now();
       if (!estado.atividade || !Number.isFinite(estado.atividade.ultima)) estado.atividade = { ultima: AGORA_AO_CARREGAR };   // save antigo: a contagem começa agora
       estado.atividade.ultima = Math.min(estado.atividade.ultima, AGORA_AO_CARREGAR);                                           // relógio ajustado para trás não gera tempo negativo
       if (!estado.danos || typeof estado.danos !== 'object') estado.danos = {};
@@ -149,7 +164,7 @@
       estado.arvoresColetaveis = Object.fromEntries(Object.entries(arvoresColetaveisSalvas)
         .filter(([id, instante]) => /^arvore-\d+$/.test(id) && Number.isFinite(instante) && instante >= 0)
         .map(([id, instante]) => [id, Math.floor(instante)]));
-      // Economia integrada (campos opcionais; saves antigos começam zerados, sem perder nada):
+      // Economia integrada (campos opcionais; saves antigos começam zerados):
       //   pocoes       → quantas poções de cada tipo o jogador guarda (POCOES_DO_GUARDIAO, seção 01)
       //   madeiraHoje  → madeira já coletada HOJE pelo lenhador (limite diário, mesmo formato de xpDaFazendaHoje)
       const pocoesSalvas = estado.pocoes && typeof estado.pocoes === 'object' ? estado.pocoes : {};
@@ -183,7 +198,7 @@
         .map(([tipo, efeito]) => [tipo, { inicio: efeito.inicio, fim: Math.min(efeito.fim, efeito.inicio + POCOES_DO_GUARDIAO[tipo].minutos * 60000),
           aplicadoAte: Number.isFinite(efeito.aplicadoAte) ? Math.max(efeito.inicio, Math.min(efeito.aplicadoAte, efeito.fim)) : efeito.inicio }]));
       const madeiraHojeSalva = estado.madeiraHoje && typeof estado.madeiraHoje === 'object' ? estado.madeiraHoje : {};
-      // Etapa 1.1: "reserva" = madeira do limite que não foi coletada no último dia jogado, guardada por até RESERVA_DE_COTA_EM_DIAS
+            // Etapa 1.1: "reserva" = madeira do limite que não foi coletada no último dia jogado, guardada por até RESERVA_DE_COTA_EM_DIAS
       // dia (mesma regra das cotas de XP; seção 29b). Saves antigos começam com reserva 0.
       estado.madeiraHoje = Number.isInteger(madeiraHojeSalva.dia) && Number.isFinite(madeiraHojeSalva.total) && madeiraHojeSalva.total >= 0
         ? { dia: madeiraHojeSalva.dia, total: madeiraHojeSalva.total, reserva: numeroValido(madeiraHojeSalva.reserva) } : { dia: null, total: 0, reserva: 0 };
@@ -195,7 +210,7 @@
       const numerosPorAtividade = objeto => Object.fromEntries(Object.keys(COTAS_DIARIAS_DE_XP).map(atividade => [atividade, numeroValido(objeto && objeto[atividade])]));
       estado.cotasDoDia = { dia: Number.isInteger(cotasSalvas.dia) ? cotasSalvas.dia : null, usado: numerosPorAtividade(cotasSalvas.usado), reserva: numerosPorAtividade(cotasSalvas.reserva) };
       estado.recompensasRecebidas = Array.isArray(estado.recompensasRecebidas) ? estado.recompensasRecebidas.filter(id => typeof id === 'string' && id.length <= 120).slice(-500) : [];
-      // Etapa 2 — eventos especiais (seção 30c). Campos opcionais; saves antigos começam sem nada usado.
+      // Etapa 2 — eventos especiais (seção 30c). Campos opcionais; saves antigos começam vazios, sem perder nada.
       //   misterio.usadoEm    → (poção misteriosa; nome neutro porque o save pode ser lido) instante (ms) em que a poção misteriosa foi usada (null = nunca). Uma vez preenchido, nunca volta a null:
       //                         é o que impede um segundo uso, inclusive depois de recarregar.
       //   misterio.concluido  → false enquanto a cena não terminou; se a página fechar no meio, a cena é mostrada de novo ao abrir.
@@ -288,12 +303,12 @@
       // Etapa 1: segundos até a vaca abduzida voltar (0 se nenhuma está fora). Relógio real, como o registro salvo.
       const segundosParaAVacaVoltar = function segundosParaAVacaVoltar() { const ausente = estado.eventosEspeciais.alienigena.vacaAusente; return ausente ? Math.max(0, Math.ceil((ausente.voltaEm - Date.now()) / 1000)) : 0; };
       const animaisVivosDaArea = function animaisVivosDaArea(idDaArea) { return Math.max(0, totalDeAnimais(idDaArea) - Math.min(animaisAusentesDaArea(idDaArea), totalDeAnimais(idDaArea))); };
-      // Grava o objeto "estado" (xp, niveis, atividade, danos e invasao) no localStorage. Falhas de
+            // Grava o objeto "estado" (xp, niveis, atividade, danos e invasao) no localStorage. Falhas de
       // armazenamento (modo privado, cota cheia) são ignoradas para não travar o jogo.
-      // ---- Etapa 2 (objetivos): registros novos; saves antigos começam vazios, sem perder nada ----
+      // ---- Etapa 2 (objetivos): registros novos; saves antigos começam vazios e são preenchidos pela seção 30f ----
       //   eventosEspeciais.et → easter egg do ET nas vacas (seção 30c): ultimaEm (ms, relógio real; intervalo mínimo entre aparições),
       //                         vezes (quantas aparições), descobertoEm (1ª descoberta; permanente).
-      //   objetivos.concluidos → { id: instante } dos objetivos concluídos (seção 30e). PERMANENTE: um objetivo concluído nunca
+      //   objetivos.concluidos → { id: instante } dos objetivos concluídos. PERMANENTE: um objetivo concluído nunca
       //                          volta a ficar incompleto, mesmo que a condição deixe de valer (ex.: instalação destruída).
       //   objetivos.contadores → atividades que o jogo não contava em lugar nenhum (plantios, colheitas, produção coletada...). O que
       //                          já existe no save (níveis, viagens da mina, poção misteriosa, abduções, equipe) NÃO é copiado aqui:
@@ -319,8 +334,8 @@
           pocoesDeExperienciaUsadas: Math.floor(numeroValido(contadoresSalvos.pocoesDeExperienciaUsadas)), pedraSecreta: Math.floor(numeroValido(contadoresSalvos.pedraSecreta)),
           contratacoes: Math.floor(numeroValido(contadoresSalvos.contratacoes)),
         },
-        iniciadoEm: Number.isFinite(objetivosSalvos.iniciadoEm) && objetivosSalvos.iniciadoEm > 0 ? objetivosSalvos.iniciadoEm : null,   // null = quadro ainda não avaliado neste save
-        vistoAte: Number.isFinite(objetivosSalvos.vistoAte) ? objetivosSalvos.vistoAte : 0,   // última vez que o jogador abriu o quadro (selo de "novo")
+        iniciadoEm: Number.isFinite(objetivosSalvos.iniciadoEm) && objetivosSalvos.iniciadoEm > 0 ? objetivosSalvos.iniciadoEm : null,
+        vistoAte: Number.isFinite(objetivosSalvos.vistoAte) ? objetivosSalvos.vistoAte : 0,
       };
       // ---- Etapa 3 (conquistas e Diário): registros novos; saves antigos começam vazios e são preenchidos pela seção 30f ----
       //   conquistas.desbloqueadas → { id: { nivel: instante | null } } (nivel 1 nas comuns/especiais/secretas; 1–3 nas progressivas).
@@ -352,7 +367,7 @@
       // (seção 30e) só se inscreve como ouvinte. Sem ouvinte (ou se um ouvinte falhar), a ação original continua igual.
       const ouvintesDosObjetivos = [];
       const avisarObjetivos = function avisarObjetivos(tipo, detalhe) { for (const ouvir of ouvintesDosObjetivos) { try { ouvir(tipo, detalhe || {}); } catch (erro) { console.error("[FarmEdu] Quadro de objetivos:", erro); } } };
-      // Backend: com o servidor, não grava no localStorage e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
+      // Backend: mantém um diário local por aluno e agenda o envio ao banco (window.FarmEduSincronia, seção 34).
       // CONTRATO (correção de 17/11): devolve true quando o estado foi ACEITO — gravado no localStorage (sem servidor) ou posto na
       // fila de envio ao servidor (com servidor). true NÃO significa "gravado no banco": o envio é assíncrono (~5 s depois) e a
       // confirmação fica na seção 34. Devolve false quando o localStorage recusou a gravação (ex.: cota cheia) ou quando esta aba
@@ -361,8 +376,21 @@
       // O envio continua sendo agendado exatamente como antes, qualquer que seja o retorno.
       const salvarProgresso = function salvarProgresso() {
         let aceito = true;
-        try { if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, JSON.stringify(estado)); }
-        catch (erro) { aceito = false; console.error('[FarmEdu] Não foi possível salvar o progresso no navegador:', erro); }
+        try {
+          const fotografia = JSON.stringify(estado);
+          if (!SERVIDOR_DA_FAZENDA) localStorage.setItem(CHAVE_SALVAMENTO, fotografia);
+          else if (window.FARMEDU_RECUPERACAO_EM_CONFLITO) aceito = false;
+          else {
+            // Diário local durável: protege alterações ainda não confirmadas no banco contra fechamento, crash ou perda de rede.
+            // A chave é por aluno para nunca misturar fazendas em computadores compartilhados.
+            localStorage.setItem(CHAVE_RECUPERACAO, JSON.stringify({
+              usuarioId: Number(SERVIDOR_DA_FAZENDA.idUsuario),
+              revisaoBase: Number(window.FarmEduSincronia ? window.FarmEduSincronia.revisao : SERVIDOR_DA_FAZENDA.revisao) || 0,
+              estado: JSON.parse(fotografia),
+              salvoEm: Date.now()
+            }));
+          }
+        } catch (erro) { aceito = false; window.FARMEDU_RASCUNHO_LOCAL_FALHOU = true; console.error('[FarmEdu] Não foi possível registrar o progresso localmente:', erro); }
         const sincronia = window.FarmEduSincronia;
         if (sincronia) { sincronia.agendar(); if (sincronia.bloqueada) aceito = false; }
         return aceito;

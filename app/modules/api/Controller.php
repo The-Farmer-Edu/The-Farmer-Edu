@@ -1,32 +1,41 @@
 <?php
 
+require_once __DIR__ . '/../../core/session.php';
+
 class ApiController {
 
     public function showAvaliar(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/views/Avaliar.php';
     }
 
     public function sendAvaliacao(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/views/sendAvaliacao.php';
     }
 
     public function showConsultarSophia(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/views/consultarSophia.php';
     }
 
     public function showLinguagens(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/views/ListarLinguagens.php';
     }
 
     public function showJudge0(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/views/Judge0.php';
     }
 
     public function showOllama(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/views/Ollama.php';
     }
     
     public function showWOL(): void {
+        solicitarPerfilDeAcesso('ambos');
         require_once __DIR__ . '/model/Ollama.php';
         require_once __DIR__ . '/model/Config.php';
 

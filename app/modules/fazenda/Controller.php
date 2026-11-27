@@ -64,7 +64,7 @@
             //EASTER EGGS VINGADORES
 
             'easter-eggs/vingadores' , 'easter-eggs/vingadores/cenario', 
-            'easter-eggs/vingadores/dialogos', 'easter-eggs/vingadores/personagens']
+            'easter-eggs/vingadores/dialogos', 'easter-eggs/vingadores/personagens'];
 
 
            /*  $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/audio/'));

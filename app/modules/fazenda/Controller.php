@@ -48,9 +48,27 @@
         // precisa ficar DENTRO de views/assets, a extensão precisa estar na lista e o arquivo é só enviado.
         // ---------------------------------------------------------------------------------------------
         public function sendFile(): void {
-            $paths = ['botao-acesso-fazenda', 'css', 'js'];
-            $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/audio/'));
-            $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/easter-eggs/'));
+            $paths = ['botao-acesso-fazenda', 'css', 'js', 'audio/Theme_songs', 'audio/SFX/areas-do-jogo',
+            'audio/SFX/cavalo', 'audio/SFX/galinhas', 'audio/SFX/mobs/esqueleto', 'audio/SFX/mobs/fazendeiros', 
+            'audio/SFX/mobs/lenhador', 'audio/SFX/mobs/vampiro', 'audio/SFX/mobs/zumbi', 'audio/SFX/ovelhas',
+             'audio/SFX/pocoes', 'audio/SFX/porcos', 'audio/SFX/segredos', 'audio/SFX/sons-do-jogo/acoes',
+             'audio/SFX/sons-do-jogo/botoes-e-menu', 'audio/SFX/vacas', 
+
+             //EASTER EGGS CAVERNA
+
+             'easter-eggs/caverna', 'easter-eggs/caverna/_estudos', 'easter-eggs/caverna/_estudos/_fonte',
+             'easter-eggs/caverna/cenario', 'easter-eggs/caverna/personagens', 
+             'easter-eggs/caverna/sprites','easter-eggs/caverna/sprites/_fonte',
+
+
+            //EASTER EGGS VINGADORES
+
+            'easter-eggs/vingadores' , 'easter-eggs/vingadores/cenario', 
+            'easter-eggs/vingadores/dialogos', 'easter-eggs/vingadores/personagens']
+
+
+           /*  $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/audio/'));
+            $paths = array_merge($paths, $this->getFolderTree(__DIR__ . '/views/assets/easter-eggs/')); */
             enviarArquivoEstatico(__DIR__ . '/views/assets', $paths);
         }
 

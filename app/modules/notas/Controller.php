@@ -20,6 +20,20 @@ require_once __DIR__ . '/../../core/session.php';
 
 class NotasController
 {
+    private const ASSETS = [
+        'css' => [
+            'index.css' => __DIR__ . '/assets/css/index.css',
+            'instrutor.css' => __DIR__ . '/assets/css/instrutor.css',
+            'Notas.css' => __DIR__ . '/assets/css/Notas.css',
+            'turma.css' => __DIR__ . '/assets/css/turma.css',
+        ],
+        'js' => [
+            'index.js' => __DIR__ . '/assets/js/index.js',
+            'instrutor.js' => __DIR__ . '/assets/js/instrutor.js',
+            'turma.js' => __DIR__ . '/assets/js/turma.js',
+        ],
+    ];
+
     /**
      * Instância da camada de dados do módulo de notas.
      * @var NotasModel
@@ -151,6 +165,33 @@ class NotasController
             'turma'      => $turma,
             'submissoes' => $submissoes,
         ]);
+    }
+
+    public function sendAsset(): void
+    {
+        $tipo = $_GET['type'] ?? null;
+        $arquivo = $_GET['file'] ?? null;
+
+        if (
+            !is_string($tipo)
+            || !is_string($arquivo)
+            || !isset(self::ASSETS[$tipo][$arquivo])
+            || !is_file(self::ASSETS[$tipo][$arquivo])
+        ) {
+            http_response_code(404);
+            exit;
+        }
+
+        $tiposConteudo = [
+            'css' => 'text/css; charset=utf-8',
+            'js' => 'application/javascript; charset=utf-8',
+        ];
+
+        header('Content-Type: ' . $tiposConteudo[$tipo]);
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: public, max-age=3600');
+        readfile(self::ASSETS[$tipo][$arquivo]);
+        exit;
     }
 
     // -----------------------------------------------------------------

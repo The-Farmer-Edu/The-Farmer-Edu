@@ -1,0 +1,490 @@
+
+        /* ============================================================
+           RESET E BASE
+           ============================================================ */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            /* Perfil Aluno (Verde) - Guia de Design */
+            --verde-primario:   #1B5E20;
+            --verde-escuro:     #089C2F;
+            --verde-header:     #A0FDA3;
+            --verde-suave:      #E8F5E9;
+            --verde:            #1B5E20;
+            --verde-claro:      #A0FDA3;
+
+            /* Destaque Secundário (Laranja) - Guia de Design */
+            --laranja:          #FF8D28;
+            --laranja-suave:    #FFF3E0;
+            --amarelo:          #FF8D28;
+            --amarelo-claro:    #FFF3E0;
+
+            /* Feedback / Status */
+            --vermelho:         #DC2626;
+            --vermelho-claro:   #FEE2E2;
+            --azul:             #002D38;
+            --azul-claro:       #A0FDA3;
+
+            /* Neutros - Guia de Design */
+            --texto-principal:  #002D38;
+            --texto-preto:      #000000;
+            --texto-secundario: #727272;
+            --bg-pagina:        #FFFFFF;
+            /* --bg-pagina:        #FFFFFF; */
+            --bg-card:          #FFFFFF;
+            --borda-card:       #E6E6E6;
+            --cinza-50:         #F5F7F0;
+            --cinza-100:        #E6E6E6;
+            --cinza-200:        #D9D9D9;
+            --cinza-400:        #727272;
+            --cinza-600:        #727272;
+            --cinza-800:        #002D38;
+            --cinza-900:        #002D38;
+
+            /* Sombras do Guia de Design */
+            --sombra-card:      0px 4px 4px rgba(0, 0, 0, 0.25);
+            --sombra-header:    0px 4px 3px rgba(248, 96, 17, 0.5);
+            --sombra-sm:        0px 2px 4px rgba(0, 0, 0, 0.08);
+            --sombra-md:        0px 4px 4px rgba(0, 0, 0, 0.25);
+            --sombra-lg:        0 10px 15px rgba(0, 0, 0, 0.1);
+
+            /* Geometria do Guia de Design */
+            --raio-card:        25px;
+            --raio-pill:        20px;
+            --raio-icone:       10px;
+            --raio:             25px;
+            --transicao:        all .2s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-pagina);
+            color: var(--texto-principal);
+            min-height: 100vh;
+        }
+
+        .btn-acessar-fazenda {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 1030;
+            text-decoration: none;
+        }
+
+        @media (max-width: 650px) {
+            .btn-acessar-fazenda {
+                right: 12px;
+                bottom: 12px;
+            }
+
+            .btn-acessar-fazenda img {
+                width: 44px;
+                height: 44px;
+            }
+        }
+
+        /* ============================================================
+           TOPBAR (HEADER) - Guia de Design
+           Faixa colorida de ponta a ponta (#A0FDA3), logo circular + "The Farmer Edu"
+           com "Edu" em verde (#1B5E20) e o restante em navy (#002D38),
+           avatar em verde escuro (#089C2F) e brilho laranja por baixo.
+           ============================================================ */
+        .topbar {
+            background: var(--verde-header);
+            color: var(--texto-principal);
+            padding: 0 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--sombra-header);
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: var(--verde-primario);
+            text-decoration: none;
+        }
+
+        .topbar-logo span {
+            color: var(--texto-principal);
+        }
+
+        .topbar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            font-size: .875rem;
+            color: var(--texto-principal);
+            position: relative;
+            cursor: pointer;
+            padding: 5px 12px 5px 6px;
+            border-radius: var(--raio-pill);
+            transition: var(--transicao);
+            user-select: none;
+        }
+
+        .topbar-user:hover {
+            background: rgba(255, 255, 255, 0.45);
+        }
+
+        .seta-user {
+            transition: transform 0.2s ease;
+        }
+
+        .topbar-user.aberto .seta-user {
+            transform: rotate(180deg);
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: 16px;
+            box-shadow: 0 12px 28px rgba(0,0,0,.15);
+            min-width: 210px;
+            z-index: 200;
+            overflow: hidden;
+            display: none;
+            animation: fadeInMenu .2s ease;
+        }
+
+        @keyframes fadeInMenu {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .topbar-user.aberto .user-dropdown {
+            display: block;
+        }
+
+        .user-dropdown-header {
+            padding: 14px 16px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .user-dropdown-header strong {
+            font-size: .875rem;
+            color: var(--texto-principal);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-dropdown-header span {
+            font-size: .75rem;
+            color: var(--verde-primario);
+            font-weight: 600;
+        }
+
+        .user-dropdown-divider {
+            height: 1px;
+            background: var(--cinza-100);
+            margin: 4px 0;
+        }
+
+        .user-dropdown .item-logout {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            font-family: 'Inter', sans-serif;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--vermelho);
+            text-decoration: none;
+            transition: background .15s;
+        }
+
+        .user-dropdown .item-logout:hover {
+            background: var(--vermelho-claro);
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--verde-escuro);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: .875rem;
+            color: #ffffff;
+            flex-shrink: 0;
+        }
+
+        /* ============================================================
+           CONTAINER PRINCIPAL
+           ============================================================ */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+        }
+
+        /* ============================================================
+           CABECALHO DA PAGINA
+           ============================================================ */
+        .page-header {
+            margin-bottom: 28px;
+        }
+
+        .page-header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--texto-principal);
+            margin-bottom: 4px;
+        }
+
+        .page-header p {
+            font-family: 'Inter', sans-serif;
+            font-size: .95rem;
+            color: var(--texto-secundario);
+        }
+
+        /* ============================================================
+           CARDS DE RESUMO (Raio: 25px, Sombra padrão de card)
+           ============================================================ */
+        .resumo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .card-resumo {
+            background: var(--bg-card);
+            border-radius: var(--raio-card);
+            padding: 20px 24px;
+            box-shadow: var(--sombra-card);
+            border: 1px solid var(--borda-card);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: var(--transicao);
+        }
+
+        .card-resumo:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .card-resumo .icone {
+            font-size: 1.6rem;
+        }
+
+        .card-resumo .valor {
+            font-family: 'Poppins', sans-serif;
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .card-resumo .label {
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            color: var(--texto-secundario);
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           BARRA DE PESQUISA
+           ============================================================ */
+        .filtro-bar {
+            background: var(--bg-card);
+            border: 1px solid var(--borda-card);
+            border-radius: var(--raio-icone);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            box-shadow: var(--sombra-card);
+        }
+
+        .filtro-bar input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: .9rem;
+            font-family: 'Inter', sans-serif;
+            color: var(--texto-principal);
+            background: transparent;
+        }
+
+        .filtro-bar input::placeholder {
+            color: var(--texto-secundario);
+        }
+
+        /* ============================================================
+           SECAO DE DISCIPLINA / TURMA
+           ============================================================ */
+        .secao {
+            margin-bottom: 36px;
+        }
+
+        .secao-titulo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--verde-primario);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--verde-header);
+        }
+
+        /* ============================================================
+           CARDS DE ATIVIDADE (Raio: 25px, Sombra padrão de card)
+           ============================================================ */
+        .lista-atividades {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card-atividade {
+            background: var(--bg-card);
+            border-radius: var(--raio-card);
+            border: 1px solid var(--borda-card);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: var(--sombra-card);
+            transition: var(--transicao);
+        }
+
+        .card-atividade:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+            border-color: var(--verde-escuro);
+        }
+
+        .atividade-esq {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .tipo-icone {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--raio-icone);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            background: var(--cinza-100);
+        }
+
+        .tipo-codigo  { background: var(--laranja-suave); }
+        .tipo-quiz    { background: var(--verde-suave); }
+        .tipo-texto   { background: #E0F2FE; }
+
+        .atividade-info h3 {
+            font-family: 'Poppins', sans-serif;
+            font-size: .925rem;
+            font-weight: 700;
+            color: var(--texto-preto);
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 420px;
+        }
+
+        .atividade-info .meta {
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            color: var(--texto-secundario);
+        }
+
+        .atividade-dir {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* NOTA */
+        .nota {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .nota-10  { color: var(--verde-primario); }
+        .nota-boa { color: var(--verde-escuro); }
+        .nota-ok  { color: var(--laranja); }
+        .nota-ruim{ color: var(--vermelho); }
+
+        .nota-max {
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            color: var(--texto-secundario);
+            font-weight: 400;
+        }
+
+        /* BADGES (Formato pílula: 20px) */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: var(--raio-pill);
+            font-family: 'Inter', sans-serif;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+
+        .badge-avaliado  { background: var(--verde-suave);   color: var(--verde-primario); }
+        .badge-enviado   { background: #E0F2FE;              color: #0284C7; }
+        .badge-pendente  { background: var(--laranja-suave); color: var(--laranja); }
+        .badge-ia        { background: #F3E8FF;              color: #7E22CE; }
+
+        /* ============================================================
+           ESTADO VAZIO
+           ============================================================ */
+        .vazio {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--texto-secundario);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .vazio p { font-size: 1rem; margin-top: 12px; }
+
+        /* ============================================================
+           RESPONSIVO
+           ============================================================ */
+        @media (max-width: 600px) {
+            .atividade-info h3 { max-width: 200px; }
+            .nota { font-size: 1.2rem; }
+        }
+    
